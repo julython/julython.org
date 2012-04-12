@@ -23,7 +23,7 @@ to finish.
 Goals
 -----
 
-Since it is very hard to quantify code, so we have come up with a 
+Since it is very hard to quantify code we have come up with a 
 simple metric to decide the 'winners' of the competition. The goal
 is to commit at least once a day for the entire month. If you are 
 working on the next twitter or instigram you don't have to give your
