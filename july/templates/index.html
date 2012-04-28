@@ -17,6 +17,8 @@
     </head>
     <body>
         <h1>Title here</h1>
-        <p>content</p>
+        {% for section in sections %}
+        <h2>{{ section.title }}</h2>
+        {% endfor %}
     </body>
 </html>
