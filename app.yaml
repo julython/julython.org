@@ -4,15 +4,15 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
+env_variables:
+  DJANGO_SETTINGS_MODULE: 'july.settings'
+
 builtins:
 - appstats: on
 - remote_api: on
 - admin_redirect: on
 - django_wsgi: on
 - deferred: on
-
-env_variables:
-  DJANGO_SETTINGS_MODULE: 'july.settings'
 
 libraries:
 - name: django
