@@ -1,0 +1,6 @@
+*.py[co]
+.project
+.pydevproject
+.settings
+secrets.py
+settings_local.py
