@@ -146,6 +146,7 @@ INSTALLED_APPS = (
     'gae_django.admin',
     'gae_django.auth',
     'july',
+    'july.pages',
 )
 
 AUTHENTICATION_BACKENDS = ['gae_django.auth.backend.GAEBackend', 'gae_django.auth.backend.GAETwitterBackend']
