@@ -117,10 +117,14 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.logger.LoggingPanel',
 )
 
+def custom_show_toolbar(request):
+    return True # Always show toolbar, for example purposes only.
+
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': True,
     'HIDE_DJANGO_SQL': True,
     'ENABLE_STACKTRACES' : True,
+    #'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
 }
 
 ROOT_URLCONF = 'july.urls'
