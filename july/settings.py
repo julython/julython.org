@@ -174,8 +174,7 @@ if VERSION == '1.1':
 else:
     MAIN_URL = 'http://www.julython.org/'
 
-TWITTER_CALLBACK = '%sauth/twitter/verify/' % MAIN_URL
-TWITTER_CONSUMER_KEY = 'df1p5XTlM0YZr6f2lDVEYQ'
-TWITTER_CONSUMER_SECRET = 'JluwxoPYSf2LHsFvjJVo8GYYzvvemRuwcXUqjsQT6U'
+TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
+
 
 LOGIN_REDIRECT_URL = '/'
