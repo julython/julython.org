@@ -3,14 +3,21 @@
 
 @julyblue: #6f94b6;
 @linkColor: @julyblue;
+@titleFont: "Doppio One", sans-serif;
+@mainFont: "Open Sans", sans-serif;
 
 body {
-  font-family: 'Open Sans', sans-serif;
+  font-family: @mainFont;
   margin-top: 40px;
+}
+
+p, button, input, textarea {
+  font-family: @mainFont;
 }
 
 a.video {
   display: inline-block;
+  font-family: @titleFont;
   padding-left: 32px;
   min-height: 20px;
   line-height: 30px;
@@ -44,7 +51,6 @@ a.video {
     line-height: 30px;
     font-size: 16px;
     padding-top: 5px;
-    font-weight: bold;
     cursor: pointer;
     margin-left: 15px;
     color: #FFF;
@@ -54,16 +60,16 @@ a.video {
   display: block;
   width: 0;
   height: 0;
-  margin: 40px auto 40px;
-  padding: 170px 0 0 600px;
+  margin: 60px auto 60px;
+  padding: 136px 0 0 500px;
   overflow: hidden;
   background: url("/static/images/julython_logo_large.png") top left no-repeat;
 }
 
 .large-notice {
   border-top: 1px solid #CCC;
-  padding-top: 40px;
-  padding-bottom: 40px;
+  padding-top: 30px;
+  padding-bottom: 30px;
   text-align: center;
 }
 
@@ -80,11 +86,12 @@ a.video {
     color: #555;
     text-align: center;
     width: 110px;
-    font-size: 14px;
+    font-size: 13px;
     background-repeat: no-repeat;
     background-position: center top;
     text-align: center;
     text-shadow: 1px 1px #FFF;
+    font-family: @titleFont;
   }
 
     .what-is-this {
@@ -126,17 +133,20 @@ a.video {
 
 .section-container h2 {
   font-size: 26px;
+  font-weight: normal;
   color: #555;
   line-height: 50px;
   padding-left: 64px;
-  background-image: url("/static/images/whats_this_button.png");
   background-repeat: no-repeat;
   background-position: top left;
   margin-bottom: 30px;
+  font-family: @titleFont;
 }
 
   .section-blurb h3 {
     color: #555;
+    font-family: @titleFont;
+    font-weight: normal;
     font-size: 20px;
     margin: 0 0 8px;
   }

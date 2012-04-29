@@ -5,6 +5,7 @@
     <title>Julython 2012</title>
     <link href="/static/css/main.css" rel="stylesheet" type="text/css"/>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'/>
+    <link href='http://fonts.googleapis.com/css?family=Doppio+One' rel='stylesheet' type='text/css'/>
     <script type="text/javascript">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-31203363-1']);
@@ -58,72 +59,38 @@
       </div>
     </div>
 
+    {% for section in sections %}
+    {% if section.blurbs|length %}
     <div class="container section-container no-border">
       <div class="row">
-        <div class="span8">
+        {% for block in section.blocks %}
+        <div class="span{{ block.bootstrap_width }}">
+          {% if block.title %}
           <div class="row">
-            <div class="span8">
-              <h2 class="what-is-this">Why are you people making up words?</h3>
+            <div class="span{{ block.bootstrap_width}}">
+              <h2 class="{{ block.slug }}">{{ block.title }}</h2>
             </div>
           </div>
+          {% endif %}
           <div class="row">
-            <div class="span4 section-blurb">
-              <h3>You are a busy person.</h3>
-              <p>
-                Jerky speck fatback tenderloin meatloaf, chuck brisket ham hock
-                pork filet mignon short loin. Sausage biltong kielbasa bresaola,
-                cow swine tongue pancetta. Prosciutto ball tip chicken.
-              </p>
+            {% for blurb in block.blurbs %}
+            <div class="span4">
+              {% if blurb.title %}
+              <h3>{{ blurb.title }}</h3>
+              <p>{{ blurb.content }}</p>
+              {% endif %}
+              {% if blurb.image_url %}
+              <img src="{{ blurb.image_url }}"/>
+              {% endif %}
             </div>
-            <div class="span4 section-blurb">
-              <h3>You are a busy person.</h3>
-              <p>
-                Jerky speck fatback tenderloin meatloaf, chuck brisket ham hock
-                pork filet mignon short loin. Sausage biltong kielbasa bresaola,
-                cow swine tongue pancetta. Prosciutto ball tip chicken.
-              </p>
-            </div>
+            {% endfor %}
           </div>
         </div>
-        <div class="span4">
-          <img src="/static/images/welcome_to_julython.png"/>
-        </div>
+        {% endfor %}
       </div>
     </div>
-
-    <div class="container section-container">
-      <div class="row">
-        <div class="span12">
-          <h2 class="what-is-this">Why are you people making up words?</h3>
-        </div>
-      </div>
-      <div class="row">
-        <div class="span4 section-blurb">
-          <h3>You are a busy person.</h3>
-          <p>
-            Jerky speck fatback tenderloin meatloaf, chuck brisket ham hock
-            pork filet mignon short loin. Sausage biltong kielbasa bresaola,
-            cow swine tongue pancetta. Prosciutto ball tip chicken.
-          </p>
-        </div>
-        <div class="span4 section-blurb">
-          <h3>You are a busy person.</h3>
-          <p>
-            Jerky speck fatback tenderloin meatloaf, chuck brisket ham hock
-            pork filet mignon short loin. Sausage biltong kielbasa bresaola,
-            cow swine tongue pancetta. Prosciutto ball tip chicken.
-          </p>
-        </div>
-        <div class="span4 section-blurb">
-          <h3>You are a busy person.</h3>
-          <p>
-            Jerky speck fatback tenderloin meatloaf, chuck brisket ham hock
-            pork filet mignon short loin. Sausage biltong kielbasa bresaola,
-            cow swine tongue pancetta. Prosciutto ball tip chicken.
-          </p>
-        </div>
-      </div>
-    </div>
+    {% endif %}
+    {% endfor %}
 
     <script>
           (function() {
