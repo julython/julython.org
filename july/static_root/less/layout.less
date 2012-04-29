@@ -1,0 +1,147 @@
+@import "/static_root/bootstrap/less/bootstrap";
+@import "/static_root/bootstrap/less/responsive";
+
+@julyblue: #6f94b6;
+@linkColor: @julyblue;
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  margin-top: 40px;
+}
+
+a.video {
+  display: inline-block;
+  padding-left: 32px;
+  min-height: 20px;
+  line-height: 30px;
+  background: url("/static/images/video_icon.png") 0 6px no-repeat;
+  color: #777;
+  font-size: 15px;
+}
+
+.gray-container {
+  background: #DDD;
+  padding: 24px 0;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-inner {
+  background: #ACACAC;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2), 0 0 3px rgba(0, 0, 0, 0.3);
+  color: #FFF;
+}
+
+  .navbar-inner img.logo {
+    margin-top: 5px;
+  }
+
+  .navbar-inner .navbar-links {
+    text-align: right;
+  }
+
+  .navbar-inner .navbar-link {
+    display: inline-block;
+    line-height: 30px;
+    font-size: 16px;
+    padding-top: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 15px;
+    color: #FFF;
+  }
+
+#logo {
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 40px auto 40px;
+  padding: 170px 0 0 600px;
+  overflow: hidden;
+  background: url("/static/images/julython_logo_large.png") top left no-repeat;
+}
+
+.large-notice {
+  border-top: 1px solid #CCC;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  text-align: center;
+}
+
+  button {
+    background: none
+  }
+
+  #sticky-bar button {
+    display: inline-block;
+    border: none;
+    padding: 0;
+    padding-top: 58px;
+    line-height: 18px;
+    color: #555;
+    text-align: center;
+    width: 110px;
+    font-size: 14px;
+    background-repeat: no-repeat;
+    background-position: center top;
+    text-align: center;
+    text-shadow: 1px 1px #FFF;
+  }
+
+    .what-is-this {
+      background-image: url("/static/images/whats_this_button.png");
+    }
+
+    .participating {
+      background-image: url("/static/images/participating_button.png");
+    }
+
+    .the-rules {
+      background-image: url("/static/images/rules_button.png");
+    }
+
+    .teaming-up {
+      background-image: url("/static/images/teaming_up_button.png");
+    }
+
+    .spread-the-word {
+      background-image: url("/static/images/spread_the_word_button.png");
+    }
+
+
+    #sticky-bar button:hover {
+      color: #000;
+      text-decoration: underline;
+      background-color: clear;
+    }
+
+.section-container {
+  border-top: 1px solid #AAA;
+  padding: 40px;
+  color: #777;
+}
+
+  .section-container.no-border {
+    border-top: none;
+  }
+
+.section-container h2 {
+  font-size: 26px;
+  color: #555;
+  line-height: 50px;
+  padding-left: 64px;
+  background-image: url("/static/images/whats_this_button.png");
+  background-repeat: no-repeat;
+  background-position: top left;
+  margin-bottom: 30px;
+}
+
+  .section-blurb h3 {
+    color: #555;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  .section-blurb p {
+    font-size: 16px;
+    line-height: 23px
+  }
