@@ -15,7 +15,7 @@
 
   <body>
 
-    <div class="navbar navbar-fixed-top">
+    <div class="navbar navbar-fixed-top" id="topnav">
       <div class="navbar-inner">
         <div class="container">
           <div class="row">
@@ -45,7 +45,7 @@
       </div>
     </div>
 
-    <div class="gray-container">
+    <div class="gray-container" id="navigation">
       <div class="container">
         <div class="row">
           <div class="span6 offset3" id="sticky-bar">
@@ -92,6 +92,8 @@
     {% endif %}
     {% endfor %}
 
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/js/index.js"></script>
     <script>
           (function() {
             var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
