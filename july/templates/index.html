@@ -1,36 +1,6 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
-<html lang="en">
-  <head>
-    <title>Julython 2012</title>
-    <link href="/static/css/main.css" rel="stylesheet" type="text/css"/>
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'/>
-    <link href='http://fonts.googleapis.com/css?family=Doppio+One' rel='stylesheet' type='text/css'/>
-    <script type="text/javascript">
-          var _gaq = _gaq || [];
-          _gaq.push(['_setAccount', 'UA-31203363-1']);
-          _gaq.push(['_trackPageview']);
-    </script>
-  </head>
-
-  <body>
-
-    <div class="navbar navbar-fixed-top" id="topnav">
-      <div class="navbar-inner">
-        <div class="container">
-          <div class="row">
-            <div class="span2">
-              <img class="logo" src="/static/images/julython_logo_small.png"/>
-            </div>
-            <div class="span3 offset7 navbar-links">
-              <a class="navbar-link" href="/accounts/twitter">Sign In</a>
-              <a class="navbar-link" href="http://github.com/julython">Our GitHub</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+{% block content %}
     <div class="container">
       <div class="row">
         <div class="span12">
@@ -77,7 +47,7 @@
             <div class="span4 section-blurb">
               {% if blurb.title %}
               <h3>{{ blurb.title }}</h3>
-              <p>{{ blurb.content }}</p>
+              <p>{{ blurb.content|safe }}</p>
               {% endif %}
               {% if blurb.image_url %}
               <img src="{{ blurb.image_url }}"/>
@@ -91,17 +61,10 @@
     </div>
     {% endif %}
     {% endfor %}
+{% endblock %}
 
-    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
-    <script type="text/javascript" src="/static/js/index.js"></script>
-    <script>
-          (function() {
-            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-          })();
-    </script> 
-  </body>
-
-</html>
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="{{ STATIC_URL }}js/index.js"></script>
+{% endblock %}
 
