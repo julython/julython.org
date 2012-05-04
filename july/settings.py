@@ -182,4 +182,4 @@ else:
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
 
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/me/'
