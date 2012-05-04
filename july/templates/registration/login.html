@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+<div class="row">
+    <div class="span-8">
+        
+    <h2>Sign in</h2>
+    
+    <form method="post" action=".">
+    {% csrf_token %}
+    <fieldset>
+    <legend>{{ title }}</legend>
+    {% if form.non_field_errors %}<div class="span-14 error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <div class="clearfix{% if field.errors %} error{% endif %}">
+        <label for="id_{{ field.name}}">{{ field.label }}:</label>
+        <div class="input">
+            {{ field }}
+            {% for error in field.errors %}<span class="help-inline">{{ error }}</span>{% endfor %}
+            {% if field.help_text %}<span class="help-block">{{ field.help_text}}</span>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="actions">
+        <input type='submit' class='btn primary' value='{% firstof title "submit" %}' />
+        <a href="{% if cancel_url %}{{ cancel_url }}{% else %}../{% endif %}">Cancel</a>
+    </div>
+    </fieldset>
+        
+    </form>
+    </div>
+    <div class="span-4">
+        <h2>Social Media Yo</h2>
+        <a href="/accounts/twitter/signin/" class="btn primary">Sign in with Twitter</a>
+        
+        <h2>I don't have an account</h2>
+        <a href="/accounts/twitter/" class="btn primary">Sign up with Twitter</a>
+    </div>
+</div>    
+</div>
+
+{% endblock %}
