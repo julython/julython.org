@@ -1,7 +1,7 @@
 
 from django.views.decorators.cache import cache_page
 from django.shortcuts import render_to_response
-from django.template import RequestContext
+from django.template import Context
 
 from july.pages.models import Section
 
@@ -11,9 +11,12 @@ def index(request):
     
     sections = Section.all().order('order')
     
-    return render_to_response('index.html', RequestContext(request, {
+    ctx = Context({
         'sections': sections,
-    }))
+        'MEDIA_URL': '/static/',
+        'STATIC_URL': '/static/'})
+    
+    return render_to_response('index.html', context_instance=ctx)
 
 def warmup(request):
     """Fire up the servers!"""
