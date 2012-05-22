@@ -13,4 +13,5 @@ urlpatterns = patterns('',
     url(r'^signout/$', views.logout),
     url(r'^accounts/', include('gae_django.auth.urls')),
     url(r'^me/', include('july.people.urls')),
+    url(r'^_ah/warmup', 'july.views.warmup'),
 )

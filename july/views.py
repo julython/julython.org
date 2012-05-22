@@ -14,3 +14,8 @@ def index(request):
     return render_to_response('index.html', RequestContext(request, {
         'sections': sections,
     }))
+
+def warmup(request):
+    """Fire up the servers!"""
+    from django.http import HttpResponse
+    return HttpResponse('OK')

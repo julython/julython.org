@@ -14,6 +14,9 @@ builtins:
 - django_wsgi: on
 - deferred: on
 
+inbound_services:
+- warmup
+
 libraries:
 - name: django
   version: "1.3"
@@ -21,3 +24,7 @@ libraries:
 handlers:
 - url: /static
   static_dir: july/static_root
+
+- url: /(favicon.ico|robots.txt)
+  static_files: july/static_root/\1
+  upload: /static/(.*)
