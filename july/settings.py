@@ -4,7 +4,7 @@ from secrets import *
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -177,7 +177,11 @@ if VERSION == '1.1':
     except:
         pass
 else:
+    # Production settings!!
     MAIN_URL = 'http://www.julython.org/'
+    STATIC_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
+    ADMIN_MEDIA_PREFIX = 'http://d1v9vqkrs9fyao.cloudfront.net/static/admin/'
+    MEDIA_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
 
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
 

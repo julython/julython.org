@@ -28,3 +28,7 @@ handlers:
 - url: /(favicon.ico|robots.txt)
   static_files: july/static_root/\1
   upload: /static/(.*)
+
+- url: /api.*
+  script: api.app
+  

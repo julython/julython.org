@@ -2,6 +2,7 @@
 from django.views.decorators.cache import cache_page
 from django.shortcuts import render_to_response
 from django.template import Context
+from django.conf import settings
 
 from july.pages.models import Section
 
@@ -13,8 +14,8 @@ def index(request):
     
     ctx = Context({
         'sections': sections,
-        'MEDIA_URL': '/static/',
-        'STATIC_URL': '/static/'})
+        'MEDIA_URL': settings.MEDIA_URL,
+        'STATIC_URL': settings.STATIC_URL})
     
     return render_to_response('index.html', context_instance=ctx)
 
