@@ -6,6 +6,8 @@ import time
 
 from google.appengine.ext import db
 
+from july.pages.models import Section
+
 SIMPLE_TYPES = (int, long, float, bool, dict, basestring, list)
 
 def to_dict(model):
@@ -34,16 +36,10 @@ def to_dict(model):
 
     return output
 
-def make_resource(model, uri):
-    """Serialize a model and add a uri for the api."""
-    
-    resp = to_dict(model)
-    resp['uri'] = '%s/%s' % (uri, model.key().id_or_name())
-    return resp
-
 class API(webapp2.RequestHandler):
     
     endpoint = None
+    model = None
     
     def base_url(self):
         return self.request.host_url + '/api/v1'
@@ -52,6 +48,17 @@ class API(webapp2.RequestHandler):
         if self.endpoint:
             return self.base_url() + self.endpoint
         return self.base_url()
+    
+    def serialize(self, model):
+        # Allow models to override the default to_dict
+        if hasattr(self.model, 'to_dict'):
+            resp = self.model.to_dict(model)
+        else:
+            resp = to_dict(model)
+        resp['uri'] = '%s/%s' % (self.uri(), model.key().id_or_name())
+        resp['key'] = str(model.key())
+        resp['id'] = model.key().id_or_name()
+        return resp
     
     def respond_json(self, message, status_code=200):
         self.response.set_status(status_code)
@@ -90,17 +97,22 @@ class RootHandler(API):
         }
         return self.respond_json(resp)
 
-class CommitHandler(API):
+class CommitCollection(API):
+    
+    endpoint = '/commits'
     
     def get(self):
         return self.respond_json({'commits': []})
 
-class SectionHandler(API):
+class CommitResource(API):
+    
+    endpoint = '/commits'
+
+class SectionCollection(API):
     
     endpoint = '/sections'
     
     def get(self):
-        from july.pages.models import Section
         limit = int(self.request.get('limit', 100))
         cursor = self.request.get('cursor')
         
@@ -109,7 +121,7 @@ class SectionHandler(API):
         if cursor:
             query.with_cursor(cursor)
         
-        sections = [make_resource(section, self.uri()) for section in query.fetch(limit)]
+        sections = [self.serialize(section) for section in query.fetch(limit)]
         resp = {
             'limit': limit,
             'cursor': query.cursor(),
@@ -120,11 +132,21 @@ class SectionHandler(API):
             resp['next'] = self.uri() + '?limit=%s&cursor=%s' % (limit, query.cursor())
         return self.respond_json(resp)
         
+class SectionResource(API):
+    
+    endpoint = '/sections'
+    model = Section
+    
+    def get(self, section_id):
+        instance = self.model.get_by_id(int(section_id))
+        return self.respond_json(self.serialize(instance))
 
 routes = [
     ('/api/v1', RootHandler),
-    ('/api/v1/commits', CommitHandler),
-    ('/api/v1/sections', SectionHandler),
+    ('/api/v1/commits', CommitCollection),
+    ('/api/v1/commits/(\d+)', CommitResource),
+    ('/api/v1/sections', SectionCollection),
+    ('/api/v1/sections/(\d+)', SectionResource),
 ] 
 
 app = webapp2.WSGIApplication(routes)
