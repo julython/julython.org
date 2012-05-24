@@ -7393,6 +7393,11 @@ a.video {
   margin-left: 15px;
   color: #FFF;
 }
+img.icon {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #fff;
+}
 #logo {
   display: block;
   width: 0;

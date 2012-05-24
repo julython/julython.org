@@ -1,12 +1,12 @@
 
-from django.views.decorators.cache import cache_page
 from django.shortcuts import render_to_response
 from django.template import Context
 from django.conf import settings
 
 from july.pages.models import Section
+from july.decorators import cache_page_anonymous
 
-@cache_page(60)
+@cache_page_anonymous(60)
 def index(request):
     """Render the home page"""
     
@@ -14,6 +14,7 @@ def index(request):
     
     ctx = Context({
         'sections': sections,
+        'user': request.user,
         'MEDIA_URL': settings.MEDIA_URL,
         'STATIC_URL': settings.STATIC_URL})
     
