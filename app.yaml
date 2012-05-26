@@ -11,7 +11,7 @@ builtins:
 - appstats: on
 - remote_api: on
 - admin_redirect: on
-- django_wsgi: on
+#- django_wsgi: on
 - deferred: on
 
 inbound_services:
@@ -20,6 +20,10 @@ inbound_services:
 libraries:
 - name: django
   version: "1.3"
+- name: jinja2
+  version: "2.6"
+- name: setuptools
+  version: "0.6c11"
 
 handlers:
 - url: /static
@@ -31,4 +35,7 @@ handlers:
 
 - url: /api.*
   script: api.app
+
+- url: /.*
+  script: main.app
   
