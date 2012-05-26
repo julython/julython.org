@@ -4,3 +4,9 @@
 [submodule "lib/django-debug-toolbar"]
 	path = lib/django-debug-toolbar
 	url = git://github.com/django-debug-toolbar/django-debug-toolbar.git
+[submodule "lib/flask"]
+	path = lib/flask
+	url = https://github.com/mitsuhiko/flask.git
+[submodule "lib/werkzeug"]
+	path = lib/werkzeug
+	url = https://github.com/mitsuhiko/werkzeug.git
