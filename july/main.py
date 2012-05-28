@@ -1,6 +1,6 @@
 import logging
 
-from flask import Flask, render_template, session, g, redirect, url_for, request
+from flask import Flask, render_template, session, g, redirect, url_for, request, abort
 from werkzeug.debug import DebuggedApplication
 
 from july import settings
@@ -13,6 +13,14 @@ app.config.from_object(settings)
 
 # Wrap the applictaion in middleware for debugging fun
 app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=settings.DEBUG)
+
+def login_required(f):
+    """Checks whether user is logged in or raises error 401."""
+    def decorator(*args, **kwargs):
+        if not g.user:
+            return redirect(url_for('twitter_signin'))
+        return f(*args, **kwargs)
+    return decorator
 
 @app.before_request
 def before_request():
@@ -27,6 +35,14 @@ def index():
     
     sections = Section.all().fetch(100)
     return render_template('index.html', sections=sections, user=g.user)
+
+@app.route('/me/')
+@login_required
+def profile():
+    from july.pages.models import Section
+    
+    sections = Section.all().fetch(100)
+    return render_template('me.html', sections=sections, user=g.user)
 
 @app.route('/signin/')
 def twitter_signin():
@@ -58,3 +74,9 @@ def twitter_verify():
 def signout():
     session['username'] = None
     return redirect(url_for('index'))
+
+# TODO: this should be removed 
+# For debugging the app
+@app.route('/exception/')
+def exception():
+    raise Exception
