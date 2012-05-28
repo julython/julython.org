@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <title>Julython 2012</title>
-    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ config.STATIC_URL }}css/main.css" rel="stylesheet" type="text/css"/>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'/>
     <link href='http://fonts.googleapis.com/css?family=Doppio+One' rel='stylesheet' type='text/css'/>
     <script type="text/javascript">
@@ -21,7 +21,7 @@
         <div class="container">
           <div class="row">
             <div class="span2">
-              <a href="/"><img class="logo" alt="julython.org" src="{{ url_for('static', filename='images/julython_logo_small.png') }}"/></a>
+              <a href="/"><img class="logo" alt="julython.org" src="{{ config.STATIC_URL }}images/julython_logo_small.png"/></a>
             </div>
             <div class="span3 offset7 navbar-links">
               {% block navbar_links %}

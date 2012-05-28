@@ -65,6 +65,6 @@
 
 {% block javascript %}
     {{ super() }}
-    <script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script type="text/javascript" src="{{ config.STATIC_URL }}js/index.js"></script>
 {% endblock %}
 
