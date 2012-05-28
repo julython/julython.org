@@ -8,7 +8,7 @@ from gae_django.auth import oauth
 from gae_django.auth.models import User
 
 
-app = Flask('julython', static_url_path=settings.STATIC_URL)
+app = Flask('julython')
 app.config.from_object(settings)
 
 # Wrap the applictaion in middleware for debugging fun
