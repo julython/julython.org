@@ -2,15 +2,18 @@
 from django.shortcuts import render_to_response
 from django.template import Context
 from django.conf import settings
+from django.core.cache import cache
 
 from july.pages.models import Section
-from july.decorators import cache_page_anonymous
 
-@cache_page_anonymous(60)
 def index(request):
     """Render the home page"""
     
-    sections = Section.all().order('order')
+    sections = cache.get('front_page')
+    if sections is None:
+        sections = Section.all().order('order').fetch(10)
+        cache.set('front_page', sections, 120)
+        
     
     ctx = Context({
         'sections': sections,

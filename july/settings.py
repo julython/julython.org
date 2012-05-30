@@ -98,8 +98,8 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -150,7 +150,7 @@ INSTALLED_APPS = (
 )
 
 AUTHENTICATION_BACKENDS = ['gae_django.auth.backend.GAEBackend', 'gae_django.auth.backend.GAETwitterBackend']
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_ENGINE = 'gae_django.django_1_4.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SESSION_SAVE_EVERY_REQUEST = True
 
@@ -161,6 +161,7 @@ CACHES = {
     }
 }
 
+CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 # SETUP local and prod settings
 VERSION = os.environ.get('CURRENT_VERSION_ID', '1.1')
