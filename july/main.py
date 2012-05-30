@@ -32,17 +32,23 @@ def before_request():
 @app.route('/')
 def index():
     from july.pages.models import Section
-    
+    logging.error(request.headers)
     sections = Section.all().fetch(100)
     return render_template('index.html', sections=sections, user=g.user)
 
 @app.route('/me/')
 @login_required
 def profile():
-    from july.pages.models import Section
+    from july.records import Record
+    cursor = request.args.get('cursor', None)
     
-    sections = Section.all().fetch(100)
-    return render_template('me.html', sections=sections, user=g.user)
+    records = Record.all().ancestor(g.user)
+    
+    if cursor:
+        records.with_cursor(cursor)
+    
+    recs = records.fetch(35)
+    return render_template('me.html', records=recs, user=g.user)
 
 @app.route('/signin/')
 def twitter_signin():
