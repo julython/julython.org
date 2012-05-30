@@ -1,3 +1,4 @@
+import logging
 
 from django.shortcuts import render_to_response
 from django.template import Context
@@ -14,7 +15,6 @@ def index(request):
         sections = Section.all().order('order').fetch(10)
         cache.set('front_page', sections, 120)
         
-    
     ctx = Context({
         'sections': sections,
         'user': request.user,
