@@ -41,3 +41,13 @@ Site
 The site is a work in progress right now and volunteers are welcome
 also we could use some nice free hosting (**hint hint**). In the
 mean time follow us on the twitter ``@julython``.
+
+
+Hacking
+-------
+
+The site is written in Django and hosted on Appengine. You can use this
+gist to setup your dev environment to help out::
+
+    https://gist.github.com/2839803
+
