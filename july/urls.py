@@ -11,7 +11,9 @@ urlpatterns = patterns('',
     url(r'^$', 'july.views.index', name='index'),
     url(r'^signin/$', views.login, {'authentication_form': AuthenticationForm}),
     url(r'^signout/$', views.logout),
+    url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('gae_django.auth.urls')),
-    url(r'^me/', include('july.people.urls')),
     url(r'^_ah/warmup', 'july.views.warmup'),
+    url(r'^', include('july.people.urls')),
+
 )

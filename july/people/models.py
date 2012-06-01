@@ -1,27 +1,22 @@
 from google.appengine.ext import db
 import logging
 
-class Profile(db.Model):
+class Profile(db.Expando):
     """
     Basic profile to optionally describe the stuff the 
     developer is hacking on.
     """
     user_id = db.IntegerProperty(required=True)
     name = db.StringProperty(required=True)
+    avatar = db.BlobProperty()
     my_url = db.URLProperty()
     about_me = db.TextProperty()
     where = db.StringProperty(indexed=False)
 
-    twitter = db.StringProperty(indexed=False)
-    show_twitter = db.BooleanProperty(default=False, indexed=False)
-
-    facebook = db.StringProperty(indexed=False)
-    show_facebook = db.BooleanProperty(default=False, indexed=False)
-    
     last_commit = db.DateTimeProperty()
     
     commits = db.IntegerProperty()
-    
+
     def __unicode__(self):
         return unicode(self.parent())
     

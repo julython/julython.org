@@ -1,7 +1,39 @@
 {% extends "base.html" %}
 
+{% block bodyclass %}profile{% endblock %}
+
 {% block content %}
 <div class="container">
-    <span class="span-14"><h1>{{ user }}</h1></span>
+    <div class="row">
+        <div class="span3"> 
+            <div class="row">
+                <div class="span3 user"><h1><img src="{{ user.picture_url }}" alt="{{user}}"/> <span>{{ user }}</span></h1></div>
+            </div>
+            <div class="row">
+                <div class="span3 last_commit">{{ user.last_commit_date }}</div>
+            </div>
+            {% for k,v  in expandos.iteritems %} 
+            <div class="row">
+                <div class="span1 label">{{ k }}</div>
+                <div class="span2 expando">{{ v }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="span9">
+            <div class="row">
+                <div class="span9"><h2>Recent Activity</h2></div>
+            </div>
+            {% for commit in commits %}
+            <div class="row">
+                <div class="span9">Commit</div>
+            </div>
+            {% empty %}
+            <div class="row">
+                <div class="span9">No Commits Yet!</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
+
 {% endblock %}
