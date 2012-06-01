@@ -1,50 +1,6 @@
 from google.appengine.ext import db
 import logging
 
-class Profile(db.Expando):
-    """
-    Basic profile to optionally describe the stuff the 
-    developer is hacking on.
-    """
-    user_id = db.IntegerProperty(required=True)
-    name = db.StringProperty(required=True)
-    avatar = db.BlobProperty()
-    my_url = db.URLProperty()
-    about_me = db.TextProperty()
-    where = db.StringProperty(indexed=False)
-
-    last_commit = db.DateTimeProperty()
-    
-    commits = db.IntegerProperty()
-
-    def __unicode__(self):
-        return unicode(self.parent())
-    
-    @property
-    def secret(self):
-        """
-        This is the secret key the user will add to identify 
-        themselves with the api. We just use the key as
-        this is unique and allows us to add the commits to the
-        proper entity group. 
-        
-        This is not secure so don't use this for anything too
-        important.
-        """
-        return str(self.key())
-    
-    @classmethod
-    def get_or_create(cls, user):
-        profile = cls.all().filter('user_id', user.key().id()).get()
-        if profile is None:
-            profile = cls(user_id=user.key().id(), name=unicode(user))
-            if user.service == 'twitter':
-                profile.twitter = user.username
-            elif user.service == 'facebook':
-                profile.facebook = user.username
-            profile.put()
-        return profile
-
 class Commit(db.Model):
     """
     Commit record for the profile, the parent is the profile
@@ -55,7 +11,7 @@ class Commit(db.Model):
     author = db.StringProperty()
     message = db.StringProperty()
     remote = db.StringProperty()
-    timestamp = db.DateTimeProperty()
+    timestamp = db.DateTimeProperty(auto_now_add=True)
     
     @classmethod
     def create_from_json(cls, json_msg):
