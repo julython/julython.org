@@ -27,7 +27,7 @@
               {% block navbar-links %}
               <a class="navbar-link" href="http://github.com/julython">Our GitHub</a>
               {% if user.is_authenticated %}
-              <a class="navbar-link" href="/me/"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }}</a>
+              <a class="navbar-link" href="/{{ user.username }}"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }}</a>
               {% else %}
               <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a>
               {% endif %}
