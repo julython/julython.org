@@ -5,6 +5,9 @@
 @linkColor: @julyblue;
 @titleFont: "Doppio One", sans-serif;
 @mainFont: "Open Sans", sans-serif;
+@pressStart: "Press Start 2P", sans-serif;
+
+
 
 body {
   font-family: @mainFont;
@@ -13,6 +16,10 @@ body {
 
 p, button, input, textarea {
   font-family: @mainFont;
+}
+
+.press-start { 
+    font-family: @pressStart;
 }
 
 a.video {
@@ -165,3 +172,21 @@ img.icon {
     font-size: 16px;
     line-height: 23px
   }
+
+/** profile page **/
+
+body.profile #contents h1.user { 
+    margin-top: 25px;
+    font-family: @pressStart, Helvetica sans-serif;     
+}
+
+body.profile #contents h1.user img{ 
+    display: block; 
+    float:left; 
+    margin-top: -15px;
+    padding-right: 5px;
+}
+
+body.profile .sidebar_section { 
+    margin-bottom: 20px;
+}

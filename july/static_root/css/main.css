@@ -7355,6 +7355,9 @@ input,
 textarea {
   font-family: "Open Sans", sans-serif;
 }
+.press-start {
+  font-family: "Press Start 2P", sans-serif;
+}
 a.video {
   display: inline-block;
   font-family: "Doppio One", sans-serif;
@@ -7481,4 +7484,18 @@ button {
 .section-blurb p {
   font-size: 16px;
   line-height: 23px;
+}
+/** profile page **/
+body.profile #contents h1.user {
+  margin-top: 25px;
+  font-family: "Press Start 2P", sans-serif, Helvetica sans-serif;
+}
+body.profile #contents h1.user img {
+  display: block;
+  float: left;
+  margin-top: -15px;
+  padding-right: 5px;
+}
+body.profile .sidebar_section {
+  margin-bottom: 20px;
 }
