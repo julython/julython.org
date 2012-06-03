@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+
+{% block bodyclass %}profile edit_profile{% endblock %}
+
+{% block content %} 
+<div class="container" id="contents">
+    <div class="row">
+        <div class="span12">
+            <h1 class="user">Player 1_</h1>
+        </div>
+    </div>
+    <div class="row">
+        <div class="span12">
+            <form method="POST" enctype="multipart/form-data">{% csrf_token %}
+                {{ form }} 
+                <input type="submit">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
