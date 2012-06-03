@@ -23,14 +23,13 @@ def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
     user = request.user
 
-    #CONSIDER FILES with no POST?  Can that happen?
-    form = EditUserForm(request.POST or None, request.FILES or None)
+    form = EditUserForm(request.POST or None, user=request.user)
     if form.is_valid():
         for key in form.cleaned_data:
-            setattr(user,key,form.cleaned_data.get(key))
+            setattr(user, key, form.cleaned_data.get(key))
         user.put()
         return HttpResponseRedirect(
-                    reverse('member-profile', kwargs={'username': request.user.username})
+            reverse('member-profile', kwargs={'username':request.user.username})
         )
         
     
@@ -38,5 +37,5 @@ def edit_profile(request, username, template_name='people/edit.html'):
         raise Http404("User not found")
 
     return render_to_response(template_name, 
-                              {'form':form,}, 
+                              {'form':form}, 
                               RequestContext(request))
