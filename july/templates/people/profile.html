@@ -11,40 +11,40 @@
             <div class="row sidebar_section">
                 <div class="span3 user">
                     <h1 class="user">
-                        <img src="{{ user.picture_url }}" alt="{{user}}"/> 
-                        {{ user }}
+                        <img src="{{ profile.picture_url }}" alt="{{profile}}"/> 
+                        {{ profile }}
                     </h1>
                 </div>
             </div>
 
-            {% if user.score %}
+            {% if profile.score %}
             <div class="row sidebar_section">
                 <div class="span3">
                     <h3>Score</h3>
                     <div>
-                    {{ user.score }} 
+                    {{ profile.score }} 
                     </div>
                 </div>
             </div>
             {% endif %}
 
-            {% if user.about_me %}
+            {% if profile.about_me %}
             <div class="row sidebar_section">
                 <div class="span3">
                     <h3>About Me</h3>
                     <div>
-                    {{ user.about_me }} 
+                    {{ profile.about_me }} 
                     </div>
                 </div>
             </div>
             {% endif %}
 
-            {% if user.twitter_url %}
+            {% if profile.twitter_url %}
             <div class="row sidebar_section">
                 <div class="span3">
                     <h3>Tweets</h3>
-                    <a href="http://twitter.com/{{ user.username }}"> 
-                        @{{ user.username }}
+                    <a href="http://twitter.com/{{ profile.username }}"> 
+                        @{{ profile.username }}
                     </a>
                 </div>
             </div>
