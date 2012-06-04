@@ -10,9 +10,9 @@ class EditUserForm(forms.Form):
         user = kwargs.pop('user', None)
         super(EditUserForm, self).__init__(*args, **kwargs)
         if user:
-            self.fields['about_me'].initial=user.about_me
-            self.fields['url'].initial=user.url
-            self.fields['facebook_url'].initial=user.facebook_url
+            self.fields['about_me'].initial=getattr(user, 'about_me', None)
+            self.fields['url'].initial=getattr(user, 'url', None)
+            self.fields['facebook_url'].initial=getattr(user, 'facebook_url', None)
             self.fields['email'].initial=user.email
         
         
