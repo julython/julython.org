@@ -22,4 +22,6 @@ class CommitForm(forms.Form):
     timestamp = forms.CharField(required=False)
     url = forms.URLField(verify_exists=False, required=False)
     email = forms.EmailField(required=False)
+    author = forms.CharField(required=False)
     name = forms.CharField(required=False)
+    hash = forms.CharField(required=False)
