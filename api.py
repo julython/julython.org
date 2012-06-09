@@ -175,7 +175,7 @@ class CommitCollection(API):
             "email": "catchjosh@gmail.com", 
             "message": "Working on Tornado stuff!", 
             "url": "https://github.com/project/commitID", 
-            "time": 5430604985.0,
+            "timestamp": 5430604985.0,
             "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
         """
         if self.user is None:
