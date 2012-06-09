@@ -82,7 +82,7 @@ class ApiTests(WebTestCase):
             "email": "josh@example.com", 
             "message": "Working on Tornado stuff!", 
             "url": "https://github.com/project/commitID", 
-            "time": 5430604985.0,
+            "timestamp": 5430604985.0,
             "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
         body_json = json.dumps(body)
         resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')})
@@ -107,6 +107,55 @@ class ApiTests(WebTestCase):
         body_json = json.dumps(body)
         resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')}, status=400)
         self.assertEqual(resp.status_code, 400)
+    
+    def test_bad_user(self):
+        body = { "message": "Josh Marshall"}
+        body_json = json.dumps(body)
+        resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')}, status=403)
+        self.assertEqual(resp.status_code, 403)
+    
+    def test_data_saved_after_post(self):
+        self.make_user('josh', email='josh@example.com')
+        body = { "name": "Josh Marshall", 
+            "email": "josh@example.com", 
+            "message": "Working on Tornado stuff!", 
+            "url": "https://github.com/project/commitID", 
+            "timestamp": 5430604985.0,
+            "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
+        body_json = json.dumps(body)
+        resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')})
+        resp_body = json.loads(resp.body)
+        
+        # try to get the commit from the api
+        resp = self.app.get('/api/v1/commits/%s' % resp_body['commit'])
+        self.assertEqual(resp.status_code, 200)
+    
+    def test_commit_data_from_post(self):
+        self.make_user('josh', email='josh@example.com')
+        body = { "name": "Josh Marshall", 
+            "email": "josh@example.com", 
+            "message": "Working on Tornado stuff!", 
+            "url": "https://github.com/project/commitID", 
+            "timestamp": 5430604985.0,
+            "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
+        body_json = json.dumps(body)
+        resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')})
+        resp_body = json.loads(resp.body)
+        
+        # try to get the commit from the api
+        resp = self.app.get('/api/v1/commits/%s' % resp_body['commit'])
+        commit = json.loads(resp.body)
+        self.assertEqual(commit['name'], "Josh Marshall")
+        self.assertEqual(commit['email'], "josh@example.com")
+        self.assertEqual(commit['message'], "Working on Tornado stuff!")
+        self.assertEqual(commit['url'], "https://github.com/project/commitID")
+        self.assertEqual(commit['timestamp'], '5430604985.0')
+        self.assertEqual(commit['hash'], "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9")
+    
+    def test_commit_not_found(self):
+        resp = self.app.get('/api/v1/commits/blah', status=404)
+        self.assertEqual(resp.status_code, 404)
+    
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

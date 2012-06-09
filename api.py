@@ -184,7 +184,7 @@ class CommitCollection(API):
         # check to see if the user is registered.
         user = User.all().filter('username', self.user).get()
         if not user:
-            return
+            abort(403)
         
         # see how we were posted
         try:
@@ -218,7 +218,16 @@ class CommitResource(API):
     model = Commit
     
     def get(self, commit_key):
-        return 
+        # Test if the string is an actual datastore key first
+        try:
+            key = db.Key(commit_key)
+        except:
+            abort(404)
+            
+        commit = db.get(key)
+        if commit is None:
+            abort(404)
+        return self.respond_json(self.serialize(commit))
 
 class SectionCollection(API):
     
@@ -235,13 +244,15 @@ class SectionResource(API):
     
     def get(self, section_id):
         instance = self.model.get_by_id(int(section_id))
+        if instance is None:
+            abort(404)
         return self.respond_json(self.serialize(instance))
             
 
 routes = [
     webapp2.Route('/api/v1', RootHandler),
     webapp2.Route('/api/v1/commits', CommitCollection),
-    webapp2.Route('/api/v1/commits/<commit_id:\w+>', CommitResource),
+    webapp2.Route('/api/v1/commits/<commit_key:\w+>', CommitResource),
     webapp2.Route('/api/v1/sections', SectionCollection),
     webapp2.Route('/api/v1/sections/<section_id:\d+>', SectionResource),
 ] 
