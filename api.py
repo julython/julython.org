@@ -3,12 +3,37 @@ import logging
 import json
 import datetime
 import time
+import hmac
+import hashlib
 
 from google.appengine.ext import db
 
 from july.pages.models import Section
+from gae_django.auth.models import User
+
+from july import settings
+
+from webapp2 import abort
+from july.people.forms import CommitForm
+from july.people.models import Commit
 
 SIMPLE_TYPES = (int, long, float, bool, dict, basestring, list)
+
+def make_digest(message):
+    """Somewhat secure way to encode the username for tweets by the client."""
+    salt = str(int(time.time()))
+    key = ':'.join([salt, settings.SECRET_KEY])
+    m = hmac.new(key, message, hashlib.sha256).hexdigest()
+    return ':'.join([salt, message, m])
+
+def verify_digest(message):
+    """Decode the digest from the request Auth Headers"""
+    salt, user_name, digest = message.split(':')
+    key = ':'.join([salt, settings.SECRET_KEY])
+    m = hmac.new(key, user_name, hashlib.sha256).hexdigest()
+    if m == digest:
+        return user_name
+    return None
 
 def to_dict(model):
     """
@@ -41,6 +66,15 @@ class API(webapp2.RequestHandler):
     endpoint = None
     model = None
     
+    @webapp2.cached_property
+    def user(self):
+        """Check the authorization header for a username to lookup"""
+        headers = self.request.headers
+        auth = headers.get('Authorization', None)
+        if auth:
+            return verify_digest(auth)
+        return None
+    
     def base_url(self):
         return self.request.host_url + '/api/v1'
     
@@ -49,16 +83,43 @@ class API(webapp2.RequestHandler):
             return self.base_url() + self.endpoint
         return self.base_url()
     
+    def resource_uri(self, model):
+        return '%s/%s' % (self.uri(), model.key().id_or_name())
+    
     def serialize(self, model):
         # Allow models to override the default to_dict
         if hasattr(self.model, 'to_dict'):
             resp = self.model.to_dict(model)
         else:
             resp = to_dict(model)
-        resp['uri'] = '%s/%s' % (self.uri(), model.key().id_or_name())
+        resp['uri'] = self.resource_uri(model)
         resp['key'] = str(model.key())
         resp['id'] = model.key().id_or_name()
         return resp
+    
+    def fetch_models(self):
+        limit = int(self.request.get('limit', 100))
+        cursor = self.request.get('cursor')
+        order = self.request.get('order')
+        
+        query = self.model.all()
+        
+        if cursor:
+            query.with_cursor(cursor)
+        
+        if order:
+            query.order(order)
+        
+        models = [self.serialize(m) for m in query.fetch(limit)]
+        resp = {
+            'limit': limit,
+            'cursor': query.cursor(),
+            'uri': self.uri(),
+            'models': models,
+        }
+        if len(models) == limit:
+            resp['next'] = self.uri() + '?limit=%s&cursor=%s' % (limit, query.cursor())
+        return self.respond_json(resp)
     
     def respond_json(self, message, status_code=200):
         self.response.set_status(status_code)
@@ -100,37 +161,72 @@ class RootHandler(API):
 class CommitCollection(API):
     
     endpoint = '/commits'
+    model = Commit
+    
+    def resource_uri(self, model):
+        return '%s/%s' % (self.uri(), model.key())
+    
+    def post(self):
+        """Create a tweet from the api.
+        
+        Example::
+        
+            { "name": "Josh Marshall", 
+            "email": "catchjosh@gmail.com", 
+            "message": "Working on Tornado stuff!", 
+            "url": "https://github.com/project/commitID", 
+            "time": 5430604985.0,
+            "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
+        """
+        if self.user is None:
+            abort(401)
+        
+        # check to see if the user is registered.
+        user = User.all().filter('username', self.user).get()
+        if not user:
+            return
+        
+        # see how we were posted
+        try:
+            data = json.loads(self.request.body)
+        except:
+            abort(400)
+            
+        # create the new commit object
+        form = CommitForm(data)
+        if not form.is_valid():
+            abort(400)
+        
+        def txn(user_key, data):
+            user = db.get(user_key)
+            commit = Commit(parent=user_key, **data)
+            count = getattr(user, 'total', 0)
+            user.total = count + 1
+            db.put([commit, user])
+            return commit
+        
+        commit = db.run_in_transaction(txn, user.key(), form.cleaned_data)
+        
+        self.respond_json({'commit': str(commit.key())}, status_code=201)
     
     def get(self):
-        return self.respond_json({'commits': []})
+        return self.fetch_models()
 
 class CommitResource(API):
     
     endpoint = '/commits'
+    model = Commit
+    
+    def get(self, commit_key):
+        return 
 
 class SectionCollection(API):
     
     endpoint = '/sections'
+    model = Section
     
     def get(self):
-        limit = int(self.request.get('limit', 100))
-        cursor = self.request.get('cursor')
-        
-        query = Section.all()
-        
-        if cursor:
-            query.with_cursor(cursor)
-        
-        sections = [self.serialize(section) for section in query.fetch(limit)]
-        resp = {
-            'limit': limit,
-            'cursor': query.cursor(),
-            'uri': self.uri(),
-            'sections': sections
-        }
-        if len(sections) == limit:
-            resp['next'] = self.uri() + '?limit=%s&cursor=%s' % (limit, query.cursor())
-        return self.respond_json(resp)
+        return self.fetch_models()
         
 class SectionResource(API):
     
@@ -140,13 +236,14 @@ class SectionResource(API):
     def get(self, section_id):
         instance = self.model.get_by_id(int(section_id))
         return self.respond_json(self.serialize(instance))
+            
 
 routes = [
-    ('/api/v1', RootHandler),
-    ('/api/v1/commits', CommitCollection),
-    ('/api/v1/commits/(\d+)', CommitResource),
-    ('/api/v1/sections', SectionCollection),
-    ('/api/v1/sections/(\d+)', SectionResource),
+    webapp2.Route('/api/v1', RootHandler),
+    webapp2.Route('/api/v1/commits', CommitCollection),
+    webapp2.Route('/api/v1/commits/<commit_id:\w+>', CommitResource),
+    webapp2.Route('/api/v1/sections', SectionCollection),
+    webapp2.Route('/api/v1/sections/<section_id:\d+>', SectionResource),
 ] 
 
 app = webapp2.WSGIApplication(routes)

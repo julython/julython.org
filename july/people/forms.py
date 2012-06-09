@@ -16,3 +16,10 @@ class EditUserForm(forms.Form):
             self.fields['email'].initial=user.email
         
         
+class CommitForm(forms.Form):
+    
+    message = forms.CharField(required=True)
+    timestamp = forms.CharField(required=False)
+    url = forms.URLField(verify_exists=False, required=False)
+    email = forms.EmailField(required=False)
+    name = forms.CharField(required=False)

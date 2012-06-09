@@ -1,6 +1,9 @@
 # Django settings for men project.
 import os
-from secrets import *
+try:
+    from secrets import *
+except ImportError:
+    SECRET_KEY = 'foobar'
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -188,6 +191,8 @@ else:
             'django.template.loaders.app_directories.Loader',
         ])
     ]
+    # Don't go live with a default setting for SECRET_KEY
+    assert(SECRET_KEY != 'foobar')
 
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
 
