@@ -41,8 +41,8 @@ def to_dict(model):
     http://stackoverflow.com/questions/1531501/json-serialization-of-google-app-engine-models
     """
     output = {}
-
-    for key, prop in model.properties().iteritems():
+    
+    def encode(output, key, model):
         value = getattr(model, key)
 
         if value is None or isinstance(value, SIMPLE_TYPES):
@@ -57,7 +57,15 @@ def to_dict(model):
         elif isinstance(value, db.Model):
             output[key] = to_dict(value)
         else:
-            raise ValueError('cannot encode ' + repr(prop))
+            raise ValueError('cannot encode property: %s', key)
+        return output
+    
+    for key, prop in model.properties().iteritems():
+        output = encode(output, key, model)
+    
+    if isinstance(model, db.Expando):
+        for key in model.dynamic_properties():
+            output = encode(output, key, model)
 
     return output
 
