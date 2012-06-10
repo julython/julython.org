@@ -25,3 +25,9 @@ class CommitForm(forms.Form):
     author = forms.CharField(required=False)
     name = forms.CharField(required=False)
     hash = forms.CharField(required=False)
+
+class ProjectForm(forms.Form):
+    
+    url = forms.URLField(required=True)
+    forked = forms.BooleanField(required=False)
+    parent_url = forms.URLField(required=False)

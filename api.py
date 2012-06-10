@@ -14,8 +14,8 @@ from gae_django.auth.models import User
 from july import settings
 
 from webapp2 import abort
-from july.people.forms import CommitForm
-from july.people.models import Commit
+from july.people.forms import CommitForm, ProjectForm
+from july.people.models import Commit, Project
 
 SIMPLE_TYPES = (int, long, float, bool, dict, basestring, list)
 
@@ -101,6 +101,7 @@ class API(webapp2.RequestHandler):
         limit = int(self.request.get('limit', 100))
         cursor = self.request.get('cursor')
         order = self.request.get('order')
+        filter_string = self.request.get('filter')
         
         query = self.model.all()
         
@@ -110,15 +111,20 @@ class API(webapp2.RequestHandler):
         if order:
             query.order(order)
         
+        # filter is ignored for apis that don't define 'handle_filter'
+        if filter_string and hasattr(self, 'handle_filter'):
+            query = self.handle_filter(query, filter_string)
+        
         models = [self.serialize(m) for m in query.fetch(limit)]
         resp = {
             'limit': limit,
+            'filter': filter_string,
             'cursor': query.cursor(),
             'uri': self.uri(),
             'models': models,
         }
         if len(models) == limit:
-            resp['next'] = self.uri() + '?limit=%s&cursor=%s' % (limit, query.cursor())
+            resp['next'] = self.uri() + '?limit=%s&cursor=%s&filter=%s' % (limit, query.cursor(), filter_string)
         return self.respond_json(resp)
     
     def respond_json(self, message, status_code=200):
@@ -165,6 +171,25 @@ class CommitCollection(API):
     
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.key())
+    
+    def handle_filter(self, query, filter_string):
+        """Allow for filtering by user or project"""
+        if filter_string.startswith('#'):
+            # we're looking for a project strip the hash tag first
+            project_name = filter_string[1:]
+            logging.error('Handle Projects!!! %s', project_name)
+            raise
+        elif filter_string.startswith('@'):
+            username = filter_string[1:]
+        else:
+            username = filter_string
+            
+        logging.info('looking up commits for user: %s', username)
+        user = User.all().filter('username', username).get()
+        if user is None:
+            abort(404)
+        
+        return query.ancestor(user)
     
     def post(self):
         """Create a tweet from the api.
@@ -248,13 +273,113 @@ class SectionResource(API):
             abort(404)
         return self.respond_json(self.serialize(instance))
             
+class ProjectCollection(API):
+    
+    endpoint = '/projects'
+    model = Project
+    
+    def get(self):
+        return self.fetch_models()
+    
+    def post(self):
+        """Create a project from the api.
+        
+        Example::
+        
+            {"url": "http://github.com/user/project",
+             "forked": true,
+             "parent_url": "http://github.com/other/project"}
+        """
+        if self.user is None:
+            abort(401)
+        
+        # check to see if the user is registered.
+        user = User.all().filter('username', self.user).get()
+        if not user:
+            abort(403)
+        
+        # see how we were posted
+        try:
+            data = json.loads(self.request.body)
+        except:
+            abort(400)
+            
+        # create the new commit object
+        form = ProjectForm(data)
+        if not form.is_valid():
+            abort(400)
+        
+        post_data = {}
+        for k, v in data.iteritems():
+            if not v:
+                continue
+            post_data[k] = v
+             
+        created = False
+        key = db.Key.from_path('Project', Project.parse_project_name(data['url']))
+        project = db.get(key)
+        
+        if project is None:
+            created = True
+            project = Project(key=key, **post_data)
+            db.put(project)
+            
+        def txn(user_key):
+            user = db.get(user_key)
+            count = getattr(user, 'total', 0)
+            user.total = count + 10
+            db.put([user])
+            return user
+        
+        if created:
+            user = db.run_in_transaction(txn, user.key())
+        
+        self.respond_json({'project': self.serialize(project)}, status_code=201 if created else 200)
 
+class ProjectResource(API):
+    
+    endpoint = '/project'
+    model = Project
+    
+    def get(self, project_name):
+        instance = self.model.get_by_key_name(project_name)
+        if instance is None:
+            abort(404)
+        return self.respond_json(self.serialize(instance))
+
+class PeopleCollection(API):
+    
+    endpoint = '/people'
+    model = User
+    
+    def get(self):
+        return self.fetch_models()
+    
+class PeopleResource(API):
+    
+    endpoint = '/people'
+    model = User
+    
+    def get(self, username):
+        instance = self.model.all().filter('username', username).get()
+        if instance is None:
+            abort(404)
+        return self.respond_json(self.serialize(instance))
+
+###
+### Setup the routes for the API
+###
 routes = [
     webapp2.Route('/api/v1', RootHandler),
     webapp2.Route('/api/v1/commits', CommitCollection),
     webapp2.Route('/api/v1/commits/<commit_key:\w+>', CommitResource),
     webapp2.Route('/api/v1/sections', SectionCollection),
     webapp2.Route('/api/v1/sections/<section_id:\d+>', SectionResource),
+    webapp2.Route('/api/v1/projects', ProjectCollection),
+    webapp2.Route('/api/v1/projects/<project_name:[\w-]+>', ProjectResource),
+    webapp2.Route('/api/v1/people', PeopleCollection),
+    webapp2.Route('/api/v1/people/<username:[\w_-]+>', PeopleCollection),
 ] 
 
+# The Main Application
 app = webapp2.WSGIApplication(routes)

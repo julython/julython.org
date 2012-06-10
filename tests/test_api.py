@@ -40,7 +40,7 @@ setup_paths()
 
 from gae_django.auth.models import User
 from api import app, make_digest
-from july.people.models import Commit
+from july.people.models import Commit, Project
 
 class WebTestCase(unittest.TestCase):
     
@@ -71,8 +71,15 @@ class WebTestCase(unittest.TestCase):
         if save:
             commit.put()
         return commit
+    
+    def make_project(self, name, save=True, **kwargs):
+        key = db.Key.from_path('Project', name)
+        project = Project(key=key, **kwargs)
+        if save:
+            project.put()
+        return project
 
-class ApiTests(WebTestCase):
+class CommitApiTests(WebTestCase):
     
     APPLICATION = app
     
@@ -139,7 +146,8 @@ class ApiTests(WebTestCase):
             "timestamp": 5430604985.0,
             "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
         body_json = json.dumps(body)
-        resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')})
+        resp = self.app.post('/api/v1/commits', body_json, 
+            headers={"Authorization": make_digest('josh')})
         resp_body = json.loads(resp.body)
         
         # try to get the commit from the api
@@ -156,6 +164,61 @@ class ApiTests(WebTestCase):
         resp = self.app.get('/api/v1/commits/blah', status=404)
         self.assertEqual(resp.status_code, 404)
     
+    def test_filter_by_user(self):
+        user = self.make_user(username="josh")
+        user2 = self.make_user(username="sam")
+        self.make_commit(user, message='Working on the pythons')
+        self.make_commit(user, message="Still working on the pythons")
+        self.make_commit(user2, message="Sam working on the pythons")
+        
+        resp = self.app.get('/api/v1/commits?filter=josh')
+        resp_body = json.loads(resp.body)
+        
+        self.assertEqual(len(resp_body['models']), 2)
+    
+    def test_filter_by_user_with_at_symbol(self):
+        user = self.make_user(username="josh")
+        user2 = self.make_user(username="sam")
+        self.make_commit(user, message='Working on the pythons')
+        self.make_commit(user, message="Still working on the pythons")
+        self.make_commit(user2, message="Sam working on the pythons")
+        
+        resp = self.app.get('/api/v1/commits?filter=@josh')
+        resp_body = json.loads(resp.body)
+        
+        self.assertEqual(len(resp_body['models']), 2)
+
+class ProjectApiTests(WebTestCase):
+    
+    APPLICATION = app
+    
+    def test_get_project(self):
+        self.make_project("fancypants", url='http://blah.com')
+        resp = self.app.get("/api/v1/projects/fancypants")
+        resp_body = json.loads(resp.body)
+        self.assertEqual(resp_body['url'], 'http://blah.com')
+    
+    def test_not_found(self):
+        resp = self.app.get('/api/v1/project/fancypants', status=404)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_create_existing_returns_200(self):
+        self.make_user('josh', email='josh@example.com')
+        self.make_project("user-project", url='http://github.com/user/project')
+        body_json = json.dumps({'url': 'http://github.com/user/project'})
+        resp = self.app.post('/api/v1/projects', body_json, 
+            headers={"Authorization": make_digest('josh')}
+        )
+        self.assertEqual(resp.status_code, 200)
+    
+    def test_create_new_project(self):
+        self.make_user('josh', email='josh@example.com')
+        body_json = json.dumps({'url': 'http://github.com/user/project'})
+        resp = self.app.post('/api/v1/projects', body_json, 
+            headers={"Authorization": make_digest('josh')}
+        )
+        self.assertEqual(resp.status_code, 201)
+
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
