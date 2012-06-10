@@ -218,6 +218,17 @@ class ProjectApiTests(WebTestCase):
             headers={"Authorization": make_digest('josh')}
         )
         self.assertEqual(resp.status_code, 201)
+    
+    def test_user_get(self):
+        self.make_user('josh', email='josh@example.com')
+        resp = self.app.get('/api/v1/people/josh')
+        self.assertEqual(resp.status_code, 200)
+    
+    def test_user_dynamic_properties(self):
+        self.make_user('josh', foo_tastic='super-property')
+        resp = self.app.get('/api/v1/people/josh')
+        person = json.loads(resp.body)
+        self.assertEqual(person['foo_tastic'], 'super-property')
 
 
 if __name__ == '__main__':
