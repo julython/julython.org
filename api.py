@@ -153,8 +153,16 @@ class RootHandler(API):
             'uri': self.uri(),
             'endpoints': [
                 {
-                    'comment': 'commit data',
+                    'comment': 'Commit data',
                     'uri': self.uri() + '/commits'
+                },
+                {
+                    'comment': 'People of julython',
+                    'uri': self.uri() + '/people'
+                },
+                {
+                    'comment': 'Project in julython',
+                    'uri': self.uri() + '/projects'
                 },
                 {
                     'comment': 'Front Page Sections',
@@ -352,6 +360,9 @@ class PeopleCollection(API):
     endpoint = '/people'
     model = User
     
+    def resource_uri(self, model):
+        return '%s/%s' % (self.uri(), model.username)
+    
     def get(self):
         return self.fetch_models()
     
@@ -378,7 +389,7 @@ routes = [
     webapp2.Route('/api/v1/projects', ProjectCollection),
     webapp2.Route('/api/v1/projects/<project_name:[\w-]+>', ProjectResource),
     webapp2.Route('/api/v1/people', PeopleCollection),
-    webapp2.Route('/api/v1/people/<username:[\w_-]+>', PeopleCollection),
+    webapp2.Route('/api/v1/people/<username:[\w_-]+>', PeopleResource),
 ] 
 
 # The Main Application
