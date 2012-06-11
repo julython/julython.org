@@ -231,7 +231,8 @@ class CommitCollection(API):
         try:
             data = json.loads(self.request.body)
         except:
-            abort(400)
+            # fall back to POST and GET args
+            data = self.request.params
             
         # create the new commit object
         form = CommitForm(data)
@@ -318,7 +319,8 @@ class ProjectCollection(API):
         try:
             data = json.loads(self.request.body)
         except:
-            abort(400)
+            # fall back to POST and GET args
+            data = self.request.params
             
         # create the new commit object
         form = ProjectForm(data)
