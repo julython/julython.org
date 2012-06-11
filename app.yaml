@@ -30,5 +30,5 @@ handlers:
   upload: /static/(.*)
 
 - url: /api.*
-  script: api.app
+  script: july.api.app
   

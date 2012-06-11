@@ -39,7 +39,7 @@ def setup_paths():
 setup_paths()
 
 from gae_django.auth.models import User
-from api import app, make_digest
+from july.api import app, make_digest
 from july.people.models import Commit, Project
 
 class WebTestCase(unittest.TestCase):
