@@ -11,13 +11,14 @@ from july.pages.models import Section
 def index(request):
     """Render the home page"""
     
-    sections = cache.get('front_page')
-    if sections is None:
-        sections = Section.all().order('order').fetch(10)
-        cache.set('front_page', sections, 120)
+    # For now we are just using hard coded sections
+    #sections = cache.get('front_page')
+    #if sections is None:
+    #    sections = Section.all().order('order').fetch(10)
+    #    cache.set('front_page', sections, 120)
         
     ctx = Context({
-        'sections': sections,
+        'sections': [],
         'user': request.user,
         'MEDIA_URL': settings.MEDIA_URL,
         'STATIC_URL': settings.STATIC_URL})
