@@ -29,5 +29,11 @@ class CommitForm(forms.Form):
 class ProjectForm(forms.Form):
     
     url = forms.URLField(required=True)
-    forked = forms.BooleanField(required=False)
+    forked = forms.BooleanField(required=False, initial=False)
     parent_url = forms.URLField(required=False)
+    
+    def clean_parent_url(self):
+        data = self.cleaned_data
+        if data['parent_url'] == '':
+            return None
+        return data['parent_url']

@@ -5,15 +5,15 @@ import datetime
 import time
 import hmac
 import hashlib
+from functools import wraps
 
 from google.appengine.ext import db
+from webapp2 import abort
 
-from july.pages.models import Section
 from gae_django.auth.models import User
 
 from july import settings
-
-from webapp2 import abort
+from july.pages.models import Section
 from july.people.forms import CommitForm, ProjectForm
 from july.people.models import Commit, Project
 
@@ -69,18 +69,74 @@ def to_dict(model):
 
     return output
 
+def decorated_func(login_required=True, registration_required=True):
+    """Simple decorator to require login and or registration."""
+    
+    def decorator(func):
+        func._login_require = login_required
+        func._registration_required = registration_required
+        
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if login_required:
+                if self.auth is None:
+                    abort(401)
+                
+            if registration_required:
+                # check to see if the user is registered.
+                user = User.all().filter('username', self.auth).get()
+                if not user:
+                    abort(403)
+
+            return func(self, *args, **kwargs)
+        return wrapper
+    return decorator
+
+# default wrapper    
+auth_required = decorated_func()
+
 class API(webapp2.RequestHandler):
     
     endpoint = None
     model = None
+    form = None
+    
+    def options(self):
+        """Be a good netizen citizen and return HTTP verbs allowed."""
+        valid = ', '.join(webapp2._get_handler_methods(self))
+        self.response.set_status(200)
+        self.response.headers['Allow'] = valid
+        return self.response.out
     
     @webapp2.cached_property
-    def user(self):
+    def auth(self):
         """Check the authorization header for a username to lookup"""
         headers = self.request.headers
         auth = headers.get('Authorization', None)
         if auth:
             return verify_digest(auth)
+        return None
+    
+    def parse_form(self, form=None):
+        """Hook to run the validation on a form"""
+        form = form or self.form
+        if not form:
+            raise AttributeError("Form object missing")
+        
+        # see how we were posted
+        try:
+            data = json.loads(self.request.body)
+        except:
+            # fall back to POST and GET args
+            data = self.request.params
+
+        return form(data)
+        
+    @webapp2.cached_property
+    def user(self):
+        """Check the authorization header for a username to lookup"""
+        if self.auth:
+            return User.all().filter('username', self.auth).get()
         return None
     
     def base_url(self):
@@ -184,6 +240,7 @@ class CommitCollection(API):
     
     endpoint = '/commits'
     model = Commit
+    form = CommitForm
     
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.key())
@@ -207,6 +264,7 @@ class CommitCollection(API):
         
         return query.ancestor(user)
     
+    @auth_required
     def post(self):
         """Create a tweet from the api.
         
@@ -219,25 +277,9 @@ class CommitCollection(API):
             "timestamp": 5430604985.0,
             "hash": "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9"}
         """
-        if self.user is None:
-            abort(401)
-        
-        # check to see if the user is registered.
-        user = User.all().filter('username', self.user).get()
-        if not user:
-            abort(403)
-        
-        # see how we were posted
-        try:
-            data = json.loads(self.request.body)
-        except:
-            # fall back to POST and GET args
-            data = self.request.params
-            
-        # create the new commit object
-        form = CommitForm(data)
+        form = self.parse_form()
         if not form.is_valid():
-            abort(400)
+            return self.respond_json(form.errors, status_code=400)
         
         def txn(user_key, data):
             user = db.get(user_key)
@@ -247,7 +289,7 @@ class CommitCollection(API):
             db.put([commit, user])
             return commit
         
-        commit = db.run_in_transaction(txn, user.key(), form.cleaned_data)
+        commit = db.run_in_transaction(txn, self.user.key(), form.cleaned_data)
         
         self.respond_json({'commit': str(commit.key())}, status_code=201)
     
@@ -294,10 +336,15 @@ class ProjectCollection(API):
     
     endpoint = '/projects'
     model = Project
+    form = ProjectForm
+    
+    def options(self):
+        return self.response.out()
     
     def get(self):
         return self.fetch_models()
     
+    @auth_required
     def post(self):
         """Create a project from the api.
         
@@ -307,39 +354,17 @@ class ProjectCollection(API):
              "forked": true,
              "parent_url": "http://github.com/other/project"}
         """
-        if self.user is None:
-            abort(401)
-        
-        # check to see if the user is registered.
-        user = User.all().filter('username', self.user).get()
-        if not user:
-            abort(403)
-        
-        # see how we were posted
-        try:
-            data = json.loads(self.request.body)
-        except:
-            # fall back to POST and GET args
-            data = self.request.params
-            
-        # create the new commit object
-        form = ProjectForm(data)
+        form = self.parse_form()
         if not form.is_valid():
-            abort(400)
+            return self.respond_json(form.errors, status_code=400)
         
-        post_data = {}
-        for k, v in data.iteritems():
-            if not v:
-                continue
-            post_data[k] = v
-             
         created = False
-        key = db.Key.from_path('Project', Project.parse_project_name(data['url']))
+        key = db.Key.from_path('Project', Project.parse_project_name(form.cleaned_data['url']))
         project = db.get(key)
         
         if project is None:
             created = True
-            project = Project(key=key, **post_data)
+            project = Project(key=key, **form.cleaned_data)
             db.put(project)
             
         def txn(user_key):
@@ -350,7 +375,7 @@ class ProjectCollection(API):
             return user
         
         if created:
-            user = db.run_in_transaction(txn, user.key())
+            user = db.run_in_transaction(txn, self.user.key())
         
         self.respond_json({'project': self.serialize(project)}, status_code=201 if created else 200)
 

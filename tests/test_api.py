@@ -115,6 +115,15 @@ class CommitApiTests(WebTestCase):
         resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')}, status=400)
         self.assertEqual(resp.status_code, 400)
     
+    def test_error_response(self):
+        self.make_user('josh', email='josh@example.com')
+        # post missing required field
+        body = { "name": "Josh Marshall"}
+        body_json = json.dumps(body)
+        resp = self.app.post('/api/v1/commits', body_json, headers={"Authorization": make_digest('josh')}, status=400)
+        resp_body = json.loads(resp.body)
+        self.assertEqual(resp_body['message'], ['This field is required.'])
+    
     def test_bad_user(self):
         body = { "message": "Josh Marshall"}
         body_json = json.dumps(body)
@@ -187,6 +196,11 @@ class CommitApiTests(WebTestCase):
         resp_body = json.loads(resp.body)
         
         self.assertEqual(len(resp_body['models']), 2)
+    
+    def test_options(self):
+        resp = self.app.options('/api/v1/commits')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers.get('Allow'), 'GET, POST, OPTIONS')
 
 class ProjectApiTests(WebTestCase):
     
@@ -219,6 +233,15 @@ class ProjectApiTests(WebTestCase):
         )
         self.assertEqual(resp.status_code, 201)
     
+    def test_malformed_post(self):
+        self.make_user('josh', email='josh@example.com')
+        body_json = json.dumps({'bad': 'http://github.com/user/project'})
+        resp = self.app.post('/api/v1/projects', body_json, 
+            headers={"Authorization": make_digest('josh')},
+        status=400)
+        resp_body = json.loads(resp.body)
+        self.assertEqual(resp_body['url'], ["This field is required."])
+    
     def test_user_get(self):
         self.make_user('josh', email='josh@example.com')
         resp = self.app.get('/api/v1/people/josh')
@@ -230,6 +253,10 @@ class ProjectApiTests(WebTestCase):
         person = json.loads(resp.body)
         self.assertEqual(person['foo_tastic'], 'super-property')
 
+    def test_options(self):
+        resp = self.app.options('/api/v1/people')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers.get('Allow'), 'GET, OPTIONS')
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
