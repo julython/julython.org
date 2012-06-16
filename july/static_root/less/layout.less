@@ -175,18 +175,89 @@ img.icon {
 
 /** profile page **/
 
-body.profile #contents h1.user { 
-    margin-top: 25px;
-    font-family: @pressStart, Helvetica sans-serif;     
-}
-
-body.profile #contents h1.user img{ 
-    display: block; 
-    float:left; 
-    margin-top: -15px;
-    padding-right: 5px;
-}
-
-body.profile .sidebar_section { 
-    margin-bottom: 20px;
+.profile {
+  .center-block();
+  width: 780px;
+  
+  .header {
+    background: @successBackground;
+    padding: 0;
+    border: 1px solid @successText;
+    border-top:none;
+    color: @successText;
+    
+    a {
+      color: @successText;
+    }
+    
+    a:hover { 
+      color: darken(@successText, 15);
+    }
+    
+    .user {
+      
+      h1 {
+       margin-top: 15px;
+       font-family: @pressStart, Helvetica sans-serif;
+       color: @successText;
+      }
+      
+      .user-links {
+        list-style:none;
+        margin: 0;
+        
+        li {
+          float: left;
+          margin-right: 5px;
+        }
+      }
+      
+      .about-me {
+        font-style: italic;
+      }
+    }
+    
+    .points {
+      margin-top:15px;
+      margin-right: 15px;
+      border: 5px solid @successText;
+      background-color: darken(@successBackground, 10);
+      padding: 10px;
+      
+      p {
+        font-family: @pressStart, Helvetica sans-serif;
+        font-size: 20px;
+        text-align: center;
+        
+        &.small {
+          font-size: 8px;
+          margin:0;
+        }
+      }
+      
+    }
+    
+    .avatar {
+      padding: 5px;
+      width: 75px;
+      
+      img { 
+        .square(75px);
+        border: 6px solid #fff;
+        margin: 10px;
+      }
+      
+    }
+    
+    .subnav {
+      padding-right: 5px;
+      padding-bottom: 4px;
+      border-top: 1px dotted @successText;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
+      
+      .nav {
+        margin: 0;
+      }
+    }
+  }
 }
