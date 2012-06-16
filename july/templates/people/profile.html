@@ -6,51 +6,52 @@
 {% block content %}
 <div class="container" id="contents">
     <div class="row">
-        <div class="span3"> 
-
-            <div class="row sidebar_section">
-                <div class="span3 user">
-                    <h1 class="user">
-                        <img src="{{ profile.picture_url }}" alt="{{profile}}"/> 
-                        {{ profile }}
-                    </h1>
-                </div>
-            </div>
-
-            {% if profile.score %}
-            <div class="row sidebar_section">
-                <div class="span3">
-                    <h3>Score</h3>
-                    <div>
-                    {{ profile.score }} 
+        <div class="profile span-8 offset3">
+            <div class="header">
+                <div class="row">
+                    <div class="avatar span-1">
+                        <img src="{{ profile.picture_url }}" alt="{{profile}}" />                    
+                    </div>
+                    <div class="user span-6">
+                        <h1>{{ profile }}</h1>
+                        <p class="about-me">{% if profile.about_me %}{{ profile.about_me }}{% else %}Python Hacker{% endif %}</p>
+                        <ul class="user-links">
+                            <li>
+                                <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">Follow</a>
+                                <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+                            </li>
+                            {% if profile.url %}
+                            <li><a class="btn btn-mini" href="{{ profile.url }}"><i class="icon-globe"></i> Website</a></li>
+                            {% endif %}
+                            {% if profile.location %}
+                            <li><a class="btn btn-mini" href="#"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+                            {% endif %}
+                            <li><a class="btn btn-mini" href="#"><i class="icon-map-marker"></i>lsk</a></li>
+                        </ul>
+                    </div>
+                    <div class="points pull-right">
+                        <p>{% firstof profile.points '0' %}</p>
+                        <p class="small">points</p>
+                        
                     </div>
                 </div>
+                <div class="subnav">
+                        <ul class="nav nav-pills">
+                            <li><a class="active">Commits</a></li>
+                            <li><a href="#">Projects</a></li>
+                            {% if profile.username == user.username %}
+                            <li><a href="{% url edit-profile username=user.username %}">Edit Profile</a></li>
+                            {% endif %}
+                            <li class="search pull-right">
+                                <form class="navbar-form">
+                                    <input type="text" class="search-query" placeholder="Search my commits">
+                                </form>
+                            </li>
+                        </ul>
+                </div>           
             </div>
-            {% endif %}
-
-            {% if profile.about_me %}
-            <div class="row sidebar_section">
-                <div class="span3">
-                    <h3>About Me</h3>
-                    <div>
-                    {{ profile.about_me }} 
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            {% if profile.twitter_url %}
-            <div class="row sidebar_section">
-                <div class="span3">
-                    <h3>Tweets</h3>
-                    <a href="http://twitter.com/{{ profile.username }}"> 
-                        @{{ profile.username }}
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-
         </div>
+        
         <div class="span9">
             <div class="row">
                 <div class="span9"><h2>Recent Activity</h2></div>

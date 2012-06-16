@@ -26,10 +26,6 @@
             </div>
             <div class="span4 offset6 navbar-links">
               {% block navbar-links %}
-              {% if user.is_authenticated %}
-              <a class="navbar-link" href="#">Tools</a>
-              <a class="navbar-link" href="{% url edit-profile username=user.username %} ">Edit</a>
-              {% endif %}
               <a class="navbar-link" href="http://github.com/julython">Our GitHub</a>
               {% if user.is_authenticated %}
               <a class="navbar-link" href="{% url member-profile username=user.username %}"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }}</a>
