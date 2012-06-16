@@ -16,21 +16,21 @@
                         <h1>{{ profile }}</h1>
                         <p class="about-me">{% if profile.about_me %}{{ profile.about_me }}{% else %}Python Hacker{% endif %}</p>
                         <ul class="user-links">
-                            <li>
+                            <li class="twitter">
                                 <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">Follow</a>
                                 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
                             </li>
                             {% if profile.url %}
-                            <li><a class="btn btn-mini" href="{{ profile.url }}"><i class="icon-globe"></i> Website</a></li>
+                            <li><a class="btn btn-mini profile-link" href="{{ profile.url }}"><i class="icon-globe"></i> Website</a></li>
                             {% endif %}
                             {% if profile.location %}
-                            <li><a class="btn btn-mini" href="#"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+                            <li><a class="btn btn-mini profile-link" href="#"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
                             {% endif %}
-                            <li><a class="btn btn-mini" href="#"><i class="icon-map-marker"></i>lsk</a></li>
+                            <li><a class="btn btn-mini profile-link" href="#"><i class="icon-map-marker"></i>My Town, USA</a></li>
                         </ul>
                     </div>
                     <div class="points pull-right">
-                        <p>{% firstof profile.points '0' %}</p>
+                        <p>{% firstof profile.points '1' %}</p>
                         <p class="small">points</p>
                         
                     </div>
