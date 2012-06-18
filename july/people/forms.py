@@ -1,19 +1,24 @@
 from django import forms
 
 class EditUserForm(forms.Form):
-    about_me = forms.CharField(widget=forms.Textarea, required=False)
+    # Match Twitter
+    first_name = forms.CharField(max_length=255, required=True)
+    last_name = forms.CharField(max_length=255, required=False)
+    description = forms.CharField(label="About me", max_length=160, required=False,
+        widget=forms.TextInput(attrs={'class': 'span4'}))
     url = forms.CharField(max_length=255, required=False)
-    facebook_url = forms.CharField(max_length=255, required=False)
-    email = forms.EmailField(max_length=255)
+    location = forms.CharField(max_length=160, required=False)
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super(EditUserForm, self).__init__(*args, **kwargs)
         if user:
-            self.fields['about_me'].initial=getattr(user, 'about_me', None)
+            self.fields['first_name'].initial=getattr(user, 'first_name', None)
+            self.fields['last_name'].initial=getattr(user, 'last_name', None)
+            self.fields['description'].initial=getattr(user, 'description', None)
             self.fields['url'].initial=getattr(user, 'url', None)
-            self.fields['facebook_url'].initial=getattr(user, 'facebook_url', None)
-            self.fields['email'].initial=user.email
+            self.fields['location'].initial=getattr(user, 'location', None)
+            
         
         
 class CommitForm(forms.Form):
