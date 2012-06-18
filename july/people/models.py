@@ -1,24 +1,24 @@
 import logging
 from urlparse import urlparse
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
-class Commit(db.Model):
+class Commit(ndb.Model):
     """
     Commit record for the profile, the parent is the profile
     that way we can update the commit count and last commit timestamp
     in the same transaction.
     """
-    hash = db.StringProperty()
-    author = db.StringProperty(indexed=False)
-    name = db.StringProperty(indexed=False)
-    email = db.EmailProperty()
-    message = db.StringProperty(indexed=False)
-    url = db.StringProperty()
-    timestamp = db.StringProperty()
-    created_on = db.DateTimeProperty(auto_now_add=True)
+    hash = ndb.StringProperty()
+    author = ndb.StringProperty(indexed=False)
+    name = ndb.StringProperty(indexed=False)
+    email = ndb.StringProperty()
+    message = ndb.StringProperty(indexed=False)
+    url = ndb.StringProperty()
+    timestamp = ndb.StringProperty()
+    created_on = ndb.DateTimeProperty(auto_now_add=True)
     
-class Project(db.Model):
+class Project(ndb.Model):
     """
     Project Model:
     
@@ -29,13 +29,13 @@ class Project(db.Model):
     for any of the repo host we know already. (github, bitbucket)
     """
     
-    url = db.URLProperty()
-    description = db.TextProperty(required=False)
-    forked = db.BooleanProperty(default=False)
-    parent_url = db.URLProperty(required=False)
-    created_on = db.DateTimeProperty(auto_now_add=True)
+    url = ndb.StringProperty()
+    description = ndb.TextProperty(required=False)
+    forked = ndb.BooleanProperty(default=False)
+    parent_url = ndb.StringProperty(required=False)
+    created_on = ndb.DateTimeProperty(auto_now_add=True)
     # new projects start off with 10 points
-    total_points = db.IntegerProperty(default=10)
+    total_points = ndb.IntegerProperty(default=10)
     
     @classmethod
     def parse_project_name(cls, url):

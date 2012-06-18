@@ -1,18 +1,20 @@
+from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
-#from google.appengine.ext import db
-from july.people.models import Commit
+from google.appengine.ext import ndb
+
 from gae_django.auth.models import User
-from django.http import Http404, HttpResponseRedirect, HttpResponse
-from django.core.urlresolvers import reverse
+
+from july.people.models import Commit
 
 def user_profile(request, username):
-    user = User.all().filter("username", username).get()
+    user = User.query(ndb.GenericProperty('username') == username).get()
     if user == None:
         raise Http404("User not found")
 
-    commits = Commit.all().ancestor(user.key())
+    commits = Commit.query(ancestor=user.key)
 
     return render_to_response('people/profile.html', 
         {"commits":commits, 'profile':user}, 
@@ -21,9 +23,12 @@ def user_profile(request, username):
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
-    user = User.all().filter("username", username).get()
+    user = User.query(ndb.GenericProperty('username') == username).get()
+
+    if user == None:
+        raise Http404("User not found")
     
-    if user.key() != request.user.key():
+    if user.key != request.user.key:
         http403 = HttpResponse("This ain't you!")
         http403.status = 403
         return http403
@@ -39,8 +44,6 @@ def edit_profile(request, username, template_name='people/edit.html'):
         )
         
     
-    if user == None:
-        raise Http404("User not found")
 
     return render_to_response(template_name, 
                               {'form':form}, 
