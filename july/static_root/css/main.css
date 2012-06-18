@@ -872,7 +872,7 @@ button{background:none;}
 .profile .header a:hover{color:#2c552d;}
 .profile .header .user h1{margin-top:15px;font-family:"Press Start 2P",sans-serif,Helvetica sans-serif;color:#468847;}
 .profile .header .user .user-links{list-style:none;margin:0;}.profile .header .user .user-links li{float:left;margin-right:5px;}.profile .header .user .user-links li.twitter{padding-top:1px;}
-.profile .header .user .about-me{font-style:italic;}
+.profile .header .user .about-me{font-style:italic;width:525px;}
 .profile .header .points{margin-top:15px;margin-right:15px;border:5px solid #468847;background-color:#c1e2b3;padding:10px;}.profile .header .points p{font-family:"Press Start 2P",sans-serif,Helvetica sans-serif;font-size:20px;text-align:center;}.profile .header .points p.small{font-size:8px;margin:0;}
 .profile .header .avatar{padding:5px;width:75px;}.profile .header .avatar img{width:75px;height:75px;width:75px;height:75px;width:75px;height:75px;width:75px;height:75px;border:6px solid #fff;margin:10px;}
 .profile .header .subnav{padding-right:5px;padding-bottom:4px;border-top:1px dotted #468847;box-shadow:inset 0 0 12px rgba(0, 0, 0, 0.15);}.profile .header .subnav .nav{margin:0;}
