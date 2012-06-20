@@ -7,7 +7,8 @@ import hmac
 import hashlib
 from functools import wraps
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
+from google.appengine.datastore.datastore_query import Cursor
 from webapp2 import abort
 
 from gae_django.auth.models import User
@@ -52,19 +53,19 @@ def to_dict(model):
             ms = time.mktime(value.utctimetuple())
             ms += getattr(value, 'microseconds', 0) / 1000
             output[key] = int(ms)
-        elif isinstance(value, db.GeoPt):
+        elif isinstance(value, ndb.GeoPt):
             output[key] = {'lat': value.lat, 'lon': value.lon}
-        elif isinstance(value, db.Model):
+        elif isinstance(value, ndb.Model):
             output[key] = to_dict(value)
         else:
             raise ValueError('cannot encode property: %s', key)
         return output
     
-    for key, prop in model.properties().iteritems():
+    for key in model.to_dict().iterkeys():
         output = encode(output, key, model)
     
-    if isinstance(model, db.Expando):
-        for key in model.dynamic_properties():
+    if isinstance(model, ndb.Expando):
+        for key in model._properties.iterkeys():
             output = encode(output, key, model)
 
     return output
@@ -84,7 +85,7 @@ def decorated_func(login_required=True, registration_required=True):
                 
             if registration_required:
                 # check to see if the user is registered.
-                user = User.all().filter('username', self.auth).get()
+                user = User.get_by_auth_id(self.auth)
                 if not user:
                     abort(403)
 
@@ -136,7 +137,7 @@ class API(webapp2.RequestHandler):
     def user(self):
         """Check the authorization header for a username to lookup"""
         if self.auth:
-            return User.all().filter('username', self.auth).get()
+            return User.get_by_auth_id(self.auth)
         return None
     
     def base_url(self):
@@ -148,47 +149,48 @@ class API(webapp2.RequestHandler):
         return self.base_url()
     
     def resource_uri(self, model):
-        return '%s/%s' % (self.uri(), model.key().id_or_name())
+        return '%s/%s' % (self.uri(), model.key.id())
     
     def serialize(self, model):
         # Allow models to override the default to_dict
-        if hasattr(self.model, 'to_dict'):
-            resp = self.model.to_dict(model)
+        if hasattr(self.model, 'serialize'):
+            resp = self.model.serialize(model)
         else:
             resp = to_dict(model)
         resp['uri'] = self.resource_uri(model)
-        resp['key'] = str(model.key())
-        resp['id'] = model.key().id_or_name()
+        resp['key'] = str(model.key)
+        resp['id'] = model.key.id()
         return resp
     
     def fetch_models(self):
         limit = int(self.request.get('limit', 100))
-        cursor = self.request.get('cursor')
+        cursor = self.request.get('cursor', None)
         order = self.request.get('order')
         filter_string = self.request.get('filter')
         
-        query = self.model.all()
+        query = self.model.query()
         
         if cursor:
-            query.with_cursor(cursor)
-        
-        if order:
-            query.order(order)
+            cursor = Cursor(urlsafe=cursor)
         
         # filter is ignored for apis that don't define 'handle_filter'
         if filter_string and hasattr(self, 'handle_filter'):
             query = self.handle_filter(query, filter_string)
+
+        if order and hasattr(self, 'handle_order'):
+            query = self.handle_order(query, order)
         
-        models = [self.serialize(m) for m in query.fetch(limit)]
+        models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
+        
         resp = {
             'limit': limit,
             'filter': filter_string,
-            'cursor': query.cursor(),
+            'cursor': next_cursor.urlsafe(),
             'uri': self.uri(),
-            'models': models,
+            'models': [self.serialize(m) for m in models],
         }
-        if len(models) == limit:
-            resp['next'] = self.uri() + '?limit=%s&cursor=%s&filter=%s' % (limit, query.cursor(), filter_string)
+        if more:
+            resp['next'] = self.uri() + '?limit=%s&cursor=%s&filter=%s' % (limit, next_cursor.urlsafe(), filter_string)
         return self.respond_json(resp)
     
     def respond_json(self, message, status_code=200):
@@ -227,10 +229,6 @@ class RootHandler(API):
                 {
                     'comment': 'Project in julython',
                     'uri': self.uri() + '/projects'
-                },
-                {
-                    'comment': 'Front Page Sections',
-                    'url': self.uri() + '/sections'
                 }
             ]
         }
@@ -243,7 +241,7 @@ class CommitCollection(API):
     form = CommitForm
     
     def resource_uri(self, model):
-        return '%s/%s' % (self.uri(), model.key())
+        return '%s/%s' % (self.uri(), model.key.urlsafe())
     
     def handle_filter(self, query, filter_string):
         """Allow for filtering by user or project"""
@@ -253,16 +251,16 @@ class CommitCollection(API):
             logging.error('Handle Projects!!! %s', project_name)
             raise
         elif filter_string.startswith('@'):
-            username = filter_string[1:]
+            username = 'twitter:%s' % filter_string[1:]
         else:
             username = filter_string
             
         logging.info('looking up commits for user: %s', username)
-        user = User.all().filter('username', username).get()
+        user = User.get_by_auth_id(username)
         if user is None:
             abort(404)
-        
-        return query.ancestor(user)
+            
+        return self.model.query(ancestor=user.key)
     
     @auth_required
     def post(self):
@@ -281,17 +279,9 @@ class CommitCollection(API):
         if not form.is_valid():
             return self.respond_json(form.errors, status_code=400)
         
-        def txn(user_key, data):
-            user = db.get(user_key)
-            commit = Commit(parent=user_key, **data)
-            count = getattr(user, 'total', 0)
-            user.total = count + 1
-            db.put([commit, user])
-            return commit
+        commit = Commit.create_by_user(self.user, form.cleaned_data)
         
-        commit = db.run_in_transaction(txn, self.user.key(), form.cleaned_data)
-        
-        self.respond_json({'commit': str(commit.key())}, status_code=201)
+        self.respond_json({'commit': commit.key.urlsafe()}, status_code=201)
     
     def get(self):
         return self.fetch_models()
@@ -304,33 +294,14 @@ class CommitResource(API):
     def get(self, commit_key):
         # Test if the string is an actual datastore key first
         try:
-            key = db.Key(commit_key)
+            key = ndb.Key(urlsafe=commit_key)
         except:
             abort(404)
             
-        commit = db.get(key)
+        commit = key.get()
         if commit is None:
             abort(404)
         return self.respond_json(self.serialize(commit))
-
-class SectionCollection(API):
-    
-    endpoint = '/sections'
-    model = Section
-    
-    def get(self):
-        return self.fetch_models()
-        
-class SectionResource(API):
-    
-    endpoint = '/sections'
-    model = Section
-    
-    def get(self, section_id):
-        instance = self.model.get_by_id(int(section_id))
-        if instance is None:
-            abort(404)
-        return self.respond_json(self.serialize(instance))
             
 class ProjectCollection(API):
     
@@ -350,32 +321,51 @@ class ProjectCollection(API):
         
         Example::
         
-            {"url": "http://github.com/user/project",
-             "forked": true,
-             "parent_url": "http://github.com/other/project"}
+            {
+                "url": "http://github.com/defunkt/github",
+                "name": "github",
+                "description": "You're lookin' at it.",
+                "watchers": 5,
+                "forks": 2,
+                "private": 1,
+                "email": "chris@ozmm.org",
+                "account": "twitter_name",
+            },
         """
         form = self.parse_form()
         if not form.is_valid():
             return self.respond_json(form.errors, status_code=400)
         
+        # Lookup the user by email or account
+        email = form.cleaned_data.pop('email', None)
+        account = form.cleaned_data.pop('account', None)
+        user = None
+        if email:
+            user = User.get_by_auth_id('email:%s' % email)
+        elif account:
+            user = User.get_by_auth_id('twitter:%s' % account)
+        
         created = False
-        key = db.Key.from_path('Project', Project.parse_project_name(form.cleaned_data['url']))
-        project = db.get(key)
+        project_url = form.cleaned_data['url']
+        project_key = Project.make_key(project_url)
+        project = project_key.get()
         
         if project is None:
             created = True
-            project = Project(key=key, **form.cleaned_data)
-            db.put(project)
-            
-        def txn(user_key):
-            user = db.get(user_key)
+            project = Project(key=project_key, **form.cleaned_data)
+            project.put()
+        
+        @ndb.transactional    
+        def txn():
             count = getattr(user, 'total', 0)
+            projects = getattr(user, 'projects', [])
             user.total = count + 10
-            db.put([user])
+            user.projects = projects.append(project_url)
+            user.put()
             return user
         
-        if created:
-            user = db.run_in_transaction(txn, self.user.key())
+        if created and user:
+            txn()
         
         self.respond_json({'project': self.serialize(project)}, status_code=201 if created else 200)
 
@@ -385,7 +375,8 @@ class ProjectResource(API):
     model = Project
     
     def get(self, project_name):
-        instance = self.model.get_by_key_name(project_name)
+        project_key = ndb.Key(self.model._get_kind(), project_name)
+        instance = project_key.get()
         if instance is None:
             abort(404)
         return self.respond_json(self.serialize(instance))
@@ -407,11 +398,170 @@ class PeopleResource(API):
     model = User
     
     def get(self, username):
-        instance = self.model.all().filter('username', username).get()
+        auth_id = username
+        
+        if '@' in username:
+            auth_id = 'email:%s' % username
+        elif ':' not in username:
+            # default to twitter lookup
+            auth_id = 'twitter:%s' % username
+            
+        instance = self.model.get_by_auth_id(auth_id)
         if instance is None:
             abort(404)
         return self.respond_json(self.serialize(instance))
 
+class BitbucketHandler(API):
+    
+    def post(self):
+        """
+        Take a POST from bitbucket in the format::
+        
+            payload=>"{
+                "canon_url": "https://bitbucket.org", 
+                "commits": [
+                    {
+                        "author": "marcus", 
+                        "branch": "featureA", 
+                        "files": [
+                            {
+                                "file": "somefile.py", 
+                                "type": "modified"
+                            }
+                        ], 
+                        "message": "Added some featureA things", 
+                        "node": "d14d26a93fd2", 
+                        "parents": [
+                            "1b458191f31a"
+                        ], 
+                        "raw_author": "Marcus Bertrand <marcus@somedomain.com>", 
+                        "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe", 
+                        "revision": 3, 
+                        "size": -1, 
+                        "timestamp": "2012-05-30 06:07:03", 
+                        "utctimestamp": "2012-05-30 04:07:03+00:00"
+                    }
+                ], 
+                "repository": {
+                    "absolute_url": "/marcus/project-x/", 
+                    "fork": false, 
+                    "is_private": true, 
+                    "name": "Project X", 
+                    "owner": "marcus", 
+                    "scm": "hg", 
+                    "slug": "project-x", 
+                    "website": ""
+                }, 
+                "user": "marcus"
+            }"
+        """
+        #TODO: make this work
+
+class GithubHandler(API):
+    
+    def _parse_commit(self, data):
+        """Return a tuple of (email, dict) to simplify commit creation.
+        
+        Raw commit data::
+        
+            {
+              "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "author": {
+                "email": "chris@ozmm.org",
+                "name": "Chris Wanstrath"
+              },
+              "message": "okay i give in",
+              "timestamp": "2008-02-15T14:57:17-08:00",
+              "added": ["filepath.rb"]
+            },
+        """
+        if not isinstance(data, dict):
+            raise AttributeError("Expected a dict object")
+        
+        author = data.get('author', {})
+        email = author.get('email', '')
+        name = author.get('name', '')
+        
+        commit_data = {
+            'hash': data['id'],
+            'url': data['url'],
+            'email': email,
+            'name': name,
+            'message': data['message'],
+            'timestamp': data['timestamp'],
+        }
+        return email, commit_data
+    
+    def post(self):
+        """
+        Takes a POST response from github in the following format::
+        
+            payload=>"{
+                  "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+                  "repository": {
+                    "url": "http://github.com/defunkt/github",
+                    "name": "github",
+                    "description": "You're lookin' at it.",
+                    "watchers": 5,
+                    "forks": 2,
+                    "private": 1,
+                    "owner": {
+                      "email": "chris@ozmm.org",
+                      "name": "defunkt"
+                    }
+                  },
+                  "commits": [
+                    {
+                      "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+                      "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                      "author": {
+                        "email": "chris@ozmm.org",
+                        "name": "Chris Wanstrath"
+                      },
+                      "message": "okay i give in",
+                      "timestamp": "2008-02-15T14:57:17-08:00",
+                      "added": ["filepath.rb"]
+                    },
+                    {
+                      "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+                      "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                      "author": {
+                        "email": "chris@ozmm.org",
+                        "name": "Chris Wanstrath"
+                      },
+                      "message": "update pricing a tad",
+                      "timestamp": "2008-02-15T14:36:34-08:00"
+                    }
+                  ],
+                  "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+                  "ref": "refs/heads/master"
+                }"
+        """
+        payload = self.request.params.get('payload')
+        if not payload:
+            abort(400)
+        
+        try:
+            data = json.loads(payload)
+        except:
+            logging.exception("Unable to serialize github POST")
+            abort(400)
+        
+        #TODO: get or create the Project
+        logging.info("create project: %s", data.repository['name'])
+        #TODO: add points for the project
+        logging.info("adding %s points to project", len(data.commits))
+        
+        for c in data.commits:
+            try:
+                email, commit_data = self._parse_commit(c)
+                commit = Commit.create_by_email(email, commit_data)
+            except:
+                logging.exception("Problem creating commit from callback.")
+        
+        
+        
 ###
 ### Setup the routes for the API
 ###
@@ -419,12 +569,12 @@ routes = [
     webapp2.Route('/api/v1', RootHandler),
     webapp2.Route('/api/v1/commits', CommitCollection),
     webapp2.Route('/api/v1/commits/<commit_key:\w+>', CommitResource),
-    webapp2.Route('/api/v1/sections', SectionCollection),
-    webapp2.Route('/api/v1/sections/<section_id:\d+>', SectionResource),
     webapp2.Route('/api/v1/projects', ProjectCollection),
     webapp2.Route('/api/v1/projects/<project_name:[\w-]+>', ProjectResource),
     webapp2.Route('/api/v1/people', PeopleCollection),
     webapp2.Route('/api/v1/people/<username:[\w_-]+>', PeopleResource),
+    webapp2.Route('/api/v1/github', GithubHandler),
+    webapp2.Route('/api/v1/bitbucket', BitbucketHandler),
 ] 
 
 # The Main Application

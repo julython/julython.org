@@ -6,7 +6,7 @@ import os
 import logging
 
 from google.appengine.api import memcache
-from google.appengine.ext import db
+from google.appengine.ext import db, ndb
 from google.appengine.ext import testbed
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'july.settings'
@@ -61,19 +61,18 @@ class WebTestCase(unittest.TestCase):
         self.testbed.deactivate()
     
     def make_user(self, username, save=True, **kwargs):
-        user = User(username=username, **kwargs)
-        if save:
-            user.put()
+        kwargs['username'] = username
+        _, user = User.create_user(auth_id=username, **kwargs)
         return user
     
     def make_commit(self, user, message, save=True, **kwargs):
-        commit = Commit(parent=user, message=message, **kwargs)
+        commit = Commit(parent=user.key, message=message, **kwargs)
         if save:
             commit.put()
         return commit
     
     def make_project(self, name, save=True, **kwargs):
-        key = db.Key.from_path('Project', name)
+        key = ndb.Key('Project', name)
         project = Project(key=key, **kwargs)
         if save:
             project.put()
@@ -186,7 +185,7 @@ class CommitApiTests(WebTestCase):
         self.assertEqual(len(resp_body['models']), 2)
     
     def test_filter_by_user_with_at_symbol(self):
-        user = self.make_user(username="josh")
+        user = self.make_user(username="twitter:josh")
         user2 = self.make_user(username="sam")
         self.make_commit(user, message='Working on the pythons')
         self.make_commit(user, message="Still working on the pythons")
@@ -218,7 +217,7 @@ class ProjectApiTests(WebTestCase):
 
     def test_create_existing_returns_200(self):
         self.make_user('josh', email='josh@example.com')
-        self.make_project("user-project", url='http://github.com/user/project')
+        self.make_project("gh-user-project", url='http://github.com/user/project')
         body_json = json.dumps({'url': 'http://github.com/user/project'})
         resp = self.app.post('/api/v1/projects', body_json, 
             headers={"Authorization": make_digest('josh')}
@@ -243,12 +242,12 @@ class ProjectApiTests(WebTestCase):
         self.assertEqual(resp_body['url'], ["This field is required."])
     
     def test_user_get(self):
-        self.make_user('josh', email='josh@example.com')
+        self.make_user('twitter:josh', email='josh@example.com')
         resp = self.app.get('/api/v1/people/josh')
         self.assertEqual(resp.status_code, 200)
     
     def test_user_dynamic_properties(self):
-        self.make_user('josh', foo_tastic='super-property')
+        self.make_user('twitter:josh', foo_tastic='super-property')
         resp = self.app.get('/api/v1/people/josh')
         person = json.loads(resp.body)
         self.assertEqual(person['foo_tastic'], 'super-property')
