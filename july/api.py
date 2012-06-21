@@ -6,6 +6,7 @@ import time
 import hmac
 import hashlib
 from functools import wraps
+from collections import defaultdict
 
 from google.appengine.ext import ndb
 from google.appengine.datastore.datastore_query import Cursor
@@ -279,9 +280,9 @@ class CommitCollection(API):
         if not form.is_valid():
             return self.respond_json(form.errors, status_code=400)
         
-        commit = Commit.create_by_user(self.user, form.cleaned_data)
+        commits = Commit.create_by_user(self.user, form.cleaned_data)
         
-        self.respond_json({'commit': commit.key.urlsafe()}, status_code=201)
+        self.respond_json({'commits': [k.urlsafe() for k in commits]}, status_code=201)
     
     def get(self):
         return self.fetch_models()
@@ -358,9 +359,9 @@ class ProjectCollection(API):
         @ndb.transactional    
         def txn():
             count = getattr(user, 'total', 0)
-            projects = getattr(user, 'projects', [])
+            projects = set(getattr(user, 'projects', []))
             user.total = count + 10
-            user.projects = projects.append(project_url)
+            user.projects = list(projects.add(project_url))
             user.put()
             return user
         
@@ -411,53 +412,148 @@ class PeopleResource(API):
             abort(404)
         return self.respond_json(self.serialize(instance))
 
-class BitbucketHandler(API):
+class PostCallbackHandler(API):
+
+    def parse_commits(self, commits):
+        """
+        Takes a list of raw commit data and returns a dict of::
+            
+            {'email': [list of parsed commits]}
+        
+        """
+        commit_dict = defaultdict(list)
+        for k, v in [self._parse_commit(data) for data in commits]:
+            commit_dict[k].append(v)
+        
+        return commit_dict
+    
+    def _parse_commit(self, commit):
+        """Parse a single commit."""
+        raise NotImplementedError("Subclasses must define this")
+    
+    def parse_payload(self):
+        """
+        Hook for turning post data into payload.
+        """
+        payload = self.request.params.get('payload')
+        return payload
+        
+    def get(self):
+        """Display some useful info about POSTing to this resource."""
+        return self.respond_json({'description': self.__doc__})
     
     def post(self):
-        """
-        Take a POST from bitbucket in the format::
+        payload = self.parse_payload()
+        if not payload:
+            abort(400)
         
-            payload=>"{
-                "canon_url": "https://bitbucket.org", 
-                "commits": [
-                    {
-                        "author": "marcus", 
-                        "branch": "featureA", 
-                        "files": [
-                            {
-                                "file": "somefile.py", 
-                                "type": "modified"
-                            }
-                        ], 
-                        "message": "Added some featureA things", 
-                        "node": "d14d26a93fd2", 
-                        "parents": [
-                            "1b458191f31a"
-                        ], 
-                        "raw_author": "Marcus Bertrand <marcus@somedomain.com>", 
-                        "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe", 
-                        "revision": 3, 
-                        "size": -1, 
-                        "timestamp": "2012-05-30 06:07:03", 
-                        "utctimestamp": "2012-05-30 04:07:03+00:00"
-                    }
-                ], 
-                "repository": {
-                    "absolute_url": "/marcus/project-x/", 
-                    "fork": false, 
-                    "is_private": true, 
-                    "name": "Project X", 
-                    "owner": "marcus", 
-                    "scm": "hg", 
-                    "slug": "project-x", 
-                    "website": ""
-                }, 
-                "user": "marcus"
-            }"
-        """
-        #TODO: make this work
+        try:
+            data = json.loads(payload)
+        except:
+            logging.exception("Unable to serialize POST")
+            abort(400)
+        
+        repository = data.get('repository', {})
+        commit_data = data.get('commits', [])
+        
+        #TODO: get or create the Project
+        logging.info("create project: %s", repository)
+        #TODO: add points for the project
+        logging.info("adding %s points to project", len(commit_data))
+        
+        commits = self.parse_commits(commit_data)
+        
+    
+class BitbucketHandler(PostCallbackHandler):
+    """
+    Take a POST from bitbucket in the format::
+    
+        payload=>"{
+            "canon_url": "https://bitbucket.org", 
+            "commits": [
+                {
+                    "author": "marcus", 
+                    "branch": "featureA", 
+                    "files": [
+                        {
+                            "file": "somefile.py", 
+                            "type": "modified"
+                        }
+                    ], 
+                    "message": "Added some featureA things", 
+                    "node": "d14d26a93fd2", 
+                    "parents": [
+                        "1b458191f31a"
+                    ], 
+                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>", 
+                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe", 
+                    "revision": 3, 
+                    "size": -1, 
+                    "timestamp": "2012-05-30 06:07:03", 
+                    "utctimestamp": "2012-05-30 04:07:03+00:00"
+                }
+            ], 
+            "repository": {
+                "absolute_url": "/marcus/project-x/", 
+                "fork": false, 
+                "is_private": true, 
+                "name": "Project X", 
+                "owner": "marcus", 
+                "scm": "hg", 
+                "slug": "project-x", 
+                "website": ""
+            }, 
+            "user": "marcus"
+        }"
+    """
+    #TODO: make this work
 
-class GithubHandler(API):
+class GithubHandler(PostCallbackHandler):
+    """
+    Takes a POST response from github in the following format::
+    
+        payload=>"{
+              "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+              "repository": {
+                "url": "http://github.com/defunkt/github",
+                "name": "github",
+                "description": "You're lookin' at it.",
+                "watchers": 5,
+                "forks": 2,
+                "private": 1,
+                "owner": {
+                  "email": "chris@ozmm.org",
+                  "name": "defunkt"
+                }
+              },
+              "commits": [
+                {
+                  "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+                  "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                  "author": {
+                    "email": "chris@ozmm.org",
+                    "name": "Chris Wanstrath"
+                  },
+                  "message": "okay i give in",
+                  "timestamp": "2008-02-15T14:57:17-08:00",
+                  "added": ["filepath.rb"]
+                },
+                {
+                  "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+                  "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                  "author": {
+                    "email": "chris@ozmm.org",
+                    "name": "Chris Wanstrath"
+                  },
+                  "message": "update pricing a tad",
+                  "timestamp": "2008-02-15T14:36:34-08:00"
+                }
+              ],
+              "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+              "ref": "refs/heads/master"
+            }"
+    """
+    
     
     def _parse_commit(self, data):
         """Return a tuple of (email, dict) to simplify commit creation.
@@ -493,72 +589,7 @@ class GithubHandler(API):
         }
         return email, commit_data
     
-    def post(self):
-        """
-        Takes a POST response from github in the following format::
-        
-            payload=>"{
-                  "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
-                  "repository": {
-                    "url": "http://github.com/defunkt/github",
-                    "name": "github",
-                    "description": "You're lookin' at it.",
-                    "watchers": 5,
-                    "forks": 2,
-                    "private": 1,
-                    "owner": {
-                      "email": "chris@ozmm.org",
-                      "name": "defunkt"
-                    }
-                  },
-                  "commits": [
-                    {
-                      "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                      "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
-                      "author": {
-                        "email": "chris@ozmm.org",
-                        "name": "Chris Wanstrath"
-                      },
-                      "message": "okay i give in",
-                      "timestamp": "2008-02-15T14:57:17-08:00",
-                      "added": ["filepath.rb"]
-                    },
-                    {
-                      "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                      "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
-                      "author": {
-                        "email": "chris@ozmm.org",
-                        "name": "Chris Wanstrath"
-                      },
-                      "message": "update pricing a tad",
-                      "timestamp": "2008-02-15T14:36:34-08:00"
-                    }
-                  ],
-                  "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                  "ref": "refs/heads/master"
-                }"
-        """
-        payload = self.request.params.get('payload')
-        if not payload:
-            abort(400)
-        
-        try:
-            data = json.loads(payload)
-        except:
-            logging.exception("Unable to serialize github POST")
-            abort(400)
-        
-        #TODO: get or create the Project
-        logging.info("create project: %s", data.repository['name'])
-        #TODO: add points for the project
-        logging.info("adding %s points to project", len(data.commits))
-        
-        for c in data.commits:
-            try:
-                email, commit_data = self._parse_commit(c)
-                commit = Commit.create_by_email(email, commit_data)
-            except:
-                logging.exception("Problem creating commit from callback.")
+    
         
         
         

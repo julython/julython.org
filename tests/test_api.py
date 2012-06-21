@@ -142,7 +142,7 @@ class CommitApiTests(WebTestCase):
         resp_body = json.loads(resp.body)
         
         # try to get the commit from the api
-        resp = self.app.get('/api/v1/commits/%s' % resp_body['commit'])
+        resp = self.app.get('/api/v1/commits/%s' % resp_body['commits'][0])
         self.assertEqual(resp.status_code, 200)
     
     def test_commit_data_from_post(self):
@@ -159,7 +159,7 @@ class CommitApiTests(WebTestCase):
         resp_body = json.loads(resp.body)
         
         # try to get the commit from the api
-        resp = self.app.get('/api/v1/commits/%s' % resp_body['commit'])
+        resp = self.app.get('/api/v1/commits/%s' % resp_body['commits'][0])
         commit = json.loads(resp.body)
         self.assertEqual(commit['name'], "Josh Marshall")
         self.assertEqual(commit['email'], "josh@example.com")
@@ -256,6 +256,60 @@ class ProjectApiTests(WebTestCase):
         resp = self.app.options('/api/v1/people')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.headers.get('Allow'), 'GET, OPTIONS')
+
+class GithubHandlerTests(WebTestCase):
+    
+    APPLICATION = app
+    
+    POST = {'payload':
+        json.dumps({
+            "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+            "repository": {
+              "url": "http://github.com/defunkt/github",
+              "name": "github",
+              "description": "You're lookin' at it.",
+              "watchers": 5,
+              "forks": 2,
+              "private": 1,
+              "owner": {
+                "email": "chris@ozmm.org",
+                "name": "defunkt"
+              }
+            },
+            "commits": [
+              {
+                "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+                "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                "author": {
+                  "email": "chris@ozmm.org",
+                  "name": "Chris Wanstrath"
+                },
+                "message": "okay i give in",
+                "timestamp": "2008-02-15T14:57:17-08:00",
+                "added": ["filepath.rb"]
+              },
+              {
+                "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+                "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                "author": {
+                  "email": "chris@ozmm.org",
+                  "name": "Chris Wanstrath"
+                },
+                "message": "update pricing a tad",
+                "timestamp": "2008-02-15T14:36:34-08:00"
+              }
+            ],
+            "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+            "ref": "refs/heads/master"
+        })
+    }
+    
+    def test_post_creates_commits(self):
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        resp = self.app.post('/api/v1/github', self.POST)
+        resp_body = json.loads(resp.body)
+        self.assertEqual(len(resp_body), 2)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
