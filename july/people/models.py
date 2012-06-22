@@ -85,7 +85,7 @@ class Commit(ndb.Model):
             return keys
         
         commits = txn()
-        return commits
+        return filter(lambda x: x.kind() == 'Commit', commits)
     
     @classmethod
     def create_orphan(cls, commits):
@@ -123,10 +123,21 @@ class Project(ndb.Model):
     description = ndb.TextProperty(required=False)
     name = ndb.StringProperty(required=False)
     forked = ndb.BooleanProperty(default=False)
+    forks = ndb.IntegerProperty(default=0)
+    watchers = ndb.IntegerProperty(default=0)
     parent_url = ndb.StringProperty(required=False)
     created_on = ndb.DateTimeProperty(auto_now_add=True)
     # new projects start off with 10 points
     total = ndb.IntegerProperty(default=10)
+    
+    def __str__(self):
+        if self.name:
+            return self.name
+        else:
+            return self.url
+    
+    def __unicode__(self):
+        return self.__str__()
     
     @property
     def project_name(self):

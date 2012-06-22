@@ -427,6 +427,10 @@ class PostCallbackHandler(API):
         
         return commit_dict
     
+    def _parse_repo(self, repository):
+        """Parse a repository."""
+        raise NotImplementedError("Subclasses must define this")
+    
     def _parse_commit(self, commit):
         """Parse a single commit."""
         raise NotImplementedError("Subclasses must define this")
@@ -456,12 +460,34 @@ class PostCallbackHandler(API):
         repository = data.get('repository', {})
         commit_data = data.get('commits', [])
         
-        #TODO: get or create the Project
-        logging.info("create project: %s", repository)
-        #TODO: add points for the project
-        logging.info("adding %s points to project", len(commit_data))
+        repo = self._parse_repo(repository)
         
-        commits = self.parse_commits(commit_data)
+        _, project = Project.get_or_create(**repo)
+        project_key = project.key
+        
+        commit_dict = self.parse_commits(commit_data)
+        total_commits = []
+        for email, commits in commit_dict.iteritems():
+            # TODO: run this in a task queue?
+            cmts = Commit.create_by_email(email, commits, project.url)
+            total_commits += cmts
+        
+        @ndb.transactional
+        def txn():
+            # TODO: run this in a task queue?
+            total = len(total_commits)
+            
+            project = project_key.get()
+            logging.info("adding %s points to %s", total, project)
+            project.total += total
+            project.put()
+        
+        status = 200
+        if len(total_commits):
+            txn()
+            status = 201
+        
+        return self.respond_json({'commits': [c.urlsafe() for c in total_commits]}, status_code=status)
         
     
 class BitbucketHandler(PostCallbackHandler):
@@ -553,6 +579,19 @@ class GithubHandler(PostCallbackHandler):
               "ref": "refs/heads/master"
             }"
     """
+    
+    def _parse_repo(self, data):
+        """Returns a dict suitable for creating a project."""
+        if not isinstance(data, dict):
+            raise AttributeError("Expected a dict object")
+        
+        return {
+            'url': data['url'],
+            'description': data.get('description', ''),
+            'name': data.get('name'),
+            'forks': data.get('forks'),
+            'watchers': data.get('watchers')
+        }
     
     
     def _parse_commit(self, data):

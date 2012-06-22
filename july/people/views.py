@@ -10,7 +10,7 @@ from gae_django.auth.models import User
 from july.people.models import Commit
 
 def user_profile(request, username):
-    user = User.query(ndb.GenericProperty('username') == username).get()
+    user = User.get_by_auth_id('twitter:%s' % username)
     if user == None:
         raise Http404("User not found")
 
@@ -23,7 +23,7 @@ def user_profile(request, username):
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
-    user = User.query(ndb.GenericProperty('username') == username).get()
+    user = User.get_by_auth_id('twitter:%s' % username)
 
     if user == None:
         raise Http404("User not found")

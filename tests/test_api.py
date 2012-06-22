@@ -309,7 +309,22 @@ class GithubHandlerTests(WebTestCase):
         user.add_auth_id('email:chris@ozmm.org')
         resp = self.app.post('/api/v1/github', self.POST)
         resp_body = json.loads(resp.body)
-        self.assertEqual(len(resp_body), 2)
+        self.assertEqual(len(resp_body['commits']), 2)
+    
+    def test_post_adds_points_to_user(self):
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        u = User.get_by_auth_id('email:chris@ozmm.org')
+        self.assertEqual(u.total, 2)
+    
+    def test_post_adds_points_to_project(self):
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        p_key = Project.make_key('http://github.com/defunkt/github')
+        p = p_key.get()
+        self.assertEqual(p.total, 12)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
