@@ -19,7 +19,9 @@ inbound_services:
 
 libraries:
 - name: django
-  version: "1.3"
+  version: "latest"
+- name: webapp2
+  version: "latest"
 
 handlers:
 - url: /static
