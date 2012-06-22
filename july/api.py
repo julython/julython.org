@@ -448,6 +448,7 @@ class PostCallbackHandler(API):
     
     def post(self):
         payload = self.parse_payload()
+        logging.info(payload)
         if not payload:
             abort(400)
         
