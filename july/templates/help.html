@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block bodyclass %}help{% endblock %}
+
+{% block content %}
+
+<div class="container section-container no-border">
+  <div class="row">
+    <div class="span10 offset1">
+          <div class="row">
+            <div class="span10">
+              <h2 class="spread-the-word">Help me get started!</h2>
+              {% if user.is_authenticated %}
+              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.</p>
+              {% else %}
+              <p class="lead">First <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a></p>
+              {% endif %}
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border"  id="webhook">
+  <div class="row">
+    <div class="span10 offset1">
+          <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">How do I add a web hook for my project?</h2>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span5 section-blurb">
+              <h3>Github</h3>
+              <p>If you host your project on github, follow the instructions below to setup a post recieve hook.</p>
+              <ol>
+                  <li>Go to your project on <a href="http://github.com">github</a>.</li>
+                  <li>Select the 'Admin' button at the top of the project dashboard.</li>
+                  <li>Select 'Service Hooks' on the left menu.</li>
+                  <li>In 'Available service hooks' select 'Webhook URLs'.</li>
+                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/github</pre></li>
+                  <li>Select 'Update Settings'</li>
+              </ol>
+              <p>You can test it out by selecting 'WebHook URLs' again and choosing 'Test Hook'. Or you can try pushing a commit to your repository.</p>
+            </div>
+            <div class="span5 section-blurb">
+              <h3>Bitbucket</h3>
+              <p>If you host your project on bitbucket, follow the instructions below to setup a post recieve hook.</p>
+              <ol>
+                  <li>Go to your project on <a href="http://bitbucket.org">bitbucket</a>.</li>
+                  <li>Select the 'Admin' admin tab on your project dashboard.</li>
+                  <li>Select 'Services' on the left menu.</li>
+                  <li>In the 'Select a service' dropdown select or type 'POST' then 'Add service'.</li>
+                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/bitbucket</pre></li>
+                  <li>Select 'Save Settings'</li>
+              </ol>
+              <p>You can test it out by pushing a commit to your repository.</p>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border">
+  <div class="row">
+    <div class="span10 offset1">
+           <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">How are points scored?</h2>
+              <p class="lead">Points are awarded to the committer, the project, and optionally to the location the user has specified in his/her profile.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span5 section-blurb">
+              <h3>Commits</h3>
+              <p>You can score points by commited to a project that has a <a href="#webhook">web hook</a> setup.
+              Each commit is worth 1 point.</p>
+            </div>
+            <div class="span5 section-blurb">
+              <h3>New Projects</h3>
+              <p>Everytime a new project is add by the <a href="#webhook">web hook</a> points are awarded.
+              Each new project is worth 10 points.</p>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

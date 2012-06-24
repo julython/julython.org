@@ -25,6 +25,15 @@ def index(request):
     
     return render_to_response('index.html', context_instance=ctx)
 
+def help_view(request):
+    """Render the help page"""       
+    ctx = Context({
+        'user': request.user,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'STATIC_URL': settings.STATIC_URL})
+    
+    return render_to_response('help.html', context_instance=ctx)
+
 @login_required
 def login_redirect(request):
     if request.user != None:

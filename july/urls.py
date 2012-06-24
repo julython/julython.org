@@ -9,6 +9,7 @@ urlpatterns = patterns('',
     # Examples:
     url(r'^admin/', include(admin.site.urls)),
     url(r'^$', 'july.views.index', name='index'),
+    url(r'^help/', 'july.views.help_view', name='help'),
     url(r'^signin/$', views.login, {'authentication_form': AuthenticationForm}),
     url(r'^signout/$', views.logout),
     url(r'^accounts/profile', 'july.views.login_redirect'),
