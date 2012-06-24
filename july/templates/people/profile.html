@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-
 {% block bodyclass %}profile{% endblock %}
 
 {% block content %}
+
 <div class="container" id="contents">
-    <div class="row">
-        <div class="profile span-8 offset3">
+        
+        <div class="row">
+            <div class="span10 offset1">
             <div class="header">
-                <div class="row">
-                    <div class="avatar span-1">
+                    <div class="avatar span1">
                         <img src="{{ profile.picture_url }}" alt="{{profile}}" />                    
                     </div>
-                    <div class="user span-6">
+                    <div class="user span6">
                         <h1>{{ profile }}</h1>
                         <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}Python Hacker{% endif %}</p>
                         <ul class="user-links">
@@ -33,7 +33,6 @@
                         <p class="small">points</p>
                         
                     </div>
-                </div>
                 <div class="subnav">
                         <ul class="nav nav-pills">
                             <li><a class="active">Commits</a></li>
@@ -50,22 +49,60 @@
                 </div>           
             </div>
         </div>
-        
-        <div class="span9">
-            <div class="row">
-                <div class="span9"><h2>Recent Activity</h2></div>
-            </div>
-            {% for commit in commits %}
-            <div class="row">
-                <div class="span9">Commit</div>
-            </div>
-            {% empty %}
-            <div class="row">
-                <div class="span9">No Commits Yet!</div>
-            </div>
-            {% endfor %}
-        </div>
     </div>
 </div>
 
+<div class="container section-container no-border">
+  <div class="row">
+    <div class="span10 offset1">
+        {% for commit in commits %}
+
+        {% empty %}
+        {% if profile.username != user.username %}
+        <div class="row">
+            <div class="span10">
+              <h2 class="spread-the-word">Still preparing for lift off!</h2>
+              <p class="lead">This user has not committed to any project yet.</p>
+            </div>
+        </div>
+        {% else %}
+          <div class="row">
+            <div class="span10">
+              <h2 class="spread-the-word">Let's get started!</h2>
+              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span5 section-blurb">
+              <h3>Github</h3>
+              <p>If you host your project on github, follow the instructions below to setup a post recieve hook.</p>
+              <ol>
+                  <li>Go to your project on <a href="http://github.com">github</a>.</li>
+                  <li>Select the 'Admin' button at the top of the project dashboard.</li>
+                  <li>Select 'Service Hooks' on the left menu.</li>
+                  <li>In 'Available service hooks' select 'Webhook URLs'.</li>
+                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/github</pre></li>
+                  <li>Select 'Update Settings'</li>
+              </ol>
+              <p>You can test it out by selecting 'WebHook URLs' again and choosing 'Test Hook'.  Or you can try pushing a commit to your repository.</p>
+            </div>
+            <div class="span5 section-blurb">
+              <h3>Bitbucket</h3>
+              <p>If you host your project on bitbucket, follow the instructions below to setup a post recieve hook.</p>
+              <ol>
+                  <li>Go to your project on <a href="http://bitbucket.org">bitbucket</a>.</li>
+                  <li>Select the 'Admin' admin tab on your project dashboard.</li>
+                  <li>Select 'Services' on the left menu.</li>
+                  <li>In the 'Select a service' dropdown select or type 'POST' then 'Add service'.</li>
+                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/bitbucket</pre></li>
+                  <li>Select 'Save Settings'</li>
+              </ol>
+              <p>You can test it out by pushing a commit to your repository.</p>
+            </div>
+          </div>
+        {% endif %}
+{% endfor %}
+    </div>
+  </div>
+</div>
 {% endblock %}
