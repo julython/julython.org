@@ -14,7 +14,7 @@ def user_profile(request, username):
     if user == None:
         raise Http404("User not found")
 
-    commits = Commit.query(ancestor=user.key)
+    commits = Commit.query(ancestor=user.key).fetch(100)
 
     return render_to_response('people/profile.html', 
         {"commits":commits, 'profile':user}, 

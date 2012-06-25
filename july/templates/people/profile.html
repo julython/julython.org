@@ -55,9 +55,26 @@
 <div class="container section-container no-border">
   <div class="row">
     <div class="span10 offset1">
-        {% for commit in commits %}
-
-        {% empty %}
+        {% if commits %}
+        <div class="row">
+            <div class="span10">
+              <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
+              {% for commit in commits %}
+              {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
+              <div class="row">
+                  <div class="span5 pull-left">
+                      <img class="icon" src="{{ profile.picture_url }}">
+                      <strong>{{ commit.message}}</strong>
+                      <p>{{ commit.hash }}</p>
+                  </div>
+                  <div class="span3 pull-right">
+                      <a href="{{ commit.project }}">{{ commit.project_slug }}</a>
+                  </div>
+              </div>
+              {% endfor %}
+            </div>
+        </div>
+        {% else %}
         {% if profile.username != user.username %}
         <div class="row">
             <div class="span10">
@@ -101,7 +118,7 @@
             </div>
           </div>
         {% endif %}
-{% endfor %}
+      {% endif %}
     </div>
   </div>
 </div>
