@@ -25,7 +25,6 @@ class EditUserForm(forms.Form):
             # initialize the emails
             for auth in self.user.auth_ids:
                 if auth.startswith('email'):
-                    logging.error(auth)
                     _, email = auth.split(':')
                     self.emails.add(email)
     
