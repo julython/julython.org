@@ -16,7 +16,9 @@ class Commit(ndb.Model):
     email = ndb.StringProperty()
     message = ndb.StringProperty(indexed=False)
     url = ndb.StringProperty()
-    timestamp = ndb.StringProperty()
+    project = ndb.StringProperty()
+    project_slug = ndb.ComputedProperty(lambda self: Project.parse_project_name(self.project))
+    timestamp = ndb.DateTimeProperty()
     created_on = ndb.DateTimeProperty(auto_now_add=True)
     
     @classmethod
@@ -35,14 +37,14 @@ class Commit(ndb.Model):
     @classmethod
     def create_by_email(cls, email, commits, project=None):
         """Create a commit by email address"""
-        return cls.create_by_auth_id('email:%s' % email, commits, project)
+        return cls.create_by_auth_id('email:%s' % email, commits, project=project)
     
     @classmethod
     def create_by_auth_id(cls, auth_id, commits, project=None):
         user = User.get_by_auth_id(auth_id)
         if user:
-            return cls.create_by_user(user, commits, project)
-        return cls.create_orphan(commits)
+            return cls.create_by_user(user, commits, project=project)
+        return cls.create_orphan(commits, project=project)
     
     @classmethod
     def create_by_user(cls, user, commits, project=None):
@@ -50,6 +52,8 @@ class Commit(ndb.Model):
         if not isinstance(commits, (list, tuple)):
             commits = [commits]
         user_key = user.key
+        project = project
+        logging.info(project)
         
         @ndb.transactional
         def txn():
@@ -62,6 +66,7 @@ class Commit(ndb.Model):
                 commit_key = cls.make_key(commit_hash, user=user_key)
                 commit = commit_key.get()
                 if commit is None:
+                    c['project'] = project
                     commit = Commit(key=commit_key, **c)
                     to_put.append(commit)
             
@@ -70,15 +75,19 @@ class Commit(ndb.Model):
                 return
             
             user = user_key.get()
+            count = getattr(user, 'total', 0)
             
             if project is not None:
                 # get the list of existing projects and make it a set 
-                # to filter uniques
+                # to filter uniques, if this project is new add it and 
+                # update the users total points.
                 projects = set(getattr(user, 'projects', []))
-                projects.add(project)
-                user.projects = list(projects)
+                if project not in projects:
+                    logging.info('Adding project to user: %s', user)
+                    projects.add(project)
+                    count += 10
+                    user.projects = list(projects)
 
-            count = getattr(user, 'total', 0)
             user.total = count + len(to_put)
             to_put.append(user)
             keys = ndb.put_multi(to_put)
@@ -88,7 +97,7 @@ class Commit(ndb.Model):
         return filter(lambda x: x.kind() == 'Commit', commits)
     
     @classmethod
-    def create_orphan(cls, commits):
+    def create_orphan(cls, commits, project=None):
         """Create a commit with no parent."""
         if not isinstance(commits, (list, tuple)):
             commits = [commits]
@@ -102,11 +111,12 @@ class Commit(ndb.Model):
             commit_key = cls.make_key(commit_hash)
             commit = commit_key.get()
             if commit is None:
+                c['project'] = project
                 commit = Commit(key=commit_key, **c)
                 to_put.append(commit)
         
         commits = ndb.put_multi(to_put)
-        return filter(lambda x: x.kind() != 'User', commits)
+        return commits
     
 class Project(ndb.Model):
     """
@@ -158,6 +168,8 @@ class Project(ndb.Model):
         This is used as the Key name in order to speed lookups during
         api requests.
         """
+        if not url:
+            return
         hosts_lookup = {
             'github.com': 'gh',
             'bitbucket.org': 'bb',
@@ -179,7 +191,7 @@ class Project(ndb.Model):
     
     @classmethod
     def get_or_create(cls, **kwargs):
-        url = kwargs.pop('url', None)
+        url = kwargs.get('url', None)
         if url is None:
             raise AttributeError('Missing url in project create')
         

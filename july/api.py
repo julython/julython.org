@@ -71,6 +71,22 @@ def to_dict(model):
 
     return output
 
+def utcdatetime(timestamp):
+    """
+    Take a timestamp in the formats::
+        
+        2012-05-30 04:07:03+00:00
+        2012-05-30T04:07:03-08:00
+    
+    And return a utc normalized timestamp to insert into the db.
+    """
+    from iso8601 import parse_date
+    
+    d = parse_date(timestamp)
+    utc = d - d.utcoffset()
+    utc = utc.replace(tzinfo=None)
+    return utc
+
 def decorated_func(login_required=True, registration_required=True):
     """Simple decorator to require login and or registration."""
     
@@ -470,7 +486,7 @@ class PostCallbackHandler(API):
         total_commits = []
         for email, commits in commit_dict.iteritems():
             # TODO: run this in a task queue?
-            cmts = Commit.create_by_email(email, commits, project.url)
+            cmts = Commit.create_by_email(email, commits, project=project.url)
             total_commits += cmts
         
         @ndb.transactional
@@ -625,7 +641,7 @@ class GithubHandler(PostCallbackHandler):
             'email': email,
             'name': name,
             'message': data['message'],
-            'timestamp': data['timestamp'],
+            'timestamp': utcdatetime(data['timestamp']),
         }
         return email, commit_data
     

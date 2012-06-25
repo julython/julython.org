@@ -39,7 +39,7 @@ def setup_paths():
 setup_paths()
 
 from gae_django.auth.models import User
-from july.api import app, make_digest
+from july.api import app, make_digest, utcdatetime
 from july.people.models import Commit, Project
 
 class WebTestCase(unittest.TestCase):
@@ -165,7 +165,7 @@ class CommitApiTests(WebTestCase):
         self.assertEqual(commit['email'], "josh@example.com")
         self.assertEqual(commit['message'], "Working on Tornado stuff!")
         self.assertEqual(commit['url'], "https://github.com/project/commitID")
-        self.assertEqual(commit['timestamp'], '5430604985.0')
+        self.assertEqual(commit['timestamp'], 5430604985)
         self.assertEqual(commit['hash'], "6a87af2a7eb3de1e17ac1cce41e060516b38c0e9")
     
     def test_commit_not_found(self):
@@ -316,7 +316,7 @@ class GithubHandlerTests(WebTestCase):
         user.add_auth_id('email:chris@ozmm.org')
         self.app.post('/api/v1/github', self.POST)
         u = User.get_by_auth_id('email:chris@ozmm.org')
-        self.assertEqual(u.total, 2)
+        self.assertEqual(u.total, 12)
     
     def test_post_adds_points_to_project(self):
         user = self.make_user('chris')
@@ -325,6 +325,36 @@ class GithubHandlerTests(WebTestCase):
         p_key = Project.make_key('http://github.com/defunkt/github')
         p = p_key.get()
         self.assertEqual(p.total, 12)
+    
+    def test_post_adds_project_slug_to_commit(self):
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        resp = self.app.post('/api/v1/github', self.POST)
+        resp_body = json.loads(resp.body)
+        commit_key = ndb.Key(urlsafe=resp_body['commits'][0])
+        commit = commit_key.get()
+        self.assertEqual(commit.project_slug, 'gh-defunkt-github')
+        
+    def test_post_adds_project_to_commit(self):
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        resp = self.app.post('/api/v1/github', self.POST)
+        resp_body = json.loads(resp.body)
+        commit_key = ndb.Key(urlsafe=resp_body['commits'][0])
+        commit = commit_key.get()
+        self.assertEqual(commit.project, 'http://github.com/defunkt/github')  
+
+class TestUtils(unittest.TestCase):
+    
+    def test_utcdatetime_removes_tzinfo(self):
+        ts = '2012-05-30 04:07:03+00:00'
+        dt = utcdatetime(ts)
+        self.assertEqual(dt.tzinfo, None)
+    
+    def test_utcdatetime_offset(self):
+        ts = '2012-05-30 04:07:03-06:00'
+        dt = utcdatetime(ts)
+        self.assertEqual(dt.hour, 10)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

@@ -30,6 +30,13 @@ class CommitForm(forms.Form):
     author = forms.CharField(required=False)
     name = forms.CharField(required=False)
     hash = forms.CharField(required=False)
+    
+    def clean_timestamp(self):
+        data = self.cleaned_data.get('timestamp')
+        if data:
+            import datetime
+            data = datetime.datetime.fromtimestamp(float(data))
+        return data
 
 class ProjectForm(forms.Form):
     
