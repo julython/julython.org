@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block bodyclass %}profile{% endblock %}
+
+{% block content %}
+
+<div class="container" id="contents">
+    <ul>
+    {% for user in users %}
+        <li>{{ user }}</li>
+    {% endfor %}  
+    </ul>
+</div>
+
+{% endblock %}

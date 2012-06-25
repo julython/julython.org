@@ -4,6 +4,8 @@ from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from google.appengine.ext import ndb
+from django.template.defaultfilters import slugify
+import logging
 
 from gae_django.auth.models import User
 
@@ -19,6 +21,22 @@ def user_profile(request, username):
     return render_to_response('people/profile.html', 
         {"commits":commits, 'profile':user}, 
         context_instance=RequestContext(request)) 
+
+def users_by_location(request, location_slug, 
+                      template_name='people/people_list.html'):
+
+    users = User.query(ndb.GenericProperty('location_slug') == location_slug).fetch()
+
+    if len(users) == 0:
+        http404 = HttpResponse("Location Not Found")
+        http404.status = 404
+        return http404
+
+    logging.info(users)
+
+    return render_to_response(template_name, 
+                             {'users':users}, 
+                             context_instance=RequestContext(request)) 
  
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
@@ -38,9 +56,12 @@ def edit_profile(request, username, template_name='people/edit.html'):
     if form.is_valid():
         for key in form.cleaned_data:
             setattr(user, key, form.cleaned_data.get(key))
+        slugify(user.location)
         user.put()
         return HttpResponseRedirect(
-            reverse('member-profile', kwargs={'username':request.user.username})
+            reverse('member-profile', 
+                    kwargs={'username':request.user.username}
+                   )
         )
         
     
