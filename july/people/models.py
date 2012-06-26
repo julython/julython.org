@@ -243,7 +243,7 @@ def add_points_to_location(slug, points, project_url=None):
             points += 10
             
         location.total += points
-        
+        location.put()
         return location
     
     return txn(slug, points, project_url)
