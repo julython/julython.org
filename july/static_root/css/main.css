@@ -869,6 +869,7 @@ button{background:none;}
 .section-container h2{font-size:26px;font-weight:normal;color:#555;line-height:50px;padding-left:64px;background-repeat:no-repeat;background-position:top left;margin-bottom:30px;font-family:"Doppio One",sans-serif;}
 .section-blurb h3{color:#555;font-family:"Doppio One",sans-serif;font-weight:normal;font-size:20px;margin:0 0 8px;}
 .section-blurb p{font-size:16px;line-height:23px;}
+.profile .commit .hash{padding-left:25px;}
 .profile .header{position:relative;background:#dff0d8;padding:0;border:1px solid #468847;border-top:none;color:#468847;display:block;height:170px;}.profile .header a{color:#468847;}
 .profile .header a:hover{color:#2c552d;}
 .profile .header .user h1{margin-top:15px;font-family:"Press Start 2P",sans-serif,Helvetica sans-serif;color:#468847;}

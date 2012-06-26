@@ -61,14 +61,14 @@
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               {% for commit in commits %}
               {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
-              <div class="row">
-                  <div class="span5 pull-left">
+              <div class="row commit">
+                  <div class="span7 pull-left">
                       <img class="icon" src="{{ profile.picture_url }}">
                       <strong>{{ commit.message}}</strong>
-                      <p>{{ commit.hash }}</p>
+                      <p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a></p>
                   </div>
                   <div class="span3 pull-right">
-                      <a href="{{ commit.project }}">{{ commit.project_slug }}</a>
+                      <a href="{{ commit.project }}">{{ commit.project }}</a>
                   </div>
               </div>
               {% endfor %}
