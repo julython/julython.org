@@ -61,7 +61,7 @@
   </div>
 </div>
 
-<div class="container section-container no-border">
+<div class="container section-container no-border" id="points">
   <div class="row">
     <div class="span10 offset1">
            <div class="row">
@@ -80,6 +80,24 @@
               <h3>New Projects</h3>
               <p>Everytime a new project is add by the <a href="#webhook">web hook</a> points are awarded.
               Each new project is worth 10 points.</p>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border" id="location">
+  <div class="row">
+    <div class="span10 offset1">
+           <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">How do I set my location?</h2>
+              {% if user.is_authenticated %}
+              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add your location.</p>
+              {% else %}
+              <p class="lead">First <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a></p>
+              {% endif %}
+              <p class="lead">The location is a free form field, so it is really up to you to enter it property. But we <a href="https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify">slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'</p>
             </div>
           </div>
     </div>

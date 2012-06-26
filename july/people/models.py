@@ -89,14 +89,14 @@ class Commit(ndb.Model):
                     count += 10
                     user.projects = list(projects)
 
-            totals = count + len(to_put)
+            points = len(to_put)
             
             # defer updating the users location if they have one.
             if user.location:
                 logging.info("deferring add points to location: %s", user.location_slug)
-                deferred.defer(add_points_to_location, user.location_slug, totals, project)
+                deferred.defer(add_points_to_location, user.location_slug, points, project)
             
-            user.total = totals
+            user.total = count + points
             to_put.append(user)
             keys = ndb.put_multi(to_put)
             return keys
