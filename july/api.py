@@ -15,7 +15,6 @@ from webapp2 import abort
 from gae_django.auth.models import User
 
 from july import settings
-from july.pages.models import Section
 from july.people.forms import CommitForm, ProjectForm
 from july.people.models import Commit, Project
 
@@ -37,7 +36,7 @@ def verify_digest(message):
         return user_name
     return None
 
-def to_dict(model):
+def to_dict(model, exclude=[]):
     """
     Stolen from stackoverflow: 
     http://stackoverflow.com/questions/1531501/json-serialization-of-google-app-engine-models
@@ -68,7 +67,12 @@ def to_dict(model):
     if isinstance(model, ndb.Expando):
         for key in model._properties.iterkeys():
             output = encode(output, key, model)
-
+    
+    # remove any fields we don't want to display
+    for f in exclude:
+        if f in output:
+            del output[f]
+            
     return output
 
 def utcdatetime(timestamp):
@@ -118,6 +122,7 @@ class API(webapp2.RequestHandler):
     endpoint = None
     model = None
     form = None
+    exclude = []
     
     def options(self):
         """Be a good netizen citizen and return HTTP verbs allowed."""
@@ -168,12 +173,12 @@ class API(webapp2.RequestHandler):
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.key.id())
     
-    def serialize(self, model):
+    def serialize(self, model, exclude=[]):
         # Allow models to override the default to_dict
         if hasattr(self.model, 'serialize'):
-            resp = self.model.serialize(model)
+            resp = self.model.serialize(model, exclude)
         else:
-            resp = to_dict(model)
+            resp = to_dict(model, exclude)
         resp['uri'] = self.resource_uri(model)
         resp['key'] = str(model.key)
         resp['id'] = model.key.id()
@@ -202,9 +207,9 @@ class API(webapp2.RequestHandler):
         resp = {
             'limit': limit,
             'filter': filter_string,
-            'cursor': next_cursor.urlsafe(),
+            'cursor': next_cursor.urlsafe() if next_cursor else '',
             'uri': self.uri(),
-            'models': [self.serialize(m) for m in models],
+            'models': [self.serialize(m, self.exclude) for m in models],
         }
         if more:
             resp['next'] = self.uri() + '?limit=%s&cursor=%s&filter=%s' % (limit, next_cursor.urlsafe(), filter_string)
@@ -256,6 +261,7 @@ class CommitCollection(API):
     endpoint = '/commits'
     model = Commit
     form = CommitForm
+    exclude = ['email']
     
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.key.urlsafe())
@@ -307,6 +313,10 @@ class CommitResource(API):
     
     endpoint = '/commits'
     model = Commit
+    exclude = ['email']
+    
+    def resource_uri(self, model):
+        return '%s/%s' % (self.uri(), model.key.urlsafe())
     
     def get(self, commit_key):
         # Test if the string is an actual datastore key first
@@ -318,7 +328,7 @@ class CommitResource(API):
         commit = key.get()
         if commit is None:
             abort(404)
-        return self.respond_json(self.serialize(commit))
+        return self.respond_json(self.serialize(commit, self.exclude))
             
 class ProjectCollection(API):
     
@@ -655,7 +665,7 @@ class GithubHandler(PostCallbackHandler):
 routes = [
     webapp2.Route('/api/v1', RootHandler),
     webapp2.Route('/api/v1/commits', CommitCollection),
-    webapp2.Route('/api/v1/commits/<commit_key:\w+>', CommitResource),
+    webapp2.Route('/api/v1/commits/<commit_key:[\w=-]+>', CommitResource),
     webapp2.Route('/api/v1/projects', ProjectCollection),
     webapp2.Route('/api/v1/projects/<project_name:[\w-]+>', ProjectResource),
     webapp2.Route('/api/v1/people', PeopleCollection),

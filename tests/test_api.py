@@ -8,6 +8,7 @@ import logging
 from google.appengine.api import memcache
 from google.appengine.ext import db, ndb
 from google.appengine.ext import testbed
+from google.appengine.datastore import datastore_stub_util
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'july.settings'
 
@@ -40,7 +41,7 @@ setup_paths()
 
 from gae_django.auth.models import User
 from july.api import app, make_digest, utcdatetime
-from july.people.models import Commit, Project
+from july.people.models import Commit, Project, Location
 
 class WebTestCase(unittest.TestCase):
     
@@ -51,9 +52,14 @@ class WebTestCase(unittest.TestCase):
         self.testbed = testbed.Testbed()
         # Then activate the testbed, which prepares the service stubs for use.
         self.testbed.activate()
+        # create a policy object
+        self.policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=1)
         # Next, declare which service stubs you want to use.
-        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_datastore_v3_stub(consistency_policy=self.policy)
         self.testbed.init_memcache_stub()
+        os.environ['HTTP_HOST'] = 'localhost'
+        self.testbed.init_taskqueue_stub()
+
         if self.APPLICATION:
             self.app = webtest.TestApp(self.APPLICATION)
 
@@ -162,7 +168,6 @@ class CommitApiTests(WebTestCase):
         resp = self.app.get('/api/v1/commits/%s' % resp_body['commits'][0])
         commit = json.loads(resp.body)
         self.assertEqual(commit['name'], "Josh Marshall")
-        self.assertEqual(commit['email'], "josh@example.com")
         self.assertEqual(commit['message'], "Working on Tornado stuff!")
         self.assertEqual(commit['url'], "https://github.com/project/commitID")
         self.assertEqual(commit['timestamp'], 5430604985)
@@ -342,7 +347,18 @@ class GithubHandlerTests(WebTestCase):
         resp_body = json.loads(resp.body)
         commit_key = ndb.Key(urlsafe=resp_body['commits'][0])
         commit = commit_key.get()
-        self.assertEqual(commit.project, 'http://github.com/defunkt/github')  
+        self.assertEqual(commit.project, 'http://github.com/defunkt/github')
+    
+    def test_post_adds_points_to_location(self):
+        self.policy.SetProbability(1)
+        user = self.make_user('chris', location='Austin TX')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        location = Location.get_by_id('austin-tx')
+        # TODO: figure out how to test this!
+        if location is not None:
+            self.assertEqual(location.total, 2)
+        
 
 class TestUtils(unittest.TestCase):
     

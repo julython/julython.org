@@ -2,6 +2,7 @@ import logging
 from urlparse import urlparse
 
 from google.appengine.ext import ndb
+from google.appengine.ext import deferred
 from gae_django.auth.models import User
 
 class Commit(ndb.Model):
@@ -88,7 +89,14 @@ class Commit(ndb.Model):
                     count += 10
                     user.projects = list(projects)
 
-            user.total = count + len(to_put)
+            totals = count + len(to_put)
+            
+            # defer updating the users location if they have one.
+            if user.location:
+                logging.info("deferring add points to location: %s", user.location_slug)
+                deferred.defer(add_points_to_location, user.location_slug, totals, project)
+            
+            user.total = totals
             to_put.append(user)
             keys = ndb.put_multi(to_put)
             return keys
@@ -204,3 +212,40 @@ class Project(ndb.Model):
             project.put()
         
         return created, project
+
+class Location(ndb.Model):
+    """Simple model for holding point totals and projects for a location"""
+    total = ndb.IntegerProperty(default=0)
+    projects = ndb.StringProperty(repeated=True)
+    
+
+def add_points_to_location(slug, points, project_url=None):
+    """Add points and project_url to a location by slug.
+    
+    This is a simple method that runs in a transaction to 
+    get or insert the location model, then update the points.
+    It is meant to be run as a deferred task like so::
+    
+        from google.appengine.ext import deferred
+        
+        deferred.defer(add_points_to_location, 'some-slug-text', 10, 
+            'http://github.com/my/project')
+        
+        # or without a project
+        deferred.defer(add_points_to_location, 'some-slug-text', 3)
+    """
+    
+    @ndb.transactional
+    def txn(slug, points, project):
+        location = Location.get_or_insert(slug)
+        if project is not None and project not in location.projects:
+            location.projects.append(project)
+            points += 10
+            
+        location.total += points
+        
+        return location
+    
+    return txn(slug, points, project_url)
+        
+        
