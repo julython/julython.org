@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Commit
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
 - kind: LogEntry
   properties:
   - name: user_id
