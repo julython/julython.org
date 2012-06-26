@@ -6,7 +6,7 @@
 <div class="container" id="contents">
     <ul>
     {% for user in users %}
-        <li>{{ user }}</li>
+        <li><a href="/{{ user.username }}">{{ user }}</a></li>
     {% endfor %}  
     </ul>
 </div>
