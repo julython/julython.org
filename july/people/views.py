@@ -9,7 +9,7 @@ import logging
 
 from gae_django.auth.models import User
 
-from july.people.models import Commit
+from july.people.models import Commit, Location
 
 def user_profile(request, username):
     user = User.get_by_auth_id('twitter:%s' % username)
@@ -37,6 +37,15 @@ def users_by_location(request, location_slug,
     return render_to_response(template_name, 
                              {'users':users}, 
                              context_instance=RequestContext(request)) 
+
+def locations(request, template_name='people/locations.html'):
+
+    locations = Location.query().fetch(1000)
+    
+    logging.info(locations)
+    return render_to_response(template_name,
+                              {'locations': locations},
+                              context_instance=RequestContext(request))
  
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
