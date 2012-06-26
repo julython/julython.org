@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul>
+{% for location in locations %}
+    <li><a href="{{ location.slug }}"> {{ location }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
+
