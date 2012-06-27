@@ -218,7 +218,16 @@ class Location(ndb.Model):
     total = ndb.IntegerProperty(default=0)
     projects = ndb.StringProperty(repeated=True)
     
-
+    def __str__(self):
+        return self.key.id().replace('-', ' ')
+    
+    def __unicode__(self):
+        return self.__str__()
+    
+    @property
+    def slug(self):
+        return self.key.id()
+    
 def add_points_to_location(slug, points, project_url=None):
     """Add points and project_url to a location by slug.
     
