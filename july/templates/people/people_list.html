@@ -3,12 +3,30 @@
 
 {% block content %}
 
-<div class="container" id="contents">
-    <ul>
-    {% for user in users %}
-        <li><a href="/{{ user.username }}">{{ user }}</a></li>
-    {% endfor %}  
-    </ul>
+<div class="container section-container no-border">
+    <div class="row locations">
+        <div class="span6 offset3"><br />
+            <div class="row location">
+            <div class="span5">
+              <a href="{% url locations %}">All locations</a>
+              <h3>{{ location }}</h3>
+              <p>{{ location.projects|length }} project{{ location.projects|length|pluralize }}</p>
+            </div>
+            <div class="points pull-right">
+                <p>{{ location.total }}</p>
+                <p class="small">points</p>
+            </div>
+          </div>
+            <h4>Players</h4>
+            <ul>
+            {% for user in users %}
+                <li><a href="{% url member-profile user.username %}">{{ user }}</a> 
+                    &mdash; {{ user.total }} point{{ user.total|pluralize }} in 
+                    {{ user.projects|length }} project{{ user.projects|length|pluralize }}</li>
+            {% endfor %}  
+            </ul>
+        </div>
+    </div>
 </div>
 
 {% endblock %}

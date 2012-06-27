@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-<ul>
-{% for location in locations %}
-    <li><a href="{{ location.slug }}"> {{ location }}</a></li>
-{% endfor %}
-</ul>
+<div class="container section-container no-border">
+  <div class="row locations">
+    <div class="span6 offset3">
+        <h2 class="teaming-up">Locations</h2>
+        {% for location in locations %}
+          <div class="row location">
+            <div class="span5">
+              <h3><a href="{{ location.slug }}">{{ location }}</a></h3>
+              <p>{{ location.projects|length }} project{{ location.projects|length|pluralize }}</p>
+            </div>
+            <div class="points pull-right">
+                <p>{{ location.total }}</p>
+                <p class="small">points</p>
+            </div>
+          </div>
+        {% endfor %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 

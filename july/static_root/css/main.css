@@ -879,3 +879,6 @@ button{background:none;}
 .profile .header .avatar{padding:5px;width:75px;}.profile .header .avatar img{width:75px;height:75px;width:75px;height:75px;width:75px;height:75px;width:75px;height:75px;border:6px solid #fff;margin:10px;}
 .profile .header .subnav{padding-bottom:4px;border-top:1px dotted #468847;box-shadow:inset 0 0 12px rgba(0, 0, 0, 0.15);position:absolute;bottom:0;width:100%;}.profile .header .subnav .nav{margin:0 10px;}
 .profile-link{border:1px solid #bbb;}.profile-link a{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;}
+.locations h3,.people h2{font-family:"Press Start 2P",sans-serif,Helvetica sans-serif;font-weight:normal;font-size:18px;}
+.locations .points{border:3px solid #ddd;background-color:#f9f9f9;padding:10px;}.locations .points p{font-family:"Press Start 2P",sans-serif,Helvetica sans-serif;font-size:20px;text-align:center;}.locations .points p.small{font-size:8px;margin:0;}
+.locations .location{margin-bottom:10px;}
