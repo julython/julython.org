@@ -25,17 +25,15 @@ def user_profile(request, username):
 def users_by_location(request, location_slug, 
                       template_name='people/people_list.html'):
 
-    users = User.query(ndb.GenericProperty('location_slug') == location_slug).fetch()
+    users = User.query(User.location_slug == location_slug).fetch(1000)
 
-    if len(users) == 0:
-        http404 = HttpResponse("Location Not Found")
-        http404.status = 404
-        return http404
-
-    logging.info(users)
+    location = Location.get_by_id(location_slug)
+    
+    if location is None:
+        raise Http404('Location not found')
 
     return render_to_response(template_name, 
-                             {'users':users}, 
+                             {'users':users, 'location': location}, 
                              context_instance=RequestContext(request)) 
 
 def locations(request, template_name='people/locations.html'):
