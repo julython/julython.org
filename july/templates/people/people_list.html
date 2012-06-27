@@ -9,11 +9,15 @@
             <div class="row location">
             <div class="span5">
               <a href="{% url locations %}">All locations</a>
+              {% if location %} 
               <h3>{{ location }}</h3>
               <p>{{ location.projects|length }} project{{ location.projects|length|pluralize }}</p>
+              {% else %}
+              <h3>{{ slug }}</h3>
+              {% endif %}
             </div>
             <div class="points pull-right">
-                <p>{{ location.total }}</p>
+                <p>{% firstof location.total '0' %}</p>
                 <p class="small">points</p>
             </div>
           </div>

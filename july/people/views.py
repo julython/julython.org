@@ -29,11 +29,8 @@ def users_by_location(request, location_slug,
 
     location = Location.get_by_id(location_slug)
     
-    if location is None:
-        raise Http404('Location not found')
-
     return render_to_response(template_name, 
-                             {'users':users, 'location': location}, 
+                             {'users':users, 'location': location, 'slug': location_slug}, 
                              context_instance=RequestContext(request)) 
 
 def locations(request, template_name='people/locations.html'):
