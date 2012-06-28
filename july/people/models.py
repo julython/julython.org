@@ -189,6 +189,8 @@ class Project(ndb.Model):
         tokens = path.split('/')
         host_abbr = hosts_lookup.get(parsed.netloc, 'o')
         name = '-'.join(tokens)
+        if name.endswith('-'):
+            name = name[:-1]
         return '%s-%s' % (host_abbr, name)
     
     @classmethod
