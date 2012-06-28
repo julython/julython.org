@@ -5,6 +5,7 @@ import datetime
 import time
 import hmac
 import hashlib
+import re
 from functools import wraps
 from collections import defaultdict
 
@@ -17,6 +18,8 @@ from gae_django.auth.models import User
 from july import settings
 from july.people.forms import CommitForm, ProjectForm
 from july.people.models import Commit, Project
+
+EMAIL_MATCH = re.compile('<(.+?)>')
 
 SIMPLE_TYPES = (int, long, float, bool, dict, basestring, list)
 
@@ -180,7 +183,7 @@ class API(webapp2.RequestHandler):
         else:
             resp = to_dict(model, exclude)
         resp['uri'] = self.resource_uri(model)
-        resp['key'] = str(model.key)
+        resp['key'] = model.key.urlsafe()
         resp['id'] = model.key.id()
         return resp
     
@@ -251,7 +254,15 @@ class RootHandler(API):
                 {
                     'comment': 'Project in julython',
                     'uri': self.uri() + '/projects'
-                }
+                },
+                {
+                    'comment': 'Webhook for github repositories',
+                    'uri': self.uri() + '/github'
+                },
+                {
+                    'comment': 'Webhook for bitbuck repositories',
+                    'uri': self.uri() + '/bitbucket'
+                },
             ]
         }
         return self.respond_json(resp)
@@ -412,6 +423,7 @@ class PeopleCollection(API):
     
     endpoint = '/people'
     model = User
+    exclude = ["auth_ids", "password"]
     
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.username)
@@ -423,6 +435,7 @@ class PeopleResource(API):
     
     endpoint = '/people'
     model = User
+    exclude = ["auth_ids", "password"]
     
     def get(self, username):
         auth_id = username
@@ -559,7 +572,83 @@ class BitbucketHandler(PostCallbackHandler):
             "user": "marcus"
         }"
     """
-    #TODO: make this work
+    
+    def _parse_repo(self, data):
+        """Returns a dict suitable for creating a project.
+        
+        "repository": {
+                "absolute_url": "/marcus/project-x/", 
+                "fork": false, 
+                "is_private": true, 
+                "name": "Project X", 
+                "owner": "marcus", 
+                "scm": "hg", 
+                "slug": "project-x", 
+                "website": ""
+            }
+        """
+        if not isinstance(data, dict):
+            raise AttributeError("Expected a dict object")
+        
+        return {
+            'url': 'https://bitbucket.org%s' % data.get('absolute_url', ''),
+            'description': data.get('website', ''),
+            'name': data.get('name'),
+            'forked': data.get('fork', False),
+        }
+    
+    def _parse_email(self, raw_email):
+        """
+        Takes a raw email like: 'John Doe <joe@example.com>'
+        
+        and returns 'joe@example.com'
+        """
+        m = EMAIL_MATCH.search(raw_email)
+        if m:
+            return m.group(1)
+        return ''
+        
+    def _parse_commit(self, data):
+        """Parse a single commit.
+        
+        Example::
+        
+                {
+                    "author": "marcus", 
+                    "branch": "featureA", 
+                    "files": [
+                        {
+                            "file": "somefile.py", 
+                            "type": "modified"
+                        }
+                    ], 
+                    "message": "Added some featureA things", 
+                    "node": "d14d26a93fd2", 
+                    "parents": [
+                        "1b458191f31a"
+                    ], 
+                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>", 
+                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe", 
+                    "revision": 3, 
+                    "size": -1, 
+                    "timestamp": "2012-05-30 06:07:03", 
+                    "utctimestamp": "2012-05-30 04:07:03+00:00"
+                }
+        """
+        if not isinstance(data, dict):
+            raise AttributeError("Expected a dict object")
+        
+        email = self._parse_email(data.get('raw_author'))
+        
+        commit_data = {
+            'hash': data['raw_node'],
+            'email': email,
+            'author': data.get('author'),
+            'name': data.get('author'),
+            'message': data.get('message'),
+            'timestamp': utcdatetime(data['utctimestamp']),
+        }
+        return email, commit_data
 
 class GithubHandler(PostCallbackHandler):
     """
