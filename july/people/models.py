@@ -73,7 +73,7 @@ class Commit(ndb.Model):
             
             # Check if there are no new commits and return
             if len(to_put) == 0:
-                return
+                return []
             
             user = user_key.get()
             count = getattr(user, 'total', 0)
