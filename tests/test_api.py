@@ -5,6 +5,7 @@ import webtest
 import os
 import logging
 
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from google.appengine.datastore import datastore_stub_util
 
