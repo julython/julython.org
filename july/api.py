@@ -94,6 +94,16 @@ def utcdatetime(timestamp):
     utc = utc.replace(tzinfo=None)
     return utc
 
+def time_allowed(timestamp):
+    """
+    Check if the timestamp in between the proper datetimes.
+    """
+    ts = utcdatetime(timestamp)
+    ok = True
+    if not settings.TESTING:
+        ok = settings.START_DATETIME <= ts <= settings.END_DATETIME
+    return ok, ts
+
 def decorated_func(login_required=True, registration_required=True):
     """Simple decorator to require login and or registration."""
     
@@ -462,6 +472,9 @@ class PostCallbackHandler(API):
         """
         commit_dict = defaultdict(list)
         for k, v in [self._parse_commit(data) for data in commits]:
+            # Did we not actual parse a commit?
+            if v is None:
+                continue
             commit_dict[k].append(v)
         
         return commit_dict
@@ -502,30 +515,32 @@ class PostCallbackHandler(API):
         
         repo = self._parse_repo(repository)
         
-        _, project = Project.get_or_create(**repo)
-        project_key = project.key
-        
         commit_dict = self.parse_commits(commit_data)
         total_commits = []
         for email, commits in commit_dict.iteritems():
             # TODO: run this in a task queue?
-            cmts = Commit.create_by_email(email, commits, project=project.url)
+            cmts = Commit.create_by_email(email, commits, project=repo.get('url', ''))
             total_commits += cmts
         
-        @ndb.transactional
-        def txn():
-            # TODO: run this in a task queue?
-            total = len(total_commits)
-            
-            project = project_key.get()
-            logging.info("adding %s points to %s", total, project)
-            project.total += total
-            project.put()
-        
         status = 200
+        # If we found commits try to save the project too.
         if len(total_commits):
-            txn()
             status = 201
+        
+            _, project = Project.get_or_create(**repo)
+            project_key = project.key
+    
+            @ndb.transactional
+            def txn():
+                # TODO: run this in a task queue?
+                total = len(total_commits)
+                
+                project = project_key.get()
+                logging.info("adding %s points to %s", total, project)
+                project.total += total
+                project.put()
+            
+            txn()
         
         return self.respond_json({'commits': [c.urlsafe() for c in total_commits]}, status_code=status)
         
@@ -638,6 +653,11 @@ class BitbucketHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
+        # Bail early if the commit is not allowed
+        ok, timestamp = time_allowed(data['utctimestamp'])
+        if not ok:
+            return '', None
+        
         email = self._parse_email(data.get('raw_author'))
         
         commit_data = {
@@ -646,7 +666,7 @@ class BitbucketHandler(PostCallbackHandler):
             'author': data.get('author'),
             'name': data.get('author'),
             'message': data.get('message'),
-            'timestamp': utcdatetime(data['utctimestamp']),
+            'timestamp': timestamp,
         }
         return email, commit_data
 
@@ -730,6 +750,11 @@ class GithubHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
+        # Bail early if the commit is not allowed
+        ok, timestamp = time_allowed(data['timestamp'])
+        if not ok:
+            return '', None
+        
         author = data.get('author', {})
         email = author.get('email', '')
         name = author.get('name', '')
@@ -740,7 +765,7 @@ class GithubHandler(PostCallbackHandler):
             'email': email,
             'name': name,
             'message': data['message'],
-            'timestamp': utcdatetime(data['timestamp']),
+            'timestamp': timestamp,
         }
         return email, commit_data
     

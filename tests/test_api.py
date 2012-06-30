@@ -9,6 +9,7 @@ from google.appengine.api import memcache
 from google.appengine.ext import db, ndb
 from google.appengine.ext import testbed
 from google.appengine.datastore import datastore_stub_util
+import datetime
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'july.settings'
 
@@ -61,7 +62,7 @@ class WebTestCase(unittest.TestCase):
         os.environ['HTTP_HOST'] = 'localhost'
         self.testbed.init_taskqueue_stub()
         
-        # Set TESTING to True 
+        # reset testing settings
         settings.TESTING = True
         
         # The test application
@@ -366,14 +367,14 @@ class GithubHandlerTests(WebTestCase):
         if location is not None:
             self.assertEqual(location.total, 2)
 
-    def test_testing_mode_off_project_points(self):
+    def test_testing_mode_off(self):
         settings.TESTING = False
         user = self.make_user('chris')
         user.add_auth_id('email:chris@ozmm.org')
         self.app.post('/api/v1/github', self.POST)
         p_key = Project.make_key('http://github.com/defunkt/github')
-        p = p_key.get()
-        self.assertEqual(p.total, 0)
+        # project should not be created
+        self.assertEqual(p_key.get(), None)
     
     def test_testing_mode_off_user_points(self):
         settings.TESTING = False
@@ -381,7 +382,8 @@ class GithubHandlerTests(WebTestCase):
         user.add_auth_id('email:chris@ozmm.org')
         self.app.post('/api/v1/github', self.POST)
         u = User.get_by_auth_id('email:chris@ozmm.org')
-        self.assertEqual(u.total, 0)
+        total = getattr(u, 'total', None)
+        self.assertEqual(total, None)
 
 
 class BitbucketHandlerTests(WebTestCase):
@@ -478,6 +480,24 @@ class BitbucketHandlerTests(WebTestCase):
         if location is not None:
             self.assertEqual(location.total, 1)        
     
+    def test_testing_mode_off(self):
+        settings.TESTING = False
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        u = User.get_by_auth_id('email:marcus@somedomain.com')
+        p_key = Project.make_key('https://bitbucket.org/marcus/project-x/')
+        # project should not be created
+        self.assertEqual(p_key.get(), None)
+    
+    def test_testing_mode_off_user_points(self):
+        settings.TESTING = False
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        u = User.get_by_auth_id('email:marcus@somedomain.com')
+        total = getattr(u, 'total', None)
+        self.assertEqual(total, None)
 
 
 class TestUtils(unittest.TestCase):

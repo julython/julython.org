@@ -201,8 +201,5 @@ else:
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
 
 # TIMES COMMITS SCORE POINTS
-START_DATETIME = None
-END_DATETIME = None
-if not TESTING:
-    START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
-    END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
+START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
+END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
