@@ -59,6 +59,8 @@ def edit_profile(request, username, template_name='people/edit.html'):
     form = EditUserForm(request.POST or None, user=request.user)
     if form.is_valid():
         for key in form.cleaned_data:
+            if key == 'email':
+                continue
             setattr(user, key, form.cleaned_data.get(key))
         slugify(user.location)
         user.put()
