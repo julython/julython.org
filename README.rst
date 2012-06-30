@@ -51,3 +51,9 @@ gist to setup your dev environment to help out::
 
     https://gist.github.com/2839803
 
+In order to set up Twitter authentication:
+
+1. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
+2. ``cp july/settings_local.py.template july/settings_local.py``
+3. Open ``july/settings_local.py`` and add the consumer key and secret provided
+   by Twitter for your app.

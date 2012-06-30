@@ -1,0 +1,7 @@
+# 1. Copy this template file to one that is not tracked by git:
+#   cp july/settings_local.py.template july/settings_local.py
+#
+# 2. Replace these with your key and secret, available at:
+#   https://dev.twitter.com/apps
+TWITTER_CONSUMER_KEY = "your_consumer_key"
+TWITTER_CONSUMER_SECRET = "your_consumer_secret"
