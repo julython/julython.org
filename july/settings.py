@@ -1,5 +1,7 @@
 # Django settings for men project.
 import os
+import datetime
+
 try:
     from secrets import *
 except ImportError:
@@ -174,6 +176,7 @@ if VERSION == '1.1':
     # We are running locally
     MAIN_URL = 'http://localhost:8080/'
     DEBUG = True
+    TESTING = True
     TEMPLATE_DEBUG = DEBUG
     try:
         # allow developers to override url or other settings.
@@ -182,6 +185,7 @@ if VERSION == '1.1':
         pass
 else:
     # Production settings!!
+    TESTING = True
     MAIN_URL = 'http://www.julython.org/'
     STATIC_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
     ADMIN_MEDIA_PREFIX = 'http://d1v9vqkrs9fyao.cloudfront.net/static/admin/'
@@ -196,3 +200,9 @@ else:
 
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
 
+# TIMES COMMITS SCORE POINTS
+START_DATETIME = None
+END_DATETIME = None
+if not TESTING:
+    START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
+    END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)

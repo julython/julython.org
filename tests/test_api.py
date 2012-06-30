@@ -42,6 +42,7 @@ setup_paths()
 from gae_django.auth.models import User
 from july.api import app, make_digest, utcdatetime
 from july.people.models import Commit, Project, Location
+from july import settings
 
 class WebTestCase(unittest.TestCase):
     
@@ -59,7 +60,11 @@ class WebTestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         os.environ['HTTP_HOST'] = 'localhost'
         self.testbed.init_taskqueue_stub()
-
+        
+        # Set TESTING to True 
+        settings.TESTING = True
+        
+        # The test application
         if self.APPLICATION:
             self.app = webtest.TestApp(self.APPLICATION)
 
@@ -266,8 +271,7 @@ class GithubHandlerTests(WebTestCase):
     
     APPLICATION = app
     
-    POST = {'payload':
-        json.dumps({
+    PAYLOAD = {
             "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
             "repository": {
               "url": "http://github.com/defunkt/github",
@@ -306,7 +310,10 @@ class GithubHandlerTests(WebTestCase):
             ],
             "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
             "ref": "refs/heads/master"
-        })
+    }
+    
+    POST = {'payload':
+        json.dumps(PAYLOAD)
     }
     
     def test_post_creates_commits(self):
@@ -358,6 +365,24 @@ class GithubHandlerTests(WebTestCase):
         # TODO: figure out how to test this!
         if location is not None:
             self.assertEqual(location.total, 2)
+
+    def test_testing_mode_off_project_points(self):
+        settings.TESTING = False
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        p_key = Project.make_key('http://github.com/defunkt/github')
+        p = p_key.get()
+        self.assertEqual(p.total, 0)
+    
+    def test_testing_mode_off_user_points(self):
+        settings.TESTING = False
+        user = self.make_user('chris')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        u = User.get_by_auth_id('email:chris@ozmm.org')
+        self.assertEqual(u.total, 0)
+
 
 class BitbucketHandlerTests(WebTestCase):
     
@@ -452,6 +477,8 @@ class BitbucketHandlerTests(WebTestCase):
         # TODO: figure out how to test this!
         if location is not None:
             self.assertEqual(location.total, 1)        
+    
+
 
 class TestUtils(unittest.TestCase):
     
