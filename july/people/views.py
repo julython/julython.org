@@ -5,7 +5,6 @@ from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from google.appengine.ext import ndb
 from django.template.defaultfilters import slugify
-import logging
 
 from gae_django.auth.models import User
 
@@ -25,7 +24,8 @@ def user_profile(request, username):
 def users_by_location(request, location_slug, 
                       template_name='people/people_list.html'):
 
-    users = User.query(User.location_slug == location_slug).fetch(1000)
+    users = User.query(User.location_slug == location_slug)
+    users.order(-ndb.GenericProperty('total')).fetch(1000)
 
     location = Location.get_by_id(location_slug)
     
@@ -35,9 +35,8 @@ def users_by_location(request, location_slug,
 
 def locations(request, template_name='people/locations.html'):
 
-    locations = Location.query().fetch(1000)
+    locations = Location.query().order(-Location.total).fetch(1000)
     
-    logging.info(locations)
     return render_to_response(template_name,
                               {'locations': locations},
                               context_instance=RequestContext(request))
