@@ -1,16 +1,31 @@
 from django import forms
+from django.utils.translation import ugettext_lazy
 import logging
 
 class EditUserForm(forms.Form):
     # Match Twitter
-    first_name = forms.CharField(max_length=255, required=True)
-    last_name = forms.CharField(max_length=255, required=False)
-    description = forms.CharField(label="About me", max_length=160, required=False,
-        widget=forms.TextInput(attrs={'class': 'span6'}))
-    url = forms.CharField(max_length=255, required=False,
-        widget=forms.TextInput(attrs={'class': 'span4'}))
-    location = forms.CharField(max_length=160, required=False)
-    email = forms.EmailField(label="Add Email Address", required=False)
+    first_name = forms.CharField(
+        label=ugettext_lazy('First name'),
+        max_length=255, required=True
+    )
+    last_name = forms.CharField(
+        label=ugettext_lazy('Last name'),
+        max_length=255, required=False
+    )
+    description = forms.CharField(
+        label=ugettext_lazy("About me"), max_length=160, required=False,
+        widget=forms.TextInput(attrs={'class': 'span6'})
+    )
+    url = forms.CharField(
+        label=ugettext_lazy('URL'),
+        max_length=255, required=False,
+        widget=forms.TextInput(attrs={'class': 'span4'})
+    )
+    location = forms.CharField(
+        label=ugettext_lazy('Location'),
+        max_length=160, required=False)
+    email = forms.EmailField(
+        label=ugettext_lazy("Add Email Address"), required=False)
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
@@ -33,12 +48,17 @@ class EditUserForm(forms.Form):
         if not email:
             return None
         if email in self.emails:
-            raise forms.ValidationError("You already have that email address!")
+            error_msg = ugettext_lazy("You already have that email address!")
+            raise forms.ValidationError(error_msg)
         
         # add the email address to the user, this will cause a ndb.put()
         added, _ = self.user.add_auth_id('email:%s' % email)
         if not added:
-            raise forms.ValidationError("This email is already taken, if this is not right please email help@julython.org")
+            error_msg = ugettext_lazy(
+                "This email is already taken, if this is not right please "
+                "email help@julython.org"
+            )
+            raise forms.ValidationError(error_msg)
         
         return email
         

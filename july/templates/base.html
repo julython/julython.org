@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 
+{% load i18n %}
+
 <html lang="en">
   <head>
-    <title>Julython 2012</title>
+    <title>{% trans "Julython 2012" %}</title>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet" type="text/css"/>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'/>
     <link href='http://fonts.googleapis.com/css?family=Doppio+One' rel='stylesheet' type='text/css'/>
@@ -24,11 +26,11 @@
             <a href="/"><img class="logo" alt="julython.org" src="{{ STATIC_URL }}images/julython_logo_small.png"/></a>
             <div class="navbar-links pull-right">
               {% block navbar-links %}
-              <a class="navbar-link" href="{% url help %}">Help</a>
+              <a class="navbar-link" href="{% url help %}">{% trans "Help" %}</a>
               {% if user.is_authenticated %}
               <a class="navbar-link" href="{% url member-profile username=user.username %}"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }}</a>
               {% else %}
-              <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a>
+              <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> {% trans "Sign In With Twitter" %}</a>
               {% endif %}
               {% endblock %}
             </div>
@@ -36,20 +38,22 @@
         </div>
       </div>
     </div>
-    <div class="alert alert-info" style="width:100%;margin-bottom:0;"><strong>Heads Up!</strong> The point system will be cleared on June 30th 12:00 UTC (noon). Only commits after that time will score points. Good luck and have fun!</div>
+    <div class="alert alert-info" style="width:100%;margin-bottom:0;">
+        <strong>{% trans "Heads Up!" %}</strong> {% trans "The point system will be cleared on June 30th 12:00 UTC (noon). Only commits after that time will score points. Good luck and have fun!" %}
+    </div>
     {% endblock %}
 
     {% block content %}
     <div class="container">
       <div class="row">
         <div class="span12">
-          <h1 id="logo">Julython 2012</h1>
+          <h1 id="logo">{% trans "Julython 2012" %}</h1>
         </div>
       </div>
 
       <div class="row">
         <div class="span6 offset3 large-notice">
-          <a href="" class="video">Watch the Video</a>
+          <a href="" class="video">{% trans "Watch the Video" %}</a>
         </div>
       </div>
     </div>
@@ -58,11 +62,11 @@
       <div class="container">
         <div class="row">
           <div class="span6 offset3" id="sticky-bar">
-            <button class="what-is-this">What is This?</button>
-            <button class="participating">Participating</button>
-            <button class="the-rules">The Rules</button>
-            <button class="teaming-up">Teaming Up</button>
-            <button class="spread-the-word">Spread the Word</button>
+            <button class="what-is-this">{% trans "What is This?" %}</button>
+            <button class="participating">{% trans "Participating" %}</button>
+            <button class="the-rules">{% trans "The Rules" %}</button>
+            <button class="teaming-up">{% trans "Teaming Up" %}</button>
+            <button class="spread-the-word">{% trans "Spread the Word" %}</button>
           </div>
         </div>
       </div>
