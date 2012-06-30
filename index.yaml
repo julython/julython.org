@@ -21,3 +21,9 @@ indexes:
   - name: user_id
   - name: action_time
     direction: desc
+
+- kind: User
+  properties:
+  - name: location_slug
+  - name: total
+    direction: desc
