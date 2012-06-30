@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load i18n %}
 
 {% block bodyclass %}profile{% endblock %}
 
@@ -9,12 +10,12 @@
         <div class="span8 offset2">
             <form method="post" action="{% url delete-email user.username email %}" enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
-                   <h2>Are you sure you want to delete this email:</h2>
+                   <h2>{% trans "Are you sure you want to delete this email:" %}</h2>
                    <p>{{ email }}</p>
                 </div>
                 <div class="form-actions">
-                    <input type="submit" class="btn btn-primary" value="Yes Delete" />
-                    <a href="{% url edit-profile user.username %}" class="btn">Cancel</a>
+                    <input type="submit" class="btn btn-primary" value="{% trans "Yes Delete" %}" />
+                    <a href="{% url edit-profile user.username %}" class="btn">{% trans "Cancel" %}</a>
                 </div>            
             </form>
         </div>
