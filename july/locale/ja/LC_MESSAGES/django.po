@@ -1,16 +1,16 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# JAPANESE TRANSLATIONS FOR JULYTHON.ORG.
+# Copyright (C) 2012 JULYTHON.ORG
+# This file is distributed under the same license as the JULYTHON.ORG package.
+# modocache <modocache@gmail.com>, 2012.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-06-30 02:41-0400\n"
+"POT-Creation-Date: 2012-06-30 12:48-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: modocache <modocache@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -72,7 +72,7 @@ msgstr ""
 msgid "Our github"
 msgstr "ウチのgithub"
 
-#: templates/base.html:7 templates/index.html:9
+#: templates/base.html:7 templates/base.html.py:57 templates/index.html:9
 msgid "Julython 2012"
 msgstr "Julython 2012"
 
@@ -80,15 +80,19 @@ msgstr "Julython 2012"
 msgid "Help"
 msgstr "ヘルプ"
 
-#: templates/base.html:33
+#: templates/base.html:32
+msgid "Sign Out"
+msgstr "ログアウト"
+
+#: templates/base.html:39
 msgid "Sign In With Twitter"
 msgstr "Twitterでログイン"
 
-#: templates/base.html:42
+#: templates/base.html:49
 msgid "Heads Up!"
 msgstr "HEY、ユーたち！"
 
-#: templates/base.html:42
+#: templates/base.html:49
 msgid ""
 "The point system will be cleared on June 30th 12:00 UTC (noon). Only commits "
 "after that time will score points. Good luck and have fun!"
@@ -96,27 +100,27 @@ msgstr ""
 "一旦6月30日の12時（UTC）をもってみんなのポイントが0にリセットされちゃいます。"
 "その後ならどんどんコミットして稼げるからがんばってねー！グッド・ラック！"
 
-#: templates/base.html:56
+#: templates/base.html:63
 msgid "Watch the Video"
 msgstr "動画を見る"
 
-#: templates/base.html:65 templates/index.html:27
+#: templates/base.html:72 templates/index.html:27
 msgid "What is This?"
 msgstr "なんじゃこりゃ？"
 
-#: templates/base.html:66 templates/index.html:28
+#: templates/base.html:73 templates/index.html:28
 msgid "Participating"
 msgstr "参加するには？"
 
-#: templates/base.html:67 templates/index.html:29
+#: templates/base.html:74 templates/index.html:29
 msgid "The Rules"
 msgstr "ルールとか"
 
-#: templates/base.html:68 templates/index.html:30
+#: templates/base.html:75 templates/index.html:30
 msgid "Teaming Up"
 msgstr "ダチと組む"
 
-#: templates/base.html:69 templates/index.html:31
+#: templates/base.html:76 templates/index.html:31
 msgid "Spread the Word"
 msgstr "ダチに知らせる"
 
