@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load i18n %}
 
 {% block bodyclass %}profile{% endblock %}
 
@@ -7,7 +8,7 @@
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
-            <h1 class="user">Player 1_</h1>
+            <h1 class="user">{% trans "Player 1_" %}</h1>
             <form method="post" action="." enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
                 {% for field in form %}
@@ -21,11 +22,11 @@
                 {% endfor %}
                 {% if form.emails %}
                 <div class="control-group{% if field.errors %} error{% endif %}">
-                    <label>Existing emails</label>
+                    <label>{% trans "Existing emails" %}</label>
                     <div class="controls">
                         <ul>
                             {% for email in form.emails %}
-                            <li>{{ email }} <a href="{% url delete-email user.username email %}" class="delete">delete</a></li>
+                            <li>{{ email }} <a href="{% url delete-email user.username email %}" class="delete">{% trans "delete" %}</a></li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -33,8 +34,8 @@
                 {% endif %}
                 </div>
                 <div class="form-actions">
-                    <input type="submit" class="btn btn-primary" value="Save" />
-                    <a href=".." class="btn">Cancel</a>
+                    <input type="submit" class="btn btn-primary" value="{% trans "Save" %}" />
+                    <a href=".." class="btn">{% trans "Cancel" %}</a>
                 </div>            
             </form>
         </div>

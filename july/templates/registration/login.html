@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+
 {% block content %}
 <div class="container">
 <div class="row">
     <div class="span-8">
         
-    <h2>Sign in</h2>
+    <h2>{% trans "Sign in" %}</h2>
     
     <form method="post" action=".">
     {% csrf_token %}
@@ -24,19 +26,23 @@
     {% endfor %}
     
     <div class="actions">
-        <input type='submit' class='btn primary' value='{% firstof title "submit" %}' />
-        <a href="{% if cancel_url %}{{ cancel_url }}{% else %}../{% endif %}">Cancel</a>
+        {% if title %}
+          <input type='submit' class='btn primary' value='{{ title }}' />
+        {% else %}
+          <input type='submit' class='btn primary' value='{% trans "Submit" %}' />
+        {% endif %}
+        <a href="{% if cancel_url %}{{ cancel_url }}{% else %}../{% endif %}">{% trans "Cancel" %}</a>
     </div>
     </fieldset>
         
     </form>
     </div>
     <div class="span-4">
-        <h2>Social Media Yo</h2>
-        <a href="/accounts/twitter/signin/" class="btn primary">Sign in with Twitter</a>
+        <h2>{% trans "Social Media Yo" %}</h2>
+        <a href="/accounts/twitter/signin/" class="btn primary">{% trans "Sign in with Twitter" %}</a>
         
-        <h2>I don't have an account</h2>
-        <a href="/accounts/twitter/" class="btn primary">Sign up with Twitter</a>
+        <h2>{% trans "I don't have an account" %}</h2>
+        <a href="/accounts/twitter/" class="btn primary">{% trans "Sign up with Twitter" %}</a>
     </div>
 </div>    
 </div>
