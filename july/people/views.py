@@ -7,7 +7,8 @@ from django.template.defaultfilters import slugify
 
 from gae_django.auth.models import User
 
-from july.people.models import Commit, Location
+from july.people.models import Commit, Location, Project
+from google.appengine.ext.ndb.query import Cursor
 
 def user_profile(request, username):
     user = User.get_by_auth_id('twitter:%s' % username)
@@ -39,7 +40,24 @@ def locations(request, template_name='people/locations.html'):
     return render_to_response(template_name,
                               {'locations': locations},
                               context_instance=RequestContext(request))
- 
+
+def projects(request, template_name='projects/index.html'):
+    limit = 100
+    cursor = request.GET.get('cursor')
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+    
+    query = Project.query().order(-Project.total)
+    
+    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
+    
+    return render_to_response(template_name,
+        {'projects': models, 'next': next_cursor, 'more': more},
+        context_instance=RequestContext(request))
+
+def project_details(request, slug, template_name='projects/details.html'):
+    pass
+
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
