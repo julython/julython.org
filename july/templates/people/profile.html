@@ -42,7 +42,7 @@
                             <li><a href="{% url member-profile username=profile.username %}" class="active">{% trans "Commits" %}</a></li>
                             <li><a href="{% url user-projects username=profile.username %}">{% trans "Projects" %}</a></li>
                             {% if profile.username == user.username %}
-                            <li><a href="{% url edit-profile username=user.username %}">{% trans "Edit Profile" %}</a></li>
+                            <li><a href="{% url edit-profile username=profile.username %}">{% trans "Edit Profile" %}</a></li>
                             {% endif %}
                             <li class="search pull-right">
                                 <form class="navbar-form">
