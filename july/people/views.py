@@ -73,7 +73,17 @@ def projects(request, template_name='projects/index.html'):
         context_instance=RequestContext(request))
 
 def project_details(request, slug, template_name='projects/details.html'):
-    pass
+    project_key = ndb.Key('Project', slug)
+    project = project_key.get()
+    if project is None:
+        raise Http404("Project Not Found.")
+    
+    # TODO: pagination
+    users = User.query().filter(ndb.GenericProperty('projects') == project.url).fetch(1000)
+    
+    return render_to_response(template_name,
+        {'project': project, 'users': users},
+        context_instance=RequestContext(request))
 
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
