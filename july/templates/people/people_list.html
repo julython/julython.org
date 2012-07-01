@@ -15,7 +15,11 @@
               {% if location %} 
               <h3>{{ location }}</h3>
               <p>
+                {% if location.projects %}
                 {% blocktrans count number_of_projects=location.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                {% else %}
+                {% trans "No Projects" %}
+                {% endif %}
               </p>
               {% else %}
               <h3>{{ slug }}</h3>
