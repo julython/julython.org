@@ -3,10 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from django.template import Context
 from django.conf import settings
-from django.core.cache import cache
 from django.http import HttpResponseRedirect
 
-from july.pages.models import Section
 
 def index(request):
     """Render the home page"""

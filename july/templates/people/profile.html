@@ -1,8 +1,14 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+
 {% block bodyclass %}profile{% endblock %}
 
 {% block contentheader %}
+
+{# Used within blocktrans #}
+{% url edit-profile username=user.username as edit_profile_url %}
+
 <div class="container" id="contents">
         <div class="row">
             <div class="span10 offset1">
@@ -12,10 +18,10 @@
                     </div>
                     <div class="user span6">
                         <h1>{{ profile }}</h1>
-                        <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}Python Hacker{% endif %}</p>
+                        <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
                         <ul class="user-links">
                             <li class="twitter">
-                                <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">Follow</a>
+                                <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
                                 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
                             </li>
                             {% if profile.url %}
@@ -28,19 +34,19 @@
                     </div>
                     <div class="points pull-right">
                         <p>{% firstof profile.total '0' %}</p>
-                        <p class="small">points</p>
+                        <p class="small">{% trans "points" %}</p>
                         
                     </div>
                 <div class="subnav">
                         <ul class="nav nav-pills">
-                            <li><a href="{% url member-profile username=user.username %}" class="active">Commits</a></li>
-                            <li><a href="{% url user-projects username=user.username %}">Projects</a></li>
+                            <li><a href="{% url member-profile username=user.username %}" class="active">{% trans "Commits" %}</a></li>
+                            <li><a href="{% url user-projects username=user.username %}">{% trans "Projects" %}</a></li>
                             {% if profile.username == user.username %}
-                            <li><a href="{% url edit-profile username=user.username %}">Edit Profile</a></li>
+                            <li><a href="{% url edit-profile username=user.username %}">{% trans "Edit Profile" %}</a></li>
                             {% endif %}
                             <li class="search pull-right">
                                 <form class="navbar-form">
-                                    <input type="text" class="search-query" placeholder="Search my commits">
+                                    <input type="text" class="search-query" placeholder="{% trans "Search my commits" %}">
                                 </form>
                             </li>
                         </ul>
@@ -78,45 +84,20 @@
         {% if profile.username != user.username %}
         <div class="row">
             <div class="span10">
-              <h2 class="spread-the-word">Still preparing for lift off!</h2>
-              <p class="lead">This user has not committed to any project yet.</p>
+              <h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>
+              <p class="lead">{% trans "This user has not committed to any project yet." %}</p>
             </div>
         </div>
         {% else %}
           <div class="row">
             <div class="span10">
-              <h2 class="spread-the-word">Let's get started!</h2>
-              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.</p>
+              <h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
+              <p class="lead">
+                {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
+              </p>
             </div>
           </div>
-          <div class="row">
-            <div class="span5 section-blurb">
-              <h3>Github</h3>
-              <p>If you host your project on github, follow the instructions below to setup a post recieve hook.</p>
-              <ol>
-                  <li>Go to your project on <a href="http://github.com">github</a>.</li>
-                  <li>Select the 'Admin' button at the top of the project dashboard.</li>
-                  <li>Select 'Service Hooks' on the left menu.</li>
-                  <li>In 'Available service hooks' select 'Webhook URLs'.</li>
-                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/github</pre></li>
-                  <li>Select 'Update Settings'</li>
-              </ol>
-              <p>You can test it out by selecting 'WebHook URLs' again and choosing 'Test Hook'.  Or you can try pushing a commit to your repository.</p>
-            </div>
-            <div class="span5 section-blurb">
-              <h3>Bitbucket</h3>
-              <p>If you host your project on bitbucket, follow the instructions below to setup a post recieve hook.</p>
-              <ol>
-                  <li>Go to your project on <a href="http://bitbucket.org">bitbucket</a>.</li>
-                  <li>Select the 'Admin' admin tab on your project dashboard.</li>
-                  <li>Select 'Services' on the left menu.</li>
-                  <li>In the 'Select a service' dropdown select or type 'POST' then 'Add service'.</li>
-                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/bitbucket</pre></li>
-                  <li>Select 'Save Settings'</li>
-              </ol>
-              <p>You can test it out by pushing a commit to your repository.</p>
-            </div>
-          </div>
+          {% include "includes/hook-instructions.html" %}
         {% endif %}
       {% endif %}
     </div>

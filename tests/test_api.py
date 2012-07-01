@@ -5,8 +5,7 @@ import webtest
 import os
 import logging
 
-from google.appengine.api import memcache
-from google.appengine.ext import db, ndb
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from google.appengine.datastore import datastore_stub_util
 import datetime

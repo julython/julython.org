@@ -51,3 +51,24 @@ gist to setup your dev environment to help out::
 
     https://gist.github.com/2839803
 
+In order to set up Twitter authentication:
+
+1. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
+2. ``cp july/secrets.py.template july/secrets.py``
+3. Open ``july/secrets.py`` and add the consumer key and secret provided
+   by Twitter for your app.
+
+In order to maintain internationalization (i18n) support, please try
+to make sure and run the following command after changing any translated text:
+
+    $ django-admin.py makemessages
+
+If you can, edit the accompanying message files (you'll find them in
+``july/locale`` with an extension of ``.po``), then run:
+
+    $ django-admin.py compilemessages
+
+Ping the following developers in your pull request or commit message
+if you'd like to have new strings translated:
+
+- ``locale/ja``: `modocache <https://github.com/modocache>`_
