@@ -6,3 +6,4 @@
 secrets.py
 settings_local.py
 build/
+.venv
