@@ -41,13 +41,21 @@ def user_profile(request, username):
 def users_by_location(request, location_slug, 
                       template_name='people/people_list.html'):
 
-    users = User.query(User.location_slug == location_slug)
-    users.order(-ndb.GenericProperty('total')).fetch(1000)
+    limit = 100
+    cursor = request.GET.get('cursor')
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+
+    query = User.query(User.location_slug == location_slug)
+    query = query.order(-ndb.GenericProperty('total'))
+        
+    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
 
     location = Location.get_by_id(location_slug)
-    
     return render_to_response(template_name, 
-                             {'users':users, 'location': location, 'slug': location_slug}, 
+                             {'next':next_cursor, 'more':more, 
+                              'users':models,
+                              'location': location, 'slug': location_slug}, 
                              context_instance=RequestContext(request)) 
 
 def locations(request, template_name='people/locations.html'):
