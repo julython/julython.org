@@ -1,0 +1,635 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <fmtech@gmail.com>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-07-01 09:49-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?"
+"2:1))\n"
+
+#: people/forms.py:7
+msgid "First name"
+msgstr "Prenume"
+
+#: people/forms.py:11
+msgid "Last name"
+msgstr "Nume de familie"
+
+#: people/forms.py:15
+msgid "About me"
+msgstr "Despre Mine"
+
+#: people/forms.py:19
+msgid "URL"
+msgstr "URL"
+
+#: people/forms.py:24
+msgid "Location"
+msgstr "Zona"
+
+#: people/forms.py:27
+msgid "Add Email Address"
+msgstr "Adresa de Email"
+
+#: people/forms.py:50
+msgid "You already have that email address!"
+msgstr "Adresa aceasta de email exista deja!"
+
+#: people/forms.py:57
+msgid ""
+"This email is already taken, if this is not right please email help@julython."
+"org"
+msgstr "Aceasta adresa de email a fost folosita in sytem. Daca ai nedumeriri te rog contacteaza help@julython.org"
+
+#: templates/404.html:7
+msgid "Some hot 404 action right here."
+msgstr "Hmmm, ceva 404 actiune se antamla aici."
+
+#: templates/404.html:12
+msgid "Whoops page not found!"
+msgstr "Hopa, aceasa pagina nu exista!"
+
+#: templates/404.html:13
+msgid "If you feel this page should exist, submit a pull request."
+msgstr "Daca crezi ca aceasta pagina ar trebui sa existe fa un pull request"
+
+#: templates/404.html:14
+msgid "Our github"
+msgstr "Github-ul nostru."
+
+#: templates/base.html:7 templates/base.html.py:47 templates/index.html:9
+msgid "Julython 2012"
+msgstr "Julython 2012"
+
+#: templates/base.html:29
+msgid "Help"
+msgstr "Ajutor"
+
+#: templates/base.html:33
+msgid "Sign In With Twitter"
+msgstr "Inregistreaza-te cu Twitter"
+
+#: templates/base.html:53
+msgid "Watch the Video"
+msgstr "Uita-te la Video"
+
+#: templates/base.html:62 templates/index.html:27
+msgid "What is This?"
+msgstr "Ce este Julython?"
+
+#: templates/base.html:63 templates/index.html:28
+msgid "Participating"
+msgstr "Cum poti sa participi."
+
+#: templates/base.html:64 templates/index.html:29
+msgid "The Rules"
+msgstr "Reguli de participare"
+
+#: templates/base.html:65 templates/index.html:30
+msgid "Teaming Up"
+msgstr "Colaboreaza"
+
+#: templates/base.html:66 templates/index.html:31
+msgid "Spread the Word"
+msgstr "Comunica"
+
+#: templates/help.html:17
+msgid "Help me get started!"
+msgstr "Ajuta-ma sa incep!"
+
+#: templates/help.html:20 templates/people/profile.html:96
+#, python-format
+msgid ""
+"First <a href=\"%(edit_profile_url)s\">edit your profile</a> and add all the "
+"email addresses you use to commit with.  This is how we'll identify you, we "
+"will not display or share this information."
+msgstr ""
+"Prima data <a href=\"%(edit_profile_url)s\">editeaza-ti profilul</a> si adauga"
+"toate adresele de email pe care le folosesti sa faci commit-uri. In felul acesta"
+"putem sa te identificam si sa aratam altora la ce proiect lucrezi."
+
+#: templates/help.html:24 templates/help.html.py:91
+msgid ""
+"First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/"
+"signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>"
+msgstr ""
+"Prima data <a class='signin btn btn-mini btn-info' href='/accounts/twitter/"
+"signin/'><i class='icon-user icon-write'></i> Inregistreaza-te cu Twitter</a>"
+
+#: templates/help.html:46
+msgid "How are points scored?"
+msgstr "Cum poti sa inscrii puncte?"
+
+#: templates/help.html:47
+msgid ""
+"Points are awarded to the committer, the project, and optionally to the "
+"location the user has specified in his/her profile."
+msgstr ""
+"Punctele sant acordate pe proiect cand faci commit si optional"
+"pe zona unde locuiesti  specificata in profilul tau." 
+
+#: templates/help.html:52 templates/people/profile.html:42
+msgid "Commits"
+msgstr "Commit-uri"
+
+#: templates/help.html:53
+msgid ""
+"You can score points by commited to a project that has a <a "
+"href='#webhook'>web hook</a> setup. Each commit is worth 1 point."
+msgstr ""
+"Poti sa inscrii puncte pentru fiecare proiect la care faci commit si care"
+"are un <a href='#webhook'>web hook</a> setat. Fiecare commit valoreasa 1 punct."
+
+#: templates/help.html:56
+msgid "New Projects"
+msgstr "Noi Proiecte"
+
+#: templates/help.html:58
+msgid ""
+"Everytime a new project is added via <a href='#webhook'>web hook</a> points "
+"are awarded. Each new project is worth 10 points."
+msgstr ""
+"De fiecare data can un proiect este adaugat prin <a href='#webhook'>web hook</a> puncte"
+"inscrii puncte. Fiecare proiect valoreaza 10 puncte."
+
+#: templates/help.html:71
+msgid "When will my points count?"
+msgstr "Cand punctele mele vor avea valoare?"
+
+#: templates/help.html:72
+msgid ""
+"The site is open right now and in testing mode. On June 30th the points will "
+"be reset to zero. You should use your local time to 'start' at midnight the "
+"morning of July 1st, and 'end' at midnight the night of July 31st."
+msgstr ""
+"Web site-ul este lansat acum in testing mode. Pe 30 iunie toate punctele"
+"vor fi resetate la zero. Foloseste timpul local al Romaniei sa incepi sa participi"
+"de pe 1 Iulie de dimineata pana pe 31 Iulie la miezul noptii."  
+
+#: templates/help.html:84
+msgid "How do I set my location?"
+msgstr "Cum setez zona unde stau?"
+
+#: templates/help.html:87
+#, python-format
+msgid ""
+"First <a href=\"%(edit_profile_url)s\">edit your profile</a> and add your "
+"location."
+msgstr ""
+"Prima data <a href=\"%(edit_profile_url)s\">editeaza-ti profilul</a> si adauga"
+"zona unde stai."
+
+#: templates/help.html:95
+msgid ""
+"The location is a free form field, so it is really up to you to enter it "
+"property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/"
+"templates/builtins/#slugify'>slugify</a> the contents of this field so "
+"'Austin, TX' and 'austin TX' are turned into 'austin-tx'"
+msgstr ""
+"Poti pune orice in camp dar din cauza ca folosim <a href='https://docs."
+"djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a>"
+"de exemplu 'Bucuresti, Romania' va fi transformat in 'bucuresti-romania'"
+
+#: templates/index.html:42
+msgid "Why are you people making up words?"
+msgstr "De ce inventati cuvinte?"
+
+#: templates/index.html:47
+msgid "We all have those Python projects..."
+msgstr "Noi toti avem proiectele alea Python..."
+
+#: templates/index.html:48
+msgid ""
+"You know, the ones that have been sitting on our hard drives collecting "
+"dust, with perhaps a few __init__.py files and maybe a TODO. But being busy "
+"people, we're content to just promise at some point we'll make time to work "
+"on it..."
+msgstr ""
+"Toti avem proiectele alea care colecteasa praf pe hardiscuri sau poate in"
+"vreo cateva __init__.py sau poate in lista cu proiecte care am vrea sa le facem."
+"Dar din cauza ca santem foate ocupati ne promitem ca o sa ne apucam de el candva..."
+
+#: templates/index.html:51
+msgid "So make the time."
+msgstr "A venit timpul sa-l incepem."
+
+#: templates/index.html:52
+msgid ""
+"This summer, during the <a href='/help/#times'>month of July</a>, we're "
+"encouraging developers of all skill levels to try and work on your pet "
+"project(s) just a little each day. It's a great excuse to contribute to the "
+"communities you follow, or even dive into the language for the first time!"
+msgstr ""
+"In aceasa vara in timpul <a href='/href/#times'>lunii Iulie</a> incurajam"
+"toti developerii din lume fiecare cu nivelul lui de cunostinte sa lucreze"
+"la un proiect Python un pic in fiecare zi. Este o scuza excelenta sa"
+"contribui la comunitate Python care-ti place sau chiar sa te apuci sa programezi"
+"pentru primia data!"
+
+
+#: templates/index.html:78
+msgid "I'm interested. How do I make this happen?"
+msgstr "Sant interesat. Cum pot sa incep?"
+
+#: templates/index.html:83
+msgid "It's totally up to you."
+msgstr "Poti incape cum vrei tu."
+
+#: templates/index.html:84
+msgid ""
+"What you do during Julython is ultimately up to you. Been hankerin' to play "
+"with ZeroMQ, NumPy or Riak? Now's your chance. Have a Django or Tornado web "
+"app you've always wanted to build? <a href='/help/#get-started'>Go hog wild</"
+"a>."
+msgstr ""
+"Ce faci in timpul Julython-ului depinde complet de tine. Te gandeai sa incerci"
+"ZeroMQ, NumPy sau Riak? Acum este momentul. Ai un proiect in Django sau Tornado"
+"app la care ai vrut sa lucrezi? <a href='/help/#get-started'>Incepe-l acum!</a>."
+
+
+#: templates/index.html:87
+msgid "However, it's good to share."
+msgstr "Oricum e bine sa fie open source."
+
+#: templates/index.html:88
+msgid ""
+"We recommend you work on something open, perhaps on GitHub or Bitbucket, so "
+"that others can see your progress. Then <a href='/help/#webhook'>add a "
+"webhook</a> for your repository, and we'll track your progress next to "
+"everyone else!"
+msgstr ""
+"Noi recomandam sa lucrezi la un poriect open source pe Github sau Bitbucket"
+"ca alti developeri sa vada progresul. Apoi adauga <a href='/help/#webhook'>un webhook</a>"
+"la repository-ul tau."
+
+#: templates/index.html:102
+msgid "What are the rules?"
+msgstr "Care sant regulile?"
+
+#: templates/index.html:107
+msgid "There are no rules!"
+msgstr "Nu este nici-o regula!"
+
+#: templates/index.html:108
+msgid ""
+"Okay, just one rule, it has to be a Python project. Of course you can work "
+"on some javascript to make you web apps. But, the heart of the project "
+"should be Python. Of course we wont check every commit (or maybe none at "
+"all) so you could do anything you want."
+msgstr ""
+"Okay, este doar o singura regula. Trebuie sa fie un proiect facut in Python."
+"Desigur poti avea si javascript daca este un proirct pentru web dar partea"
+"principala a proiectului trebuie sa fie Python. Desigur ca nu o sa ne uitam"
+"la fiecare commit care-l subscrii asa ca poti face orice vrei."
+
+#: templates/index.html:111
+msgid "Whats in it for me?"
+msgstr "Ce pot castiga?"
+
+#: templates/index.html:112
+msgid ""
+"Fame and fortune! The goal is that you either learn something new or meet "
+"someone who is also interested in similar Python tools. If you share your "
+"repository or your commits with us, we will <a href='/help/#points'>tally up "
+"points</a> for each commit or new project you work on."
+msgstr ""
+"Faima si Avere! Scopul este da a invata ceva nou sau poate de a intalni pe"
+"cineva cu acelasi interese in Python tools. Daca impartasesti la ce lucrezi"
+"cu noi, repository sau commits vei castiga <a href='/help/#points'>puncte</a>"
+"pentru fiecare commit sau nou proiect la care lucrezi."
+
+#: templates/index.html:115
+msgid "Can I work on an existing project?"
+msgstr "Pot sa lucrez la un proiect deja inceput?"
+
+#: templates/index.html:116
+msgid ""
+"Yes! But you will only get 'credit' for commits <a href='/help/"
+"#times'>within the month of July</a>. You should consider forking an "
+"existing project if you are not the owner and register that fork."
+msgstr ""
+"Desigur! Dar vei castiga puncte numai pentru commit-urile <a href="
+"'/help/#times'>pe care le faci in luna Iulie</a>. Considera sa faci"
+"un fork la un proiect existent daca nu esti autorul intial si"
+"inregistreaza fork-ul respectiv."
+
+#: templates/index.html:130
+msgid "Joining Forces"
+msgstr "Sa ne unim fortele"
+
+#: templates/index.html:135
+msgid "Local is in"
+msgstr "Local este in"
+
+#: templates/index.html:136
+msgid ""
+"We encourage everyone to team up, our goal is to have meetups organically "
+"created in cites across the country. There should be participants meeting in "
+"a coffee shop or bar near you. We'll have a way to post a meeting and "
+"location and you can search for something close by."
+msgstr ""
+"Incurajam pe fiecare sa lucreze impreuna si sa se intalneasca"
+"neoficial (ca prieteni) peste tot in tara. De exemplu intrunirea poate fi"
+"la o cafenea sau la un bar cu access la Internet. Vom avea o modalitate"
+"de a publica intruniri si locuri aproape de tine." 
+
+#: templates/index.html:139
+msgid "Cities against cities"
+msgstr "Orase contra Orase"
+
+#: templates/index.html:140
+msgid ""
+"So you think your city has the most committed Python programmers? Be sure to "
+"sign up to have your commits go toward your home town. We will see <a href='/"
+"location/'>which cities are the most committed</a>."
+msgstr ""
+"Crezi ca orasul tau are cei mai buni programadori in Python? Asigura sa"
+"inscrii toate commit-urile in numele orasului unde locuiesti. Vei putea"
+"vedea <a href='/location/>care orase au cele mai multe puncte</a>."
+
+#: templates/index.html:143
+msgid "Frameworks against Frameworks"
+msgstr "Frameworks contra Frameworks"
+
+#: templates/index.html:144
+msgid ""
+"Already work on some fancy web framework? Be sure to fork the project and <a "
+"href='/help/#webhook'>add a webhook</a>. At the end we will add up all the "
+"points and award them to the parent project, then we'll see how well each "
+"project ranks against others. A dance-off will decide the winners in the "
+"event of a tie."
+msgstr ""
+"Lucrezi deja intr-un web framework care-ti place? Fa un fork la proiect"
+"si <a href='/help/#webhook'>adauga un webhook</a>. La sfarsit vom aduna"
+"toate punctele si le vom acorda proiectului original. In felul aceasta"
+"vom putea compara proiectele intre ele."
+
+
+#: templates/index.html:158
+msgid "Good News Travels Fast"
+msgstr "Vestile Bune Se Raspandesc Rapid"
+
+#: templates/index.html:163
+msgid "Twitter"
+msgstr "Twitter"
+
+#: templates/index.html:164
+msgid "Follow @julython"
+msgstr "Follow @julython"
+
+#: templates/index.html:168
+msgid "Facebook"
+msgstr "Facebook"
+
+#: templates/index.html:169
+msgid "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>"
+msgstr "Like us pe <a href='http://www.facebook.com/julython'>Facebook</a>"
+
+#: templates/index.html:172 templates/includes/hook-instructions.html:12
+msgid "Github"
+msgstr "Github"
+
+#: templates/index.html:173
+msgid ""
+"We love sharing code, follow us on <a href='http://github.com/"
+"julython'>github</a>."
+msgstr ""
+"Urmareste-ne pe <a href='http://github.com/julython'>github</a>."
+
+#: templates/includes/hook-instructions.html:6
+msgid "How do I add a web hook for my project?"
+msgstr "Cum pot sa adaug un web hook la proiectul meu?"
+
+#: templates/includes/hook-instructions.html:14
+msgid ""
+"If you host your project on github, follow the instructions below to setup a "
+"post recieve hook."
+msgstr ""
+"Daca ai proiectul pe github urmareste instructiunile de mai jos sa setezi"
+"un post receive hook."
+
+#: templates/includes/hook-instructions.html:17
+msgid "Go to your project on <a href='http://github.com'>github</a>."
+msgstr "Du-te la poriectul tau pe <a href='http://github.com'>github</a>."
+
+#: templates/includes/hook-instructions.html:18
+msgid "Select the 'Admin' button at the top of the project dashboard."
+msgstr "Apasa pe butonul 'Admin' aflat in partea de sus a proiectului."
+
+#: templates/includes/hook-instructions.html:19
+msgid "Select 'Service Hooks' on the left menu."
+msgstr "Selecteaza 'Service Hooks' din meniul din partea stanga."
+
+#: templates/includes/hook-instructions.html:20
+msgid "In 'Available service hooks' select 'Webhook URLs'."
+msgstr "In 'Available service hooks' selecteaza 'Webhook URLs'."
+
+#: templates/includes/hook-instructions.html:21
+msgid "Enter the URL: <pre>http://www.julython.org/api/v1/github</pre>"
+msgstr "Pune adresa: <pre>http://www.julython.org/api/v1/github</pre>"
+
+#: templates/includes/hook-instructions.html:22
+msgid "Select 'Update Settings'"
+msgstr "Apasa 'Update Settings'"
+
+#: templates/includes/hook-instructions.html:25
+msgid ""
+"You can test it out by selecting 'WebHook URLs' again and choosing 'Test "
+"Hook'. Or you can try pushing a commit to your repository."
+msgstr ""
+"Sa testezi apasa 'WebHook URLs' inca o data apoi 'Test Hook' sau"
+"fa un commit in repository-ul tau."
+
+#: templates/includes/hook-instructions.html:29
+msgid "Bitbucket"
+msgstr "Bitbucket"
+
+#: templates/includes/hook-instructions.html:31
+msgid ""
+"If you host your project on bitbucket, follow the instructions below to "
+"setup a post recieve hook."
+msgstr ""
+"Daca proiectul tau este pe bitbucket, urmareste instructiunile de mai jos "
+"sa setezi un post receive hook."
+
+#: templates/includes/hook-instructions.html:34
+msgid "Go to your project on <a href='http://bitbucket.org'>bitbucket</a>."
+msgstr "Du-te la proiectul tau pe <a href='http://bitbucket.org'>bitbucket</a>."
+
+#: templates/includes/hook-instructions.html:35
+msgid "Select the 'Admin' admin tab on your project dashboard."
+msgstr "Selecteaza tab-ul 'Admin' din proiectul tau."
+
+#: templates/includes/hook-instructions.html:36
+msgid "Select 'Services' on the left menu."
+msgstr "Selecteaza 'Services' din meniul din stanga."
+
+#: templates/includes/hook-instructions.html:37
+msgid ""
+"In the 'Select a service' dropdown select or type 'POST' then 'Add service'."
+msgstr ""
+"In 'Select a service' selecteaza tipul 'POST' si apoi 'Add service'."
+
+#: templates/includes/hook-instructions.html:38
+msgid "Enter the URL: <pre>http://www.julython.org/api/v1/bitbucket</pre>"
+msgstr "Introdu adresa: <pre>http://www.julython.org/api/v1/bitbucket</pre>"
+
+#: templates/includes/hook-instructions.html:39
+msgid "Select 'Save Settings'"
+msgstr "Apasa pe 'Save Settings'"
+
+#: templates/includes/hook-instructions.html:41
+msgid "You can test it out by pushing a commit to your repository."
+msgstr "Ca sa testezi fa un commit in repository-ul tau."
+
+#: templates/people/delete_email.html:13
+msgid "Are you sure you want to delete this email:"
+msgstr "Esti sigur ca vrei sa stergi acest email:"
+
+#: templates/people/delete_email.html:17
+msgid "Yes Delete"
+msgstr "Da Sterge-l"
+
+#: templates/people/delete_email.html:18 templates/people/edit.html:38
+#: templates/registration/login.html:34
+msgid "Cancel"
+msgstr "Inchide"
+
+#: templates/people/edit.html:11
+msgid "Player 1_"
+msgstr "Player 1_"
+
+#: templates/people/edit.html:25
+msgid "Existing emails"
+msgstr "Email-urile existente"
+
+#: templates/people/edit.html:29
+msgid "delete"
+msgstr "sterge"
+
+#: templates/people/edit.html:37
+msgid "Save"
+msgstr "Salveaza"
+
+#: templates/people/locations.html:9
+msgid "Locations"
+msgstr "Zona"
+
+#: templates/people/locations.html:15 templates/people/people_list.html:18
+#: templates/people/people_list.html:36 templates/projects/details.html:30
+#, python-format
+msgid "%(number_of_projects)s project"
+msgid_plural "%(number_of_projects)s projects"
+msgstr[0] "%(number_of_projects)s proiect"
+msgstr[1] "%(number_of_projects)s proiecte"
+
+#: templates/people/locations.html:20 templates/people/people_list.html:26
+#: templates/people/people_projects.html:20 templates/people/profile.html:37
+#: templates/projects/details.html:20 templates/projects/index.html:18
+msgid "points"
+msgstr "puncte"
+
+#: templates/people/people_list.html:14
+msgid "All locations"
+msgstr "Toate zonele"
+
+#: templates/people/people_list.html:35 templates/projects/details.html:29
+#, python-format
+msgid "%(number_of_points)s points in "
+msgid_plural "%(number_of_points)s point in "
+msgstr[0] "%(number_of_points)s puncte in "
+msgstr[1] "%(number_of_points)s punct in"
+
+#: templates/people/people_projects.html:11
+msgid "No Projects Yet!"
+msgstr "Nici-un Proiect Inca!"
+
+#: templates/people/people_projects.html:11
+msgid "Your Projects"
+msgstr "Proiectele Tale"
+
+#: templates/people/people_projects.html:24
+msgid "Project Page"
+msgstr "Proiect"
+
+#: templates/people/people_projects.html:35
+msgid ""
+"Projects will automatically be added when you make commits to projects for "
+"which you have configured the Julython post-commit hooks.  If you need some "
+"help setting up web hooks, check out the <a href='/help/'>help page!</a>"
+msgstr ""
+"Proiectele vor fi adaugate automat cand vei face commits la proiectele tale"
+"pe care le-ai configurat pentru Julython post-commit hooks. Daca ai nevoie "
+"de ajutor sa setezi web hooks, du-te la <a href='/help/'>pagina help!</a>"
+
+#: templates/people/profile.html:21
+msgid "Python Hacker"
+msgstr "Python Hacker"
+
+#: templates/people/profile.html:24
+msgid "Follow"
+msgstr "Follow"
+
+#: templates/people/profile.html:43 templates/projects/index.html:9
+msgid "Projects"
+msgstr "Proiecte"
+
+#: templates/people/profile.html:45
+msgid "Edit Profile"
+msgstr "Editaza-ti Profilul"
+
+#: templates/people/profile.html:49
+msgid "Search my commits"
+msgstr "Cauta commit-urile mele"
+
+#: templates/people/profile.html:87
+msgid "Still preparing for lift off!"
+msgstr "Inca ma pregatesc!"
+
+#: templates/people/profile.html:88
+msgid "This user has not committed to any project yet."
+msgstr "Acest untilizator nu a facut nici-un commit inca"
+
+#: templates/people/profile.html:94
+msgid "Let's get started!"
+msgstr "Hai sa incepem!"
+
+#: templates/projects/details.html:14
+msgid "All projects"
+msgstr "Toate proiectele"
+
+#: templates/registration/login.html:10
+msgid "Sign in"
+msgstr "Sign in"
+
+#: templates/registration/login.html:32
+msgid "Submit"
+msgstr "Submit"
+
+#: templates/registration/login.html:41
+msgid "Social Media Yo"
+msgstr "Socal Media Yo"
+
+#: templates/registration/login.html:42
+msgid "Sign in with Twitter"
+msgstr "Fa login cu Twitter"
+
+#: templates/registration/login.html:44
+msgid "I don't have an account"
+msgstr "Nu am un cont"
+
+#: templates/registration/login.html:45
+msgid "Sign up with Twitter"
+msgstr "Inscrie-te cu Twitter"
