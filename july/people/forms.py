@@ -1,5 +1,4 @@
 from django import forms
-import logging
 
 class EditUserForm(forms.Form):
     # Match Twitter

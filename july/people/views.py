@@ -3,7 +3,6 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
-from google.appengine.ext import ndb
 from django.template.defaultfilters import slugify
 
 from gae_django.auth.models import User
