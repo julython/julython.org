@@ -1,19 +1,23 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+
 {% block content %}
 <div class="container section-container no-border">
   <div class="row locations">
     <div class="span6 offset3">
-        <h2 class="teaming-up">Locations</h2>
+        <h2 class="teaming-up">{% trans "Locations" %}</h2>
         {% for location in locations %}
           <div class="row location">
             <div class="span5">
               <h3><a href="{{ location.slug }}">{{ location }}</a></h3>
-              <p>{{ location.projects|length }} project{{ location.projects|length|pluralize }}</p>
+              <p>
+                {% blocktrans count number_of_projects=location.projects.length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+              </p>
             </div>
             <div class="points pull-right">
                 <p>{{ location.total }}</p>
-                <p class="small">points</p>
+                <p class="small">{% trans "points" %}</p>
             </div>
           </div>
         {% endfor %}
