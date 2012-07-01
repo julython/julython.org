@@ -17,11 +17,11 @@
             <div class="row">
                 <div class="span8">
                     <h3><a href="/projects/{{ project.project_name }}">{{ project.name }}</a> </h3>
-                    <span>({{ project.total }} points)</span>
+                    <span>({{ project.total }} {% trans "points" %})</span>
                 </div>
                 <div class="span8">
                     <dl><span class="description">{{ project.description }} </span></dl>
-                    <dl><a href="{{ project.url }}">Project Page</a></dl>
+                    <dl><a href="{{ project.url }}">{% trans "Project Page" %}</a></dl>
                 </div>
             </div>
             {% if not forloop.last %} 
