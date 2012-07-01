@@ -8,7 +8,19 @@ from django.template.defaultfilters import slugify
 
 from gae_django.auth.models import User
 
-from july.people.models import Commit, Location
+from july.people.models import Commit, Location, Project
+
+def projects(request, username):
+    user = User.get_by_auth_id('twitter:%s' % username)
+    if user == None:
+        raise Http404("User not found")
+    
+    projects = user.projects
+    projects = [Project.get_or_create(url=project)[1] for project in projects]
+
+    return render_to_response('people/people_projects.html', 
+        {"projects":projects, 'profile':user}, 
+        context_instance=RequestContext(request)) 
 
 def user_profile(request, username):
     user = User.get_by_auth_id('twitter:%s' % username)
