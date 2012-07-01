@@ -1,4 +1,5 @@
 {% extends "people/profile.html" %}
+{% load i18n %}
 
 
 {% block bodyclass %}profile{% endblock %}
@@ -7,7 +8,7 @@
 <div class="container section-container no-border" id="contents">
     <div class="row">
         <div class="span10 offset1">
-            <h2 class="spread-the-word">Your Projects</h2>
+            <h2 class="spread-the-word">{% if projects|length == 0 %}{% trans "No Projects Yet!" %}{% else %}{% trans "Your Projects" %}{% endif %}</h2>
         </div>
     </div>
     <div class="row">
@@ -26,6 +27,16 @@
             {% if not forloop.last %} 
             <hr/>
             {% endif %}
+            {% empty %}
+            <div class="row">
+                <div class="span10">
+                <div class="lead">
+                        <div>
+                            {%blocktrans%}Projects will automatically be added when you make commits to projects for which you have configured the Julython post-commit hooks.  If you need some help setting up web hooks, check out the <a href='/help/'>help page!</a>{% endblocktrans %}
+                        </div>
+                    </div>
+                </div>
+            </div>
             {% endfor %}
         </div>
     </div>

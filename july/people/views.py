@@ -16,8 +16,12 @@ def people_projects(request, username):
     if user == None:
         raise Http404("User not found")
     
-    projects = user.projects
-    projects = [Project.get_or_create(url=project)[1] for project in projects]
+
+    if getattr(user, 'projects', None) == None:
+        projects = [] 
+    else: 
+        projects = user.projects
+        projects = [Project.get_or_create(url=project)[1] for project in projects]
 
     return render_to_response('people/people_projects.html', 
         {"projects":projects, 'profile':user}, 
