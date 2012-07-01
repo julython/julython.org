@@ -16,7 +16,6 @@ def people_projects(request, username):
     if user == None:
         raise Http404("User not found")
     
-
     if getattr(user, 'projects', None) == None:
         projects = [] 
     else: 
@@ -37,6 +36,20 @@ def user_profile(request, username):
     return render_to_response('people/profile.html', 
         {"commits":commits, 'profile':user}, 
         context_instance=RequestContext(request)) 
+
+def leaderboard(request, template_name='people/leaderboard.html'):
+    limit = 100
+    cursor = request.GET.get('cursor')
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+    
+    query = User.query().order(-ndb.GenericProperty('total'))
+    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
+
+    return render_to_response(template_name, 
+                             {'next':next_cursor, 'more':more, 
+                              'users':models},
+                             context_instance=RequestContext(request)) 
 
 def users_by_location(request, location_slug, 
                       template_name='people/people_list.html'):

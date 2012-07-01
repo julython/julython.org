@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block bodyclass %}profile{% endblock %}
+
+{% block content %}
+
+<div class="container section-container no-border">
+    <div class="row locations">
+        <div class="span6 offset3"><br />
+            <h3>High Scores</h3><hr/>
+              {% for user in users %}
+                <div class="row"> 
+                    <div class="span5">
+                      <h3>
+                        <img src="{{ user.picture_url }}" alt="{{ user.first_name}} {{ user.last_name }}" width="50"/>
+                        <a href="{% url member-profile user.username %}">{{ user }}</a>
+                      </h3>
+                      <div>
+                        <dl><a href="/location/{{ user.location_slug }}">{{ user.location }}</a> </dl>
+                        <dl>{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</dl>
+                      </div>
+                     </div>
+                     <div class="span1">
+                     <div class="points pull-right">
+                        <p>{{ user.total|default:"0" }}</p>
+                        <p class="small">{% trans "points" %}</p>
+                    </div>
+                    </div>
+                </div>
+
+                <hr/>
+              {% endfor %}  
+        </div>
+    </div>
+</div>
+
+{% endblock %}
