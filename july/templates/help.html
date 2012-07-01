@@ -1,19 +1,28 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+
 {% block bodyclass %}help{% endblock %}
 
 {% block content %}
+
+{# Used within blocktrans #}
+{% url edit-profile username=user.username as edit_profile_url %}
 
 <div class="container section-container no-border">
   <div class="row">
     <div class="span10 offset1">
           <div class="row">
             <div class="span10">
-              <h2 class="spread-the-word">Help me get started!</h2>
+              <h2 class="spread-the-word">{% trans "Help me get started!" %}</h2>
               {% if user.is_authenticated %}
-              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.</p>
+              <p class="lead">
+                {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
+              </p>
               {% else %}
-              <p class="lead">First <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a></p>
+              <p class="lead">
+                {% trans "First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>" %}
+              </p>
               {% endif %}
             </div>
           </div>
@@ -24,39 +33,7 @@
 <div class="container section-container no-border"  id="webhook">
   <div class="row">
     <div class="span10 offset1">
-          <div class="row">
-            <div class="span10">
-              <h2 class="what-is-this">How do I add a web hook for my project?</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span5 section-blurb">
-              <h3>Github</h3>
-              <p>If you host your project on github, follow the instructions below to setup a post recieve hook.</p>
-              <ol>
-                  <li>Go to your project on <a href="http://github.com">github</a>.</li>
-                  <li>Select the 'Admin' button at the top of the project dashboard.</li>
-                  <li>Select 'Service Hooks' on the left menu.</li>
-                  <li>In 'Available service hooks' select 'Webhook URLs'.</li>
-                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/github</pre></li>
-                  <li>Select 'Update Settings'</li>
-              </ol>
-              <p>You can test it out by selecting 'WebHook URLs' again and choosing 'Test Hook'. Or you can try pushing a commit to your repository.</p>
-            </div>
-            <div class="span5 section-blurb">
-              <h3>Bitbucket</h3>
-              <p>If you host your project on bitbucket, follow the instructions below to setup a post recieve hook.</p>
-              <ol>
-                  <li>Go to your project on <a href="http://bitbucket.org">bitbucket</a>.</li>
-                  <li>Select the 'Admin' admin tab on your project dashboard.</li>
-                  <li>Select 'Services' on the left menu.</li>
-                  <li>In the 'Select a service' dropdown select or type 'POST' then 'Add service'.</li>
-                  <li>Enter the URL: <pre>http://www.julython.org/api/v1/bitbucket</pre></li>
-                  <li>Select 'Save Settings'</li>
-              </ol>
-              <p>You can test it out by pushing a commit to your repository.</p>
-            </div>
-          </div>
+      {% include "includes/hook-instructions.html" %}
     </div>
   </div>
 </div>
@@ -66,20 +43,20 @@
     <div class="span10 offset1">
            <div class="row">
             <div class="span10">
-              <h2 class="what-is-this">How are points scored?</h2>
-              <p class="lead">Points are awarded to the committer, the project, and optionally to the location the user has specified in his/her profile.</p>
+              <h2 class="what-is-this">{% trans "How are points scored?" %}</h2>
+              <p class="lead">{% trans "Points are awarded to the committer, the project, and optionally to the location the user has specified in his/her profile." %}</p>
             </div>
           </div>
           <div class="row">
             <div class="span5 section-blurb">
-              <h3>Commits</h3>
-              <p>You can score points by commited to a project that has a <a href="#webhook">web hook</a> setup.
-              Each commit is worth 1 point.</p>
+              <h3>{% trans "Commits" %}</h3>
+              <p>{% trans "You can score points by commited to a project that has a <a href='#webhook'>web hook</a> setup. Each commit is worth 1 point." %}</p>
             </div>
             <div class="span5 section-blurb">
-              <h3>New Projects</h3>
-              <p>Everytime a new project is added by the <a href="#webhook">web hook</a> points are awarded.
-              Each new project is worth 10 points.</p>
+              <h3>{% trans "New Projects" %}</h3>
+              <p>
+                {% trans "Everytime a new project is added via <a href='#webhook'>web hook</a> points are awarded. Each new project is worth 10 points." %}
+              </p>
             </div>
           </div>
     </div>
@@ -91,8 +68,8 @@
     <div class="span10 offset1">
            <div class="row">
             <div class="span10">
-              <h2 class="what-is-this">When will my points count?</h2>
-              <p class="lead">The site is open right now and in testing mode. On June 30th the points will be reset to zero. You should use your local time to 'start' at midnight the morning of July 1st, and 'end' at midnight the night of July 31st.</p>
+              <h2 class="what-is-this">{% trans "When will my points count?" %}</h2>
+              <p class="lead">{% trans "The site is open right now and in testing mode. On June 30th the points will be reset to zero. You should use your local time to 'start' at midnight the morning of July 1st, and 'end' at midnight the night of July 31st." %}</p>
             </div>
           </div>
     </div>
@@ -104,13 +81,19 @@
     <div class="span10 offset1">
            <div class="row">
             <div class="span10">
-              <h2 class="what-is-this">How do I set my location?</h2>
+              <h2 class="what-is-this">{% trans "How do I set my location?" %}</h2>
               {% if user.is_authenticated %}
-              <p class="lead">First <a href="{% url edit-profile username=user.username %}">edit your profile</a> and add your location.</p>
+              <p class="lead">
+                {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add your location.{% endblocktrans %}
+              </p>
               {% else %}
-              <p class="lead">First <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a></p>
+              <p class="lead">
+                {% trans "First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>" %}
+              </p>
               {% endif %}
-              <p class="lead">The location is a free form field, so it is really up to you to enter it properly. But we <a href="https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify">slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'</p>
+              <p class="lead">
+                {% trans "The location is a free form field, so it is really up to you to enter it property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'" %}
+              </p>
             </div>
           </div>
     </div>
