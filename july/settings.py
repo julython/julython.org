@@ -155,7 +155,12 @@ INSTALLED_APPS = (
     'july.pages',
 )
 
-AUTHENTICATION_BACKENDS = ['gae_django.auth.backend.GAEBackend', 'gae_django.auth.backend.GAETwitterBackend']
+AUTHENTICATION_BACKENDS = [
+    'gae_django.auth.backend.GAEBackend', 
+    'gae_django.auth.backend.GAETwitterBackend',
+    'gae_django.auth.backend.GAEGithubBackend'
+]
+
 SESSION_ENGINE = 'gae_django.django_1_4.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SESSION_SAVE_EVERY_REQUEST = True
@@ -200,6 +205,7 @@ else:
     assert(SECRET_KEY != 'foobar')
 
 TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
+GITHUB_CALLBACK = '%saccounts/github/verify/' % MAIN_URL
 
 # TIMES COMMITS SCORE POINTS
 START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
