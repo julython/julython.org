@@ -6,6 +6,7 @@ from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import deferred
 
 from july.people.models import Commit
+from july import settings
 
 class CommitCron(webapp2.RequestHandler):
     
@@ -31,15 +32,26 @@ def fix_orphans(cursor=None):
     
     # if we have more keep looping
     if more:
-        deferred.defer(fix_orphans, cursor=next_cursor)
+        deferred.defer(fix_orphans, cursor=next_cursor.urlsafe())
 
 def fix_commit(key):
     """Fix an individual commit if possible."""
     commit_key = ndb.Key(urlsafe=key)
     commit = commit_key.get()
     commit_data = commit.to_dict()
+    
+    # Check the timestamp to see if we should reject/delete 
+    if commit.timestamp is None:
+        logging.warning("Skipping early orphan")
+        return
+    
+    if commit.timestamp < settings.START_DATETIME:
+        logging.warning("Skipping early orphan")
+        return
+        
     if 'project_slug' in commit_data: 
         del commit_data['project_slug']
+    
     new_commit = Commit.create_by_email(commit.email, [commit_data], project=commit.project)
     
     if new_commit and new_commit[0].parent():

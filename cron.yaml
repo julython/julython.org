@@ -1,4 +1,4 @@
 cron:
 - description: fix orphans
   url: /__cron__/commits/
-  schedule: every 12 hours
+  schedule: first of august
