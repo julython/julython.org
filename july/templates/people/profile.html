@@ -6,9 +6,6 @@
 
 {% block contentheader %}
 
-{# Used within blocktrans #}
-{% url edit-profile username=user.username as edit_profile_url %}
-
 <div class="container" id="contents">
         <div class="row">
             <div class="span10 offset1">
@@ -58,6 +55,10 @@
 {% endblock %}
 
 {% block content %}
+
+{# Used within blocktrans #}
+{% url edit-profile username=user.username as edit_profile_url %}
+
 <div class="container section-container no-border">
   <div class="row">
     <div class="span10 offset1">
