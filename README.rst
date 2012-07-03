@@ -51,11 +51,26 @@ gist to setup your dev environment to help out::
 
     https://gist.github.com/2839803
 
+Pull in the git submodules (Django Debug Toolbar and
+`GAE Django admin/auth <https://github.com/rmyers/gae_django>`_ helper
+packages)::
+
+    $ git submodule update --init
+
+You'll also need the `Google App Engine Python SDK <https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python>`_
+for your OS. Once it's set up simply add an existing application from
+the Julython project root and visit ``localhost`` on the port you
+specified for the development server.
+
 In order to set up Twitter authentication:
 
 1. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
-2. ``cp july/secrets.py.template july/secrets.py``
-3. Open ``july/secrets.py`` and add the consumer key and secret provided
+2. Ensure you have set a Callback URL for your twitter app. This can be
+   any valid URL, such as your blog URL. Without this setting your twitter
+   app will be locked in 'desktop' mode and you will be unable to
+   authenticate.
+3. ``cp july/secrets.py.template july/secrets.py``
+4. Open ``july/secrets.py`` and add the consumer key and secret provided
    by Twitter for your app.
 
 In order to maintain internationalization (i18n) support, please try
