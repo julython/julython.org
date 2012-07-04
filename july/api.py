@@ -432,7 +432,7 @@ class PeopleCollection(API):
     
     endpoint = '/people'
     model = User
-    exclude = ["auth_ids", "password", "email"]
+    exclude = ["auth_ids", "password", "email", "github_access_token"]
     
     def resource_uri(self, model):
         return '%s/%s' % (self.uri(), model.username)
@@ -444,7 +444,7 @@ class PeopleResource(API):
     
     endpoint = '/people'
     model = User
-    exclude = ["auth_ids", "password", "email"]
+    exclude = ["auth_ids", "password", "email", "github_access_token"]
     
     def get(self, username):
         auth_id = username
