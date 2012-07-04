@@ -45,9 +45,12 @@ def leaderboard(request, template_name='people/leaderboard.html'):
     
     query = User.query().order(-ndb.GenericProperty('total'))
     models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-
+    
+    if next_cursor is not None:
+        next_cursor = next_cursor.urlsafe()
+    
     return render_to_response(template_name, 
-                             {'next':next_cursor.urlsafe(), 'more':more, 
+                             {'next':next_cursor, 'more':more, 
                               'users':models},
                              context_instance=RequestContext(request)) 
 
@@ -63,10 +66,13 @@ def users_by_location(request, location_slug,
     query = query.order(-ndb.GenericProperty('total'))
         
     models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-
+    
+    if next_cursor is not None:
+        next_cursor = next_cursor.urlsafe()
+    
     location = Location.get_by_id(location_slug)
     return render_to_response(template_name, 
-                             {'next':next_cursor.urlsafe(), 'more':more, 
+                             {'next':next_cursor, 'more':more, 
                               'users':models,
                               'location': location, 'slug': location_slug}, 
                              context_instance=RequestContext(request)) 
@@ -89,8 +95,11 @@ def projects(request, template_name='projects/index.html'):
     
     models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
     
+    if next_cursor is not None:
+        next_cursor = next_cursor.urlsafe()
+    
     return render_to_response(template_name,
-        {'projects': models, 'next': next_cursor.urlsafe(), 'more': more},
+        {'projects': models, 'next': next_cursor, 'more': more},
         context_instance=RequestContext(request))
 
 def project_details(request, slug, template_name='projects/details.html'):
