@@ -102,7 +102,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'google.appengine.ext.appstats.recording.AppStatsDjangoMiddleware',
+    #'google.appengine.ext.appstats.recording.AppStatsDjangoMiddleware',
     'google.appengine.ext.ndb.django_middleware.NdbDjangoMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
