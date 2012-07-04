@@ -8,7 +8,7 @@
     <div class="span6 offset3">
         <h2 class="teaming-up">{% trans "Projects" %}</h2>
         {% for project in projects %}
-          <div class="row project">
+          <div class="row location">
             <div class="span5">
               <h3><a href="{% url project-details project.project_name %}">{{ project }}</a></h3>
               <p><a href="{{ project.url }}">{{ project.url }}</a></p>
