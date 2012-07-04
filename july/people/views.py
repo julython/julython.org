@@ -20,7 +20,7 @@ def people_projects(request, username):
         projects = [] 
     else: 
         projects = user.projects
-        projects = [Project.get_or_create(url=project)[1] for project in projects]
+        projects = ndb.get_multi([Project.make_key(project) for project in projects])
 
     return render_to_response('people/people_projects.html', 
         {"projects":projects, 'profile':user}, 
@@ -47,7 +47,7 @@ def leaderboard(request, template_name='people/leaderboard.html'):
     models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
 
     return render_to_response(template_name, 
-                             {'next':next_cursor, 'more':more, 
+                             {'next':next_cursor.urlsafe(), 'more':more, 
                               'users':models},
                              context_instance=RequestContext(request)) 
 
@@ -66,7 +66,7 @@ def users_by_location(request, location_slug,
 
     location = Location.get_by_id(location_slug)
     return render_to_response(template_name, 
-                             {'next':next_cursor, 'more':more, 
+                             {'next':next_cursor.urlsafe(), 'more':more, 
                               'users':models,
                               'location': location, 'slug': location_slug}, 
                              context_instance=RequestContext(request)) 
@@ -90,7 +90,7 @@ def projects(request, template_name='projects/index.html'):
     models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
     
     return render_to_response(template_name,
-        {'projects': models, 'next': next_cursor, 'more': more},
+        {'projects': models, 'next': next_cursor.urlsafe(), 'more': more},
         context_instance=RequestContext(request))
 
 def project_details(request, slug, template_name='projects/details.html'):

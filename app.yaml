@@ -31,6 +31,10 @@ handlers:
   static_files: july/static_root/\1
   upload: /static/(.*)
 
+- url: /__cron__.*
+  script: july.cron.app
+  login: admin
+
 - url: /api.*
   script: july.api.app
   

@@ -35,9 +35,8 @@
               {% for user in users %}
                 <li>
                   <a href="{% url member-profile user.username %}">{{ user }}</a> &mdash;
-                    {# FIXME - Rendered as "0 point in ..." when user.total == 0 #}
-                    {% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} points in {% plural %}{{ number_of_points }} point in {% endblocktrans %}
-                    {% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                    {% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
+                    <a href="{% url user-projects user.username %}">{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
                 </li>
               {% endfor %}  
             </ul>

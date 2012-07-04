@@ -34,11 +34,15 @@ def help_view(request):
 
 @login_required
 def login_redirect(request):
-    if request.user != None:
+    if request.user.is_authenticated():
         return HttpResponseRedirect('/%s'%request.user.username )
     return HttpResponseRedirect('/')
+
+def maintenance(request):
+    """Site is down for maintenance, display this view for all."""
+    ctx = Context({})
     
-     
+    return render_to_response('maintenance.html', context_instance=ctx)
 
 def warmup(request):
     """Fire up the servers!"""

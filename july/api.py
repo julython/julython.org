@@ -247,7 +247,6 @@ class RootHandler(API):
     def get(self):
         """Just dish out some helpful uri info."""
         # TODO: autogenerate this!
-        logging.error(self.request.route)
         resp = {
             'comment': "Welcome to the www.julython.org API",
             'version': '1',
