@@ -5,6 +5,8 @@ from google.appengine.ext import ndb
 from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import deferred
 
+from gae_django.auth.models import User
+
 from july.people.models import Commit
 from july import settings
 
@@ -57,12 +59,41 @@ def fix_commit(key):
     if new_commit and new_commit[0].parent():
         logging.info('Deleting orphan')
         commit.key.delete()
+
+class FixAccounts(webapp2.RequestHandler):
+    """Add 'own:username' to all accounts to replace the username property."""
+    
+    def get(self):
+        deferred.defer(fix_accounts)
+
+def fix_accounts(cursor=None):
+    """Fix all the accounts in chunks"""
+    
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
         
+    query = User.query()
+    models, next_cursor, more = query.fetch_page(15, start_cursor=cursor)
+    
+    for account in models:
+        username = getattr(account, 'username', None)
+        if username is None:
+            logging.error('No user name set for: %s', account)
+            continue
+        
+        added, _ = account.add_auth_id('own:%s' % username)
+        if not added:
+            logging.error("Unable to add username: %s", account.username)
+            
+    if more:
+        deferred.defer(fix_accounts, cursor=next_cursor.urlsafe())
+
 ###
 ### Setup the routes for the Crontab
 ###
 routes = [
     webapp2.Route('/__cron__/commits/', CommitCron),
+    webapp2.Route('/__cron__/accounts/', FixAccounts),
 ] 
 
 # The Main Application

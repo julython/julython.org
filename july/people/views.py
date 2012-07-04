@@ -12,7 +12,7 @@ from google.appengine.ext.ndb.query import Cursor
 from google.appengine.ext import ndb
 
 def people_projects(request, username):
-    user = User.get_by_auth_id('twitter:%s' % username)
+    user = User.get_by_auth_id('own:%s' % username)
     if user == None:
         raise Http404("User not found")
     
@@ -27,7 +27,7 @@ def people_projects(request, username):
         context_instance=RequestContext(request)) 
 
 def user_profile(request, username):
-    user = User.get_by_auth_id('twitter:%s' % username)
+    user = User.get_by_auth_id('own:%s' % username)
     if user == None:
         raise Http404("User not found")
 
@@ -109,7 +109,7 @@ def project_details(request, slug, template_name='projects/details.html'):
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
-    user = User.get_by_auth_id('twitter:%s' % username)
+    user = User.get_by_auth_id('own:%s' % username)
 
     if user == None:
         raise Http404("User not found")
@@ -146,7 +146,7 @@ def delete_email(request, username, email):
     # the ID we are to delete
     auth_id = 'email:%s' % email
     
-    user = User.get_by_auth_id('twitter:%s' % username)
+    user = User.get_by_auth_id('own:%s' % username)
     e_user = User.get_by_auth_id(auth_id)
 
     if user is None or e_user is None:
