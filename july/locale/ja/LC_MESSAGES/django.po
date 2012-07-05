@@ -415,7 +415,7 @@ msgstr "プロジェクトにwebhookをつけるのってどうやってやる�
 #: templates/includes/hook-instructions.html:14
 msgid ""
 "If you host your project on github, follow the instructions below to setup a "
-"post recieve hook."
+"post receive hook."
 msgstr "Githubで管理されているプロジェクトは、次のとおりにやればOK："
 
 #: templates/includes/hook-instructions.html:17
@@ -457,7 +457,7 @@ msgstr "Bitbucket"
 #: templates/includes/hook-instructions.html:31
 msgid ""
 "If you host your project on bitbucket, follow the instructions below to "
-"setup a post recieve hook."
+"setup a post receive hook."
 msgstr ""
 "Bitbucketでコードを管理している場合は、次のとおりにやればhookの設定ができる："
 
