@@ -7,7 +7,7 @@ from google.appengine.ext import deferred
 
 from gae_django.auth.models import User
 
-from july.people.models import Commit
+from july.people.models import Commit, Location
 from july import settings
 
 class CommitCron(webapp2.RequestHandler):
@@ -88,12 +88,78 @@ def fix_accounts(cursor=None):
     if more:
         deferred.defer(fix_accounts, cursor=next_cursor.urlsafe())
 
+class FixLocations(webapp2.RequestHandler):
+    
+    def get(self):
+        """Calculate the total points for each location."""
+        deferred.defer(fix_locations)
+
+def fix_locations(cursor=None):
+    """Look up all the locations and re-count totals."""
+        
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+
+    query = Location.query()
+    models, next_cursor, more = query.fetch_page(15, start_cursor=cursor)
+
+    for location in models:
+        deferred.defer(fix_location, location.key.urlsafe())
+    
+    if more:
+        deferred.defer(fix_locations, cursor=next_cursor.urlsafe())
+
+def fix_location(key, cursor=None, total=0):
+    
+    location_key = ndb.Key(urlsafe=key)
+    location = location_key.get()
+    location_p = getattr(location, 'projects', [])
+    projects = set(location_p)
+    
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+    
+    people = User.query().filter(User.location_slug == location.key.id())
+    
+    # Go through the users in chucks
+    models, next_cursor, more = people.fetch_page(100, start_cursor=cursor)
+    
+    for model in models:
+        commits = Commit.query(ancestor=model.key).count(1000)
+        total += commits
+        user_projects = getattr(model, 'projects', [])
+        projects.update(user_projects)
+    
+    
+    # Run update in a transaction
+    # if total is zero the list of projects should be
+    # cleared as well.
+    if not total:
+        projects = set([])
+        
+    projects = list(projects)
+    total = total + (len(projects) * 10)
+    @ndb.transactional
+    def txn():
+        location = location_key.get()
+        location.total = total
+        location.projects = projects
+        location.put()
+    
+    txn()
+
+    if more:
+        # We have more people to loop through!!
+        return deferred.defer(fix_location, key, 
+            cursor=next_cursor.urlsafe(), total=total)
+
 ###
 ### Setup the routes for the Crontab
 ###
 routes = [
     webapp2.Route('/__cron__/commits/', CommitCron),
     webapp2.Route('/__cron__/accounts/', FixAccounts),
+    webapp2.Route('/__cron__/locations/', FixLocations),
 ] 
 
 # The Main Application
