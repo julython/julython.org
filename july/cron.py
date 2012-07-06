@@ -113,10 +113,14 @@ def fix_location(key, cursor=None, total=0):
     
     location_key = ndb.Key(urlsafe=key)
     location = location_key.get()
-    location_p = getattr(location, 'projects', [])
-    projects = set(location_p)
+    
+    projects = set([])
     
     if cursor:
+        # we are looping Grab the existing project list so we don't
+        # wipe out the earlier runs work
+        location_p = getattr(location, 'projects', [])
+        projects = set(location_p)
         cursor = Cursor(urlsafe=cursor)
     
     people = User.query().filter(User.location_slug == location.key.id())
@@ -132,12 +136,7 @@ def fix_location(key, cursor=None, total=0):
         projects.update(user_projects)
     
     
-    # Run update in a transaction
-    # if total is zero the list of projects should be
-    # cleared as well.
-    if not total:
-        projects = set([])
-        
+    # Run update in a transaction    
     projects = list(projects)
     total = total + (len(projects) * 10)
     @ndb.transactional
