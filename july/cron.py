@@ -125,7 +125,8 @@ def fix_location(key, cursor=None, total=0):
     models, next_cursor, more = people.fetch_page(100, start_cursor=cursor)
     
     for model in models:
-        commits = Commit.query(ancestor=model.key).count(1000)
+        commits = Commit.query(ancestor=model.key)
+        commits = commits.filter(Commit.timestamp > settings.START_DATETIME).count(1000)
         total += commits
         user_projects = getattr(model, 'projects', [])
         projects.update(user_projects)
