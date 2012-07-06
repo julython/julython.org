@@ -37,4 +37,3 @@ handlers:
 
 - url: /api.*
   script: july.api.app
-  
