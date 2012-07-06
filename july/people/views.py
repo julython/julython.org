@@ -9,7 +9,7 @@ from gae_django.auth.models import User
 
 from july.people.models import Commit, Location, Project
 from google.appengine.ext.ndb.query import Cursor
-from google.appengine.ext import ndb
+from google.appengine.ext import ndb, deferred
 
 def people_projects(request, username):
     user = User.get_by_auth_id('own:%s' % username)
@@ -128,15 +128,19 @@ def edit_profile(request, username, template_name='people/edit.html'):
         http403.status = 403
         return http403
     
-
+    existing_slug = str(user.location_slug)
     form = EditUserForm(request.POST or None, user=request.user)
     if form.is_valid():
         for key in form.cleaned_data:
             if key == 'email':
                 continue
             setattr(user, key, form.cleaned_data.get(key))
-        slugify(user.location)
         user.put()
+        if user.location_slug != existing_slug:
+            from july.cron import fix_location
+            # Defer a couple tasks to update the locations
+            deferred.defer(fix_location, str(user.location_slug))
+            deferred.defer(fix_location, existing_slug)
         return HttpResponseRedirect(
             reverse('member-profile', 
                     kwargs={'username':request.user.username}

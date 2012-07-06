@@ -104,15 +104,15 @@ def fix_locations(cursor=None):
     models, next_cursor, more = query.fetch_page(15, start_cursor=cursor)
 
     for location in models:
-        deferred.defer(fix_location, location.key.urlsafe())
+        deferred.defer(fix_location, location.key.id())
     
     if more:
         deferred.defer(fix_locations, cursor=next_cursor.urlsafe())
 
-def fix_location(key, cursor=None, total=0):
+def fix_location(slug, cursor=None, total=0):
     
-    location_key = ndb.Key(urlsafe=key)
-    location = location_key.get()
+    location_slug = slug
+    location = Location.get_or_insert(location_slug)
     
     projects = set([])
     
@@ -123,7 +123,7 @@ def fix_location(key, cursor=None, total=0):
         projects = set(location_p)
         cursor = Cursor(urlsafe=cursor)
     
-    people = User.query().filter(User.location_slug == location.key.id())
+    people = User.query().filter(User.location_slug == location_slug)
     
     # Go through the users in chucks
     models, next_cursor, more = people.fetch_page(100, start_cursor=cursor)
@@ -141,7 +141,7 @@ def fix_location(key, cursor=None, total=0):
     total = total + (len(projects) * 10)
     @ndb.transactional
     def txn():
-        location = location_key.get()
+        location = Location.get_or_insert(location_slug)
         location.total = total
         location.projects = projects
         location.put()
@@ -150,7 +150,7 @@ def fix_location(key, cursor=None, total=0):
 
     if more:
         # We have more people to loop through!!
-        return deferred.defer(fix_location, key, 
+        return deferred.defer(fix_location, location_slug, 
             cursor=next_cursor.urlsafe(), total=total)
 
 ###
