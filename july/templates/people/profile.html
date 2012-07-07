@@ -2,6 +2,9 @@
 
 {% load i18n %}
 
+{% block extra_stylesheets %}
+<link href="{{ STATIC_URL }}/css/charts.css" rel="stylesheet" type="text/css"/>
+{% endblock %}
 {% block bodyclass %}profile{% endblock %}
 
 {% block contentheader %}
@@ -11,7 +14,7 @@
             <div class="span10 offset1">
             <div class="header">
                     <div class="avatar span1">
-                        <img src="{{ profile.picture_url }}" alt="{{profile}}" />                    
+                        <img src="{{ profile.picture_url }}" alt="{{profile}}" />
                     </div>
                     <div class="user span6">
                         <h1>{{ profile }}</h1>
@@ -32,7 +35,7 @@
                     <div class="points pull-right">
                         <p>{% firstof profile.total '0' %}</p>
                         <p class="small">{% trans "points" %}</p>
-                        
+
                     </div>
                 <div class="subnav">
                         <ul class="nav nav-pills">
@@ -47,7 +50,7 @@
                                 </form>
                             </li>
                         </ul>
-                </div>           
+                </div>
             </div>
         </div>
     </div>
@@ -65,6 +68,16 @@
         {% if commits %}
         <div class="row">
             <div class="span10">
+              <script type="text/javascript">
+                // blech. hacky.
+                var _chart_data = _chart_data || {};
+                _chart_data["{{ profile.username }}"] = [
+                10, 5, 24, 60, 32, 3, 29, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ];
+              </script>
+              <div id="user-barchart" class="commit-chart" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               {% for commit in commits %}
               {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
@@ -104,4 +117,19 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_javascript %}
+<script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
+<script type="text/javascript">
+  (function() {
+    var data = _chart_data["{{ profile.username }}"];
+    new Charts.BarChart("user-barchart")
+      .load(data)
+      .set("xLabel", function(d, i) { return i+1; })
+      .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
+      .render();
+  }());
+</script>
 {% endblock %}
