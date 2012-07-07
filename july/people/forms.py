@@ -1,6 +1,10 @@
 from django import forms
 from django.utils.translation import ugettext_lazy
 
+from google.appengine.ext import ndb, deferred
+
+from july.cron import fix_orphans
+
 class EditUserForm(forms.Form):
     # Match Twitter
     first_name = forms.CharField(
@@ -59,6 +63,8 @@ class EditUserForm(forms.Form):
             )
             raise forms.ValidationError(error_msg)
         
+        # Defer a task to fix orphan commits
+        deferred.defer(fix_orphans, email=email)
         return email
         
 class CommitForm(forms.Form):

@@ -12,19 +12,21 @@ from july import settings
 
 class CommitCron(webapp2.RequestHandler):
     
-    def get(self):
+    def get(self, email=None):
         """
         Search through all the orphan commits and kick off a
         deferred task to re-associate them.
-        """  
-        deferred.defer(fix_orphans)
+        """
+        deferred.defer(fix_orphans, email=email)
 
-def fix_orphans(cursor=None):
+def fix_orphans(cursor=None, email=None):
     
     if cursor:
         cursor = Cursor(urlsafe=cursor)
         
     query = Commit.query()
+    if email:
+        query.filter(Commit.email==email)
     models, next_cursor, more = query.fetch_page(500, keys_only=True, start_cursor=cursor)
     
     for commit in models:
@@ -111,6 +113,11 @@ def fix_locations(cursor=None):
 
 def fix_location(slug, cursor=None, total=0):
     
+    # Don't try to lookup slugs that are the empty string.
+    # hint they don't exist!
+    if not slug:
+        return
+    
     location_slug = slug
     location = Location.get_or_insert(location_slug)
     
@@ -158,6 +165,7 @@ def fix_location(slug, cursor=None, total=0):
 ###
 routes = [
     webapp2.Route('/__cron__/commits/', CommitCron),
+    webapp2.Route('/__cron__/commits/<email:.+>', CommitCron),
     webapp2.Route('/__cron__/accounts/', FixAccounts),
     webapp2.Route('/__cron__/locations/', FixLocations),
 ] 
