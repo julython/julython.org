@@ -192,7 +192,8 @@ class Project(ndb.Model):
         if path.startswith('/'):
             path = path[1:]
         tokens = path.split('/')
-        host_abbr = hosts_lookup.get(parsed.netloc, 'o')
+        netloc_slug = parsed.netloc.replace('.', '-')
+        host_abbr = hosts_lookup.get(parsed.netloc, netloc_slug)
         name = '-'.join(tokens)
         if name.endswith('-'):
             name = name[:-1]

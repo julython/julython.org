@@ -604,8 +604,12 @@ class BitbucketHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
+        abs_url = data.get('absolute_url', '')
+        if not abs_url.startswith('http'):
+            abs_url = 'https://bitbucket.org%s' % abs_url
+        
         return {
-            'url': 'https://bitbucket.org%s' % data.get('absolute_url', ''),
+            'url': abs_url,
             'description': data.get('website', ''),
             'name': data.get('name'),
             'forked': data.get('fork', False),
@@ -666,6 +670,7 @@ class BitbucketHandler(PostCallbackHandler):
             'name': data.get('author'),
             'message': data.get('message'),
             'timestamp': timestamp,
+            'url': data.get('url', None),
         }
         return email, commit_data
 

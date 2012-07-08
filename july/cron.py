@@ -42,6 +42,9 @@ def fix_commit(key):
     """Fix an individual commit if possible."""
     commit_key = ndb.Key(urlsafe=key)
     commit = commit_key.get()
+    if commit is None:
+        return
+    
     commit_data = commit.to_dict()
     
     # Check the timestamp to see if we should reject/delete 
