@@ -769,6 +769,17 @@ class GithubHandler(PostCallbackHandler):
         return email, commit_data
     
     
+class StatsResource(API):
+    """Get the commits for the last 7 days"""
+    
+    def get(self, metric):
+        from july.people.models import get_stats
+        stats = get_stats(metric)
+        
+        self.response.headers['Content-type'] = 'application/json'
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        return self.response.out.write(stats)
         
         
         
@@ -783,6 +794,7 @@ routes = [
     webapp2.Route('/api/v1/projects/<project_name:[\w-]+>', ProjectResource),
     webapp2.Route('/api/v1/people', PeopleCollection),
     webapp2.Route('/api/v1/people/<username:[\w_-]+>', PeopleResource),
+    webapp2.Route('/api/v1/stats/commits/<metric:.+>', StatsResource),
     webapp2.Route('/api/v1/github', GithubHandler),
     webapp2.Route('/api/v1/bitbucket', BitbucketHandler),
 ] 

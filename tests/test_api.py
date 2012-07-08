@@ -72,8 +72,7 @@ class WebTestCase(unittest.TestCase):
         self.testbed.deactivate()
     
     def make_user(self, username, save=True, **kwargs):
-        kwargs['username'] = username
-        _, user = User.create_user(auth_id=username, **kwargs)
+        _, user = User.create_user(auth_id='%s' % username, **kwargs)
         return user
     
     def make_commit(self, user, message, save=True, **kwargs):
@@ -511,6 +510,40 @@ class TestUtils(unittest.TestCase):
         dt = utcdatetime(ts)
         self.assertEqual(dt.hour, 10)
 
+class StatsTest(WebTestCase):
+    
+    APPLICATION = app
+    
+    def _day_format(self, date):
+        return int(date.strftime('%Y%m%d'))
+    
+    def setUp(self):
+        super(StatsTest, self).setUp()
+        self.user = self.make_user('own:fred')
+        self.start = settings.START_DATETIME
+        self.next = self.start + datetime.timedelta(days=2)
+        self.further = self.next + datetime.timedelta(days=2)
+        self.end = settings.END_DATETIME
+        self.near_end = self.end - datetime.timedelta(days=1)
+        self.make_commit(self.user, "Test Commit", timestamp=self.start, project='http://github.com/a/b')
+        self.make_commit(self.user, "More testing", timestamp=self.next, project='http://github.com/a/b')
+        self.make_commit(self.user, "More testing1", timestamp=self.next, project='http://github.com/a/c')
+        self.make_commit(self.user, "More testing2", timestamp=self.further, project='http://github.com/a/d')
+        self.make_commit(self.user, "More testing4", timestamp=self.near_end, project='http://github.com/a/d')
+        self.make_commit(self.user, "More testing3", timestamp=self.end, project='http://github.com/a/d')
+        
+    def test_user_counts(self):
+        resp = self.app.get('/api/v1/stats/commits/own:fred')
+        resp_data = json.loads(resp.body)
+        self.assertEqual(resp_data, {
+            u"stats": [
+                1,2,0,1,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,2
+            ],
+            u"metric": u"own:fred",
+        })
+        
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     unittest.main()

@@ -20,10 +20,15 @@
                         <h1>{{ profile }}</h1>
                         <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
                         <ul class="user-links">
+                            {% if profile.twitter %}
                             <li class="twitter">
-                                <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
+                                <a href="https://twitter.com/{{ profile.twitter }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
                                 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
                             </li>
+                            {% endif %}
+                            {% if profile.github %}
+                            <li><i class="icon-globe"></i> <a href="http://github.com/{{ profile.github }}">{% trans "Follow on Github" %}</a></li>
+                            {% endif %}
                             {% if profile.url %}
                             <li><a class="btn btn-mini profile-link" href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
                             {% endif %}
@@ -68,15 +73,7 @@
         {% if commits %}
         <div class="row">
             <div class="span10">
-              <script type="text/javascript">
-                // blech. hacky.
-                var _chart_data = _chart_data || {};
-                _chart_data["{{ profile.username }}"] = [
-                10, 5, 24, 60, 32, 3, 29, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                ];
-              </script>
+              
               <div id="user-barchart" class="commit-chart" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               {% for commit in commits %}
@@ -123,13 +120,20 @@
 <script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
 <script type="text/javascript">
-  (function() {
-    var data = _chart_data["{{ profile.username }}"];
-    new Charts.BarChart("user-barchart")
-      .load(data)
-      .set("xLabel", function(d, i) { return i+1; })
-      .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
-      .render();
-  }());
+  $(document).ready(function(){
+        jQuery.ajax({
+            url: '/api/v1/stats/commits/own:{{ profile.username }}',
+            success: function(data){
+                new Charts.BarChart("user-barchart")
+                  .load(data.stats)
+                  .set("xLabel", function(d, i) { return i+1; })
+                  .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
+                  .render();
+            },
+            error: function() {
+                $('.commit-chart').html('{% trans "Commit data not found" %}');
+            }
+        })
+  });
 </script>
 {% endblock %}

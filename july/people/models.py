@@ -1,9 +1,14 @@
 import logging
+import datetime
+import json
 from urlparse import urlparse
 
 from google.appengine.ext import ndb
 from google.appengine.ext import deferred
+from google.appengine.api import memcache
+
 from gae_django.auth.models import User
+from july import settings
 
 class Commit(ndb.Model):
     """
@@ -258,5 +263,101 @@ def add_points_to_location(slug, points, project_url=None):
         return location
     
     return txn(slug, points, project_url)
-        
-        
+
+
+class Accumulator(ndb.Model):
+    """
+    Simple statistic model to store commit data for global, user, project, location.
+    """
+    # reference object for the stat collection
+    # 'location:slug', 'own:username', 'project:project_url', 'global'
+    metric = ndb.StringProperty()
+    
+    count = ndb.IntegerProperty(indexed=False)
+    
+    date = ndb.DateProperty()
+    
+    @classmethod
+    def make_key(cls, metric):
+        return ndb.Key(cls.__name__, metric)
+    
+
+
+def get_stats(metric):
+    key = 'stats:commits:%s' % metric
+    stats = memcache.get(key)
+    if stats is not None:
+        logging.info("found stats")
+        return stats
+    
+    if metric.startswith('own:'):
+        stats = _user_stats(metric)
+    elif metric.startswith('location:'):
+        stats = _location_stats(metric)
+    elif metric.startswith('project:'):
+        stats = _project_stats(metric)
+    else:
+        stats = _global_stats()
+    
+    memcache.set(key, stats, time=3600)
+    return stats
+
+def _stats(metric, commits):
+    """
+    This is a horrible method that returns a list of commit
+    counts for each day in the month::
+    
+        {
+           "metric": 'own:username',
+           "stats": [
+                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
+           ]
+        }
+    
+    The first and last days are actually June 30th and Aug 1st those
+    are just collapsed on the ends.
+    """
+    timestamp = lambda date: date.strftime('%Y%m%d')
+    
+    days = {}
+    
+    for delta in xrange(33):
+        # prepopulate a dict with the proper days
+        days['%s' % timestamp(settings.START_DATETIME + datetime.timedelta(days=delta))] = []
+    
+    for commit in commits:
+        days[timestamp(commit.timestamp)].append(commit)
+    
+    counts = [{'date': int(date), 'count': len(commits)} for date, commits in days.iteritems()]
+    counts_sorted = sorted(counts, key=lambda v: v['date'])
+    
+    stats = [d['count'] for d in counts_sorted]
+    # pop ends off and add squish into 31 days
+    june = stats.pop(0)
+    aug = stats.pop()
+    stats[0] += june
+    stats[-1] += aug
+    
+    stats = {
+        'metric': metric,
+        'stats': stats,
+    }
+    
+    return stats
+    
+    
+
+def _user_stats(metric):
+    
+    user = User.get_by_auth_id(metric)
+    if user is None:
+        return
+    
+    # TODO: remove commits from before the start!!!
+    commits = Commit.query(ancestor=user.key).filter(Commit.timestamp >= settings.START_DATETIME, Commit.timestamp <= settings.END_DATETIME).fetch(500)
+    
+    stats = _stats(metric, commits)
+    
+    return json.dumps(stats)
