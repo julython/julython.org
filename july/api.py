@@ -5,6 +5,7 @@ import datetime
 import time
 import hmac
 import hashlib
+import urlparse
 import re
 from functools import wraps
 from collections import defaultdict
@@ -509,10 +510,9 @@ class PostCallbackHandler(API):
             logging.exception("Unable to serialize POST")
             abort(400)
         
-        repository = data.get('repository', {})
         commit_data = data.get('commits', [])
         
-        repo = self._parse_repo(repository)
+        repo = self._parse_repo(data)
         
         commit_dict = self.parse_commits(commit_data)
         total_commits = []
@@ -604,16 +604,27 @@ class BitbucketHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
-        abs_url = data.get('absolute_url', '')
-        if not abs_url.startswith('http'):
-            abs_url = 'https://bitbucket.org%s' % abs_url
+        repo = data.get('repository')
+        canon_url = data.get('canon_url', '')
         
-        return {
+        abs_url = repo.get('absolute_url', '')
+        if not abs_url.startswith('http'):
+            abs_url = urlparse.urljoin(canon_url, abs_url)
+        
+        result = {
             'url': abs_url,
-            'description': data.get('website', ''),
-            'name': data.get('name'),
-            'forked': data.get('fork', False),
+            'description': repo.get('website', ''),
+            'name': repo.get('name'),
         }
+        
+        fork = repo.get('fork', False)
+        if not fork:
+            result['forked'] = False
+        else:
+            result['fork'] = fork
+        
+        return result
+        
     
     def _parse_email(self, raw_email):
         """
@@ -724,6 +735,8 @@ class GithubHandler(PostCallbackHandler):
         """Returns a dict suitable for creating a project."""
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
+        
+        data = data.get('repository')
         
         return {
             'url': data['url'],

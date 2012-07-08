@@ -497,6 +497,78 @@ class BitbucketHandlerTests(WebTestCase):
         total = getattr(u, 'total', None)
         self.assertEqual(total, None)
 
+class BitbucketLikeHandlerTests(WebTestCase):
+    
+    APPLICATION = app
+    
+    POST = {'payload':
+        json.dumps({
+            "canon_url": "https://some.other.org", 
+            "commits": [
+                {
+                    "author": "marcus", 
+                    "branch": "featureA", 
+                    "files": [
+                        {
+                            "file": "somefile.py", 
+                            "type": "modified"
+                        }
+                    ], 
+                    "message": "Added some featureA things", 
+                    "node": "d14d26a93fd2", 
+                    "parents": [
+                        "1b458191f31a"
+                    ], 
+                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>", 
+                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe", 
+                    "revision": 3, 
+                    "size": -1, 
+                    "timestamp": "2012-05-30 06:07:03", 
+                    "utctimestamp": "2012-05-30 04:07:03+00:00"
+                }
+            ], 
+            "repository": {
+                "absolute_url": "/marcus/project-x/", 
+                "fork": False, 
+                "is_private": True, 
+                "name": "Project X", 
+                "owner": "marcus", 
+                "scm": "hg", 
+                "slug": "project-x", 
+                "website": ""
+            }, 
+            "user": "marcus"
+        })
+    }
+    
+    def test_post_creates_commits(self):
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        resp = self.app.post('/api/v1/bitbucket', self.POST)
+        resp_body = json.loads(resp.body)
+        self.assertEqual(len(resp_body['commits']), 1)
+    
+    def test_post_adds_points_to_user(self):
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        u = User.get_by_auth_id('email:marcus@somedomain.com')
+        self.assertEqual(u.total, 11)
+    
+    def test_post_adds_points_to_project(self):
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        p_key = Project.make_key('https://some.other.org/marcus/project-x/')
+        p = p_key.get()
+        self.assertEqual(p.total, 11)
+    
+    def test_project_url(self):
+        user = self.make_user('marcus')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        user = User.get_by_auth_id('email:marcus@somedomain.com')
+        self.assertTrue('https://some.other.org/marcus/project-x/' in user.projects)
 
 class TestUtils(unittest.TestCase):
     
