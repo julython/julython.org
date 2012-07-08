@@ -195,9 +195,9 @@ else:
     # Production settings!!
     TESTING = False
     MAIN_URL = 'http://www.julython.org/'
-    #STATIC_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
-    #ADMIN_MEDIA_PREFIX = 'http://d1v9vqkrs9fyao.cloudfront.net/static/admin/'
-    #MEDIA_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
+    STATIC_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
+    ADMIN_MEDIA_PREFIX = 'http://d1v9vqkrs9fyao.cloudfront.net/static/admin/'
+    MEDIA_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
     TEMPLATE_LOADERS = [
         ('django.template.loaders.cached.Loader', [
             'django.template.loaders.app_directories.Loader',
