@@ -5,10 +5,11 @@ import webtest
 import os
 import logging
 
-from google.appengine.ext import ndb
+from google.appengine.ext import ndb, deferred
 from google.appengine.ext import testbed
 from google.appengine.datastore import datastore_stub_util
 import datetime
+import base64
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'july.settings'
 
@@ -60,6 +61,7 @@ class WebTestCase(unittest.TestCase):
         self.testbed.init_memcache_stub()
         os.environ['HTTP_HOST'] = 'localhost'
         self.testbed.init_taskqueue_stub()
+        self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
         
         # reset testing settings
         settings.TESTING = True
@@ -360,10 +362,15 @@ class GithubHandlerTests(WebTestCase):
         user = self.make_user('chris', location='Austin TX')
         user.add_auth_id('email:chris@ozmm.org')
         self.app.post('/api/v1/github', self.POST)
+        tasks = self.taskqueue_stub.GetTasks('default')
+        self.assertEqual(1, len(tasks))
+
+        # Run the task
+        task = tasks[0]
+        deferred.run(base64.b64decode(task['body']))
+    
         location = Location.get_by_id('austin-tx')
-        # TODO: figure out how to test this!
-        if location is not None:
-            self.assertEqual(location.total, 2)
+        self.assertEqual(location.total, 12)
 
     def test_testing_mode_off(self):
         settings.TESTING = False
@@ -473,10 +480,15 @@ class BitbucketHandlerTests(WebTestCase):
         user = self.make_user('marcus', location='Austin TX')
         user.add_auth_id('email:marcus@somedomain.com')
         self.app.post('/api/v1/bitbucket', self.POST)
+        tasks = self.taskqueue_stub.GetTasks('default')
+        self.assertEqual(1, len(tasks))
+
+        # Run the task
+        task = tasks[0]
+        deferred.run(base64.b64decode(task['body']))
+    
         location = Location.get_by_id('austin-tx')
-        # TODO: figure out how to test this!
-        if location is not None:
-            self.assertEqual(location.total, 1)        
+        self.assertEqual(location.total, 11)       
     
     def test_testing_mode_off(self):
         settings.TESTING = False
