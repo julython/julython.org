@@ -4,12 +4,12 @@ import json
 import webtest
 import os
 import logging
+import datetime
+import base64
 
 from google.appengine.ext import ndb, deferred
 from google.appengine.ext import testbed
 from google.appengine.datastore import datastore_stub_util
-import datetime
-import base64
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'july.settings'
 
