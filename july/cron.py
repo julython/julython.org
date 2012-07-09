@@ -139,10 +139,14 @@ def fix_location(slug, cursor=None, total=0):
     models, next_cursor, more = people.fetch_page(100, start_cursor=cursor)
     
     for model in models:
-        commits = Commit.query(ancestor=model.key)
-        commits = commits.filter(Commit.timestamp > settings.START_DATETIME).count(1000)
-        total += commits
         user_projects = getattr(model, 'projects', [])
+        user_total = getattr(model, 'total', 0)
+        # Do a little math to figure out how many commits they have
+        commits = user_total - (len(user_projects) * 10)
+        if commits > 0:
+            logging.info('Adding %s to %s', commits, location_slug)
+            total += commits
+        # Add the users projects to the project set (this filters duplicates)
         projects.update(user_projects)
     
     
