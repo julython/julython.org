@@ -69,9 +69,11 @@
     <div class="span10 offset1">
         {% if commits %}
         <div class="row">
+           <div id="user-barchart" class="commit-chart span10" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
+        </div>
+        <div class="row">
             <div class="span10">
               
-              <div id="user-barchart" class="commit-chart" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               {% for commit in commits %}
               {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
@@ -118,6 +120,7 @@
 <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
 <script type="text/javascript">
   $(document).ready(function(){
+        $(".commit-chart").hide();
         jQuery.ajax({
             url: '/api/v1/stats/commits/own:{{ profile.username }}',
             success: function(data){
@@ -126,6 +129,7 @@
                   .set("xLabel", function(d, i) { return i+1; })
                   .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
                   .render();
+                $(".commit-chart").slideDown('slow');
             },
             error: function() {
                 $('.commit-chart').html('{% trans "Commit data not found" %}');
