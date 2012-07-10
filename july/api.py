@@ -618,10 +618,10 @@ class BitbucketHandler(PostCallbackHandler):
         }
         
         fork = repo.get('fork', False)
-        if not fork:
-            result['forked'] = False
+        if fork:
+            result['forked'] = True
         else:
-            result['fork'] = fork
+            result['forked'] = False
         
         return result
         
