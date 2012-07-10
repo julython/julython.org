@@ -26,7 +26,8 @@ def fix_orphans(cursor=None, email=None):
         
     query = Commit.query()
     if email:
-        query.filter(Commit.email==email)
+        logging.info("Fixing orphans by email")
+        query = query.filter(Commit.email==email)
     models, next_cursor, more = query.fetch_page(500, keys_only=True, start_cursor=cursor)
     
     for commit in models:
