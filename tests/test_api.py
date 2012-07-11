@@ -11,7 +11,7 @@ from utils import WebTestCase
 
 from gae_django.auth.models import User
 from july.api import app, make_digest, utcdatetime
-from july.people.models import Project, Location
+from july.people.models import Project, Location, Accumulator
 from july import settings
 
 class CommitApiTests(WebTestCase):
@@ -287,7 +287,7 @@ class GithubHandlerTests(WebTestCase):
         user.add_auth_id('email:chris@ozmm.org')
         self.app.post('/api/v1/github', self.POST)
         tasks = self.taskqueue_stub.GetTasks('default')
-        self.assertEqual(1, len(tasks))
+        self.assertEqual(5, len(tasks))
 
         # Run the task
         task = tasks[0]
@@ -295,7 +295,26 @@ class GithubHandlerTests(WebTestCase):
     
         location = Location.get_by_id('austin-tx')
         self.assertEqual(location.total, 12)
+        
+    def test_post_adds_points_to_global(self):
+        self.policy.SetProbability(1)
+        user = self.make_user('chris', location='Austin TX')
+        user.add_auth_id('email:chris@ozmm.org')
+        self.app.post('/api/v1/github', self.POST)
+        tasks = self.taskqueue_stub.GetTasks('default')
+        self.assertEqual(5, len(tasks))
 
+        # Run the task
+        for task in tasks:
+            deferred.run(base64.b64decode(task['body']))
+    
+        stats = Accumulator.get_histogram('global')
+        self.assertListEqual(stats, [
+            0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,2,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,
+        ])
+                           
     def test_testing_mode_off(self):
         settings.TESTING = False
         user = self.make_user('chris')
@@ -405,7 +424,7 @@ class BitbucketHandlerTests(WebTestCase):
         user.add_auth_id('email:marcus@somedomain.com')
         self.app.post('/api/v1/bitbucket', self.POST)
         tasks = self.taskqueue_stub.GetTasks('default')
-        self.assertEqual(1, len(tasks))
+        self.assertEqual(3, len(tasks))
 
         # Run the task
         task = tasks[0]
@@ -413,6 +432,25 @@ class BitbucketHandlerTests(WebTestCase):
     
         location = Location.get_by_id('austin-tx')
         self.assertEqual(location.total, 11)       
+    
+    def test_post_adds_points_to_global(self):
+        self.policy.SetProbability(1)
+        user = self.make_user('marcus', location='Austin TX')
+        user.add_auth_id('email:marcus@somedomain.com')
+        self.app.post('/api/v1/bitbucket', self.POST)
+        tasks = self.taskqueue_stub.GetTasks('default')
+        self.assertEqual(3, len(tasks))
+
+        # Run the task
+        for task in tasks:
+            deferred.run(base64.b64decode(task['body']))
+    
+        stats = Accumulator.get_histogram('global')
+        self.assertListEqual(stats, [
+            0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,1,0,
+        ])
     
     def test_testing_mode_off(self):
         settings.TESTING = False
@@ -521,35 +559,31 @@ class TestUtils(unittest.TestCase):
 class StatsTest(WebTestCase):
     
     APPLICATION = app
-    
-    def _day_format(self, date):
-        return int(date.strftime('%Y%m%d'))
-    
-    def setUp(self):
-        super(StatsTest, self).setUp()
-        self.user = self.make_user('own:fred')
-        self.start = settings.START_DATETIME
-        self.next = self.start + datetime.timedelta(days=2)
-        self.further = self.next + datetime.timedelta(days=2)
-        self.end = settings.END_DATETIME
-        self.near_end = self.end - datetime.timedelta(days=1)
-        self.make_commit(self.user, "Test Commit", timestamp=self.start, project='http://github.com/a/b')
-        self.make_commit(self.user, "More testing", timestamp=self.next, project='http://github.com/a/b')
-        self.make_commit(self.user, "More testing1", timestamp=self.next, project='http://github.com/a/c')
-        self.make_commit(self.user, "More testing2", timestamp=self.further, project='http://github.com/a/d')
-        self.make_commit(self.user, "More testing4", timestamp=self.near_end, project='http://github.com/a/d')
-        self.make_commit(self.user, "More testing3", timestamp=self.end, project='http://github.com/a/d')
         
     def test_user_counts(self):
         resp = self.app.get('/api/v1/stats/commits/own:fred')
         resp_data = json.loads(resp.body)
         self.assertEqual(resp_data, {
             u"stats": [
-                1,2,0,1,0,0,0,0,0,0,
                 0,0,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,0,0,0,0,0,2
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0
             ],
+            u'total': 0,
             u"metric": u"own:fred",
+        })
+    
+    def test_global_counts(self):
+        resp = self.app.get('/api/v1/stats/commits/global')
+        resp_data = json.loads(resp.body)
+        self.assertEqual(resp_data, {
+            u"stats": [
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0
+            ],
+            u'total': 0,
+            u"metric": u"global",
         })
         
 if __name__ == '__main__':
