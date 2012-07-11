@@ -58,6 +58,7 @@ class Commit(ndb.Model):
         if not isinstance(commits, (list, tuple)):
             commits = [commits]
         user_key = user.key
+        username = 'own:%s' % user.username
         project = project
         logging.info(project)
         
@@ -75,6 +76,7 @@ class Commit(ndb.Model):
                     c['project'] = project
                     commit = Commit(key=commit_key, **c)
                     to_put.append(commit)
+                    
             
             # Check if there are no new commits and return
             if len(to_put) == 0:
@@ -107,7 +109,17 @@ class Commit(ndb.Model):
             return keys
         
         commits = txn()
-        return filter(lambda x: x.kind() == 'Commit', commits)
+        committed = filter(lambda x: x.kind() == 'Commit', commits)
+        
+        # Tally up some points, we do this here after the transaction
+        # was successful, since the timestamps could be different days
+        # we need to pull each one and then record it :( 
+        for commit in committed:
+            # Mark the commits in the history
+            deferred.defer(Accumulator.add_count, username, commit.urlsafe())
+            deferred.defer(Accumulator.add_count, 'global', commit.urlsafe())
+        
+        return committed
     
     @classmethod
     def create_orphan(cls, commits, project=None):
@@ -127,6 +139,8 @@ class Commit(ndb.Model):
                 c['project'] = project
                 commit = Commit(key=commit_key, **c)
                 to_put.append(commit)
+                # Defer adding points to global counter 
+                deferred.defer(Accumulator.add_count, 'global', c['timestamp'])
         
         commits = ndb.put_multi(to_put)
         return commits
@@ -273,92 +287,51 @@ class Accumulator(ndb.Model):
     # reference object for the stat collection
     # 'location:slug', 'own:username', 'project:project_url', 'global'
     metric = ndb.StringProperty()
-    
-    count = ndb.IntegerProperty(indexed=False)
-    
-    date = ndb.DateProperty()
+    count = ndb.IntegerProperty(indexed=False, default=0)
     
     @classmethod
-    def make_key(cls, metric):
-        return ndb.Key(cls.__name__, metric)
+    def make_key(cls, metric, date):
+        return ndb.Key(cls.__name__, '%s:%s' % (metric, date))
     
+    @classmethod
+    def get_histogram(cls, metric):
+        """
+        Returns a list of integers representing the count totals
+        for each day starting with ~July 1st and ending ~July 31st.
+        """
+        keys = [cls.make_key(metric, d) for d in xrange(1, 32)]
+        models = ndb.get_multi(keys)
+        # ndb returns None if the object doesn't exist (no counts for that day!)
+        return [model.count if model else 0 for model in models]
+    
+    @classmethod
+    def add_count(cls, metric, date, delta=1):
+        """
+        Add to the count totals for a day. Special casing the 
+        ends to be within our artifical 31 day month.
+        """
+        # check if we were passed a key
+        if isinstance(date, basestring):
+            try:
+                key = ndb.Key(urlsafe=date)
+                commit = key.get()
+                date = commit.timestamp
+            except:
+                logging.exception("Unable to find commit!")
+                return
 
-
-def get_stats(metric):
-    key = 'stats:commits:%s' % metric
-    stats = memcache.get(key)
-    if stats is not None:
-        logging.info("found stats")
-        return stats
-    
-    if metric.startswith('own:'):
-        stats = _user_stats(metric)
-    elif metric.startswith('location:'):
-        stats = _location_stats(metric)
-    elif metric.startswith('project:'):
-        stats = _project_stats(metric)
-    else:
-        stats = _global_stats()
-    
-    memcache.set(key, stats, time=3600)
-    return stats
-
-def _stats(metric, commits):
-    """
-    This is a horrible method that returns a list of commit
-    counts for each day in the month::
-    
-        {
-           "metric": 'own:username',
-           "stats": [
-                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
-           ]
-        }
-    
-    The first and last days are actually June 30th and Aug 1st those
-    are just collapsed on the ends.
-    """
-    timestamp = lambda date: date.strftime('%Y%m%d')
-    
-    days = {}
-    
-    for delta in xrange(33):
-        # prepopulate a dict with the proper days
-        days['%s' % timestamp(settings.START_DATETIME + datetime.timedelta(days=delta))] = []
-    
-    for commit in commits:
-        days[timestamp(commit.timestamp)].append(commit)
-    
-    counts = [{'date': int(date), 'count': len(commits)} for date, commits in days.iteritems()]
-    counts_sorted = sorted(counts, key=lambda v: v['date'])
-    
-    stats = [d['count'] for d in counts_sorted]
-    # pop ends off and add squish into 31 days
-    june = stats.pop(0)
-    aug = stats.pop()
-    stats[0] += june
-    stats[-1] += aug
-    
-    stats = {
-        'metric': metric,
-        'stats': stats,
-    }
-    
-    return stats
-    
-    
-
-def _user_stats(metric):
-    
-    user = User.get_by_auth_id(metric)
-    if user is None:
-        return
-    
-    # TODO: remove commits from before the start!!!
-    commits = Commit.query(ancestor=user.key).filter(Commit.timestamp >= settings.START_DATETIME, Commit.timestamp <= settings.END_DATETIME).fetch(500)
-    
-    stats = _stats(metric, commits)
-    
-    return json.dumps(stats)
+        if date.month == 6:
+            date = settings.START_DATETIME + datetime.timedelta(days=1)
+        elif date.month == 8:
+            date = settings.END_DATETIME - datetime.timedelta(days=1)
+        
+        name = '%s:%s' % (metric, date.day)
+        
+        @ndb.transactional
+        def txn():
+            counter = cls.get_or_insert(name, metric=metric)
+            counter.count += delta
+            counter.put()
+            return counter.count
+        
+        return txn()

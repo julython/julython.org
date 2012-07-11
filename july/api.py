@@ -791,15 +791,14 @@ class StatsResource(API):
     """Get the commits for the last 7 days"""
     
     def get(self, metric):
-        from july.people.models import get_stats
-        stats = get_stats(metric)
+        from july.people.models import Accumulator
+        stats = Accumulator.get_histogram(metric)
         
-        self.response.headers['Content-type'] = 'application/json'
-        self.response.headers['Access-Control-Allow-Origin'] = '*'
-        
-        return self.response.out.write(stats)
-        
-        
+        self.respond_json({
+            'metric': metric,
+            'stats': stats,
+            'total': sum(stats),
+        })
         
 ###
 ### Setup the routes for the API
