@@ -309,6 +309,12 @@ class Accumulator(ndb.Model):
         """
         Add to the count totals for a day. Special casing the 
         ends to be within our artifical 31 day month.
+        
+        * metric: 'global', 'own:username', 'project:slug'
+        * date: either the date of the object or a urlsafe key of
+                an object with a timestamp attribute
+        * delta: number to increase count by (default 1)
+        
         """
         # check if we were passed a key
         if isinstance(date, basestring):
