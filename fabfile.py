@@ -10,3 +10,8 @@ def less_compile(compress=True):
     """Compile the .less files into css."""
     with lcd('july'):
         local("lessc --compress static_root/less/layout.less > static_root/css/main.css")
+
+@task
+def test():
+    """Run the test suite"""
+    local("python -m unittest discover")
