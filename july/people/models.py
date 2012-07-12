@@ -305,7 +305,7 @@ class Accumulator(ndb.Model):
         return [model.count if model else 0 for model in models]
     
     @classmethod
-    def add_count(cls, metric, date, delta=1):
+    def add_count(cls, metric, date, delta=1, reset=False):
         """
         Add to the count totals for a day. Special casing the 
         ends to be within our artifical 31 day month.
@@ -332,11 +332,15 @@ class Accumulator(ndb.Model):
             date = settings.END_DATETIME - datetime.timedelta(days=1)
         
         name = '%s:%s' % (metric, date.day)
+        reset_counts = reset
         
         @ndb.transactional
         def txn():
             counter = cls.get_or_insert(name, metric=metric)
-            counter.count += delta
+            if reset_counts:
+                counter.count = delta
+            else:
+                counter.count += delta
             counter.put()
             return counter.count
         
