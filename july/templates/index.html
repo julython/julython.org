@@ -10,6 +10,8 @@
         </div>
       </div>
       
+   {# Teaser #}
+   {% if not user.is_authenticated %}
       {% comment %}
       <div class="row">
         <div class="span6 offset3 large-notice">
@@ -175,6 +177,84 @@
         </div>
       </div>
     </div>
+
+    
+    {% else %}
+    <div id="navigation">{# just leave me blank #}</div>
+    <div class="container section-container no-border">
+      <div class="row">
+        <div class="span12">
+          <div class="row">
+            <div class="span12">
+              <h2 class="spread-the-word">{% blocktrans %}You are all doing awesome! {{ total }} commits so far!{% endblocktrans %}</h2>
+            </div>
+          </div>
+          <div class="row">
+               <div id="user-barchart" class="commit-chart span12" data-chart="barchart" data-chartid="global"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="container section-container no-border">
+      <div class="row">
+        <div class="span12">
+          <div class="row">
+            <div class="span12">
+              <h2 class="teaming-up">{% trans "High Scores" %}</h2>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="span4 section-blurb">
+              <h3>{% trans "People" %}</h3>
+              {% for user in people %}
+                  <h3>
+                        <img src="{{ user.picture_url }}" alt="{{ user.first_name}} {{ user.last_name }}" width="50"/>
+                        <a href="{% url member-profile user.username %}">{{ user }}</a>
+                  </h3>
+                  {% if user.description %}<p>{{ user.description }}</p>{% endif %}
+                  <p><a href="/location/{{ user.location_slug }}">{{ user.location }}</a></p>
+                  <p>{% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
+                      <a href="{% url user-projects user.username %}">{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a></p>
+              {% if not forloop.last %}<hr>{% endif %}
+              {% endfor %}
+            </div>
+            
+            <div class="span4 section-blurb">
+              <h3>{% trans "Locations" %}</h3>
+              {% for location in locations %}
+                  <h3><a href="/location/{{ location.slug }}/">{{ location }}</a></h3>
+                  <p>
+                    {% blocktrans count number_of_points=location.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
+                    {% blocktrans count number_of_projects=location.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                  </p>
+              {% if not forloop.last %}<hr>{% endif %}
+              {% endfor %}
+            </div>
+            
+            <div class="span4 section-blurb">
+              <h3>{% trans "Projects" %}</h3>
+              {% for project in projects %}
+              <div class="project">
+                     <h3><a href="{% url project-details project.project_name %}">{{ project }}</a> </h3>
+                     <h3>({{ project.total }} {% trans "points" %})</h3>
+                     {% if project.description %}
+                     <p>{{ project.description }}</p>
+                     {% endif %}
+                     <p><a href="{{ project.url }}">{{ project.url }}</a></p>
+              </div>
+              {% if not forloop.last %}<hr>{% endif %}
+              {% endfor %}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {% endif %}
+    
     
     {% comment %}
     {% for section in sections %}
@@ -216,5 +296,16 @@
 {% block javascript %}
     {{ block.super }}
     <script type="text/javascript" src="{{ STATIC_URL }}js/index.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
+<script type="text/javascript">
+  $(document).ready(function(){
+    new Charts.BarChart("user-barchart")
+      .load({{stats}})
+      .set("xLabel", function(d, i) { return i+1; })
+      .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
+      .render();
+  });
+</script>
 {% endblock %}
 
