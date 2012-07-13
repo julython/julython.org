@@ -37,3 +37,9 @@ indexes:
   - name: location_slug
   - name: total
     direction: desc
+
+- kind: User
+  properties:
+  - name: team_slug
+  - name: total
+    direction: desc
