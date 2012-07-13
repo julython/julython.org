@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect
 
 from gae_django.auth.models import User
 
-from july.people.models import Accumulator, Location, Project
+from july.people.models import Accumulator, Location, Project, Team
 
 
 def index(request):
@@ -27,6 +27,7 @@ def index(request):
     people = []
     locations = []
     projects = []
+    teams = []
     
     # this is only shown on authenticated page loads
     # to save on the overhead. 
@@ -34,17 +35,20 @@ def index(request):
         stats = Accumulator.get_histogram('global')
         total = sum(stats)
         location_future = Location.query().order(-Location.total).fetch_async(3)
-        people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(3)
-        project_future = Project.query().order(-Project.total).fetch_async(3)
+        people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(5)
+        project_future = Project.query().order(-Project.total).fetch_async(5)
+        team_future = Team.query().order(-Team.total).fetch_async(3)
         locations = location_future.get_result()
         people = people_future.get_result()
         projects = project_future.get_result()
+        teams = team_future.get_result()
     
     ctx = Context({
         'sections': [],
         'people': people,
         'projects': projects,
         'locations': locations,
+        'teams': teams,
         'stats': json.dumps(stats),
         'total': total,
         'user': request.user,

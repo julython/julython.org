@@ -215,6 +215,9 @@
                   </h3>
                   {% if user.description %}<p>{{ user.description }}</p>{% endif %}
                   <p><a href="/location/{{ user.location_slug }}">{{ user.location }}</a></p>
+                  {% if user.team %}
+                  <p><a href="{% url team-details user.team_slug %}">{{ user.team }}</a></p>
+                  {% endif %}
                   <p>{% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
                       <a href="{% url user-projects user.username %}">{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a></p>
               {% if not forloop.last %}<hr>{% endif %}
@@ -228,6 +231,16 @@
                   <p>
                     {% blocktrans count number_of_points=location.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
                     {% blocktrans count number_of_projects=location.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                  </p>
+              {% if not forloop.last %}<hr>{% endif %}
+              {% endfor %}
+              
+              <h3>{% trans "Teams" %}</h3>
+              {% for team in teams %}
+                  <h3><a href="{% url team-details team.slug %}">{{ team }}</a></h3>
+                  <p>
+                    {% blocktrans count number_of_points=team.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
+                    {% blocktrans count number_of_projects=team.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
                   </p>
               {% if not forloop.last %}<hr>{% endif %}
               {% endfor %}
