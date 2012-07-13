@@ -91,18 +91,12 @@ class Commit(ndb.Model):
                 # update the users total points.
                 projects = set(getattr(user, 'projects', []))
                 if project not in projects:
-                    logging.info('Adding project to user: %s', user)
+                    logging.info('Adding project to user: %s', user.username)
                     projects.add(project)
                     count += 10
                     user.projects = list(projects)
 
             points = len(to_put)
-            
-            # defer updating the users location if they have one.
-            if user.location:
-                logging.info("deferring add points to location: %s", user.location_slug)
-                deferred.defer(add_points_to_location, user.location_slug, points, project)
-            
             user.total = count + points
             to_put.append(user)
             keys = ndb.put_multi(to_put)
@@ -110,6 +104,15 @@ class Commit(ndb.Model):
         
         commits = txn()
         committed = filter(lambda x: x.kind() == 'Commit', commits)
+        
+        # defer updating the users location if they have one.
+        if user.location:
+            logging.info("deferring add points to location: %s", user.location_slug)
+            deferred.defer(Location.add_points, user.location_slug, len(committed), project)
+            
+        if getattr(user, 'team_slug', None):
+            logging.info("deferring add points to team: %s", user.team_slug)
+            deferred.defer(Team.add_points, user.team_slug, len(committed), project)
         
         # Tally up some points, we do this here after the transaction
         # was successful, since the timestamps could be different days
@@ -250,35 +253,41 @@ class Location(ndb.Model):
     def slug(self):
         return self.key.id()
     
-def add_points_to_location(slug, points, project_url=None):
-    """Add points and project_url to a location by slug.
-    
-    This is a simple method that runs in a transaction to 
-    get or insert the location model, then update the points.
-    It is meant to be run as a deferred task like so::
-    
-        from google.appengine.ext import deferred
+    @classmethod
+    def add_points(cls, slug, points, project_url=None):
+        """Add points and project_url to a location by slug.
         
-        deferred.defer(add_points_to_location, 'some-slug-text', 10, 
-            'http://github.com/my/project')
+        This is a simple method that runs in a transaction to 
+        get or insert the location model, then update the points.
+        It is meant to be run as a deferred task like so::
         
-        # or without a project
-        deferred.defer(add_points_to_location, 'some-slug-text', 3)
-    """
-    
-    @ndb.transactional
-    def txn(slug, points, project):
-        location = Location.get_or_insert(slug)
-        if project is not None and project not in location.projects:
-            location.projects.append(project)
-            points += 10
+            from google.appengine.ext import deferred
             
-        location.total += points
-        location.put()
-        return location
-    
-    return txn(slug, points, project_url)
+            deferred.defer(Location.add_points, 'some-slug-text', 10, 
+                'http://github.com/my/project')
+            
+            # or without a project
+            deferred.defer(Location.add_points, 'some-slug-text', 3)
+        """
+        
+        model = cls
+        
+        @ndb.transactional
+        def txn(slug, points, project):
+            instance = model.get_or_insert(slug)
+            if project is not None and project not in instance.projects:
+                instance.projects.append(project)
+                points += 10
+                
+            instance.total += points
+            instance.put()
+            return instance
+        
+        return txn(slug, points, project_url)
 
+class Team(Location):
+    """Simple model for holding point totals and projects for a Team"""
+    # It is all the same yo!
 
 class Accumulator(ndb.Model):
     """

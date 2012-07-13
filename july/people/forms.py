@@ -27,6 +27,9 @@ class EditUserForm(forms.Form):
     location = forms.CharField(
         label=ugettext_lazy('Location'),
         max_length=160, required=False)
+    team = forms.CharField(
+        label=ugettext_lazy('Team'),
+        max_length=160, required=False)
     email = forms.EmailField(
         label=ugettext_lazy("Add Email Address"), required=False)
 
@@ -40,6 +43,7 @@ class EditUserForm(forms.Form):
             self.fields['description'].initial=getattr(self.user, 'description', None)
             self.fields['url'].initial=getattr(self.user, 'url', None)
             self.fields['location'].initial=getattr(self.user, 'location', None)
+            self.fields['team'].initial=getattr(self.user, 'team', None)
             # initialize the emails
             for auth in self.user.auth_ids:
                 if auth.startswith('email'):

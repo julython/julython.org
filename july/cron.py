@@ -8,7 +8,7 @@ from google.appengine.ext import deferred
 
 from gae_django.auth.models import User
 
-from july.people.models import Commit, Location, Accumulator
+from july.people.models import Commit, Location, Accumulator, Team
 from july import settings
 
 class CommitCron(webapp2.RequestHandler):
@@ -167,6 +167,59 @@ def fix_location(slug, cursor=None, total=0):
     if more:
         # We have more people to loop through!!
         return deferred.defer(fix_location, location_slug, 
+            cursor=next_cursor.urlsafe(), total=total)
+
+def fix_team(slug, cursor=None, total=0):
+    
+    # Don't try to lookup slugs that are the empty string.
+    # hint they don't exist!
+    if not slug:
+        return
+    
+    team_slug = slug
+    team = Team.get_or_insert(team_slug)
+    
+    projects = set([])
+    
+    if cursor:
+        # we are looping Grab the existing project list so we don't
+        # wipe out the earlier runs work
+        team_p = getattr(team, 'projects', [])
+        projects = set(team_p)
+        cursor = Cursor(urlsafe=cursor)
+    
+    people = User.query().filter(ndb.GenericProperty('team_slug') == team_slug)
+    
+    # Go through the users in chucks
+    models, next_cursor, more = people.fetch_page(100, start_cursor=cursor)
+    
+    for model in models:
+        user_projects = getattr(model, 'projects', [])
+        user_total = getattr(model, 'total', 0)
+        # Do a little math to figure out how many commits they have
+        commits = user_total - (len(user_projects) * 10)
+        if commits > 0:
+            logging.info('Adding %s to %s', commits, team_slug)
+            total += commits
+        # Add the users projects to the project set (this filters duplicates)
+        projects.update(user_projects)
+    
+    
+    # Run update in a transaction    
+    projects = list(projects)
+    total = total + (len(projects) * 10)
+    @ndb.transactional
+    def txn():
+        team = Team.get_or_insert(team_slug)
+        team.total = total
+        team.projects = projects
+        team.put()
+    
+    txn()
+
+    if more:
+        # We have more people to loop through!!
+        return deferred.defer(fix_team, team_slug, 
             cursor=next_cursor.urlsafe(), total=total)
 
 class FixCounts(webapp2.RequestHandler):
