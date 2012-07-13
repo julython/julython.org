@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="container section-container no-border">
+  <div class="row locations">
+    <div class="span6 offset3">
+        <h2 class="teaming-up">{% trans "Teams" %}</h2>
+        {% for team in teams %}
+          <div class="row location">
+            <div class="span5">
+              <h3><a href="{% url team-details team.slug %}">{{ team }}</a></h3>
+              <p>
+                {% blocktrans count number_of_projects=team.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+              </p>
+            </div>
+            <div class="points pull-right">
+                <p>{{ team.total }}</p>
+                <p class="small">{% trans "points" %}</p>
+            </div>
+          </div>
+        {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
