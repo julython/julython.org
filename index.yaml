@@ -32,6 +32,12 @@ indexes:
   - name: action_time
     direction: desc
 
+- kind: LogEntry
+  ancestor: yes
+  properties:
+  - name: action_time
+    direction: desc
+
 - kind: User
   properties:
   - name: location_slug
