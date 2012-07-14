@@ -1,6 +1,7 @@
 import json
 
 from google.appengine.ext import ndb
+from google.appengine.api import memcache
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
@@ -43,21 +44,26 @@ def index(request):
         people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(5)
         project_future = Project.query().order(-Project.total).fetch_async(5)
         team_future = Team.query().order(-Team.total).fetch_async(3)
+        message_future = Message.query().order(-Message.timestamp).fetch_async(10)
+        # Live Connection
+        connection = Connection.get_or_insert(request.user.username, client_id=request.user.username)
+        connection_future = connection.put_async()
+        
+        # Julython live stuffs
+        token_key = 'live_token:%s' % request.user.username
+        token = memcache.get(token_key)
+        if token is None:
+            token = channel.create_channel(request.user.username)
+            memcache.set(token_key, token, time=7200)
+
+        
         locations = location_future.get_result()
         people = people_future.get_result()
         projects = project_future.get_result()
         teams = team_future.get_result()
-        
-        # Julython live stuffs
-        if not request.session.get('live_token'):
-            _token = channel.create_channel(request.user.username)
-            connection = Connection.get_or_insert(request.user.username, client_id=request.user.username)
-            connection.put()
-            request.session['live_token'] = _token
-            
-        token = request.session['live_token']
-        message_future = Message.query().order(-Message.timestamp).fetch_async(10)
+        connection_future.get_result()
         message_models = message_future.get_result()
+        
         m_list = [to_dict(m) for m in message_models]
         messages = json.dumps(m_list)
     

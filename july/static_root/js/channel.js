@@ -15,7 +15,15 @@
   Channel.prototype._connect = function() {
     // pretending to connect
     console.log("We're connecting!");
-    this._startDevMessages();
+    var self = this;
+    channel = new goog.appengine.Channel(this._token);
+    socket = channel.open();
+    socket.onmessage = function(message) {
+        self._newMessage(message);
+    };
+    socket.onerror = function(message){
+        console.log(message);
+    };
   };
 
   Channel.prototype._newMessage = function(message) {
@@ -30,9 +38,10 @@
 
   Channel.prototype._buildMessageView = function(message) {
     // should move to a template eventually...
+    message = JSON.parse(message.data);
     var li = $('<li class="message"></li>');
-    li.append('<img src="'+message.image+'" class="profile-image"/>');
-    li.append('<h4 class="username">'+message.user+'</h4>');
+    li.append('<img src="'+message.picture_url+'" class="profile-image"/>');
+    li.append('<h4 class="username">'+message.username+'</h4>');
     var p = $('<p class="message-content"></p>');
     p.text(message.message);
     li.append(p);
