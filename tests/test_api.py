@@ -13,6 +13,7 @@ from gae_django.auth.models import User
 from july.api import app, make_digest, utcdatetime
 from july.people.models import Project, Location, Accumulator
 from july import settings
+from july.live.models import Message
 
 class CommitApiTests(WebTestCase):
     
@@ -585,7 +586,37 @@ class StatsTest(WebTestCase):
             u'total': 0,
             u"metric": u"global",
         })
+
+class TestMessage(WebTestCase):
+    
+    APPLICATION = app
+    
+    DATA = {
+        "username": "github",
+        "message": "Something interesting",
+        "picture_url": "http://avator.com/my_image.jpg",
+        "url": "http://github.com/defunkt/github/commit/k20lkjs920lskjlskjjd1",
+        "commit_hash": "k20lkjs920lskjlskjjd1",
+        "project": "http://github.com/defunkt/github"}
+    
+    def test_create_message(self):
+        data = json.dumps(self.DATA)
+        self.app.post('/api/v1/live', data)
+        count = Message.query().count(10)
+        self.assertEqual(count, 1)
+    
+    def test_post_adds_points_to_global(self):
+        data = json.dumps(self.DATA)
+        self.app.post('/api/v1/live', data)
+        tasks = self.taskqueue_stub.GetTasks('default')
+        self.assertEqual(1, len(tasks))
+
+        # Run the task
+        for task in tasks:
+            deferred.run(base64.b64decode(task['body']))
         
+        #TODO: assert channels 
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     unittest.main()

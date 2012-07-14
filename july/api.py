@@ -19,6 +19,8 @@ from gae_django.auth.models import User
 from july import settings
 from july.people.forms import CommitForm, ProjectForm
 from july.people.models import Commit, Project
+from july.live.models import Message
+from july.live.forms import MessageForm
 
 EMAIL_MATCH = re.compile('<(.+?)>')
 
@@ -799,7 +801,34 @@ class StatsResource(API):
             'stats': stats,
             'total': sum(stats),
         })
+
+class LiveHandler(API):
+    
+    model = Message
+    form = MessageForm
+    
+    def post(self):
+        """Create a message from the api.
         
+        Example::
+        
+            {
+                "username": "github",
+                "message": "Something interesting",
+                "picture_url": "http://avator.com/my_image.jpg",
+                "url": "http://github.com/defunkt/github/commit/k20lkjs920lskjlskjjd1",
+                "commit_hash": "k20lkjs920lskjlskjjd1",
+                "project": "http://github.com/defunkt/github"
+            },
+        """
+        form = self.parse_form()
+        if not form.is_valid():
+            return self.respond_json(form.errors, status_code=400)
+        
+        message = Message.create_message(**form.cleaned_data)
+        
+        self.respond_json({'message': self.serialize(message)}, status_code=201)
+
 ###
 ### Setup the routes for the API
 ###
@@ -814,6 +843,7 @@ routes = [
     webapp2.Route('/api/v1/stats/commits/<metric:.+>', StatsResource),
     webapp2.Route('/api/v1/github', GithubHandler),
     webapp2.Route('/api/v1/bitbucket', BitbucketHandler),
+    webapp2.Route('/api/v1/live', LiveHandler),
 ] 
 
 # The Main Application

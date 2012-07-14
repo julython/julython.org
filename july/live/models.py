@@ -22,8 +22,9 @@ class Message(model.Model):
     
     @classmethod
     def create_message(cls, username, picture_url, message, **kwargs):
-        message = cls(username=username, picture_url, message)
+        message = cls(username=username, picture_url=picture_url, message=message)
         message.populate(**kwargs)
         message.put()
         
         deferred.defer(create_message, message.key.urlsafe())
+        return message
