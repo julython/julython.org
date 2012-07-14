@@ -32,7 +32,21 @@ class Message(model.Model):
         message.populate(**kwargs)
         message.put()
         
-        deferred.defer(send_live_message, message.key.urlsafe())
+        deferred.defer(send_live_message, message.key.urlsafe(), _queue="live")
+        return message
+    
+    @classmethod
+    def add_commit(cls, key):
+        commit_key = model.Key(urlsafe=key)
+        commit = commit_key.get()
+        parent = commit.parent.get()
+        
+        message = cls(username=parent.username, 
+            picture_url=parent.picture_url, message=commit.message, url=commit.url,
+            project=commit.project, commit_hash=commit.hash)
+        message.put()
+        
+        deferred.defer(send_live_message, message.key.urlsafe(), _queue="live")
         return message
 
 class Connection(model.Model):

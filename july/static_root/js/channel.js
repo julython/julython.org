@@ -47,7 +47,7 @@
 
   Channel.prototype._buildMessageView = function(message) {
     // should move to a template eventually...
-    if (typeof(message) === "string") {
+    if (message.data && typeof(message.data) === "string") {
       // it's a JSON message from Google.
       message = JSON.parse(message.data);
     }

@@ -329,6 +329,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/channel.js"></script>
 <script type="text/javascript">
+  {% if user.is_authenticated %}
   $(document).ready(function(){
     new Charts.BarChart("user-barchart")
       .load({{stats}})
@@ -338,6 +339,7 @@
     var channel = new julython.Channel($("#live-messages"), "{{ token }}", {maxMessages: 30});
     channel.prepopulate("{{ messages|safe|addslashes }}");
   });
+  {% endif %}
 </script>
 {% endblock %}
 
