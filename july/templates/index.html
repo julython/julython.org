@@ -328,7 +328,8 @@
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
-    new julython.Channel($("#live-messages"), "{{ token }}", {maxMessages: 30});
+    var channel = new julython.Channel($("#live-messages"), "{{ token }}", {maxMessages: 30});
+    channel.prepopulate("{{ messages|safe|addslashes }}");
   });
 </script>
 {% endblock %}

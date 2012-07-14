@@ -4,6 +4,8 @@
     this._el = $(el);
     this._options = options || {};
     this._token = token;
+    console.log(this);
+    console.log(this._setupOptions);
     this._setupOptions();
     this._connect();
   };
@@ -16,14 +18,21 @@
     // pretending to connect
     console.log("We're connecting!");
     var self = this;
-    channel = new goog.appengine.Channel(this._token);
-    socket = channel.open();
+    var channel = new goog.appengine.Channel(this._token);
+    var socket = channel.open();
     socket.onmessage = function(message) {
         self._newMessage(message);
     };
     socket.onerror = function(message){
         console.log(message);
     };
+  };
+
+  Channel.prototype.prepopulate = function(messages) {
+    messages = JSON.parse(messages);
+    for (var i=0; i<messages.length; ++i) {
+      this._newMessage(messages[i]);
+    }
   };
 
   Channel.prototype._newMessage = function(message) {
@@ -38,7 +47,10 @@
 
   Channel.prototype._buildMessageView = function(message) {
     // should move to a template eventually...
-    message = JSON.parse(message.data);
+    if (typeof(message) === "string") {
+      // it's a JSON message from Google.
+      message = JSON.parse(message.data);
+    }
     var li = $('<li class="message"></li>');
     li.append('<img src="'+message.picture_url+'" class="profile-image"/>');
     li.append('<h4 class="username">'+message.username+'</h4>');
