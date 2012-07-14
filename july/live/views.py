@@ -1,11 +1,13 @@
 import json
+import logging
 
 from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 
 from july.api import to_dict
-from july.live.models import Message
+from july.live.models import Message, Connection
+from django import http
 
 @login_required
 def live(request):
@@ -21,3 +23,24 @@ def live(request):
     return render_to_response('live/index.html', {
         'token': token, 'mesages': messages},
         context_instance=RequestContext(request))
+    
+def connected(request):
+    
+    client_id = request.POST.get('from')
+
+    connection = Connection.get_or_insert(client_id, client_id=client_id)
+    connection.put()
+    
+    return http.HttpResponse('Ok')
+
+def disconnected(request):
+    
+    client_id = request.POST.get('from')
+    
+    connection = Connection.get_by_id(client_id)
+    if connection is None:
+        return http.HttpResponse('Ok')
+    
+    connection.delete()
+    
+    return http.HttpResponse('Ok')

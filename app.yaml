@@ -16,6 +16,7 @@ builtins:
 
 inbound_services:
 - warmup
+- channel_presence
 
 libraries:
 - name: django
