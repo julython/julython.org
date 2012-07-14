@@ -1,8 +1,10 @@
 
+import datetime
+import json
+
 from google.appengine.ext import deferred
 from google.appengine.ext.ndb import model
-
-from tasks import create_message
+from google.appengine.api import channel
 
 class Message(model.Model):
     
@@ -20,11 +22,40 @@ class Message(model.Model):
     def __unicode__(self):
         return self.__str__()
     
+    def to_json(self):
+        data = self.to_dict(exclude=['timestamp'])
+        return json.dumps(data)
+    
     @classmethod
     def create_message(cls, username, picture_url, message, **kwargs):
         message = cls(username=username, picture_url=picture_url, message=message)
         message.populate(**kwargs)
         message.put()
         
-        deferred.defer(create_message, message.key.urlsafe())
+        deferred.defer(send_live_message, message.key.urlsafe())
         return message
+
+class Connection(model.Model):
+    """Store all the connected clients."""
+    
+    client_id = model.StringProperty()
+    timestamp = model.DateTimeProperty(auto_now=True)
+    
+
+def send_live_message(key):
+    """Deferred task for sending messages to the open channels."""
+    
+    message_key = model.Key(urlsafe=key)
+    message = message_key.get()
+    
+    if message is None:
+        return
+    
+    # Only notify rescent connections
+    timestamp = datetime.datetime.now()
+    oldest = timestamp - datetime.timedelta(hours=2)
+    
+    connections = Connection.query().filter(Connection.timestamp >= oldest).fetch(200, keys_only=True)
+    
+    for connection in connections:
+        channel.send_message(connection.id(), message.to_json())
