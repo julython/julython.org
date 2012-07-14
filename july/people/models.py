@@ -9,6 +9,7 @@ from google.appengine.api import memcache
 
 from gae_django.auth.models import User
 from july import settings
+from july.live.models import Message
 
 class Commit(ndb.Model):
     """
@@ -121,6 +122,7 @@ class Commit(ndb.Model):
             # Mark the commits in the history
             deferred.defer(Accumulator.add_count, username, commit.urlsafe())
             deferred.defer(Accumulator.add_count, 'global', commit.urlsafe())
+            deferred.defer(Message.add_commit, commit.urlsafe(), _countdown=15, _queue="live")
         
         return committed
     
