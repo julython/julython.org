@@ -7368,6 +7368,16 @@ a.video {
   color: #777;
   font-size: 15px;
 }
+a.tshirt {
+  display: inline-block;
+  font-family: "Doppio One", sans-serif;
+  padding-left: 26px;
+  min-height: 20px;
+  line-height: 30px;
+  background: url("/static/images/tshirt_icon.png") 0 6px no-repeat;
+  color: #777;
+  font-size: 15px;
+}
 .fixed {
   position: fixed;
 }
@@ -7415,6 +7425,15 @@ img.icon {
   padding: 136px 0 0 500px;
   overflow: hidden;
   background: url("/static/images/julython_logo_large.png") top left no-repeat;
+}
+.notice {
+  border-top: 1px solid #EEE;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  text-align: center;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.1);
+  background: #FAFAFA;
 }
 .large-notice {
   border-top: 1px solid #CCC;
