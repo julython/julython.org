@@ -25,7 +25,7 @@ def live(request):
         context_instance=RequestContext(request))
     
 def connected(request):
-    
+    logging.error('here')
     client_id = request.POST.get('from')
 
     connection = Connection.get_or_insert(client_id, client_id=client_id)

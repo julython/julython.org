@@ -12,7 +12,7 @@ from gae_django.auth.models import User
 
 from july.people.models import Accumulator, Location, Project, Team
 from google.appengine.api import channel
-from july.live.models import Message
+from july.live.models import Message, Connection
 from july.api import to_dict
 
 
@@ -51,6 +51,8 @@ def index(request):
         # Julython live stuffs
         if not request.session.get('live_token'):
             _token = channel.create_channel(request.user.username)
+            connection = Connection.get_or_insert(request.user.username, client_id=request.user.username)
+            connection.put()
             request.session['live_token'] = _token
             
         token = request.session['live_token']

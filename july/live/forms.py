@@ -7,9 +7,9 @@ class MessageForm(forms.Form):
     username = forms.CharField(required=True)
     picture_url = forms.URLField(required=True)
     message = forms.CharField(required=True)
-    commit_hash = forms.CharField()
-    url = forms.URLField()
-    project = forms.URLField()
+    commit_hash = forms.CharField(required=False)
+    url = forms.URLField(required=False)
+    project = forms.URLField(required=False)
     
     def clean_username(self):
         data = self.cleaned_data.get('username')

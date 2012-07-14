@@ -316,6 +316,7 @@
 
 {% block javascript %}
     {{ block.super }}
+    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/index.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
@@ -327,7 +328,7 @@
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
-    new julython.Channel($("#live-messages"), "foobar", {maxMessages: 30});
+    new julython.Channel($("#live-messages"), "{{ token }}", {maxMessages: 30});
   });
 </script>
 {% endblock %}
