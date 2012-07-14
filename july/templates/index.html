@@ -185,12 +185,18 @@
       <div class="row">
         <div class="span12">
           <div class="row">
-            <div class="span12">
+            <div class="span8">
               <h2 class="spread-the-word">{% blocktrans %}You are all doing awesome! {{ total }} commits so far!{% endblocktrans %}</h2>
+              <div id="user-barchart"
+                class="commit-chart hidden-phone"
+                data-chart="barchart"
+                data-chartid="global">
+              </div>
             </div>
-          </div>
-          <div class="row">
-               <div id="user-barchart" class="commit-chart span12" data-chart="barchart" data-chartid="global"></div>
+            <div class="span4">
+              <h2 class="participating">What's Happening?</h2>
+              <ul class="message-list" id="live-messages"></ul>
+            </div>
           </div>
         </div>
       </div>
@@ -206,7 +212,7 @@
           </div>
           
           <div class="row">
-            <div class="span4 section-blurb">
+            <div class="span3 section-blurb">
               <h3>{% trans "People" %}</h3>
               {% for user in people %}
                   <h3>
@@ -224,7 +230,7 @@
               {% endfor %}
             </div>
             
-            <div class="span4 section-blurb">
+            <div class="span3 section-blurb">
               <h3>{% trans "Locations" %}</h3>
               {% for location in locations %}
                   <h3><a href="/location/{{ location.slug }}/">{{ location }}</a></h3>
@@ -234,7 +240,9 @@
                   </p>
               {% if not forloop.last %}<hr>{% endif %}
               {% endfor %}
-              
+
+            </div>
+            <div class="span3 section-blurb">
               <h3>{% trans "Teams" %}</h3>
               {% for team in teams %}
                   <h3><a href="{% url team-details team.slug %}">{{ team }}</a></h3>
@@ -246,7 +254,7 @@
               {% endfor %}
             </div>
             
-            <div class="span4 section-blurb">
+            <div class="span3 section-blurb">
               <h3>{% trans "Projects" %}</h3>
               {% for project in projects %}
               <div class="project">
@@ -310,7 +318,8 @@
     {{ block.super }}
     <script type="text/javascript" src="{{ STATIC_URL }}js/index.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/channel.js"></script>
 <script type="text/javascript">
   $(document).ready(function(){
     new Charts.BarChart("user-barchart")
@@ -318,6 +327,7 @@
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
+    new julython.Channel($("#live-messages"), "foobar", {maxMessages: 30});
   });
 </script>
 {% endblock %}
