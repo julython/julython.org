@@ -65,6 +65,7 @@ def index(request):
         message_models = message_future.get_result()
         
         m_list = [to_dict(m) for m in message_models]
+        m_list.reverse()
         messages = json.dumps(m_list)
     
     ctx = Context({
