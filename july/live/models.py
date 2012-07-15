@@ -39,7 +39,11 @@ class Message(model.Model):
     def add_commit(cls, key):
         commit_key = model.Key(urlsafe=key)
         commit = commit_key.get()
-        parent = commit.parent.get()
+        parent_key = commit_key.parent()
+        if parent_key is None:
+            return
+        
+        parent = parent_key.get()
         
         message = cls(username=parent.username, 
             picture_url=parent.picture_url, message=commit.message, url=commit.url,
