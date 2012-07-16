@@ -44,10 +44,7 @@ def index(request):
         people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(5)
         project_future = Project.query().order(-Project.total).fetch_async(5)
         team_future = Team.query().order(-Team.total).fetch_async(3)
-        message_future = Message.query().order(-Message.timestamp).fetch_async(10)
-        # Live Connection
-        #connection = Connection.get_or_insert(request.user.username, client_id=request.user.username)
-        #connection_future = connection.put_async()
+        message_future = Message.query().order(-Message.timestamp).fetch_async(30)
         
         # Julython live stuffs
         token_key = 'live_token:%s' % request.user.username
@@ -61,7 +58,6 @@ def index(request):
         people = people_future.get_result()
         projects = project_future.get_result()
         teams = team_future.get_result()
-        #connection_future.get_result()
         message_models = message_future.get_result()
         
         m_list = [to_dict(m) for m in message_models]
