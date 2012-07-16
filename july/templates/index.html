@@ -193,7 +193,7 @@
         <div class="span12">
           <div class="row">
             <div class="span8">
-              <h2 class="spread-the-word">{% blocktrans %}You are all doing awesome! {{ total }} commits so far!{% endblocktrans %}</h2>
+              <h2 class="spread-the-word">{% blocktrans %}You are all doing awesome! <span id="commit-total">{{ total }}</span> commits so far!{% endblocktrans %}</h2>
               <div id="user-barchart"
                 class="commit-chart hidden-phone"
                 data-chart="barchart"
@@ -323,23 +323,27 @@
 
 {% block javascript %}
     {{ block.super }}
-    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/index.js"></script>
+  {% if user.is_authenticated %}
+    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/channel.js"></script>
 <script type="text/javascript">
-  {% if user.is_authenticated %}
   $(document).ready(function(){
     new Charts.BarChart("user-barchart")
       .load({{stats}})
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
-    var channel = new julython.Channel($("#live-messages"), "{{ token }}", {maxMessages: 30});
+    var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
+        maxMessages: 30,
+        totalEl: "#commit-total",
+        total: {{ total }}
+    });
     channel.prepopulate("{{ messages|safe|addslashes }}");
   });
-  {% endif %}
 </script>
+  {% endif %}
 {% endblock %}
 

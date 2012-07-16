@@ -4,19 +4,19 @@
     this._el = $(el);
     this._options = options || {};
     this._token = token;
-    console.log(this);
-    console.log(this._setupOptions);
+    //console.log(this);
+    //console.log(this._setupOptions);
     this._setupOptions();
     this._connect();
   };
 
   Channel.prototype._setupOptions = function() {
     this._options.maxMessages = this._options.maxMessages || 100;
+    this._totalEl = this._options.totalEl;
+    this._total = parseInt(this._options.total);
   };
 
   Channel.prototype._connect = function() {
-    // pretending to connect
-    console.log("We're connecting!");
     var self = this;
     var channel = new goog.appengine.Channel(this._token);
     var socket = channel.open();
@@ -36,26 +36,41 @@
   };
 
   Channel.prototype._newMessage = function(message) {
-    var messageView = this._buildMessageView(message);
+    var self = this;
+    var messageView = this._buildMessageView(message, self);
     messageView.hide();
     this._el.prepend(messageView);
     messageView.slideDown();
     while (this._el.children().length > this._options.maxMessages) {
       this._el.children().last().remove();
     }
+    if (this._total) {
+        $(this._totalEl).html(this._total);
+    }
   };
 
-  Channel.prototype._buildMessageView = function(message) {
+  Channel.prototype._buildMessageView = function(message, self) {
     // should move to a template eventually...
     if (message.data && typeof(message.data) === "string") {
       // it's a JSON message from Google.
       message = JSON.parse(message.data);
+      if (message.commit_hash) {
+        self._total += 1;
+      }
     }
     var li = $('<li class="message"></li>');
     li.append('<img src="'+message.picture_url+'" class="profile-image"/>');
     li.append('<h4 class="username">'+message.username+'</h4>');
-    var p = $('<p class="message-content"></p>');
-    p.text(message.message);
+    if (message.project) {
+        li.append('<p><a target="_blank" href="'+message.project+'">'+message.project+'</a></p>');
+    }
+    if (message.url) {
+      var p = $('<p class="message-content"></p>')
+      p.append('<a target="_blank" href="'+ message.url +'">'+message.message+'</a>')
+    } else {
+      var p = $('<p class="message-content"></p>');   
+      p.text(message.message);
+    }
     li.append(p);
     return li;
   };
