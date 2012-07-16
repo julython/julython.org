@@ -9,8 +9,6 @@ urlpatterns = patterns('',
     # This line should only be active during maintenance!
     #url(r'^.*', 'july.views.maintenance'),
     url(r'^_ah/warmup', 'july.views.warmup'),
-    url(r'^_ah/channel/connected/', 'july.live.views.connected'),
-    url(r'^_ah/channel/disconnected/', 'july.live.views.disconnected'),
     url(r'^$', 'july.views.index', name='index'),
     url(r'^help/', 'july.views.help_view', name='help'),
     url(r'^signin/$', views.login, {'authentication_form': AuthenticationForm}, name="signin"),
