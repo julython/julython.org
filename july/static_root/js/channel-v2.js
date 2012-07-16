@@ -60,7 +60,7 @@
     }
     var li = $('<li class="message"></li>');
     li.append('<img src="'+message.picture_url+'" class="profile-image"/>');
-    li.append('<h4 class="username">'+message.username+'</h4>');
+    li.append('<h4 class="username"><a target="_blank" href="/'+message.username+'">'+message.username+'</a></h4>');
     if (message.project) {
         li.append('<p><a target="_blank" href="'+message.project+'">'+message.project+'</a></p>');
     }
