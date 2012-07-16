@@ -16,6 +16,12 @@ indexes:
   - name: date
 
 - kind: Commit
+  properties:
+  - name: project_slug
+  - name: timestamp
+    direction: desc
+
+- kind: Commit
   ancestor: yes
   properties:
   - name: timestamp

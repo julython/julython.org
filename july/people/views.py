@@ -161,11 +161,26 @@ def project_details(request, slug, template_name='projects/details.html'):
     if project is None:
         raise Http404("Project Not Found.")
     
+    limit = 100
+    cursor = request.GET.get('cursor')
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+    
     # TODO: pagination
-    users = User.query().filter(ndb.GenericProperty('projects') == project.url).fetch(1000)
+    user_future = User.query().filter(ndb.GenericProperty('projects') == project.url).fetch_async(100)
+    query = Commit.query().filter(Commit.project_slug == slug).order(-Commit.timestamp)
+    
+    commit_future = query.fetch_page_async(limit, start_cursor=cursor)
+    
+    commits, next_cursor, more = commit_future.get_result()
+    users = user_future.get_result()
+    
+    if next_cursor is not None:
+        next_cursor = next_cursor.urlsafe()
     
     return render_to_response(template_name,
-        {'project': project, 'users': users},
+        {'project': project, 'users': users, 'commits': commits,
+         'next': next_cursor, 'more': more},
         context_instance=RequestContext(request))
 
 @login_required

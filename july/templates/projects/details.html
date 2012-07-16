@@ -8,9 +8,9 @@
 
 <div class="container section-container no-border">
     <div class="row locations">
-        <div class="span6 offset3"><br />
+        <div class="span10 offset1"><br />
             <div class="row project">
-            <div class="span5">
+            <div class="span6">
               <a href="{% url projects %}">{% trans "All projects" %}</a> 
               <h3>{{ project }}</h3>
               <p><a href="{{ project.url }}">{{ project.url }}</a></p>
@@ -20,7 +20,9 @@
                 <p class="small">{% trans "points" %}</p>
             </div>
           </div>
-            <h4>Players</h4>
+          <div class="row">
+            <div class="span6">   
+            <h4>{% trans "Players" %}</h4>
             <ul>
               {% for user in users %}
                 <li>
@@ -31,6 +33,25 @@
                 </li>
               {% endfor %}  
             </ul>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span10">   
+            <h2 class="spread-the-word">{% trans "Commits" %}</h2>
+              {% for commit in commits %}
+              {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
+              <div class="row commit">
+                  <div class="span7 pull-left">
+                      <strong>{{ commit.message}}</strong>
+                      <p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}</p>
+                  </div>
+                  <div class="span3 pull-right">
+                      <a href="{{ commit.project }}">{{ commit.project }}</a>
+                  </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
         </div>
     </div>
 </div>
