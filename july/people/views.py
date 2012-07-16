@@ -80,11 +80,22 @@ def users_by_location(request, location_slug,
                              context_instance=RequestContext(request)) 
 
 def locations(request, template_name='people/locations.html'):
-
-    locations = Location.query().order(-Location.total).fetch(1000)
+    
+    limit = 100
+    cursor = request.GET.get('cursor')
+    if cursor:
+        cursor = Cursor(urlsafe=cursor)
+        
+    query = Location.query().order(-Location.total)
+    
+    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
+    
+    if next_cursor is not None:
+        next_cursor = next_cursor.urlsafe()
     
     return render_to_response(template_name,
-                              {'locations': locations},
+                              {'locations': models, 'next': next_cursor,
+                               'more': more},
                               context_instance=RequestContext(request))
 
 def teams(request, template_name='people/teams.html'):
