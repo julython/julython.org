@@ -36,5 +36,8 @@ handlers:
   script: july.cron.app
   login: admin
 
+- url: /_ah/channel/(connected|disconnected)/
+  script: july.channel.app
+
 - url: /api.*
   script: july.api.app
