@@ -2,22 +2,15 @@
 
 {% load i18n %}
 
-{% block content %}
+{% block bodyclass %}profile{% endblock %}
+
+{% block content %} 
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
-            <h2>{% trans "Social Media Yo" %}</h2>
-            <ul>
-                <li><a class="signin btn btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a></li>
-                <li><a class="signin btn" href="/accounts/github/signin/"><i class="icon-user icon-white"></i> Sign In With Github</a></li>
-            </ul>
-            
-            
-            <h2>{% trans "Old School Login" %}</h2>
-            <p><a href="{% url gae-django-register %}">{% trans "I do not have an account!" %}</a></p>
-            <form method="post" action="{% url gae-django-login %}">{% csrf_token %}
+            <h1 class="user">{% trans "Player 1_" %}</h1>
+            <form method="post" action="." enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
-                {{ form.non_field_errors }}
                 {% for field in form %}
                 <div class="control-group{% if field.errors %} error{% endif %}">
                     {{ field.label_tag }}
@@ -29,12 +22,11 @@
                 {% endfor %}
                 </div>
                 <div class="form-actions">
-                    <input type="submit" class="btn btn-primary" value="{% trans "Sign In" %}" />
+                    <input type="submit" class="btn btn-primary" value="{% trans "Sign Up!" %}" />
                     <a href=".." class="btn">{% trans "Cancel" %}</a>
                 </div>            
             </form>
         </div>
     </div>
 </div>
-
 {% endblock %}
