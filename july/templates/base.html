@@ -36,7 +36,7 @@
               {% if user.is_authenticated %}
               <a class="navbar-link" href="{% url member-profile username=user.username %}"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }}</a>
               {% else %}
-              <a class="signin btn btn-mini btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> {% trans "Sign In With Twitter" %}</a>
+              <a class="navbar-link" href="/signin/">{% trans "Sign In" %}</a>
               {% endif %}
               {% endblock %}
             </div>
