@@ -45,9 +45,7 @@ class Message(model.Model):
         
         parent = parent_key.get()
         
-        picture_url = '/static/images/spread_the_word_button.png'
-        if hasattr(parent.picture_url):
-            picture_url = parent.picture_url
+        picture_url = getattr(parent, 'picture_url', '/static/images/spread_the_word_button.png')
         
         message = cls(username=parent.username, 
             picture_url=picture_url, message=commit.message[:200], url=commit.url,
