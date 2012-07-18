@@ -148,7 +148,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.messages',
-    #'django.contrib.admin',
+    'django.contrib.admin',
     #'debug_toolbar',
     #'gae_django.toolbar',
     #'gae_django.admin',
