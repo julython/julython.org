@@ -60,7 +60,7 @@ class WebTestCase(unittest.TestCase):
         self.testbed.init_datastore_v3_stub(consistency_policy=self.policy)
         self.testbed.init_memcache_stub()
         os.environ['HTTP_HOST'] = 'localhost'
-        self.testbed.init_taskqueue_stub()
+        self.testbed.init_taskqueue_stub(_all_queues_valid=True)
         self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
         
         # reset testing settings

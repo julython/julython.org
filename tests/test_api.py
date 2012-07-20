@@ -608,7 +608,7 @@ class TestMessage(WebTestCase):
     def test_post_adds_points_to_global(self):
         data = json.dumps(self.DATA)
         self.app.post('/api/v1/live', data)
-        tasks = self.taskqueue_stub.GetTasks('default')
+        tasks = self.taskqueue_stub.GetTasks('live')
         self.assertEqual(1, len(tasks))
 
         # Run the task
