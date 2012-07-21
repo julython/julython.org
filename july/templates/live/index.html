@@ -28,7 +28,7 @@
     <script type="text/javascript">
       $(document).ready(function(){
         var channel = new julython.Channel($("#live"), "{{ token }}", {
-            maxMessages: 30,
+            maxMessages: 300,
             totalEl: "#commit-total",
             total: {{ total }}
         });

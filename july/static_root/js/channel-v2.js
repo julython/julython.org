@@ -15,7 +15,19 @@
     this._totalEl = this._options.totalEl;
     this._total = parseInt(this._options.total);
   };
-
+  
+  Channel.prototype._reconnect = function() {
+    var self = this;
+    console.log("reconnecting");
+    jQuery.ajax({
+        'url': '/_reconnect/',
+        'success': function(data) {
+            self._token = data.token;
+            self._connect();
+        }
+    });
+  };
+  
   Channel.prototype._connect = function() {
     var self = this;
     var channel = new goog.appengine.Channel(this._token);
@@ -24,7 +36,10 @@
         self._newMessage(message);
     };
     socket.onerror = function(message){
-        console.log(message);
+        self._reconnect();
+    };
+    socket.onclose = function() {
+        self._reconnect();
     };
   };
 
