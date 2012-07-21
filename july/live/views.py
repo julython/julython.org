@@ -1,28 +1,53 @@
 import json
 import logging
 
+from google.appengine.api import memcache
+from google.appengine.api import channel
+
 from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
+from django import http
 
 from july.api import to_dict
 from july.live.models import Message, Connection
-from django import http
+from july.people.models import Accumulator
 
 @login_required
 def live(request):
-    if not request.session.get('live_token'):
-        # TODO: maybe more random??
-        request.session['live_token'] = request.user.key.urlsafe()
+    stats = Accumulator.get_histogram('global')
+    total = sum(stats)
+    message_future = Message.query().order(-Message.timestamp).fetch_async(30)
         
-    token = request.session['live_token']
-    models = Message.query().order(-Message.timestamp).fetch(10)
-    m_list = [to_dict(m) for m in models]
+    # Julython live stuffs
+    token_key = 'live_token:%s' % request.user.username
+    token = memcache.get(token_key)
+    if token is None:
+        token = channel.create_channel(request.user.username)
+        memcache.set(token_key, token, time=7000)
+
+    message_models = message_future.get_result()
+    
+    m_list = [to_dict(m) for m in message_models]
+    m_list.reverse()
     messages = json.dumps(m_list)
     
     return render_to_response('live/index.html', {
-        'token': token, 'mesages': messages},
+        'token': token, 'messages': messages, 'total': total},
         context_instance=RequestContext(request))
+
+@login_required
+def reconnect(request):
+    """Endpoint for channel api to reconnect on token timeout."""
+    
+    token_key = 'live_token:%s' % request.user.username
+    logging.info('reconnecting token: %s', token_key)
+    token = channel.create_channel(request.user.username)
+    memcache.set(token_key, token, time=7000)
+    
+    response_data = {'token': token}
+    
+    return http.HttpResponse(json.dumps(response_data), mimetype="application/json")
     
 def connected(request):
     logging.error('here')

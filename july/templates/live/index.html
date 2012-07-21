@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <div class="container">
+      <div class="row">
+        <div class="span12">
+          <h1 id="logo">{% trans "Julython 2012" %}</h1>
+        </div>
+      </div>
+      
+      <div class="container section-container no-border">
+      <div class="row">
+          <div class="span8 offset2">
+              <h2 class="participating">{% blocktrans %}You are all doing awesome! <span id="commit-total">{{ total }}</span> commits so far!{% endblocktrans %}</h2>
+              <ul class="message-list" id="live"></ul>
+          </div>
+      </div>
+      </div>
+   </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/channel-v2.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function(){
+        var channel = new julython.Channel($("#live"), "{{ token }}", {
+            maxMessages: 30,
+            totalEl: "#commit-total",
+            total: {{ total }}
+        });
+        channel.prepopulate("{{ messages|safe|addslashes }}");
+      });
+    </script>
+{% endblock %}
