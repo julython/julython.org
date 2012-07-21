@@ -156,36 +156,6 @@
       </div>
     </div>
     
-    
-    
-    <div class="container section-container no-border">
-      <div class="row">
-        <div class="span12">
-          <div class="row">
-            <div class="span12">
-              <h2 class="spread-the-word">{% trans "Good News Travels Fast" %}</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "Twitter" %}</h3>
-              <p><a href="https://twitter.com/julython" class="twitter-follow-button" data-show-count="false">{% trans "Follow @julython" %}</a>
-                  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script></p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Facebook" %}</h3>
-              <p>{% trans "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>" %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Github" %}</h3>
-              <p>{% trans "We love sharing code, follow us on <a href='http://github.com/julython'>github</a>." %}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    
     {% else %}
     <div id="navigation">{# just leave me blank #}</div>
     <div class="container section-container no-border">
@@ -282,7 +252,33 @@
     </div>
     
     {% endif %}
-    
+
+    <div class="container section-container no-border">
+      <div class="row">
+        <div class="span12">
+          <div class="row">
+            <div class="span12">
+              <h2 class="spread-the-word">{% trans "Good News Travels Fast" %}</h2>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span4 section-blurb">
+              <h3>{% trans "Twitter" %}</h3>
+              <p><a href="https://twitter.com/julython" class="twitter-follow-button" data-show-count="false">{% trans "Follow @julython" %}</a>
+                  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script></p>
+            </div>
+            <div class="span4 section-blurb">
+              <h3>{% trans "Facebook" %}</h3>
+              <p>{% trans "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>" %}</p>
+            </div>
+            <div class="span4 section-blurb">
+              <h3>{% trans "Github" %}</h3>
+              <p>{% trans "We love sharing code, follow us on <a href='http://github.com/julython'>github</a>." %}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
     
     {% comment %}
     {% for section in sections %}
