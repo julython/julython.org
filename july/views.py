@@ -51,7 +51,7 @@ def index(request):
         token = memcache.get(token_key)
         if token is None:
             token = channel.create_channel(request.user.username)
-            memcache.set(token_key, token, time=7200)
+            memcache.set(token_key, token, time=7000)
 
         
         locations = location_future.get_result()
