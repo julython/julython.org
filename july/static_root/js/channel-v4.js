@@ -36,7 +36,7 @@
         self._newMessage(message);
     };
     socket.onerror = function(message){
-        self._reconnect();
+        console.log("error");
     };
     socket.onclose = function() {
         self._reconnect();
