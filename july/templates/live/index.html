@@ -24,7 +24,7 @@
 {% block javascript %}
     {{ block.super }}
     <script type="text/javascript" src="/_ah/channel/jsapi"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/channel-v2.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/channel-v3.js"></script>
     <script type="text/javascript">
       $(document).ready(function(){
         var channel = new julython.Channel($("#live"), "{{ token }}", {
