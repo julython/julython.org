@@ -28,6 +28,12 @@ class Commit(ndb.Model):
     timestamp = ndb.DateTimeProperty()
     created_on = ndb.DateTimeProperty(auto_now_add=True)
     
+    def __str__(self):
+        return self.__unicode__()
+    
+    def __unicode__(self):
+        return u'Commit: %s' % self.hash
+    
     @classmethod
     def make_key(cls, commit_hash, user=None):
         """
@@ -250,6 +256,10 @@ class Location(ndb.Model):
     
     def __unicode__(self):
         return self.__str__()
+    
+    def get_absolute_url(self):
+        from django.core.urlresolvers import reverse
+        return reverse('member-list', kwargs={'location_slug': self.slug})
     
     @property
     def slug(self):

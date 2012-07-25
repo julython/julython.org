@@ -22,7 +22,7 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': '', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'gae_django.db.gae', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': '',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
@@ -151,10 +151,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     #'debug_toolbar',
     #'gae_django.toolbar',
-    #'gae_django.admin',
+    'gae_django.admin',
     'gae_django.auth',
     'july',
     'july.pages',
+    'july.people',
 )
 
 AUTHENTICATION_BACKENDS = [
