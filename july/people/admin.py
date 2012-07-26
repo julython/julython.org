@@ -5,9 +5,10 @@ from gae_django.auth.models import User
 from models import Team, Commit, Location
 
 admin.site.register(User, 
-    list_display=["get_full_name", "username", "twitter"],
+    list_display=["last_name", "first_name", "username", "twitter"],
     list_filter=["is_superuser"], 
-    exclude=["password", 'location_slug'], 
+    exclude=["password", 'location_slug'],
+    ordering=["last_name"],
     readonly_fields=['auth_ids'], 
     search_fields=["auth_ids", "first_name", "last_name"]
 )
