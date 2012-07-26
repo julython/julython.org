@@ -2,9 +2,26 @@ from gae_django import admin
 
 from gae_django.auth.models import User
 
-from models import Accumulator, Commit, Location
+from models import Team, Commit, Location
 
-admin.site.register(User, list_display=["get_full_name", "username", "twitter"],
-    list_filter=["is_superuser"], exclude=["password", 'location_slug'], readonly_fields=['auth_ids'])
-admin.site.register(Commit, exclude=['project_slug'])
-admin.site.register(Location, list_display=["slug", 'total'])
+admin.site.register(User, 
+    list_display=["get_full_name", "username", "twitter"],
+    list_filter=["is_superuser"], 
+    exclude=["password", 'location_slug'], 
+    readonly_fields=['auth_ids'], 
+    search_fields=["auth_ids", "first_name", "last_name"]
+)
+admin.site.register(Commit, 
+    list_display=['hash', 'email', 'timestamp', 'project'], 
+    exclude=['project_slug'],
+    search_fields=['hash', 'email'], 
+    ordering=['-timestamp']
+)
+admin.site.register(Location, 
+    list_display=["__unicode__", "slug", 'total'],
+    ordering=['-total']
+)
+admin.site.register(Team, 
+    list_display=["__unicode__", "slug", 'total'],
+    ordering=['-total']
+)
