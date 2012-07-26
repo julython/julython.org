@@ -2,7 +2,7 @@ from gae_django import admin
 
 from gae_django.auth.models import User
 
-from models import Team, Commit, Location
+from models import Team, Commit, Location, Project
 
 admin.site.register(User, 
     list_display=["last_name", "first_name", "username", "twitter"],
@@ -24,5 +24,9 @@ admin.site.register(Location,
 )
 admin.site.register(Team, 
     list_display=["__unicode__", "slug", 'total'],
+    ordering=['-total']
+)
+admin.site.register(Project, 
+    list_display=["__unicode__", "url", "name", 'total'],
     ordering=['-total']
 )
