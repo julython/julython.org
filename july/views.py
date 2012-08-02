@@ -40,10 +40,10 @@ def index(request):
     if True:
         stats = Accumulator.get_histogram('global')
         total = sum(stats)
-        location_future = Location.query().order(-Location.total).fetch_async(3)
-        people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(5)
-        project_future = Project.query().order(-Project.total).fetch_async(5)
-        team_future = Team.query().order(-Team.total).fetch_async(3)
+        location_future = Location.query().order(-Location.total).fetch_async(15)
+        people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(10)
+        project_future = Project.query().order(-Project.total).fetch_async(10)
+        team_future = Team.query().order(-Team.total).fetch_async(15)
         message_future = Message.query().order(-Message.timestamp).fetch_async(30)
         
         # Julython live stuffs
