@@ -11,14 +11,13 @@
       </div>
       
       <div class="row">
-        <div class="span6 offset3 notice">
+        <div class="span6 offset3 large-notice">
           <a href="http://julython.spreadshirt.com" class="tshirt">
             {% trans "Support Julython. Buy a shirt." %}
           </a>
         </div>
       </div>
     {# Teaser #}
-   {% if not user.is_authenticated %}
       {% comment %}
       <div class="row">
         <div class="span6 offset3 large-notice">
@@ -36,7 +35,7 @@
             <button class="participating">{% trans "Participating" %}</button>
             <button class="the-rules">{% trans "The Rules" %}</button>
             <button class="teaming-up">{% trans "Teaming Up" %}</button>
-            <button class="spread-the-word">{% trans "Spread the Word" %}</button>
+            <button class="spread-the-word">{% trans "2012 Results" %}</button>
           </div>
         </div>
       </div>
@@ -156,24 +155,24 @@
       </div>
     </div>
     
-    {% else %}
-    <div id="navigation">{# just leave me blank #}</div>
     <div class="container section-container no-border">
       <div class="row">
         <div class="span12">
           <div class="row">
-            <div class="span8">
-              <h2 class="spread-the-word">{% blocktrans %}You are all doing awesome! <span id="commit-total">{{ total }}</span> commits so far!{% endblocktrans %}</h2>
+            <div class="span12">
+              <h2 class="spread-the-word">{% blocktrans %}You all did awesome! <span id="commit-total">{{ total }}</span> commits!{% endblocktrans %}</h2>
               <div id="user-barchart"
                 class="commit-chart hidden-phone"
                 data-chart="barchart"
                 data-chartid="global">
               </div>
             </div>
+            {% comment %}
             <div class="span4">
               <h2 class="participating"><a href="{% url julython-live %}">{% trans "What's Happening?" %}</a></h2>
               <ul class="message-list" id="live-messages"></ul>
             </div>
+            {% endcomment %}
           </div>
         </div>
       </div>
@@ -250,8 +249,6 @@
         </div>
       </div>
     </div>
-    
-    {% endif %}
 
     <div class="container section-container no-border">
       <div class="row">
@@ -332,12 +329,12 @@
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
-    var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
-        maxMessages: 30,
-        totalEl: "#commit-total",
-        total: {{ total }}
-    });
-    channel.prepopulate("{{ messages|safe|addslashes }}");
+    //var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
+      //  maxMessages: 30,
+      //  totalEl: "#commit-total",
+     //   total: {{ total }}
+    //});
+    //channel.prepopulate("{{ messages|safe|addslashes }}");
   });
 </script>
   {% endif %}

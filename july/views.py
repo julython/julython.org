@@ -37,7 +37,7 @@ def index(request):
     
     # this is only shown on authenticated page loads
     # to save on the overhead. 
-    if request.user.is_authenticated():
+    if True:
         stats = Accumulator.get_histogram('global')
         total = sum(stats)
         location_future = Location.query().order(-Location.total).fetch_async(3)
@@ -47,11 +47,11 @@ def index(request):
         message_future = Message.query().order(-Message.timestamp).fetch_async(30)
         
         # Julython live stuffs
-        token_key = 'live_token:%s' % request.user.username
-        token = memcache.get(token_key)
-        if token is None:
-            token = channel.create_channel(request.user.username)
-            memcache.set(token_key, token, time=7000)
+        #token_key = 'live_token:%s' % request.user.username
+        #token = memcache.get(token_key)
+        #if token is None:
+            #token = channel.create_channel(request.user.username)
+            #memcache.set(token_key, token, time=7000)
 
         
         locations = location_future.get_result()
