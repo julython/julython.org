@@ -28,6 +28,13 @@ handlers:
 - url: /static
   static_dir: july/static_root
 
+- url: /app
+  static_dir: angular/app
+
+- url: /_test
+  static_dir: angular/test
+  login: admin
+
 - url: /(favicon.ico|robots.txt)
   static_files: july/static_root/\1
   upload: /static/(.*)

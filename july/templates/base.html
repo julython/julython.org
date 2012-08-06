@@ -2,7 +2,7 @@
 
 {% load i18n %}
 
-<html lang="en">
+<html lang="en" ng-app="myApp">
   <head>
     <title>{% trans "Julython 2012" %}</title>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet" type="text/css"/>
@@ -44,6 +44,14 @@
         </div>
       </div>
     </div>
+    <ul class="menu">
+    <li><a href="/view1">view1</a></li>
+    <li><a href="/view2">view2</a></li>
+  </ul>
+
+  <div ng-view></div>
+
+  <div>Angular seed app: v<span app-version></span></div>
     {% endblock %}
     {% block contentheader %}{% endblock %}
     {% block content %}
@@ -111,6 +119,13 @@
 
     {% block javascript %}
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+    <script src="//code.angularjs.org/1.0.1/angular-1.0.1.min.js"></script>
+    <script src="//code.angularjs.org/1.0.1/angular-resource-1.0.1.min.js"></script>
+  <script src="/app/js/app.js"></script>
+  <script src="/app/js/services.js"></script>
+  <script src="/app/js/controllers.js"></script>
+  <script src="/app/js/filters.js"></script>
+  <script src="/app/js/directives.js"></script>
     {% endblock %}
     {% block extra_javascript %}{% endblock %}
     <script>

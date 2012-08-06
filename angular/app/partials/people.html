@@ -1,0 +1,32 @@
+
+<div ng-controller="PeopleController">
+    
+<div class="container section-container no-border">
+    <div class="row locations">
+        <div class="span6 offset3"><br />
+            <h3>High Score</h3><hr/>
+              <div ng-repeat="user in users">
+                <div class="row"> 
+                    <div class="span5">
+                      <h3>
+                        <img ng-src="{{ user.picture_url }}" alt="{{ user.first_name}} {{ user.last_name }}" width="50"/>
+                        <a href="#">{{ user.first_name }} {{ user.last_name}}</a>
+                      </h3>
+                      <div>
+                        <dl><a href="/location/{{ user.location_slug }}">{{ user.location }}</a> </dl>
+                        <dl>{{ user.projects.length() }} projects</dl>
+                      </div>
+                     </div>
+                     <div class="span1">
+                     <div class="points pull-right">
+                        <p>{{ user.total }}</p>
+                        <p class="small">points</p>
+                    </div>
+                    </div>
+                </div>
+                <hr/>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
