@@ -7,3 +7,7 @@ secrets.py
 settings_local.py
 build/
 .venv
+assets/node_modules
+july/static_root/css
+july/static_root/js
+
