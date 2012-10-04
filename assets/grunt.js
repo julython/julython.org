@@ -36,11 +36,11 @@ module.exports = function(grunt) {
     min: {
       app: {
 	    src: apps,
-        dest: '../july/static/js/app.js'
+        dest: '../july/static_root/js/app.js'
       },
       vendor: {
         src: deps,
-        dest: '../july/static/js/vendor.js'
+        dest: '../july/static_root/js/vendor.js'
       }
     },
 
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
 
     // Watch tasks for development
     watch: {
-      compass: {
+      less: {
         files: 'less/*.less',
         tasks: 'less:dev'
       },

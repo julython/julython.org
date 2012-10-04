@@ -1,9 +1,10 @@
 """
 Common tools for deploy run shell and the like.
 """
-from fabric.api import lcd
+from fabric.api import lcd, task, local
 
-from gae_django.fabric_commands import *
+from gae_django.fabric_commands import local_shell, remote_shell
+from gae_django.fabric_commands import deploy as _deploy
 
 @task
 def test():
@@ -28,4 +29,10 @@ def watch():
 def compile():
     """Compile assets for production."""
     with lcd('assets'):
-        local('node_modules/grunt/bin/grunt less:dev concat watch')
+        local('node_modules/grunt/bin/grunt less:prod min')
+
+@task
+def deploy(version='', appid='.'):
+    """Deploy to production"""
+    compile()
+    _deploy(version, appid)
