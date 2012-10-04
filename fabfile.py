@@ -6,15 +6,11 @@ from fabric.api import lcd
 from gae_django.fabric_commands import *
 
 @task
-def less_compile(compress=True):
-    """Compile the .less files into css."""
-    with lcd('july'):
-        local("lessc --compress static_root/less/layout.less > static_root/css/main.css")
-
-@task
 def test():
     """Run the test suite"""
     local("python -m unittest discover")
+    with lcd('assets'):
+        local('node_modules/grunt/bin/grunt jasmine')
 
 @task
 def install():
