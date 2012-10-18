@@ -20,7 +20,7 @@ inbound_services:
 
 libraries:
 - name: django
-  version: "latest"
+  version: "1.3"
 - name: webapp2
   version: "latest"
 
