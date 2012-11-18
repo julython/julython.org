@@ -16,6 +16,7 @@ class EditAddressForm(forms.Form):
             self.fields['address_line2'].initial=getattr(self.user, 'address_line2', None)
             self.fields['city'].initial=getattr(self.user, 'city', None)
             self.fields['state'].initial=getattr(self.user, 'state', None)
+            self.fields['country'].initial=getattr(self.user, 'country', None)
             self.fields['postal_code'].initial=getattr(self.user, 'postal_code', None)
 
     address_line1 = forms.CharField(
@@ -31,8 +32,12 @@ class EditAddressForm(forms.Form):
         max_length=20, required=True
     )
     state = forms.CharField(
-        label=ugettext_lazy('State'),
-        max_length=2, required=True
+        label=ugettext_lazy('State / Region'),
+        max_length=12, required=True
+    )
+    country = forms.CharField(
+        label=ugettext_lazy('Country'),
+        max_length=25, required=True
     )
     postal_code = forms.CharField(
         label=ugettext_lazy('Postal Code'),
