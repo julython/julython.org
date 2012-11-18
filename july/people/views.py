@@ -221,15 +221,46 @@ def edit_profile(request, username, template_name='people/edit.html'):
             deferred.defer(fix_team, existing_team)
             
         return HttpResponseRedirect(
-            reverse('member-profile', 
+            reverse('member-profile',
                     kwargs={'username':request.user.username}
                    )
         )
-        
+
+    return render_to_response(template_name,
+        {'form':form},
+        context_instance=RequestContext(request))
+
+
+
+@login_required
+def edit_address(request, username, template_name='people/edit_address.html'):
+    from forms import EditAddressForm
+
+    user = User.get_by_auth_id('own:%s' % username)
+
+    if user == None:
+        raise Http404("User not found")
+
+    if user.key != request.user.key:
+        http403 = HttpResponse("This ain't you!")
+        http403.status = 403
+        return http403
+
+    form = EditAddressForm(request.POST or None, user=user)
+
+    if form.is_valid():
+        for key, value in form.cleaned_data.iteritems():
+            setattr(user,key,value)
+            user.put()
+        return HttpResponseRedirect(
+            reverse('member-profile',
+                kwargs={'username':request.user.username}
+            )
+        )
     
 
     return render_to_response(template_name, 
-        {'form':form}, 
+        {'form':form},
         context_instance=RequestContext(request))
 
 @login_required

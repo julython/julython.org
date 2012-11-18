@@ -5,6 +5,47 @@ from google.appengine.ext import ndb, deferred
 
 from july.cron import fix_orphans
 
+class EditAddressForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super(EditAddressForm, self).__init__(*args, **kwargs)
+
+        if self.user:
+            self.fields['address_line1'].initial=getattr(self.user, 'address_line1', None)
+            self.fields['address_line2'].initial=getattr(self.user, 'address_line2', None)
+            self.fields['city'].initial=getattr(self.user, 'city', None)
+            self.fields['state'].initial=getattr(self.user, 'state', None)
+            self.fields['country'].initial=getattr(self.user, 'country', None)
+            self.fields['postal_code'].initial=getattr(self.user, 'postal_code', None)
+
+    address_line1 = forms.CharField(
+        label=ugettext_lazy('Address'),
+        max_length=255, required=True
+    )
+    address_line2 = forms.CharField(
+        label=ugettext_lazy('Address Line 2'),
+        max_length=255, required=False
+    )
+    city = forms.CharField(
+        label=ugettext_lazy('City'),
+        max_length=20, required=True
+    )
+    state = forms.CharField(
+        label=ugettext_lazy('State / Region'),
+        max_length=12, required=True
+    )
+    country = forms.CharField(
+        label=ugettext_lazy('Country'),
+        max_length=25, required=True
+    )
+    postal_code = forms.CharField(
+        label=ugettext_lazy('Postal Code'),
+        max_length=12, required=True
+    )
+
+
+
 class EditUserForm(forms.Form):
     # Match Twitter
     first_name = forms.CharField(
