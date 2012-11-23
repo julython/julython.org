@@ -6,6 +6,7 @@ var deps = [
   'js/vendor/knockout-*.js',
   'js/vendor/knockback-*.js',
   'js/vendor/**/*.js',
+  'bootstrap/js/bootstrap-tooltip.js',
   'bootstrap/js/*.js'
 ];
 

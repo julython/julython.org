@@ -43,11 +43,4 @@ Nav.prototype.update = function() {
   }
 };
 
-console.log($);
-$(function() {
-  var nav = new Nav("#navigation", $("#topnav").height());
-  nav.setup();
-  nav.update();
-  var win = $(window);
-  win.scroll(function () { nav.update.apply(nav, arguments); });
-});
+
