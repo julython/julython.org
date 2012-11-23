@@ -5,7 +5,11 @@ if (!console) { var console = null; }
 var Nav = function(selector, offset) {
   this._selector = selector;
   this._el = $(selector);
-  this._offset = (offset || 0);
+  if ($(window).width() < 979) {
+  	this._offset = 0;
+  } else {
+	this._offset = (offset || 0);
+  }
   this._startTop = this._el.position().top;
   this._sectionPadding = 20; // arbitrary?
   this._startPadding = Number(this._el.next().css("padding-top").replace("px", ""));

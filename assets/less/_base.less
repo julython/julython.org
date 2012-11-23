@@ -1,0 +1,431 @@
+@julyblue: #6f94b6;
+@linkColor: @julyblue;
+@titleFont: "Doppio One", sans-serif;
+@mainFont: "Open Sans", sans-serif;
+@pressStart: "Press Start 2P", sans-serif;
+
+
+
+body {
+  font-family: @mainFont;
+  margin-top: 40px;
+}
+
+/* Responsive overrides */
+@media (max-width: @navbarCollapseWidth) {
+
+  // Remove margin from the body
+  body {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  // hide secondary navigation
+  #navigation {
+    display: none;
+  }  
+}
+
+p, button, input, textarea {
+  font-family: @mainFont;
+}
+
+.press-start { 
+    font-family: @pressStart;
+}
+
+a.video {
+  display: inline-block;
+  font-family: @titleFont;
+  padding-left: 32px;
+  min-height: 20px;
+  line-height: 30px;
+  background: url("/static/images/video_icon.png") 0 6px no-repeat;
+  color: #777;
+  font-size: 15px;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.full {
+  width: 100%;
+}
+
+.gray-container {
+  background: #DDD;
+  padding: 24px 0;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-inner {
+  background: #ACACAC;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2), 0 0 3px rgba(0, 0, 0, 0.3);
+  color: #FFF;
+}
+
+  .navbar, .nav-collapse {
+    .nav {
+      li {
+        a {
+          line-height: 30px;
+          font-size: 16px;
+          margin-left: 10px;
+          color: #fff;
+          text-shadow: none;
+        }
+      }
+    }
+  }
+
+img.icon {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #fff;
+}
+
+#logo {
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 60px auto 60px;
+  padding: 136px 0 0 500px;
+  overflow: hidden;
+  background: url("/static/images/julython_logo_large.png") top left no-repeat;
+}
+
+.large-notice {
+  border-top: 1px solid #CCC;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  text-align: center;
+}
+
+  button {
+    background: none
+  }
+  
+  .sticky {
+    text-align: center;
+  }
+  
+  #sticky-bar button {
+    display: inline-block;
+    border: none;
+    padding: 0;
+    padding-top: 58px;
+    line-height: 18px;
+    color: #555;
+    text-align: center;
+    width: 110px;
+    font-size: 13px;
+    background-repeat: no-repeat;
+    background-position: center top;
+    text-align: center;
+    text-shadow: 1px 1px #FFF;
+    font-family: @titleFont;
+  }
+
+    .what-is-this {
+      background-image: url("/static/images/whats_this_button.png");
+    }
+
+    .participating {
+      background-image: url("/static/images/participating_button.png");
+    }
+
+    .the-rules {
+      background-image: url("/static/images/rules_button.png");
+    }
+
+    .teaming-up {
+      background-image: url("/static/images/teaming_up_button.png");
+    }
+
+    .spread-the-word {
+      background-image: url("/static/images/spread_the_word_button.png");
+    }
+
+
+    #sticky-bar button:hover {
+      color: #000;
+      text-decoration: underline;
+      background-color: clear;
+    }
+
+.section-container {
+  border-top: 1px solid #AAA;
+  padding: 40px 0;
+  color: #777;
+}
+
+  .section-container.no-border {
+    border-top: none;
+  }
+
+.section-container h2 {
+  font-size: 26px;
+  font-weight: normal;
+  color: #555;
+  line-height: 50px;
+  padding-left: 64px;
+  background-repeat: no-repeat;
+  background-position: top left;
+  margin-bottom: 30px;
+  font-family: @titleFont;
+}
+
+  .section-blurb h3 {
+    color: #555;
+    font-family: @titleFont;
+    font-weight: normal;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  .section-blurb p {
+    font-size: 16px;
+    line-height: 23px
+  }
+
+/** profile page **/
+
+.profile {
+  
+  .commit {
+    .hash {
+      padding-left: 25px;
+    }
+  }
+  
+  .header {
+    position: relative;
+    background: @successBackground;
+    padding: 0;
+    border: 1px solid @successText;
+    border-top:none;
+    color: @successText;
+    display: block;
+    height: 170px;
+    
+    a {
+      color: @successText;
+    }
+    
+    a:hover { 
+      color: darken(@successText, 15);
+    }
+    
+    .user {
+      
+      h1 {
+       margin-top: 15px;
+       font-family: @pressStart, Helvetica sans-serif;
+       color: @successText;
+      }
+      
+      .user-links {
+        list-style:none;
+        margin: 0;
+        
+        li {
+          float: left;
+          margin-right: 5px;
+          &.twitter {
+            padding-top: 1px;
+          }
+        }
+      }
+      
+      .about-me {
+        font-style: italic;
+        width: 525px;
+      }
+    }
+    
+    .points {
+      margin-top:15px;
+      margin-right: 15px;
+      border: 5px solid @successText;
+      background-color: darken(@successBackground, 10);
+      padding: 10px;
+      
+      p {
+        font-family: @pressStart, Helvetica sans-serif;
+        font-size: 20px;
+        text-align: center;
+        
+        &.small {
+          font-size: 8px;
+          margin:0;
+        }
+      }
+      
+    }
+    
+    .avatar {
+      padding: 5px;
+      width: 75px;
+      
+      img { 
+        .square(75px);
+        border: 6px solid #fff;
+        margin: 10px;
+      }
+      
+    }
+    
+    .subnav {
+      padding-bottom: 4px;
+      border-top: 1px dotted @successText;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      .nav {
+        margin: 0 10px;
+      }
+    }
+  }
+}
+
+// Mimic twitter button
+.profile-link {
+  border: 1px solid #bbb;
+  
+  a {
+    font-family:  'Helvetica Neue', Arial, sans-serif;
+    color: #333;
+  }
+  
+}
+
+.locations h3, .people h2 {
+    font-family: @pressStart, Helvetica sans-serif;
+    font-weight: normal;
+    font-size: 18px;
+}
+
+.locations {
+  .points {
+      border: 3px solid #ddd;
+      background-color: #f9f9f9;
+      padding: 10px;
+      
+      p {
+        font-family: @pressStart, Helvetica sans-serif;
+        font-size: 20px;
+        text-align: center;
+        
+        &.small {
+          font-size: 8px;
+          margin:0;
+        }
+      }
+  }
+  .location {
+    margin-bottom: 10px;
+  }
+}
+
+
+/* PAGINATION */
+
+.next {
+
+  background: #d456c8;
+  border: 1px solid #000;
+  border-radius: 4px;
+  color: #FFF;
+  font-size: 18px;
+  font-family: "Doppio One", sans-serif;
+  padding: 6px;
+  text-align: center;
+  text-shadow: 0 -1px #000;
+  cursor: pointer;
+  box-shadow: 3px 3px #CCC;
+  display: block;
+  margin: 20px 0 0;
+}
+
+  .next:hover {
+    margin: 21px 0 0 1px;
+    background: #d96fce;
+    box-shadow: 2px 2px #BBB;
+  }
+
+/* CHARTS */
+.commit-chart {
+  height: 200px;
+  margin-bottom: 20px;
+}
+
+.commit-chart svg rect {
+  fill: steelblue;
+}
+
+.commit-chart svg text {
+  font-family: "Arial", sans-serif;
+  font-size: 12px;
+  color: #777;
+}
+
+.commit-chart svg text.xLabel {
+  fill: #333;
+}
+
+.commit-chart svg text.yLabel {
+  font-size: 10px;
+  font-weight: bold;
+  fill: #777;
+}
+
+.commit-chart svg line.rule {
+  stroke: #777;
+  stroke-width: 1px;
+  color: #333;
+}
+
+#user-barchart {
+  height: 260px;
+}
+
+#live-messages {
+  height: 240px;
+  padding: 6px;
+  overflow: auto;
+  border-bottom: 1px solid #AAA;
+}
+
+.message-list {
+  list-style: none;
+  margin: -14px 0 0;
+  padding: 0;
+}
+
+  .message-list .message {
+    position: relative;
+    display: block;
+    border-radius: 10px;
+    background: #EEE;
+    padding: 5px 5px 5px 35px;
+    border: 1px solid #BBB;
+    margin-bottom: 10px;
+  }
+
+  .message-list .profile-image {
+    display: block;
+    width: 20px;
+    max-height: 20px;
+    overflow: hidden;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+  }
+
+  .message-list h4 {
+    font-size: 16px;
+    line-height: 20px;
+  }
