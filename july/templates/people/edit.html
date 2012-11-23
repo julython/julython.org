@@ -1,14 +1,12 @@
-{% extends "base.html" %}
+{% extends "people/profile.html" %}
 
 {% load i18n %}
-
-{% block bodyclass %}profile{% endblock %}
 
 {% block content %} 
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
-            <h1 class="user">{% block formtitle %}{% trans "Player 1_" %}{%  endblock %}</h1>
+            <h1 class="user">{% block formtitle %}{%  endblock %}</h1>
             <form method="post" action="." enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
                 {% for field in form %}

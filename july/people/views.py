@@ -24,8 +24,11 @@ def people_projects(request, username):
         projects = user.projects
         projects = ndb.get_multi([Project.make_key(project) for project in projects])
 
-    return render_to_response('people/people_projects.html', 
-        {"projects":projects, 'profile':user}, 
+    return render_to_response('people/people_projects.html', {
+            'projects': projects,
+            'profile': user,
+            'active': 'projects',
+        },  
         context_instance=RequestContext(request)) 
 
 def user_profile(request, username):
@@ -35,8 +38,11 @@ def user_profile(request, username):
 
     commits = Commit.query(ancestor=user.key).order(-Commit.timestamp).fetch(100)
 
-    return render_to_response('people/profile.html', 
-        {"commits":commits, 'profile':user}, 
+    return render_to_response('people/profile.html', {
+            'commits': commits, 
+            'profile': user,
+            'active': 'commits',
+        }, 
         context_instance=RequestContext(request)) 
 
 def leaderboard(request, template_name='people/leaderboard.html'):
@@ -226,8 +232,11 @@ def edit_profile(request, username, template_name='people/edit.html'):
                    )
         )
 
-    return render_to_response(template_name,
-        {'form':form},
+    return render_to_response(template_name, {
+            'form': form, 
+            'profile': user,
+            'active': 'edit',
+        }, 
         context_instance=RequestContext(request))
 
 
@@ -259,8 +268,11 @@ def edit_address(request, username, template_name='people/edit_address.html'):
         )
     
 
-    return render_to_response(template_name, 
-        {'form':form},
+    return render_to_response(template_name, {
+            'form': form, 
+            'profile': user,
+            'active': 'edit',
+        },
         context_instance=RequestContext(request))
 
 @login_required

@@ -312,6 +312,13 @@
     <script type="text/javascript" src="/_ah/channel/jsapi"></script>
 <script type="text/javascript">
   $(document).ready(function(){
+    // navigation bar
+    var nav = new Nav("#navigation", $("#topnav").height());
+    nav.setup();
+    nav.update();
+    var win = $(window);
+    win.scroll(function () { nav.update.apply(nav, arguments); });
+    // charts!
     new Charts.BarChart("user-barchart")
       .load({{stats}})
       .set("xLabel", function(d, i) { return i+1; })

@@ -6,57 +6,49 @@
 
 {% block contentheader %}
 
-<div class="container" id="contents">
+<div class="container profile-container">
         <div class="row">
             <div class="span10 offset1">
-            <div class="header">
-                    <div class="avatar span1">
-                        <img src="{{ profile.picture_url }}" alt="{{profile}}" />
-                    </div>
-                    <div class="user span6">
-                        <h1>{{ profile }}</h1>
-                        <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
-                        <ul class="user-links">
+            	<div class="media">
+            		<a class="thumbnail pull-left avatar" href=".">        			
+	            		<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
+            		</a>
+            		<div class="media-body">
+            			<h2 class="media-heading">{{ profile }}
                             {% if profile.twitter %}
-                            <li class="twitter">
                                 <a href="https://twitter.com/{{ profile.twitter }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
                                 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
-                            </li>
                             {% endif %}
+                            <small class="points pull-right">
+                            	{% firstof profile.total '0' %} {% trans "points" %}
+                            </small>
+            			</h2>
+            			<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
+            			<ul class="nav nav-pills">
                             {% if profile.github %}
                             <li><i class="icon-globe"></i> <a href="http://github.com/{{ profile.github }}">{% trans "Follow on Github" %}</a></li>
                             {% endif %}
                             {% if profile.url %}
-                            <li><a class="btn btn-mini profile-link" href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
+                            <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
                             {% endif %}
                             {% if profile.location %}
-                            <li><a class="btn btn-mini profile-link" href="/location/{{ profile.location_slug }}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+                            <li><a href="/location/{{ profile.location_slug }}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
                             {% endif %}
                             {% if profile.team %}
-                            <li><a class="btn btn-mini profile-link" href="{% url team-details profile.team_slug %}">{{ profile.team }}</a></li>
+                            <li><a href="{% url team-details profile.team_slug %}">{{ profile.team }}</a></li>
                             {% endif %}
                         </ul>
-                    </div>
-                    <div class="points pull-right">
-                        <p>{% firstof profile.total '0' %}</p>
-                        <p class="small">{% trans "points" %}</p>
-
-                    </div>
-                <div class="subnav">
-                        <ul class="nav nav-pills">
-                            <li><a href="{% url member-profile username=profile.username %}" class="active">{% trans "Commits" %}</a></li>
-                            <li><a href="{% url user-projects username=profile.username %}">{% trans "Projects" %}</a></li>
+            		</div>
+            		<ul class="nav nav-tabs">
+                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url member-profile username=profile.username %}">{% trans "Commits" %}</a></li>
+                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url user-projects username=profile.username %}">{% trans "Projects" %}</a></li>
                             {% if profile.username == user.username %}
-                            <li><a href="{% url edit-profile username=profile.username %}">{% trans "Edit Profile" %}</a></li>
+                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url edit-profile username=profile.username %}">{% trans "Edit Profile" %}</a></li>
                             {% endif %}
-                            <li class="search pull-right">
-                                <form class="navbar-form">
-                                    <input type="text" class="search-query" placeholder="{% trans "Search my commits" %}">
-                                </form>
-                            </li>
-                        </ul>
-                </div>
-            </div>
+                    </ul>
+            		
+            	</div>
+            	
         </div>
     </div>
 </div>
@@ -80,15 +72,15 @@
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               {% for commit in commits %}
               {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
-              <div class="row commit">
-                  <div class="span7 pull-left">
-                      <img class="icon" src="{{ profile.picture_url }}">
-                      <strong>{{ commit.message}}</strong>
-                      <p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}</p>
-                  </div>
-                  <div class="span3 pull-right">
-                      <a href="{{ commit.project }}">{{ commit.project }}</a>
-                  </div>
+              <div class="media">
+            	  <a class="thumbnail pull-left" href=".">        			
+	            	<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
+            	  </a>
+            	  <div class="media-body">
+            		<h4 class="media-heading"><a href="{{ commit.project }}">{{ commit.project }}</a></h4>
+            		<strong>{{ commit.message}}</strong>
+            		<p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}</p>
+              	  </div>
               </div>
               {% endfor %}
             </div>
@@ -119,8 +111,7 @@
 {% endblock %}
 
 {% block extra_javascript %}
-<script type="text/javascript" src="{{ STATIC_URL }}js/d3.min.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}js/charts.js"></script>
+
 <script type="text/javascript">
   $(document).ready(function(){
         $(".commit-chart").hide();
