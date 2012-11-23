@@ -61,6 +61,25 @@ for your OS. Once it's set up simply add an existing application from
 the Julython project root and visit ``localhost`` on the port you
 specified for the development server.
 
+Media
+++++++
+
+We are using `grunt <http://gruntjs.com/>`_ to manage all the assets 
+so you'll need to have a recent version of 
+`node and npm installed <http://nodejs.org/>`_ then run::
+
+    $ fab install
+    
+Once the modules have been installed you can either `compile` or `watch` the
+css/javascript files::
+
+	$ fab compile
+	or
+	$ fab watch 
+
+Authentication
+++++++++++++++
+
 In order to set up Twitter authentication:
 
 1. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
