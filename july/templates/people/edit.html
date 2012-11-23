@@ -8,12 +8,12 @@
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
-            <h1 class="user">{% trans "Player 1_" %}</h1>
+            <h1 class="user">{% block formtitle %}{% trans "Player 1_" %}{%  endblock %}</h1>
             <form method="post" action="." enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
                 {% for field in form %}
                 <div class="control-group{% if field.errors %} error{% endif %}">
-                    {{ field.label_tag }}
+                    <span>{{ field.label_tag }}</span> {%  if not field.field.required %}<em>(optional)</em>{% endif %}
                     <div class="controls">
                         {{ field }}
                         {% if field.errors %}<span class="help-inline">{% for e in field.errors %}{{ e }} {% endfor %}</span>{% endif %}
