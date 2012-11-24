@@ -164,7 +164,7 @@ AUTHENTICATION_BACKENDS = [
     'gae_django.auth.backend.GAEGithubBackend'
 ]
 
-SESSION_ENGINE = 'gae_django.django_1_4.contrib.sessions.backends.signed_cookies'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SESSION_SAVE_EVERY_REQUEST = True
 
