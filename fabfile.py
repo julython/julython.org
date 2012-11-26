@@ -3,7 +3,7 @@ Common tools for deploy run shell and the like.
 """
 from fabric.api import lcd, task, local
 
-from gae_django.fabric_commands import local_shell, remote_shell
+from gae_django.fabric_commands import local_shell, remote_shell, runserver
 from gae_django.fabric_commands import deploy as _deploy
 
 @task
