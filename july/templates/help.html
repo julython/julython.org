@@ -8,7 +8,7 @@
 
 {# Used within blocktrans #}
 {% url edit-profile username=user.username as edit_profile_url %}
-
+{% url signin as signin_url %}
 <div class="container section-container no-border">
   <div class="row">
     <div class="span10 offset1">
@@ -21,7 +21,7 @@
               </p>
               {% else %}
               <p class="lead">
-                {% trans "First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>" %}
+                {% blocktrans %}First <a class='signin btn btn-mini btn-info' href='{{ signin_url }}'><i class='icon-user icon-white'></i> Sign In</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
               </p>
               {% endif %}
             </div>
@@ -69,7 +69,48 @@
            <div class="row">
             <div class="span10">
               <h2 class="what-is-this">{% trans "When will my points count?" %}</h2>
-              <p class="lead">{% trans "The site is open right now and in testing mode. On June 30th the points will be reset to zero. You should use your local time to 'start' at midnight the morning of July 1st, and 'end' at midnight the night of July 31st." %}</p>
+              <p class="lead">{% trans "You should use your local time to 'start' at midnight on the first day of the month, and 'end' at midnight on the last day of the month. You can refer to this handy chart: " %}</p>
+              <table class="table table-bordered table-hover">
+              	<thead><th>{% trans "Event" %}</th><th>{% trans "Start" %}</th><th>{% trans "End" %}</th></thead>
+              	<tbody>
+              		<tr>
+              			<th>{% trans "Julython" %}</th><td>{% trans "July 1st" %}</td><td>{% trans "July 31st" %}</td>
+              		</tr>
+              		<tr>
+              			<th>{% trans "J(an)ulython" %}</th><td>{% trans "January 1st" %}</td><td>{% trans "January 31st" %}</td>
+              		</tr>
+              	</tbody>
+              </table>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border" id="git">
+  <div class="row">
+    <div class="span10 offset1">
+           <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">{% trans "Why don't my commits show up?" %}</h2>
+              <p class="lead">{% trans "Be sure to edit your profile and add the email you use to commit with. Here is how you check the default in git and mecurial." %}</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="span5 section-blurb">
+              <h3>{% trans "Git Help" %}</h3>
+              <p>{% trans "Check the existing setting:" %}</p>
+              <pre>git config --global user.email</pre>
+ 			  <p>{% trans "Set a new value: " %}</p>
+ 			  <pre>git config --global user.email "me@example.com"</pre>
+ 			  <p>{% trans "Fix the email address used for the last commit:" %}</p>
+ 			  <pre>git commit --amend --author="Me &lt;me@example.com&gt;"</pre>
+            </div>
+            <div class="span5 section-blurb">
+              <h3>{% trans "Mecurial Help" %}</h3>
+              <p>{% trans "To set the username Mercurial will use for commits, edit the configurartion in .hgrc (or Mercurial.ini on Windows) and adding lines like the following:" %}</p>
+              <pre>[ui]
+username = Julython Joe &lt;me@example.com&gt;</pre>
             </div>
           </div>
     </div>
@@ -88,11 +129,35 @@
               </p>
               {% else %}
               <p class="lead">
-                {% trans "First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>" %}
+                {% blocktrans %}First <a class='signin btn btn-mini btn-info' href='{{ signin_url }}'><i class='icon-user icon-white'></i> Sign In</a>{% endblocktrans %}
               </p>
               {% endif %}
               <p class="lead">
                 {% trans "The location is a free form field, so it is really up to you to enter it property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'" %}
+              </p>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border" id="team">
+  <div class="row">
+    <div class="span10 offset1">
+           <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">{% trans "How do I set my team?" %}</h2>
+              {% if user.is_authenticated %}
+              <p class="lead">
+                {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add your team.{% endblocktrans %}
+              </p>
+              {% else %}
+              <p class="lead">
+                {% blocktrans %}First <a class='signin btn btn-mini btn-info' href='{{ signin_url }}'><i class='icon-user icon-white'></i> Sign In</a>{% endblocktrans %}
+              </p>
+              {% endif %}
+              <p class="lead">
+                {% trans "The team is a free form field, so it is really up to you to enter it property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Worker Bees' and 'worker bees' are turned into 'worker-bees'" %}
               </p>
             </div>
           </div>
