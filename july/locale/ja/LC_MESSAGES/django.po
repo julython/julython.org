@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-07-01 01:42-0400\n"
+"POT-Creation-Date: 2012-11-26 20:58-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,35 +18,63 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0\n"
 
-#: people/forms.py:7
+#: people/forms.py:23
+msgid "Address"
+msgstr ""
+
+#: people/forms.py:27
+msgid "Address Line 2"
+msgstr ""
+
+#: people/forms.py:31
+msgid "City"
+msgstr ""
+
+#: people/forms.py:35
+msgid "State / Region"
+msgstr ""
+
+#: people/forms.py:39
+msgid "Country"
+msgstr ""
+
+#: people/forms.py:43
+msgid "Postal Code"
+msgstr ""
+
+#: people/forms.py:52
 msgid "First name"
 msgstr "名"
 
-#: people/forms.py:11
+#: people/forms.py:56
 msgid "Last name"
 msgstr "姓"
 
-#: people/forms.py:15
+#: people/forms.py:60
 msgid "About me"
 msgstr "自己紹介"
 
-#: people/forms.py:19
+#: people/forms.py:64
 msgid "URL"
 msgstr "URL"
 
-#: people/forms.py:24
+#: people/forms.py:69
 msgid "Location"
 msgstr "所在地"
 
-#: people/forms.py:27
+#: people/forms.py:72
+msgid "Team"
+msgstr ""
+
+#: people/forms.py:75
 msgid "Add Email Address"
 msgstr "メールアドレス"
 
-#: people/forms.py:50
+#: people/forms.py:99
 msgid "You already have that email address!"
 msgstr "そのメアド、既に入ってんじゃんか"
 
-#: people/forms.py:57
+#: people/forms.py:106
 msgid ""
 "This email is already taken, if this is not right please email help@julython."
 "org"
@@ -72,39 +100,77 @@ msgstr ""
 msgid "Our github"
 msgstr "ウチのgithub"
 
-#: templates/base.html:7 templates/base.html.py:47 templates/index.html:9
+#: templates/base.html:7 templates/base.html.py:69 templates/index.html:9
+#: templates/live/index.html:9
 msgid "Julython 2012"
 msgstr "Julython 2012"
 
-#: templates/base.html:29
+#: templates/base.html:38 templates/index.html:182
+msgid "People"
+msgstr ""
+
+#: templates/base.html:39 templates/base.html.py:49 templates/index.html:224
+#: templates/people/profile.html:44 templates/projects/index.html:9
+msgid "Projects"
+msgstr "プロジェクト"
+
+#: templates/base.html:40 templates/index.html:200
+#: templates/people/locations.html:9
+msgid "Locations"
+msgstr "所在地"
+
+#: templates/base.html:41 templates/index.html:212
+#: templates/people/teams.html:9
+msgid "Teams"
+msgstr ""
+
+#: templates/base.html:42
+msgid "T-Shirts!"
+msgstr ""
+
+#: templates/base.html:43
 msgid "Help"
 msgstr "ヘルプ"
 
-#: templates/base.html:33
-msgid "Sign In With Twitter"
-msgstr "Twitterでログイン"
+#: templates/base.html:48 templates/help.html:52
+#: templates/people/profile.html:43 templates/projects/details.html:40
+msgid "Commits"
+msgstr "コミット"
 
-#: templates/base.html:53
+#: templates/base.html:50 templates/people/profile.html:46
+msgid "Edit Profile"
+msgstr "プロフィール編集"
+
+#: templates/base.html:51
+msgid "Signout"
+msgstr ""
+
+#: templates/base.html:55 templates/registration/login.html:30
+#, fuzzy
+msgid "Sign In"
+msgstr "ログイン"
+
+#: templates/base.html:75
 msgid "Watch the Video"
 msgstr "動画を見る"
 
-#: templates/base.html:62 templates/index.html:27
+#: templates/base.html:84 templates/index.html:27
 msgid "What is This?"
 msgstr "なんじゃこりゃ？"
 
-#: templates/base.html:63 templates/index.html:28
+#: templates/base.html:85 templates/index.html:28
 msgid "Participating"
 msgstr "参加するには？"
 
-#: templates/base.html:64 templates/index.html:29
+#: templates/base.html:86 templates/index.html:29
 msgid "The Rules"
 msgstr "ルールとか"
 
-#: templates/base.html:65 templates/index.html:30
+#: templates/base.html:87 templates/index.html:30
 msgid "Teaming Up"
 msgstr "ダチと組む"
 
-#: templates/base.html:66 templates/index.html:31
+#: templates/base.html:88
 msgid "Spread the Word"
 msgstr "ダチに知らせる"
 
@@ -112,7 +178,7 @@ msgstr "ダチに知らせる"
 msgid "Help me get started!"
 msgstr "で？どうすればいいの？"
 
-#: templates/help.html:20 templates/people/profile.html:95
+#: templates/help.html:20 templates/people/profile.html:101
 #, python-format
 msgid ""
 "First <a href=\"%(edit_profile_url)s\">edit your profile</a> and add all the "
@@ -124,13 +190,18 @@ msgstr ""
 "定してポイントを付与してやる。登録してくれるメアドは絶対第三者に表示したり、"
 "共有したりはしないからな！"
 
-#: templates/help.html:24 templates/help.html.py:91
+#: templates/help.html:24
+#, fuzzy, python-format
 msgid ""
-"First <a class='signin btn btn-mini btn-info' href='/accounts/twitter/"
-"signin/'><i class='icon-user icon-white'></i> Sign In With Twitter</a>"
+"First <a class='signin btn btn-mini btn-info' href='%(signin_url)s'><i "
+"class='icon-user icon-white'></i> Sign In</a> and add all the email "
+"addresses you use to commit with.  This is how we'll identify you, we will "
+"not display or share this information."
 msgstr ""
-"まずは<a class='signin btn btn-mini btn-info' href='/accounts/twitter/"
-"signin/'><i class='icon-user icon-white'></i>Twitterでログインだ</a>"
+"まずは<a href=\"%(edit_profile_url)s\">プロフィールを編集して</a>コミットに紐"
+"付いているメアドを全部登録してくれれば、オレたちでそいつらを使って誰だかを特"
+"定してポイントを付与してやる。登録してくれるメアドは絶対第三者に表示したり、"
+"共有したりはしないからな！"
 
 #: templates/help.html:46
 msgid "How are points scored?"
@@ -143,10 +214,6 @@ msgid ""
 msgstr ""
 "コミットをするたびに、コミットする人、コミットが行われたプロジェクト、それに"
 "プロフィールで指定すればコミットをした人の所在地にポイントが付与される。"
-
-#: templates/help.html:52 templates/people/profile.html:43
-msgid "Commits"
-msgstr "コミット"
 
 #: templates/help.html:53
 msgid ""
@@ -174,26 +241,107 @@ msgstr "ポイントが有効になる時期って？"
 
 #: templates/help.html:72
 msgid ""
-"The site is open right now and in testing mode. On June 30th the points will "
-"be reset to zero. You should use your local time to 'start' at midnight the "
-"morning of July 1st, and 'end' at midnight the night of July 31st."
+"You should use your local time to 'start' at midnight on the first day of "
+"the month, and 'end' at midnight on the last day of the month. You can refer "
+"to this handy chart: "
 msgstr ""
-"今は本サイトはテスト・モードでいろいろ試し運転をしているわけっすよ。6月30日に"
-"ポイントがリセットされちゃって、7月1日の0時から7月31日の23時59分まで本物のポ"
-"イントが稼げるようになる。"
 
-#: templates/help.html:84
+#: templates/help.html:74
+msgid "Event"
+msgstr ""
+
+#: templates/help.html:74
+msgid "Start"
+msgstr ""
+
+#: templates/help.html:74
+msgid "End"
+msgstr ""
+
+#: templates/help.html:77
+#, fuzzy
+msgid "Julython"
+msgstr "Julython 2012"
+
+#: templates/help.html:77
+msgid "July 1st"
+msgstr ""
+
+#: templates/help.html:77
+msgid "July 31st"
+msgstr ""
+
+#: templates/help.html:80
+#, fuzzy
+msgid "J(an)ulython"
+msgstr "Julython 2012"
+
+#: templates/help.html:80
+msgid "January 1st"
+msgstr ""
+
+#: templates/help.html:80
+msgid "January 31st"
+msgstr ""
+
+#: templates/help.html:95
+msgid "Why don't my commits show up?"
+msgstr ""
+
+#: templates/help.html:96
+msgid ""
+"Be sure to edit your profile and add the email you use to commit with. Here "
+"is how you check the default in git and mecurial."
+msgstr ""
+
+#: templates/help.html:101
+#, fuzzy
+msgid "Git Help"
+msgstr "ヘルプ"
+
+#: templates/help.html:102
+msgid "Check the existing setting:"
+msgstr ""
+
+#: templates/help.html:104
+msgid "Set a new value: "
+msgstr ""
+
+#: templates/help.html:106
+msgid "Fix the email address used for the last commit:"
+msgstr ""
+
+#: templates/help.html:110
+msgid "Mecurial Help"
+msgstr ""
+
+#: templates/help.html:111
+msgid ""
+"To set the username Mercurial will use for commits, edit the configurartion "
+"in .hgrc (or Mercurial.ini on Windows) and adding lines like the following:"
+msgstr ""
+
+#: templates/help.html:125
 msgid "How do I set my location?"
 msgstr "自分の所在地を登録するには？"
 
-#: templates/help.html:87
+#: templates/help.html:128
 #, python-format
 msgid ""
 "First <a href=\"%(edit_profile_url)s\">edit your profile</a> and add your "
 "location."
 msgstr "<a href=\"%(edit_profile_url)s\">プロフィール編集んとこ</a>でできる。"
 
-#: templates/help.html:95
+#: templates/help.html:132 templates/help.html.py:156
+#, fuzzy, python-format
+msgid ""
+"First <a class='signin btn btn-mini btn-info' href='%(signin_url)s'><i "
+"class='icon-user icon-white'></i> Sign In</a>"
+msgstr ""
+"まずは<a class='signin btn btn-mini btn-info' href='/accounts/twitter/"
+"signin/'><i class='icon-user icon-white'></i>Twitterでログインだ</a>"
+
+#: templates/help.html:136
 msgid ""
 "The location is a free form field, so it is really up to you to enter it "
 "property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/"
@@ -204,6 +352,39 @@ msgstr ""
 "href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/"
 "#slugify'>slugify</a>されるんで'Osaka, Japan'と'osaka Japan'はどれも'osaka-"
 "japan'になるってことだけはご承知おきを。"
+
+#: templates/help.html:149
+#, fuzzy
+msgid "How do I set my team?"
+msgstr "自分の所在地を登録するには？"
+
+#: templates/help.html:152
+#, fuzzy, python-format
+msgid ""
+"First <a href=\"%(edit_profile_url)s\">edit your profile</a> and add your "
+"team."
+msgstr "<a href=\"%(edit_profile_url)s\">プロフィール編集んとこ</a>でできる。"
+
+#: templates/help.html:160
+#, fuzzy
+msgid ""
+"The team is a free form field, so it is really up to you to enter it "
+"property. But we <a href='https://docs.djangoproject.com/en/1.4/ref/"
+"templates/builtins/#slugify'>slugify</a> the contents of this field so "
+"'Worker Bees' and 'worker bees' are turned into 'worker-bees'"
+msgstr ""
+"所在地はバリデーション丸投げの項目なので基本お任せだけど、中身は<a "
+"href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/"
+"#slugify'>slugify</a>されるんで'Osaka, Japan'と'osaka Japan'はどれも'osaka-"
+"japan'になるってことだけはご承知おきを。"
+
+#: templates/index.html:16
+msgid "Support Julython. Buy a shirt."
+msgstr ""
+
+#: templates/index.html:31
+msgid "2012 Results"
+msgstr ""
 
 #: templates/index.html:42
 msgid "Why are you people making up words?"
@@ -229,9 +410,10 @@ msgid "So make the time."
 msgstr "じゃあ、今こそ蘇らせようではないか。"
 
 #: templates/index.html:52
+#, fuzzy
 msgid ""
-"This summer, during the <a href='/help/#times'>month of July</a>, we're "
-"encouraging developers of all skill levels to try and work on your pet "
+"This year, during the <a href='/help/#times'>months of January and July</a>, "
+"we're encouraging developers of all skill levels to try and work on your pet "
 "project(s) just a little each day. It's a great excuse to contribute to the "
 "communities you follow, or even dive into the language for the first time!"
 msgstr ""
@@ -241,15 +423,15 @@ msgstr ""
 "ロジェクトにコミットしてみるとか、昔書いたスクリプトを完成させてみるとか、あ"
 "るいは初めてPythonに触れてみるとか！"
 
-#: templates/index.html:78
+#: templates/index.html:74
 msgid "I'm interested. How do I make this happen?"
 msgstr "よし乗ったぞ！何をどうすればいいのか教えて！"
 
-#: templates/index.html:83
+#: templates/index.html:79
 msgid "It's totally up to you."
 msgstr "完全にあなたの自由です（爆）"
 
-#: templates/index.html:84
+#: templates/index.html:80
 msgid ""
 "What you do during Julython is ultimately up to you. Been hankerin' to play "
 "with ZeroMQ, NumPy or Riak? Now's your chance. Have a Django or Tornado web "
@@ -260,11 +442,11 @@ msgstr ""
 "たあなた、今がチャンスだよ。DjangoとかTornadoでウェブアプリでも作っちゃう？"
 "<a href='/help/#get-started'>やっちゃってよ！</a>."
 
-#: templates/index.html:87
+#: templates/index.html:83
 msgid "However, it's good to share."
 msgstr "でもやっぱみんなでやると楽しい"
 
-#: templates/index.html:88
+#: templates/index.html:84
 msgid ""
 "We recommend you work on something open, perhaps on GitHub or Bitbucket, so "
 "that others can see your progress. Then <a href='/help/#webhook'>add a "
@@ -276,15 +458,15 @@ msgstr ""
 "録しちゃえばポイントが付与されて、みんなと比べてどんだけ熱くPythonが書けてい"
 "るかがわかる。"
 
-#: templates/index.html:102
+#: templates/index.html:98
 msgid "What are the rules?"
 msgstr "ルールって？"
 
-#: templates/index.html:107
+#: templates/index.html:103
 msgid "There are no rules!"
 msgstr "ルールなど何もない！"
 
-#: templates/index.html:108
+#: templates/index.html:104
 msgid ""
 "Okay, just one rule, it has to be a Python project. Of course you can work "
 "on some javascript to make you web apps. But, the heart of the project "
@@ -296,11 +478,11 @@ msgstr ""
 "まぁ、ウェブアプリで多少JavaScriptいじりをするのも別にいいけど、Python中心の"
 "やつでお願いします！まぁ、別にオレたちで規制したりはしないけどさ（多分）。"
 
-#: templates/index.html:111
+#: templates/index.html:107
 msgid "Whats in it for me?"
 msgstr "オレにゃ何のメリットがあるんだ？"
 
-#: templates/index.html:112
+#: templates/index.html:108
 msgid ""
 "Fame and fortune! The goal is that you either learn something new or meet "
 "someone who is also interested in similar Python tools. If you share your "
@@ -312,29 +494,30 @@ msgstr ""
 "うのだ！でもまぁ、Githubのレポとかを教えてくれれば<a href='/help/#points'>ポ"
 "イントとか</a>付与してもいいんだけどね。"
 
-#: templates/index.html:115
+#: templates/index.html:111
 msgid "Can I work on an existing project?"
 msgstr "既存のプロジェクトでもいいの？"
 
-#: templates/index.html:116
+#: templates/index.html:112
+#, fuzzy
 msgid ""
 "Yes! But you will only get 'credit' for commits <a href='/help/"
-"#times'>within the month of July</a>. You should consider forking an "
-"existing project if you are not the owner and register that fork."
+"#times'>within the months of January or July</a>. You should consider "
+"forking an existing project if you are not the owner and register that fork."
 msgstr ""
 "もちろん！ただしポイントが付与されるのはあくまで<a href='/help/#times'>7月中"
 "に</a>行われたコミットのみ。他人のプロジェクトでもフォークしてwebhookを設定す"
 "ればポイントが貯まるのでやってみればどうかね？"
 
-#: templates/index.html:130
+#: templates/index.html:126
 msgid "Joining Forces"
 msgstr "ダチと力を合わせれば無敵じゃん"
 
-#: templates/index.html:135
+#: templates/index.html:131
 msgid "Local is in"
 msgstr "ソーシャルが流行ってるからな"
 
-#: templates/index.html:136
+#: templates/index.html:132
 msgid ""
 "We encourage everyone to team up, our goal is to have meetups organically "
 "created in cites across the country. There should be participants meeting in "
@@ -345,11 +528,11 @@ msgstr ""
 "なーって、オレたちは思ってるわけっすよ。近いうちにそういう機能もリリースすっ"
 "からお楽しみに。"
 
-#: templates/index.html:139
+#: templates/index.html:135
 msgid "Cities against cities"
 msgstr "となりの街と勝負だ！"
 
-#: templates/index.html:140
+#: templates/index.html:136
 msgid ""
 "So you think your city has the most committed Python programmers? Be sure to "
 "sign up to have your commits go toward your home town. We will see <a href='/"
@@ -359,11 +542,11 @@ msgstr ""
 "Julythonでその圧倒的な差を見せつけろ！プロフィールに所在地を登録すれば、 <a "
 "href='/location/'>地元のランキング</a>が上がる！"
 
-#: templates/index.html:143
+#: templates/index.html:139
 msgid "Frameworks against Frameworks"
 msgstr "フレームワーク同士でランキング"
 
-#: templates/index.html:144
+#: templates/index.html:140
 msgid ""
 "Already work on some fancy web framework? Be sure to fork the project and <a "
 "href='/help/#webhook'>add a webhook</a>. At the end we will add up all the "
@@ -376,31 +559,70 @@ msgstr ""
 "れたポイントの合計を取ってその人気度を比較するつもりだ。引き分けの場合はそれ"
 "ぞれのテック・リードが早食い大会をして勝者を決める。"
 
-#: templates/index.html:158
+#: templates/index.html:152
+#, python-format
+msgid ""
+"You all did awesome! <span id=\"commit-total\">%(total)s</span> commits!"
+msgstr ""
+
+#: templates/index.html:176 templates/people/leaderboard.html:12
+msgid "High Scores"
+msgstr ""
+
+#: templates/index.html:193 templates/index.html.py:204
+#: templates/index.html:216 templates/people/people_list.html:38
+#: templates/people/team_details.html:38
+#, fuzzy, python-format
+msgid "%(number_of_points)s point in "
+msgid_plural "%(number_of_points)s points in "
+msgstr[0] "%(number_of_points)s ポイント／"
+msgstr[1] "%(number_of_points)s ポイント／"
+
+#: templates/index.html:194 templates/index.html.py:205
+#: templates/index.html:217 templates/people/leaderboard.html:22
+#: templates/people/locations.html:15 templates/people/people_list.html:19
+#: templates/people/people_list.html:39 templates/people/team_details.html:19
+#: templates/people/team_details.html:39 templates/people/teams.html:15
+#: templates/projects/details.html:32
+#, python-format
+msgid "%(number_of_projects)s project"
+msgid_plural "%(number_of_projects)s projects"
+msgstr[0] "%(number_of_projects)s project"
+msgstr[1] "%(number_of_projects)s projects"
+
+#: templates/index.html:228 templates/people/leaderboard.html:28
+#: templates/people/locations.html:20 templates/people/people_list.html:30
+#: templates/people/people_projects.html:20 templates/people/profile.html:23
+#: templates/people/team_details.html:30 templates/people/teams.html:20
+#: templates/projects/details.html:20 templates/projects/index.html:18
+msgid "points"
+msgstr "ポイント"
+
+#: templates/index.html:248
 msgid "Good News Travels Fast"
 msgstr "シェアしようぜ"
 
-#: templates/index.html:163
+#: templates/index.html:253
 msgid "Twitter"
 msgstr "Twitter"
 
-#: templates/index.html:164
+#: templates/index.html:254
 msgid "Follow @julython"
 msgstr "Follow @julython"
 
-#: templates/index.html:168
+#: templates/index.html:258
 msgid "Facebook"
 msgstr "Facebook"
 
-#: templates/index.html:169
+#: templates/index.html:259
 msgid "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>"
 msgstr "<a href='http://www.facebook.com/julython'>Facebook</a>でいいね！"
 
-#: templates/index.html:172 templates/includes/hook-instructions.html:12
+#: templates/index.html:262 templates/includes/hook-instructions.html:12
 msgid "Github"
 msgstr "Github"
 
-#: templates/index.html:173
+#: templates/index.html:263
 msgid ""
 "We love sharing code, follow us on <a href='http://github.com/"
 "julython'>github</a>."
@@ -493,6 +715,13 @@ msgstr "「Save Settings」をクリック。"
 msgid "You can test it out by pushing a commit to your repository."
 msgstr "レポにコミットすれば動作確認できるよ。"
 
+#: templates/live/index.html:16
+#, python-format
+msgid ""
+"You are all doing awesome! <span id=\"commit-total\">%(total)s</span> "
+"commits so far!"
+msgstr ""
+
 #: templates/people/delete_email.html:13
 msgid "Are you sure you want to delete this email:"
 msgstr "ホントにこのメアドを削除するの？"
@@ -501,110 +730,151 @@ msgstr "ホントにこのメアドを削除するの？"
 msgid "Yes Delete"
 msgstr "消しちまえ！"
 
-#: templates/people/delete_email.html:18 templates/people/edit.html:38
-#: templates/registration/login.html:34
+#: templates/people/delete_email.html:18 templates/people/edit.html:36
+#: templates/registration/login.html:31
+#: templates/registration/register.html:26
 msgid "Cancel"
 msgstr "やっぱやめる"
 
-#: templates/people/edit.html:11
-msgid "Player 1_"
-msgstr "プレイヤー１"
-
-#: templates/people/edit.html:25
+#: templates/people/edit.html:23
 msgid "Existing emails"
 msgstr "登録されているメアド"
 
-#: templates/people/edit.html:29
+#: templates/people/edit.html:27
 msgid "delete"
 msgstr "削除"
 
-#: templates/people/edit.html:37
+#: templates/people/edit.html:35
 msgid "Save"
 msgstr "保存"
-
-#: templates/people/locations.html:9
-msgid "Locations"
-msgstr "所在地"
-
-#: templates/people/locations.html:15 templates/people/people_list.html:18
-#: templates/people/people_list.html:36
-#, python-format
-msgid "%(number_of_projects)s project"
-msgid_plural "%(number_of_projects)s projects"
-msgstr[0] "%(number_of_projects)s project"
-msgstr[1] "%(number_of_projects)s projects"
-
-#: templates/people/locations.html:20 templates/people/people_list.html:26
-#: templates/people/profile.html:38
-msgid "points"
-msgstr "ポイント"
 
 #: templates/people/people_list.html:14
 msgid "All locations"
 msgstr "所在地一覧"
 
-#: templates/people/people_list.html:35
+#: templates/people/people_list.html:21 templates/people/team_details.html:21
+#, fuzzy
+msgid "No Projects"
+msgstr "新しいプロジェクト"
+
+#: templates/people/people_projects.html:11
+#, fuzzy
+msgid "No Projects Yet!"
+msgstr "新しいプロジェクト"
+
+#: templates/people/people_projects.html:11
+#, fuzzy
+msgid "Your Projects"
+msgstr "プロジェクト"
+
+#: templates/people/people_projects.html:24
+#, fuzzy
+msgid "Project Page"
+msgstr "プロジェクト"
+
+#: templates/people/people_projects.html:35
+msgid ""
+"Projects will automatically be added when you make commits to projects for "
+"which you have configured the Julython post-commit hooks.  If you need some "
+"help setting up web hooks, check out the <a href='/help/'>help page!</a>"
+msgstr ""
+
+#: templates/people/profile.html:19
+msgid "Follow"
+msgstr "Follow"
+
+#: templates/people/profile.html:26
+msgid "Python Hacker"
+msgstr "Python ハッカー"
+
+#: templates/people/profile.html:29
+msgid "Follow on Github"
+msgstr ""
+
+#: templates/people/profile.html:92
+msgid "Still preparing for lift off!"
+msgstr "まだまだこれからだぜ！"
+
+#: templates/people/profile.html:93
+msgid "This user has not committed to any project yet."
+msgstr "こいつはまだ何もコミットしてない。"
+
+#: templates/people/profile.html:99
+msgid "Let's get started!"
+msgstr "始めようぜ！"
+
+#: templates/people/profile.html:129
+#, fuzzy
+msgid "Commit data not found"
+msgstr "こんなURL叩いても何も出ないぜ"
+
+#: templates/people/team_details.html:14
+msgid "All teams"
+msgstr ""
+
+#: templates/projects/details.html:14
+#, fuzzy
+msgid "All projects"
+msgstr "プロジェクト"
+
+#: templates/projects/details.html:25
+#, fuzzy
+msgid "Players"
+msgstr "プレイヤー１"
+
+#: templates/projects/details.html:31
 #, python-format
 msgid "%(number_of_points)s points in "
 msgid_plural "%(number_of_points)s point in "
 msgstr[0] "%(number_of_points)s ポイント／"
 msgstr[1] "%(number_of_points)s ポイント／"
 
-#: templates/people/profile.html:22
-msgid "Python Hacker"
-msgstr "Python ハッカー"
-
-#: templates/people/profile.html:25
-msgid "Follow"
-msgstr "Follow"
-
-#: templates/people/profile.html:44
-msgid "Projects"
-msgstr "プロジェクト"
-
-#: templates/people/profile.html:46
-msgid "Edit Profile"
-msgstr "プロフィール編集"
-
-#: templates/people/profile.html:50
-msgid "Search my commits"
-msgstr "コミットを検索"
-
-#: templates/people/profile.html:86
-msgid "Still preparing for lift off!"
-msgstr "まだまだこれからだぜ！"
-
-#: templates/people/profile.html:87
-msgid "This user has not committed to any project yet."
-msgstr "こいつはまだ何もコミットしてない。"
-
-#: templates/people/profile.html:93
-msgid "Let's get started!"
-msgstr "始めようぜ！"
-
-#: templates/registration/login.html:10
-msgid "Sign in"
-msgstr "ログイン"
-
-#: templates/registration/login.html:32
-msgid "Submit"
-msgstr "登録"
-
-#: templates/registration/login.html:41
+#: templates/registration/login.html:9
 msgid "Social Media Yo"
 msgstr "ソーシャルにログインだぜ"
 
-#: templates/registration/login.html:42
-msgid "Sign in with Twitter"
-msgstr "Twitterでログイン"
+#: templates/registration/login.html:14
+msgid "Old School Login"
+msgstr ""
 
-#: templates/registration/login.html:44
-msgid "I don't have an account"
+#: templates/registration/login.html:15
+#, fuzzy
+msgid "I do not have an account!"
 msgstr "アカウントをまだ持ってない！"
 
-#: templates/registration/login.html:45
-msgid "Sign up with Twitter"
-msgstr "Twitterで登録"
+#: templates/registration/register.html:11
+msgid "Player 1_"
+msgstr "プレイヤー１"
+
+#: templates/registration/register.html:25
+#, fuzzy
+msgid "Sign Up!"
+msgstr "ログイン"
+
+#~ msgid "Sign In With Twitter"
+#~ msgstr "Twitterでログイン"
+
+#~ msgid ""
+#~ "The site is open right now and in testing mode. On June 30th the points "
+#~ "will be reset to zero. You should use your local time to 'start' at "
+#~ "midnight the morning of July 1st, and 'end' at midnight the night of July "
+#~ "31st."
+#~ msgstr ""
+#~ "今は本サイトはテスト・モードでいろいろ試し運転をしているわけっすよ。6月30"
+#~ "日にポイントがリセットされちゃって、7月1日の0時から7月31日の23時59分まで本"
+#~ "物のポイントが稼げるようになる。"
+
+#~ msgid "Search my commits"
+#~ msgstr "コミットを検索"
+
+#~ msgid "Submit"
+#~ msgstr "登録"
+
+#~ msgid "Sign in with Twitter"
+#~ msgstr "Twitterでログイン"
+
+#~ msgid "Sign up with Twitter"
+#~ msgstr "Twitterで登録"
 
 #~ msgid "Heads Up!"
 #~ msgstr "HEY、ユーたち！"
