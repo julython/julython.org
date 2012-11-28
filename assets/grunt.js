@@ -25,11 +25,11 @@ module.exports = function(grunt) {
     concat: {
       app: {
         src: apps,
-        dest: '../july/static_root/js/app.js'
+        dest: '../july/static/js/app.js'
       },
       vendor: {
         src: deps,
-        dest: '../july/static_root/js/vendor.js'
+        dest: '../july/static/js/vendor.js'
       }
     },
 
@@ -37,11 +37,11 @@ module.exports = function(grunt) {
     min: {
       app: {
 	    src: apps,
-        dest: '../july/static_root/js/app.js'
+        dest: '../july/static/js/app.js'
       },
       vendor: {
         src: deps,
-        dest: '../july/static_root/js/vendor.js'
+        dest: '../july/static/js/vendor.js'
       }
     },
 
@@ -52,7 +52,7 @@ module.exports = function(grunt) {
             paths: ["assets/bootstrap/less"]
         },
         files: {
-            "../july/static_root/css/main.css": "less/layout.less"
+            "../july/static/css/main.css": "less/layout.less"
         }
       },
       prod: {
@@ -61,7 +61,7 @@ module.exports = function(grunt) {
             compress: true            
         },
         files: {
-            "../july/static_root/css/main.css": "less/layout.less"
+            "../july/static/css/main.css": "less/layout.less"
         }
       }
     },

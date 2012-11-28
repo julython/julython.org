@@ -1,6 +1,7 @@
 application: julython
+domain: www.julython.org
 version: 1
-runtime: python27
+runtime: cannula.runtime.Python
 api_version: 1
 threadsafe: true
 
