@@ -1,51 +1,35 @@
 import logging
 import datetime
-import json
 from urlparse import urlparse
 
-from google.appengine.ext import ndb
-from google.appengine.ext import deferred
-from google.appengine.api import memcache
+from django.db import models
+from django.contrib.auth.models import User
 
-from gae_django.auth.models import User
 from july import settings
-from july.live.models import Message
+#from july.live.models import Message
 
-class Commit(ndb.Model):
+class Commit(models.Model):
     """
     Commit record for the profile, the parent is the profile
     that way we can update the commit count and last commit timestamp
     in the same transaction.
     """
-    hash = ndb.StringProperty()
-    author = ndb.StringProperty(indexed=False)
-    name = ndb.StringProperty(indexed=False)
-    email = ndb.StringProperty()
-    message = ndb.StringProperty(indexed=False)
-    url = ndb.StringProperty()
-    project = ndb.StringProperty()
-    project_slug = ndb.ComputedProperty(lambda self: Project.parse_project_name(self.project))
-    timestamp = ndb.DateTimeProperty()
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    hash = models.CharField(max_length=255)
+    author = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    message = models.CharField(max_length=255)
+    url = models.CharField(max_length=255)
+    project = models.ForeignKey("Project")
+    timestamp = models.DateTimeField()
+    created_on = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return self.__unicode__()
     
     def __unicode__(self):
         return u'Commit: %s' % self.hash
-    
-    @classmethod
-    def make_key(cls, commit_hash, user=None):
-        """
-        Return a ndb.Key for this commit, if the user is passed
-        make the user the parent of the commit.
-        """
-        if user and isinstance(user, ndb.Model):
-            return ndb.Key('User', user.key.id(), 'Commit', commit_hash)
-        elif user and isinstance(user, ndb.Key):
-            return ndb.Key('User', user.id(), 'Commit', commit_hash)
-        else:
-            return ndb.Key('Commit', commit_hash)
     
     @classmethod
     def create_by_email(cls, email, commits, project=None):
@@ -69,7 +53,6 @@ class Commit(ndb.Model):
         project = project
         logging.info(project)
         
-        @ndb.transactional
         def txn():
             to_put = []
             for c in commits:
@@ -156,7 +139,7 @@ class Commit(ndb.Model):
         commits = ndb.put_multi(to_put)
         return commits
     
-class Project(ndb.Model):
+class Project(models.Model):
     """
     Project Model:
     
@@ -167,16 +150,16 @@ class Project(ndb.Model):
     for any of the repo host we know already. (github, bitbucket)
     """
     
-    url = ndb.StringProperty()
-    description = ndb.TextProperty(required=False)
-    name = ndb.StringProperty(required=False)
-    forked = ndb.BooleanProperty(default=False)
-    forks = ndb.IntegerProperty(default=0)
-    watchers = ndb.IntegerProperty(default=0)
-    parent_url = ndb.StringProperty(required=False)
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
+    url = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    name = models.CharField(max_length=255)
+    forked = models.BooleanField(default=False)
+    forks = models.IntegerField(default=0)
+    watchers = models.IntegerField(default=0)
+    parent_url = models.CharField(max_length=255)
+    created_on = models.DateTimeField(auto_now_add=True)
     # new projects start off with 10 points
-    total = ndb.IntegerProperty(default=10)
+    total = models.IntegerField(default=10)
     
     def __str__(self):
         if self.name:
@@ -225,12 +208,6 @@ class Project(ndb.Model):
         return '%s-%s' % (host_abbr, name)
     
     @classmethod
-    def make_key(cls, url):
-        """Return a ndb.Key from a url."""
-        name = cls.parse_project_name(url)
-        return ndb.Key('Project', name)
-    
-    @classmethod
     def get_or_create(cls, **kwargs):
         url = kwargs.get('url', None)
         if url is None:
@@ -246,10 +223,9 @@ class Project(ndb.Model):
         
         return created, project
 
-class Location(ndb.Model):
+class Location(models.Model):
     """Simple model for holding point totals and projects for a location"""
-    total = ndb.IntegerProperty(default=0)
-    projects = ndb.StringProperty(repeated=True)
+    total = models.IntegerField(default=0)
     
     def __str__(self):
         return self.key.id().replace('-', ' ')
@@ -301,68 +277,68 @@ class Team(Location):
     """Simple model for holding point totals and projects for a Team"""
     # It is all the same yo!
 
-class Accumulator(ndb.Model):
-    """
-    Simple statistic model to store commit data for global, user, project, location.
-    """
-    # reference object for the stat collection
-    # 'location:slug', 'own:username', 'project:project_url', 'global'
-    metric = ndb.StringProperty()
-    count = ndb.IntegerProperty(indexed=False, default=0)
-    
-    @classmethod
-    def make_key(cls, metric, date):
-        return ndb.Key(cls.__name__, '%s:%s' % (metric, date))
-    
-    @classmethod
-    def get_histogram(cls, metric):
-        """
-        Returns a list of integers representing the count totals
-        for each day starting with ~July 1st and ending ~July 31st.
-        """
-        keys = [cls.make_key(metric, d) for d in xrange(1, 32)]
-        models = ndb.get_multi(keys)
-        # ndb returns None if the object doesn't exist (no counts for that day!)
-        return [model.count if model else 0 for model in models]
-    
-    @classmethod
-    def add_count(cls, metric, date, delta=1, reset=False):
-        """
-        Add to the count totals for a day. Special casing the 
-        ends to be within our artifical 31 day month.
-        
-        * metric: 'global', 'own:username', 'project:slug'
-        * date: either the date of the object or a urlsafe key of
-                an object with a timestamp attribute
-        * delta: number to increase count by (default 1)
-        
-        """
-        # check if we were passed a key
-        if isinstance(date, basestring):
-            try:
-                key = ndb.Key(urlsafe=date)
-                commit = key.get()
-                date = commit.timestamp
-            except:
-                logging.exception("Unable to find commit!")
-                return
-
-        if date.month == 6:
-            date = settings.START_DATETIME + datetime.timedelta(days=1)
-        elif date.month == 8:
-            date = settings.END_DATETIME - datetime.timedelta(days=1)
-        
-        name = '%s:%s' % (metric, date.day)
-        reset_counts = reset
-        
-        @ndb.transactional
-        def txn():
-            counter = cls.get_or_insert(name, metric=metric)
-            if reset_counts:
-                counter.count = delta
-            else:
-                counter.count += delta
-            counter.put()
-            return counter.count
-        
-        return txn()
+#class Accumulator(ndb.Model):
+#    """
+#    Simple statistic model to store commit data for global, user, project, location.
+#    """
+#    # reference object for the stat collection
+#    # 'location:slug', 'own:username', 'project:project_url', 'global'
+#    metric = ndb.StringProperty()
+#    count = ndb.IntegerProperty(indexed=False, default=0)
+#    
+#    @classmethod
+#    def make_key(cls, metric, date):
+#        return ndb.Key(cls.__name__, '%s:%s' % (metric, date))
+#    
+#    @classmethod
+#    def get_histogram(cls, metric):
+#        """
+#        Returns a list of integers representing the count totals
+#        for each day starting with ~July 1st and ending ~July 31st.
+#        """
+#        keys = [cls.make_key(metric, d) for d in xrange(1, 32)]
+#        models = ndb.get_multi(keys)
+#        # ndb returns None if the object doesn't exist (no counts for that day!)
+#        return [model.count if model else 0 for model in models]
+#    
+#    @classmethod
+#    def add_count(cls, metric, date, delta=1, reset=False):
+#        """
+#        Add to the count totals for a day. Special casing the 
+#        ends to be within our artifical 31 day month.
+#        
+#        * metric: 'global', 'own:username', 'project:slug'
+#        * date: either the date of the object or a urlsafe key of
+#                an object with a timestamp attribute
+#        * delta: number to increase count by (default 1)
+#        
+#        """
+#        # check if we were passed a key
+#        if isinstance(date, basestring):
+#            try:
+#                key = ndb.Key(urlsafe=date)
+#                commit = key.get()
+#                date = commit.timestamp
+#            except:
+#                logging.exception("Unable to find commit!")
+#                return
+#
+#        if date.month == 6:
+#            date = settings.START_DATETIME + datetime.timedelta(days=1)
+#        elif date.month == 8:
+#            date = settings.END_DATETIME - datetime.timedelta(days=1)
+#        
+#        name = '%s:%s' % (metric, date.day)
+#        reset_counts = reset
+#        
+#        @ndb.transactional
+#        def txn():
+#            counter = cls.get_or_insert(name, metric=metric)
+#            if reset_counts:
+#                counter.count = delta
+#            else:
+#                counter.count += delta
+#            counter.put()
+#            return counter.count
+#        
+#        return txn()

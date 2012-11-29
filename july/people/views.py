@@ -5,13 +5,13 @@ from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
 
-from gae_django.auth.models import User
+#from gae_django.auth.models import User
 
-from google.appengine.ext.ndb.query import Cursor
-from google.appengine.ext import ndb, deferred
+#from google.appengine.ext.ndb.query import Cursor
+#from google.appengine.ext import ndb, deferred
 
-from july.people.models import Commit, Location, Project, Team
-from july.cron import fix_location, fix_team
+#from july.people.models import Commit, Location, Project, Team
+#from july.cron import fix_location, fix_team
 
 def people_projects(request, username):
     user = User.get_by_auth_id('own:%s' % username)

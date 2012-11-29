@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import ugettext_lazy
 
-from google.appengine.ext import ndb, deferred
+#from google.appengine.ext import ndb, deferred
 
 from july.cron import fix_orphans
 

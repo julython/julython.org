@@ -10,10 +10,4 @@ if __name__ == "__main__":
 
     from django.core.management import execute_from_command_line
     
-    # Don't allow runserver command
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'runserver':
-            print("Use appengine dev_appserver.py or fabric to runserver!")
-            sys.exit(1)
-    
     execute_from_command_line(sys.argv)

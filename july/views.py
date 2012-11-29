@@ -1,7 +1,7 @@
 import json
 
-from google.appengine.ext import ndb
-from google.appengine.api import memcache
+#from google.appengine.ext import ndb
+#from google.appengine.api import memcache
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
@@ -9,12 +9,12 @@ from django.template import Context
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
-from gae_django.auth.models import User
+from django.contrib.auth.models import User
 
-from july.people.models import Accumulator, Location, Project, Team
-from google.appengine.api import channel
-from july.live.models import Message, Connection
-from july.api import to_dict
+#from july.people.models import Accumulator, Location, Project, Team
+#from google.appengine.api import channel
+#from july.live.models import Message#, Connection
+#from july.api import to_dict
 
 
 def index(request):
@@ -37,11 +37,11 @@ def index(request):
     
     # this is only shown on authenticated page loads
     # to save on the overhead. 
-    if True:
+    if False:
         stats = Accumulator.get_histogram('global')
         total = sum(stats)
         location_future = Location.query().order(-Location.total).fetch_async(15)
-        people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(10)
+        #people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(10)
         project_future = Project.query().order(-Project.total).fetch_async(10)
         team_future = Team.query().order(-Team.total).fetch_async(15)
         message_future = Message.query().order(-Message.timestamp).fetch_async(30)

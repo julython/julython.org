@@ -1,29 +1,29 @@
 
-from google.appengine.ext import db
+from django.db import models
 
-class Section(db.Model):
+class Section(models.Model):
     """Simple model for handling section content"""
 
-    title = db.StringProperty(required=True)
-    order = db.IntegerProperty(default=1)
+    title = models.CharField(max_length=200)
+    order = models.IntegerField(default=1)
     # the slug is the CSS class name, too
-    slug = db.StringProperty(required=True)
+    slug = models.CharField(max_length=200)
 
     # this is pretty darn hacky. :)
-    use_blurb_one = db.BooleanProperty()
-    blurb_one_image_url = db.StringProperty()
-    blurb_one_title = db.StringProperty()
-    blurb_one_content = db.TextProperty()
+    use_blurb_one = models.BooleanField()
+    blurb_one_image_url = models.CharField(max_length=200)
+    blurb_one_title = models.CharField(max_length=200)
+    blurb_one_content = models.TextField()
 
-    use_blurb_two = db.BooleanProperty()
-    blurb_two_image_url = db.StringProperty()
-    blurb_two_title = db.StringProperty()
-    blurb_two_content = db.TextProperty()
+    use_blurb_two = models.BooleanField()
+    blurb_two_image_url = models.CharField(max_length=200)
+    blurb_two_title = models.CharField(max_length=200)
+    blurb_two_content = models.TextField()
 
-    use_blurb_three = db.BooleanProperty()
-    blurb_three_image_url = db.StringProperty()
-    blurb_three_title = db.StringProperty()
-    blurb_three_content = db.TextProperty()
+    use_blurb_three = models.BooleanField()
+    blurb_three_image_url = models.CharField(max_length=200)
+    blurb_three_title = models.CharField(max_length=200)
+    blurb_three_content = models.TextField()
 
     @property
     def blurbs(self):
