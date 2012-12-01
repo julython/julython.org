@@ -154,13 +154,14 @@ INSTALLED_APPS = (
     'july',
     'july.pages',
     'july.people',
+    'social_auth',
 )
 
-#AUTHENTICATION_BACKENDS = [
-#    'gae_django.auth.backend.GAEBackend', 
-#    'gae_django.auth.backend.GAETwitterBackend',
-#    'gae_django.auth.backend.GAEGithubBackend'
-#]
+AUTHENTICATION_BACKENDS = [
+    'social_auth.backends.twitter.TwitterBackend',
+    'social_auth.backends.contrib.github.GithubBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
@@ -211,3 +212,9 @@ GITHUB_CALLBACK = '%saccounts/github/verify/' % MAIN_URL
 # TIMES COMMITS SCORE POINTS
 START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
 END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
+
+SOCIAL_AUTH_DEFAULT_USERNAME = 'new_social_auth_user'
+SOCIAL_AUTH_UUID_LENGTH = 3
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email']
+SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
+SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'

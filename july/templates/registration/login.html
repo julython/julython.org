@@ -7,13 +7,13 @@
     <div class="row">
         <div class="span8 offset2">
             <h2>{% trans "Social Media Yo" %}</h2>
-            <p><a class="signin btn btn-large btn-info" href="/accounts/twitter/signin/"><i class="icon-user icon-white"></i> Sign In With Twitter</a>
-                <a class="signin btn btn-large" href="/accounts/github/signin/"><i class="icon-user"></i> Sign In With Github</a></p>
+            <p><a class="signin btn btn-large btn-info" href="/accounts/login/twitter/"><i class="icon-user icon-white"></i> Sign In With Twitter</a>
+                <a class="signin btn btn-large" href="/accounts/login/github/"><i class="icon-user"></i> Sign In With Github</a></p>
             
             
             <h2>{% trans "Old School Login" %}</h2>
-            <p><a href="{% url gae-django-register %}">{% trans "I do not have an account!" %}</a></p>
-            <form method="post" action="{% url gae-django-login %}">{% csrf_token %}
+            <p><a href="#TODO!!">{% trans "I do not have an account!" %}</a></p>
+            <form method="post" action="#TODO!!">{% csrf_token %}
                 <div class="well">
                 {{ form.non_field_errors }}
                 {% for field in form %}

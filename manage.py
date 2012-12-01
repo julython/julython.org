@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 import os, sys
 
-from gae_django.fabric_commands import setup_paths
-
-setup_paths()
-
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "july.settings")
 

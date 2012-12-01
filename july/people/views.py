@@ -1,16 +1,13 @@
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
 
-#from gae_django.auth.models import User
+from django.contrib.auth.models import User
 
-#from google.appengine.ext.ndb.query import Cursor
-#from google.appengine.ext import ndb, deferred
-
-#from july.people.models import Commit, Location, Project, Team
+from july.people.models import Commit, Location, Project, Team
 #from july.cron import fix_location, fix_team
 
 def people_projects(request, username):
@@ -32,11 +29,9 @@ def people_projects(request, username):
         context_instance=RequestContext(request)) 
 
 def user_profile(request, username):
-    user = User.get_by_auth_id('own:%s' % username)
-    if user == None:
-        raise Http404("User not found")
+    user = get_object_or_404(User, username=username)
 
-    commits = Commit.query(ancestor=user.key).order(-Commit.timestamp).fetch(100)
+    commits = Commit.objects.filter(user=user).order_by('-timestamp')
 
     return render_to_response('people/profile.html', {
             'commits': commits, 
