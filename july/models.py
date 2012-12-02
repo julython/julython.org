@@ -11,12 +11,13 @@ from django.contrib.auth.models import AbstractUser
 
 from social_auth.models import UserSocialAuth
 
-from july.people.models import Location, Team
+from july.people.models import Location, Team, Project
 
 class User(AbstractUser):
     
     location = models.ForeignKey(Location, blank=True, null=True, related_name='location_members')
     team = models.ForeignKey(Team, blank=True, null=True, related_name='team_members')
+    projects = models.ManyToManyField(Project)
     
     def add_auth_id(self, auth_str):
         """
@@ -24,8 +25,12 @@ class User(AbstractUser):
         
         The `auth_str` should be in the format '{provider}:{uid}'
         this is useful for adding multiple unique email addresses.
+        
+        Example::
+            
+            user = User.objects.get(username='foo')
+            user.add_auth_id('email:foo@example.com')
         """
         provider, uid = auth_str.split(':')
         UserSocialAuth.create_social_auth(self, uid, provider)
-        
-        
+

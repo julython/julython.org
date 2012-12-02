@@ -11,18 +11,10 @@ from july.people.models import Commit, Location, Project, Team
 #from july.cron import fix_location, fix_team
 
 def people_projects(request, username):
-    user = User.get_by_auth_id('own:%s' % username)
-    if user == None:
-        raise Http404("User not found")
-    
-    if getattr(user, 'projects', None) == None:
-        projects = [] 
-    else: 
-        projects = user.projects
-        projects = ndb.get_multi([Project.make_key(project) for project in projects])
+    user = get_object_or_404(User, username=username)
 
     return render_to_response('people/people_projects.html', {
-            'projects': projects,
+            'projects': user.projects.all(),
             'profile': user,
             'active': 'projects',
         },  
