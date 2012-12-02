@@ -1,6 +1,0 @@
-queue:
-- name: default
-  rate: 5/s
-
-- name: live
-  rate: 1/s

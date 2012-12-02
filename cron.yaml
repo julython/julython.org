@@ -1,4 +1,0 @@
-cron:
-- description: fix orphans
-  url: /__cron__/commits/
-  schedule: first wed of aug 00:00

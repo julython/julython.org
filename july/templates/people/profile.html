@@ -35,15 +35,15 @@
                             <li><a href="/location/{{ profile.location_slug }}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
                             {% endif %}
                             {% if profile.team %}
-                            <li><a href="{% url team-details profile.team_slug %}">{{ profile.team }}</a></li>
+                            <li><a href="{% url 'team-details' profile.team_slug %}">{{ profile.team }}</a></li>
                             {% endif %}
                         </ul>
             		</div>
             		<ul class="nav nav-tabs">
-                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url member-profile username=profile.username %}">{% trans "Commits" %}</a></li>
-                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url user-projects username=profile.username %}">{% trans "Projects" %}</a></li>
+                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
+                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
                             {% if profile.username == user.username %}
-                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url edit-profile username=profile.username %}">{% trans "Edit Profile" %}</a></li>
+                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
                             {% endif %}
                     </ul>
             		
@@ -57,7 +57,7 @@
 {% block content %}
 
 {# Used within blocktrans #}
-{% url edit-profile username=user.username as edit_profile_url %}
+{% url 'edit-profile' username=user.username as edit_profile_url %}
 
 <div class="container section-container no-border">
   <div class="row">

@@ -24,7 +24,7 @@
                     <div class="controls">
                         <ul>
                             {% for email in form.emails %}
-                            <li>{{ email }} <a href="{% url delete-email user.username email %}" class="delete">{% trans "delete" %}</a></li>
+                            <li>{{ email }} <a href="{% url 'delete-email' user.username email %}" class="delete">{% trans "delete" %}</a></li>
                             {% endfor %}
                         </ul>
                     </div>

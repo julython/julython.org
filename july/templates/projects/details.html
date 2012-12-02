@@ -11,7 +11,7 @@
         <div class="span10 offset1"><br />
             <div class="row project">
             <div class="span6">
-              <a href="{% url projects %}">{% trans "All projects" %}</a> 
+              <a href="{% url 'projects' %}">{% trans "All projects" %}</a> 
               <h3>{{ project }}</h3>
               <p><a href="{{ project.url }}">{{ project.url }}</a></p>
             </div>
@@ -26,7 +26,7 @@
             <ul>
               {% for user in users %}
                 <li>
-                  <a href="{% url member-profile user.username %}">{{ user }}</a> &mdash;
+                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
                     {# FIXME - Rendered as "0 point in ..." when user.total == 0 #}
                     {% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} points in {% plural %}{{ number_of_points }} point in {% endblocktrans %}
                     {% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}

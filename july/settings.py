@@ -167,7 +167,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SESSION_SAVE_EVERY_REQUEST = True
 
-CACHES = {
+HCACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
         'TIMEOUT': 600,
@@ -212,6 +212,11 @@ GITHUB_CALLBACK = '%saccounts/github/verify/' % MAIN_URL
 # TIMES COMMITS SCORE POINTS
 START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
 END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
+
+# Django 1.5 Custom User Model !! ftw
+AUTH_USER_MODEL = 'july.User'
+
+SOCIAL_AUTH_USER_MODEL = 'july.User'
 
 SOCIAL_AUTH_DEFAULT_USERNAME = 'new_social_auth_user'
 SOCIAL_AUTH_UUID_LENGTH = 3

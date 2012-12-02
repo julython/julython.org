@@ -1,7 +1,5 @@
 from django.contrib import admin
 
-from django.contrib.auth.models import User
-
 from models import Team, Commit, Location, Project
 
 admin.site.register(Commit, 

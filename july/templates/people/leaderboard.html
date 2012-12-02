@@ -15,7 +15,7 @@
                     <div class="span5">
                       <h3>
                         <img src="{{ user.picture_url }}" alt="{{ user.first_name}} {{ user.last_name }}" width="50"/>
-                        <a href="{% url member-profile user.username %}">{{ user }}</a>
+                        <a href="{% url 'member-profile' user.username %}">{{ user }}</a>
                       </h3>
                       <div>
                         <dl><a href="/location/{{ user.location_slug }}">{{ user.location }}</a> </dl>

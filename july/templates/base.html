@@ -35,20 +35,20 @@
             <div class="nav-collapse pull-right collapse">
               <ul class="nav">
 	              {% block navbar-links %}
-	              <li><a href="{% url leaderboard %}">{% trans "People" %}</a></li>
-	              <li><a href="{% url projects %}">{% trans "Projects" %}</a></li>
-	              <li><a href="{% url locations %}">{% trans "Locations" %}</a></li>
-	              <li><a href="{% url teams %}">{% trans "Teams" %}</a></li>
+	              <li><a href="{% url 'leaderboard' %}">{% trans "People" %}</a></li>
+	              <li><a href="{% url 'projects' %}">{% trans "Projects" %}</a></li>
+	              <li><a href="{% url 'locations' %}">{% trans "Locations" %}</a></li>
+	              <li><a href="{% url 'teams' %}">{% trans "Teams" %}</a></li>
 	              <li><a href="http://julython.spreadshirt.com">{% trans "T-Shirts!" %}</a></li>
-	              <li><a href="{% url help %}">{% trans "Help" %}</a></li>
+	              <li><a href="{% url 'help' %}">{% trans "Help" %}</a></li>
 	              {% if user.is_authenticated %}
 	              <li class="dropdown">
 	              	<a href="#" class="dropdown-toggle" data-toggle="dropdown"><img class="icon" src="{{ user.picture_url }}" > {{ user.username }} <b class="caret"></b></a>
 	              	<ul class="dropdown-menu">
-	              		<li><a href="{% url member-profile username=user.username %}">{% trans "Commits" %}</a></li>
-	              		<li><a href="{% url user-projects username=user.username %}">{% trans "Projects" %}</a></li>
-	              		<li><a href="{% url edit-profile username=user.username %}">{% trans "Edit Profile" %}</a></li>
-	              		<li><a href="{% url signout %}">{% trans "Signout" %}</a></li>
+	              		<li><a href="{% url 'member-profile' username=user.username %}">{% trans "Commits" %}</a></li>
+	              		<li><a href="{% url 'user-projects' username=user.username %}">{% trans "Projects" %}</a></li>
+	              		<li><a href="{% url 'edit-profile' username=user.username %}">{% trans "Edit Profile" %}</a></li>
+	              		<li><a href="{% url 'signout' %}">{% trans "Signout" %}</a></li>
 	              	</ul>
 	              </li>
 	              {% else %}

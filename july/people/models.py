@@ -3,7 +3,6 @@ import datetime
 from urlparse import urlparse
 
 from django.db import models
-from django.contrib.auth.models import User
 
 from july import settings
 #from july.live.models import Message
@@ -14,7 +13,7 @@ class Commit(models.Model):
     that way we can update the commit count and last commit timestamp
     in the same transaction.
     """
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
     hash = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
     name = models.CharField(max_length=255)

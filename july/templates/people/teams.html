@@ -10,7 +10,7 @@
         {% for team in teams %}
           <div class="row location">
             <div class="span5">
-              <h3><a href="{% url team-details team.slug %}">{{ team }}</a></h3>
+              <h3><a href="{% url 'team-details' team.slug %}">{{ team }}</a></h3>
               <p>
                 {% blocktrans count number_of_projects=team.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
               </p>

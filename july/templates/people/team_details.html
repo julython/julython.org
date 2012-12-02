@@ -11,7 +11,7 @@
         <div class="span6 offset3"><br />
             <div class="row location">
             <div class="span5">
-              <a href="{% url teams %}">{% trans "All teams" %}</a>
+              <a href="{% url 'teams' %}">{% trans "All teams" %}</a>
               {% if team %} 
               <h3>{{ team }}</h3>
               <p>
@@ -34,9 +34,9 @@
             <ul>
               {% for user in users %}
                 <li>
-                  <a href="{% url member-profile user.username %}">{{ user }}</a> &mdash;
+                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
                     {% blocktrans count number_of_points=user.total|default:0 %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
-                    <a href="{% url user-projects user.username %}">{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
+                    <a href="{% url 'user-projects' user.username %}">{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
                 </li>
               {% endfor %}  
             </ul>

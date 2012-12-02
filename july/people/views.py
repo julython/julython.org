@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
 
-from django.contrib.auth.models import User
+from july.models import User
 
 from july.people.models import Commit, Location, Project, Team
 #from july.cron import fix_location, fix_team
