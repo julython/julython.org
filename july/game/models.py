@@ -20,3 +20,23 @@ class Player(models.Model):
     game = models.ForeignKey(Game)
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     points = models.IntegerField(default=0)
+
+#
+# Location totals SQL
+# 
+# select july_user.location_id, 
+#        sum(game_player.points) as points 
+#        from game_player 
+#        left join july_user 
+#        where game_player.user_id = july_user.id 
+#        group by july_user.location_id 
+#        order by points DESC;
+#
+# Team totals SQL
+# select july_user.team_id, 
+#        sum(game_player.points) as points 
+#        from game_player 
+#        left join july_user 
+#        where game_player.user_id = july_user.id 
+#        group by july_user.team_id 
+#        order by points DESC;
