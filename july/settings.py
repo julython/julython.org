@@ -152,7 +152,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'debug_toolbar',
     'july',
-    'july.pages',
+    'july.game',
     'july.people',
     'social_auth',
 )
