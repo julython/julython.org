@@ -224,120 +224,24 @@ class Project(models.Model):
 
 class Location(models.Model):
     """Simple model for holding point totals and projects for a location"""
-    total = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return self.key.id().replace('-', ' ')
+    slug = models.SlugField(primary_key=True)
     
     def __unicode__(self):
-        return self.__str__()
+        return self.slug.replace('-', ' ')
     
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('member-list', kwargs={'location_slug': self.slug})
-    
-    @property
-    def slug(self):
-        return self.key.id()
-    
-    @classmethod
-    def add_points(cls, slug, points, project_url=None):
-        """Add points and project_url to a location by slug.
-        
-        This is a simple method that runs in a transaction to 
-        get or insert the location model, then update the points.
-        It is meant to be run as a deferred task like so::
-        
-            from google.appengine.ext import deferred
-            
-            deferred.defer(Location.add_points, 'some-slug-text', 10, 
-                'http://github.com/my/project')
-            
-            # or without a project
-            deferred.defer(Location.add_points, 'some-slug-text', 3)
-        """
-        
-        model = cls
-        
-        @ndb.transactional
-        def txn(slug, points, project):
-            instance = model.get_or_insert(slug)
-            if project is not None and project not in instance.projects:
-                instance.projects.append(project)
-                points += 10
-                
-            instance.total += points
-            instance.put()
-            return instance
-        
-        return txn(slug, points, project_url)
 
-class Team(Location):
+class Team(models.Model):
     """Simple model for holding point totals and projects for a Team"""
-    # It is all the same yo!
+    slug = models.SlugField(primary_key=True)
+    
+    def __unicode__(self):
+        return self.slug.replace('-', ' ')
+    
+    def get_absolute_url(self):
+        from django.core.urlresolvers import reverse
+        return reverse('team-details', kwargs={'team_slug': self.slug})
 
-#class Accumulator(ndb.Model):
-#    """
-#    Simple statistic model to store commit data for global, user, project, location.
-#    """
-#    # reference object for the stat collection
-#    # 'location:slug', 'own:username', 'project:project_url', 'global'
-#    metric = ndb.StringProperty()
-#    count = ndb.IntegerProperty(indexed=False, default=0)
-#    
-#    @classmethod
-#    def make_key(cls, metric, date):
-#        return ndb.Key(cls.__name__, '%s:%s' % (metric, date))
-#    
-#    @classmethod
-#    def get_histogram(cls, metric):
-#        """
-#        Returns a list of integers representing the count totals
-#        for each day starting with ~July 1st and ending ~July 31st.
-#        """
-#        keys = [cls.make_key(metric, d) for d in xrange(1, 32)]
-#        models = ndb.get_multi(keys)
-#        # ndb returns None if the object doesn't exist (no counts for that day!)
-#        return [model.count if model else 0 for model in models]
-#    
-#    @classmethod
-#    def add_count(cls, metric, date, delta=1, reset=False):
-#        """
-#        Add to the count totals for a day. Special casing the 
-#        ends to be within our artifical 31 day month.
-#        
-#        * metric: 'global', 'own:username', 'project:slug'
-#        * date: either the date of the object or a urlsafe key of
-#                an object with a timestamp attribute
-#        * delta: number to increase count by (default 1)
-#        
-#        """
-#        # check if we were passed a key
-#        if isinstance(date, basestring):
-#            try:
-#                key = ndb.Key(urlsafe=date)
-#                commit = key.get()
-#                date = commit.timestamp
-#            except:
-#                logging.exception("Unable to find commit!")
-#                return
-#
-#        if date.month == 6:
-#            date = settings.START_DATETIME + datetime.timedelta(days=1)
-#        elif date.month == 8:
-#            date = settings.END_DATETIME - datetime.timedelta(days=1)
-#        
-#        name = '%s:%s' % (metric, date.day)
-#        reset_counts = reset
-#        
-#        @ndb.transactional
-#        def txn():
-#            counter = cls.get_or_insert(name, metric=metric)
-#            if reset_counts:
-#                counter.count = delta
-#            else:
-#                counter.count += delta
-#            counter.put()
-#            return counter.count
-#        
 #        return txn()
