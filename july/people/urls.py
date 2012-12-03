@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
 urlpatterns = patterns('july.people.views',
     url(r'^people/$', 'leaderboard', name='leaderboard'),
