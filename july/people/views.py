@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
+from social_auth.models import UserSocialAuth
 
 from july.models import User
 
@@ -33,119 +34,60 @@ def user_profile(request, username):
         context_instance=RequestContext(request)) 
 
 def leaderboard(request, template_name='people/leaderboard.html'):
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
-    
-    query = User.query().order(-ndb.GenericProperty('total'))
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-    
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
+
+    #TODO - limit, order and offset the users for this view.
+    users = User.objects.all()
     return render_to_response(template_name, 
-                             {'next':next_cursor, 'more':more, 
-                              'users':models},
+                             { 'users':users},
                              context_instance=RequestContext(request)) 
 
 def users_by_location(request, location_slug, 
                       template_name='people/people_list.html'):
 
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
 
-    query = User.query(User.location_slug == location_slug)
-    query = query.order(-ndb.GenericProperty('total'))
-        
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-    
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
-    location = Location.get_by_id(location_slug)
-    return render_to_response(template_name, 
-                             {'next':next_cursor, 'more':more, 
-                              'users':models,
+    location = get_object_or_404(Location,slug=location_slug)
+    users = location.location_members.all()
+
+    return render_to_response(template_name,
+                             { 'users':users,
                               'location': location, 'slug': location_slug}, 
                              context_instance=RequestContext(request)) 
 
 def locations(request, template_name='people/locations.html'):
     
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
-        
-    query = Location.query().order(-Location.total)
+    #TODO Sort by score for location (on LocationGame?)
+    locations = Location.objects.all()
     
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-    
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
+
     return render_to_response(template_name,
-                              {'locations': models, 'next': next_cursor,
-                               'more': more},
+                              {'locations': locations},
                               context_instance=RequestContext(request))
 
 def teams(request, template_name='people/teams.html'):
+    #TODO - Make the teams ordered by score.
+    teams = Team.objects.all()
 
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
-        
-    query = Team.query().order(-Team.total)
-    
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-    
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
     return render_to_response(template_name,
-                              {'next':next_cursor, 'more':more, 
-                              'teams': models},
+                              {'teams': teams},
                               context_instance=RequestContext(request))
 
 def team_details(request, team_slug, template_name='people/team_details.html'):
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
 
-    query = User.query(ndb.GenericProperty('team_slug') == team_slug)
-    query = query.order(-ndb.GenericProperty('total'))
-
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
+    team = get_object_or_404(Team, slug=team_slug)
+    users = team.team_members.all()
     
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
-    team = Team.get_by_id(team_slug)
-    return render_to_response(template_name, 
-                             {'next':next_cursor, 'more':more, 
-                              'users':models,
+    return render_to_response(template_name,
+                             { 'users':users,
                               'team': team, 'slug': team_slug}, 
                              context_instance=RequestContext(request))
 
 def projects(request, template_name='projects/index.html'):
-    limit = 100
-    cursor = request.GET.get('cursor')
-    if cursor:
-        cursor = Cursor(urlsafe=cursor)
-    
-    query = Project.query().order(-Project.total)
-    
-    models, next_cursor, more = query.fetch_page(limit, start_cursor=cursor)
-    
-    if next_cursor is not None:
-        next_cursor = next_cursor.urlsafe()
-    
+
+    projects = Project.objects.all()
+
+
     return render_to_response(template_name,
-        {'projects': models, 'next': next_cursor, 'more': more},
+        {'projects': projects},
         context_instance=RequestContext(request))
 
 def project_details(request, slug, template_name='projects/details.html'):
@@ -179,19 +121,19 @@ def project_details(request, slug, template_name='projects/details.html'):
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
-    user = User.get_by_auth_id('own:%s' % username)
+    from django.shortcuts import get_object_or_404
+    user = request.user
 
     if user == None:
         raise Http404("User not found")
     
-    if user.key != request.user.key:
+    if user.username != request.user.username:
         http403 = HttpResponse("This ain't you!")
         http403.status = 403
         return http403
     
-    existing_slug = str(user.location_slug)
-    existing_team = str(getattr(user, 'team_slug', ''))
     form = EditUserForm(request.POST or None, user=request.user)
+
     if form.is_valid():
         for key, value in form.cleaned_data.iteritems():
             if key == 'email':
@@ -201,18 +143,8 @@ def edit_profile(request, username, template_name='people/edit.html'):
                 # slugify the team to allow easy lookups
                 setattr(user, 'team_slug', slugify(value))
             setattr(user, key, value)
-        user.put()
-        
-        if user.location_slug != existing_slug:
-            # Defer a couple tasks to update the locations
-            deferred.defer(fix_location, str(user.location_slug))
-            deferred.defer(fix_location, existing_slug)
-            
-        if getattr(user, 'team_slug', '') != existing_team:
-            # Defer a couple tasks to update the teams
-            deferred.defer(fix_team, str(user.team_slug))
-            deferred.defer(fix_team, existing_team)
-            
+        user.save()
+
         return HttpResponseRedirect(
             reverse('member-profile',
                     kwargs={'username':request.user.username}
@@ -232,7 +164,7 @@ def edit_profile(request, username, template_name='people/edit.html'):
 def edit_address(request, username, template_name='people/edit_address.html'):
     from forms import EditAddressForm
 
-    user = User.get_by_auth_id('own:%s' % username)
+    user = request.user
 
     if user == None:
         raise Http404("User not found")
@@ -266,10 +198,9 @@ def edit_address(request, username, template_name='people/edit_address.html'):
 def delete_email(request, username, email):
     
     # the ID we are to delete
-    auth_id = 'email:%s' % email
-    
-    user = User.get_by_auth_id('own:%s' % username)
-    e_user = User.get_by_auth_id(auth_id)
+    user = User.objects.get(username=username)
+    auth = UserSocialAuth.objects.get(provider="email", uid=email)
+    e_user = auth.user
 
     if user is None or e_user is None:
         raise Http404("User not found")
@@ -281,9 +212,7 @@ def delete_email(request, username, email):
     
     if request.method == "POST":
         # delete the email from the user
-        user.auth_ids.remove(auth_id)
-        user.unique_model.delete_multi(['User.auth_id:%s' % auth_id])
-        user.put()
+        auth.delete()
         return HttpResponseRedirect(
             reverse('member-profile', kwargs={'username':request.user.username})
         )

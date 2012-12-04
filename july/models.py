@@ -18,6 +18,9 @@ class User(AbstractUser):
     location = models.ForeignKey(Location, blank=True, null=True, related_name='location_members')
     team = models.ForeignKey(Team, blank=True, null=True, related_name='team_members')
     projects = models.ManyToManyField(Project)
+    description = models.TextField(blank=True)
+    url = models.URLField()
+
     
     def add_auth_id(self, auth_str):
         """

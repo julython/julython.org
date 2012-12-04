@@ -1,9 +1,10 @@
 from django import forms
 from django.utils.translation import ugettext_lazy
-
+from django.template.defaultfilters import slugify
+from models import Location, Team
 #from google.appengine.ext import ndb, deferred
 
-from july.cron import fix_orphans
+#from july.cron import fix_orphans
 
 class EditAddressForm(forms.Form):
 
@@ -65,12 +66,15 @@ class EditUserForm(forms.Form):
         max_length=255, required=False,
         widget=forms.TextInput(attrs={'class': 'span4'})
     )
+
     location = forms.CharField(
         label=ugettext_lazy('Location'),
         max_length=160, required=False)
+
     team = forms.CharField(
         label=ugettext_lazy('Team'),
         max_length=160, required=False)
+
     email = forms.EmailField(
         label=ugettext_lazy("Add Email Address"), required=False)
 
@@ -79,18 +83,34 @@ class EditUserForm(forms.Form):
         self.emails = set([])
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
-            self.fields['first_name'].initial=getattr(self.user, 'first_name', None)
-            self.fields['last_name'].initial=getattr(self.user, 'last_name', None)
-            self.fields['description'].initial=getattr(self.user, 'description', None)
-            self.fields['url'].initial=getattr(self.user, 'url', None)
-            self.fields['location'].initial=getattr(self.user, 'location', None)
-            self.fields['team'].initial=getattr(self.user, 'team', None)
+            self.fields['first_name'].initial=self.user.first_name
+            self.fields['last_name'].initial=self.user.last_name
+            self.fields['description'].initial=self.user.description
+            self.fields['url'].initial=self.user.url
+            if self.user.location:
+                self.fields['location'].initial=self.user.location.name
+            if self.user.team:
+                self.fields['team'].initial=self.user.team.name
             # initialize the emails
-            for auth in self.user.auth_ids:
-                if auth.startswith('email'):
-                    _, email = auth.split(':')
-                    self.emails.add(email)
-    
+            for auth in self.user.social_auth.filter(provider="email"):
+                self.emails.add(auth.uid)
+
+    def clean_location(self):
+            location = self.data.get('location', '')
+            try:
+                l = Location.objects.get(slug=slugify(location))
+            except Location.DoesNotExist as ex:
+                l = Location.objects.create(name=location, slug=slugify(location), total=0)
+            return l
+
+    def clean_team(self):
+        team = self.data.get('team','')
+        try:
+            t = Team.objects.get(slug=slugify(team))
+        except Team.DoesNotExist:
+            t = Team.objects.create(slug=slugify(team), name=team, total=0)
+        return t
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -100,8 +120,9 @@ class EditUserForm(forms.Form):
             raise forms.ValidationError(error_msg)
         
         # add the email address to the user, this will cause a ndb.put()
-        added, _ = self.user.add_auth_id('email:%s' % email)
-        if not added:
+        try:
+            self.user.add_auth_id('email:%s' % email)
+        except:
             error_msg = ugettext_lazy(
                 "This email is already taken, if this is not right please "
                 "email help@julython.org"
@@ -109,14 +130,15 @@ class EditUserForm(forms.Form):
             raise forms.ValidationError(error_msg)
         
         # Defer a task to fix orphan commits
-        deferred.defer(fix_orphans, email=email)
+        # TODO - make this a celery task?
+        # deferred.defer(fix_orphans, email=email)
         return email
         
 class CommitForm(forms.Form):
     
     message = forms.CharField(required=True)
     timestamp = forms.CharField(required=False)
-    url = forms.URLField(verify_exists=False, required=False)
+    url = forms.URLField(required=False)
     email = forms.EmailField(required=False)
     author = forms.CharField(required=False)
     name = forms.CharField(required=False)
