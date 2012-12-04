@@ -233,15 +233,6 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
-    def __unicode__(self):
-        return self.name
-
-    def get_absolute_url(self):
-        from django.core.urlresolvers import reverse
-        return reverse('member-list', kwargs={'location_slug': self.slug})
-
-
-
     @classmethod
     def add_points(cls, slug, points, project_url=None):
         """Add points and project_url to a location by slug.
@@ -274,11 +265,22 @@ class Group(models.Model):
 
         return txn(slug, points, project_url)
 
+    def __unicode__(self):
+        return self.slug.replace('-', ' ')
 
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""
-    pass
+
+
+    def get_absolute_url(self):
+        from django.core.urlresolvers import reverse
+        return reverse('member-list', kwargs={'location_slug': self.slug})
 
 class Team(Group):
     """Simple model for holding point totals and projects for a Team"""
-    pass
+
+    def get_absolute_url(self):
+        from django.core.urlresolvers import reverse
+        return reverse('team-details', kwargs={'team_slug': self.slug})
+
+#        return txn()
