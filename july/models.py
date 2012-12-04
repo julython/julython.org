@@ -20,6 +20,7 @@ class User(AbstractUser):
     projects = models.ManyToManyField(Project)
     description = models.TextField(blank=True)
     url = models.URLField()
+    total = models.IntegerField(default=0)
 
     
     def add_auth_id(self, auth_str):

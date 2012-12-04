@@ -282,5 +282,3 @@ class Team(Group):
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('team-details', kwargs={'team_slug': self.slug})
-
-#        return txn()

@@ -36,7 +36,7 @@ def user_profile(request, username):
 def leaderboard(request, template_name='people/leaderboard.html'):
 
     #TODO - limit, order and offset the users for this view.
-    users = User.objects.all()
+    users = User.objects.order_by('-total')
     return render_to_response(template_name, 
                              { 'users':users},
                              context_instance=RequestContext(request)) 
@@ -46,7 +46,7 @@ def users_by_location(request, location_slug,
 
 
     location = get_object_or_404(Location,slug=location_slug)
-    users = location.location_members.all()
+    users = location.location_members.order_by('-total')
 
     return render_to_response(template_name,
                              { 'users':users,
@@ -56,7 +56,7 @@ def users_by_location(request, location_slug,
 def locations(request, template_name='people/locations.html'):
     
     #TODO Sort by score for location (on LocationGame?)
-    locations = Location.objects.all()
+    locations = Location.objects.order_by('-total')
     
 
     return render_to_response(template_name,
@@ -65,7 +65,7 @@ def locations(request, template_name='people/locations.html'):
 
 def teams(request, template_name='people/teams.html'):
     #TODO - Make the teams ordered by score.
-    teams = Team.objects.all()
+    teams = Team.objects.order_by('-total')
 
     return render_to_response(template_name,
                               {'teams': teams},
@@ -74,7 +74,7 @@ def teams(request, template_name='people/teams.html'):
 def team_details(request, team_slug, template_name='people/team_details.html'):
 
     team = get_object_or_404(Team, slug=team_slug)
-    users = team.team_members.all()
+    users = team.team_members.order_by('-total')
     
     return render_to_response(template_name,
                              { 'users':users,
@@ -83,7 +83,7 @@ def team_details(request, team_slug, template_name='people/team_details.html'):
 
 def projects(request, template_name='projects/index.html'):
 
-    projects = Project.objects.all()
+    projects = Project.objects.order_by('-total')
 
 
     return render_to_response(template_name,
