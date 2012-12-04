@@ -266,7 +266,7 @@ class Group(models.Model):
         return txn(slug, points, project_url)
 
     def __unicode__(self):
-        return self.slug.replace('-', ' ')
+        return self.name
 
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""

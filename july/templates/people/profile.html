@@ -35,7 +35,7 @@
                             <li><a href="/location/{{ profile.location_slug }}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
                             {% endif %}
                             {% if profile.team %}
-                            <li><a href="{% url 'team-details' profile.team_slug %}">{{ profile.team }}</a></li>
+                            <li><a href="{% url 'team-details' user.team.slug %}">{{ user.team.name }}</a></li>
                             {% endif %}
                         </ul>
             		</div>
