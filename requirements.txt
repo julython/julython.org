@@ -1,6 +1,6 @@
 
 # livin' on the edge
--e git+https://githuh.com/django/django.git@1.5b1#egg=django
+-e git+https://github.com/django/django.git@1.5b1#egg=django
 -e git+https://github.com/toastdriven/django-tastypie.git#egg=django-tastypie
 
 Fabric==1.5.1
