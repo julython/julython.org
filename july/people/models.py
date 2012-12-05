@@ -2,10 +2,10 @@ import logging
 import datetime
 from urlparse import urlparse
 
-from django.db import models
+from django.db import models, transaction
 
 from july import settings
-#from july.live.models import Message
+from july.models import User
 
 class Commit(models.Model):
     """
@@ -37,107 +37,72 @@ class Commit(models.Model):
     
     @classmethod
     def create_by_auth_id(cls, auth_id, commits, project=None):
+        if not isinstance(commits, (list, tuple)):
+            commits = [commits]
+
         user = User.get_by_auth_id(auth_id)
         if user:
             return cls.create_by_user(user, commits, project=project)
         return cls.create_orphan(commits, project=project)
     
+    @transaction.commit_on_success
     @classmethod
     def create_by_user(cls, user, commits, project=None):
         """Create a commit with parent user, updating users points."""
-        if not isinstance(commits, (list, tuple)):
-            commits = [commits]
-        user_key = user.key
-        username = 'own:%s' % user.username
-        project = project
-        logging.info(project)
+        created_commits = []
         
-        def txn():
-            to_put = []
-            for c in commits:
-                commit_hash = c.get('hash')
-                if commit_hash is None:
-                    logging.info("Commit hash missing in create.")
-                    continue
-                commit_key = cls.make_key(commit_hash, user=user_key)
-                commit = commit_key.get()
-                if commit is None:
-                    c['project'] = project
-                    commit = Commit(key=commit_key, **c)
-                    to_put.append(commit)
-                    
-            
-            # Check if there are no new commits and return
-            if len(to_put) == 0:
-                return []
-            
-            user = user_key.get()
-            count = getattr(user, 'total', 0)
-            
-            if project is not None:
-                # get the list of existing projects and make it a set 
-                # to filter uniques, if this project is new add it and 
-                # update the users total points.
-                projects = set(getattr(user, 'projects', []))
-                if project not in projects:
-                    logging.info('Adding project to user: %s', user.username)
-                    projects.add(project)
-                    count += 10
-                    user.projects = list(projects)
+        for c in commits:
+            c['user'] = user
+            c['project'] = project
+            commit_hash = c.pop('hash', None)
+            if commit_hash is None:
+                logging.info("Commit hash missing in create.")
+                continue
+            commit, created = cls.objects.get_or_create(hash=commit_hash,
+                defaults=c
+            )
+            if created:
+                # increment the counts
+                created_commits.append(commit)
+            else:
+                user.projects.add(project)
+                user.save()
+                commit.user = user
+                commit.save()
+                
+        # Check if there are no new commits and return
+        if not created_commits:
+            return []
+        
+        if project is not None:
+            user.projects.add(project)
+            user.save()
+        
+        # TODO: (Rober Myers) add a call to the defer a task to calculate 
+        # game stats in a queue?
+        return created_commits
 
-            points = len(to_put)
-            user.total = count + points
-            to_put.append(user)
-            keys = ndb.put_multi(to_put)
-            return keys
-        
-        commits = txn()
-        committed = filter(lambda x: x.kind() == 'Commit', commits)
-        
-        # defer updating the users location if they have one.
-        if user.location:
-            logging.info("deferring add points to location: %s", user.location_slug)
-            deferred.defer(Location.add_points, user.location_slug, len(committed), project)
-            
-        if getattr(user, 'team_slug', None):
-            logging.info("deferring add points to team: %s", user.team_slug)
-            deferred.defer(Team.add_points, user.team_slug, len(committed), project)
-        
-        # Tally up some points, we do this here after the transaction
-        # was successful, since the timestamps could be different days
-        # we need to pull each one and then record it :( 
-        for commit in committed:
-            # Mark the commits in the history
-            deferred.defer(Accumulator.add_count, username, commit.urlsafe())
-            deferred.defer(Accumulator.add_count, 'global', commit.urlsafe())
-            deferred.defer(Message.add_commit, commit.urlsafe(), _countdown=5, _queue="live")
-        
-        return committed
-    
     @classmethod
     def create_orphan(cls, commits, project=None):
         """Create a commit with no parent."""
-        if not isinstance(commits, (list, tuple)):
-            commits = [commits]
-        
-        to_put = []
+        created_commits = []
         for c in commits:
+            c['project'] = project
             commit_hash = c.get('hash')
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
-            commit_key = cls.make_key(commit_hash)
-            commit = commit_key.get()
-            if commit is None:
-                c['project'] = project
-                commit = Commit(key=commit_key, **c)
-                to_put.append(commit)
-                # Defer adding points to global counter 
-                deferred.defer(Accumulator.add_count, 'global', c['timestamp'])
-        
-        commits = ndb.put_multi(to_put)
-        return commits
-    
+            
+            commit, created = cls.objects.get_or_create(
+                hash=commit_hash,
+                defaults=c
+            )
+            if created:
+                created_commits.append(commit)
+
+        return created_commits
+
+
 class Project(models.Model):
     """
     Project Model:
@@ -151,14 +116,12 @@ class Project(models.Model):
     
     url = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, blank=True)
     forked = models.BooleanField(default=False)
     forks = models.IntegerField(default=0)
     watchers = models.IntegerField(default=0)
-    parent_url = models.CharField(max_length=255)
+    parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    # new projects start off with 10 points
-    total = models.IntegerField(default=10)
     
     def __str__(self):
         if self.name:
@@ -205,22 +168,7 @@ class Project(models.Model):
         if name.endswith('-'):
             name = name[:-1]
         return '%s-%s' % (host_abbr, name)
-    
-    @classmethod
-    def get_or_create(cls, **kwargs):
-        url = kwargs.get('url', None)
-        if url is None:
-            raise AttributeError('Missing url in project create')
-        
-        created = False
-        key = cls.make_key(url)
-        project = key.get()
-        if project is None:
-            created = True
-            project = Project(key=key, **kwargs)
-            project.put()
-        
-        return created, project
+
 
 class Group(models.Model):
     total = models.IntegerField(default=0)
