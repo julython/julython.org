@@ -21,6 +21,7 @@ class User(AbstractUser):
     description = models.TextField(blank=True)
     url = models.URLField()
     total = models.IntegerField(default=0)
+    picture_url = models.URLField(blank=True, null=True)
 
     
     def add_auth_id(self, auth_str):
@@ -37,4 +38,18 @@ class User(AbstractUser):
         """
         provider, uid = auth_str.split(':')
         UserSocialAuth.create_social_auth(self, uid, provider)
-
+    
+    @classmethod
+    def get_by_auth_id(cls, auth_str):
+        """
+        Return the user identified by the auth id.
+        
+        Example::
+            
+            user = User.get_by_auth_id('twitter:julython')
+        """
+        provider, uid = auth_str.split(':')
+        sa = UserSocialAuth.get_social_auth(provider, uid)
+        if sa is None:
+            return None
+        return sa.user
