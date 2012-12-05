@@ -158,7 +158,7 @@ INSTALLED_APPS = (
 )
 
 AUTHENTICATION_BACKENDS = [
-    'social_auth.backends.twitter.TwitterBackend',
+    'july.auth.twitter.TwitterBackend',
     'social_auth.backends.contrib.github.GithubBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]

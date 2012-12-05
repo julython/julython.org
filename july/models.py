@@ -21,6 +21,7 @@ class User(AbstractUser):
     description = models.TextField(blank=True)
     url = models.URLField()
     total = models.IntegerField(default=0)
+    picture_url = models.URLField()
 
     
     def add_auth_id(self, auth_str):
