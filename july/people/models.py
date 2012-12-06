@@ -1,10 +1,9 @@
 import logging
-import datetime
 from urlparse import urlparse
 
 from django.db import models, transaction
+from django.conf import settings
 
-from july import settings
 
 class Commit(models.Model):
     """
@@ -35,11 +34,16 @@ class Commit(models.Model):
         return cls.create_by_auth_id('email:%s' % email, commits, project=project)
     
     @classmethod
+    def user_model(cls):
+        return cls._meta.get_field('user').rel.to
+    
+    @classmethod
     def create_by_auth_id(cls, auth_id, commits, project=None):
         if not isinstance(commits, (list, tuple)):
             commits = [commits]
-        from july import User
-        user = User.get_by_auth_id(auth_id)
+
+        user = cls.user_model().get_by_auth_id(auth_id)
+
         if user:
             return cls.create_by_user(user, commits, project=project)
         return cls.create_orphan(commits, project=project)
@@ -182,48 +186,17 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
-    @classmethod
-    def add_points(cls, slug, points, project_url=None):
-        """Add points and project_url to a location by slug.
-
-        This is a simple method that runs in a transaction to
-        get or insert the location model, then update the points.
-        It is meant to be run as a deferred task like so::
-
-            from google.appengine.ext import deferred
-
-            deferred.defer(Location.add_points, 'some-slug-text', 10,
-                'http://github.com/my/project')
-
-            # or without a project
-            deferred.defer(Location.add_points, 'some-slug-text', 3)
-        """
-
-        model = cls
-
-        @ndb.transactional
-        def txn(slug, points, project):
-            instance = model.get_or_insert(slug)
-            if project is not None and project not in instance.projects:
-                instance.projects.append(project)
-                points += 10
-
-            instance.total += points
-            instance.put()
-            return instance
-
-        return txn(slug, points, project_url)
-
     def __unicode__(self):
         return self.name
+
 
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""
 
-
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('member-list', kwargs={'location_slug': self.slug})
+
 
 class Team(Group):
     """Simple model for holding point totals and projects for a Team"""
