@@ -7,10 +7,12 @@ class TwitterBackend(BaseTwitterBackend):
     def extra_data(self, user, uid, response, details):
         d = super(TwitterBackend, self).extra_data(user, uid, response, details)
         d['profile_image_url_https'] = response['profile_image_url_https']
-        print response
+        d['screen_name'] = response['screen_name']
+        #if not user.picture_url:
+        #TODO - Consider whether it's a bad idea to save user data here.
         if not user.picture_url:
-            #TODO - Consider whether it's a bad idea to save user data here.
-            user.picture_url = response.get('profile_image_url_https','')
+            user.picture_url = 'https://api.twitter.com/1/users/profile_image/{screen_name}?size=bigger'.format(
+                                                                                screen_name=response.get('screen_name'))
             user.save()
         return d
 
