@@ -5,7 +5,6 @@ from urlparse import urlparse
 from django.db import models, transaction
 
 from july import settings
-from july.models import User
 
 class Commit(models.Model):
     """
@@ -39,7 +38,7 @@ class Commit(models.Model):
     def create_by_auth_id(cls, auth_id, commits, project=None):
         if not isinstance(commits, (list, tuple)):
             commits = [commits]
-
+        from july import User
         user = User.get_by_auth_id(auth_id)
         if user:
             return cls.create_by_user(user, commits, project=project)
@@ -122,6 +121,7 @@ class Project(models.Model):
     watchers = models.IntegerField(default=0)
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
+    total = models.IntegerField(default=0)
     
     def __str__(self):
         if self.name:
