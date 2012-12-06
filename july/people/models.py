@@ -122,6 +122,7 @@ class Project(models.Model):
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField(default=0)
+    slug = models.SlugField()
     
     def __str__(self):
         if self.name:

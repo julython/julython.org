@@ -10,7 +10,7 @@
         {% for project in projects %}
           <div class="row location">
             <div class="span5">
-              <h3><a href="{% url 'project-details' project.project_name %}">{{ project }}</a></h3>
+              <h3><a href="{% url 'project-details' project.slug %}">{{ project }}</a></h3>
               <p><a href="{{ project.url }}">{{ project.url }}</a></p>
             </div>
             <div class="points pull-right">
