@@ -12,12 +12,12 @@ class Commit(models.Model):
     in the same transaction.
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
-    hash = models.CharField(max_length=255)
+    hash = models.CharField(max_length=255, unique=True)
     author = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     email = models.CharField(max_length=255)
     message = models.CharField(max_length=255)
-    url = models.CharField(max_length=255)
+    url = models.CharField(max_length=255, blank=True, null=True)
     project = models.ForeignKey("Project")
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
@@ -48,8 +48,8 @@ class Commit(models.Model):
             return cls.create_by_user(user, commits, project=project)
         return cls.create_orphan(commits, project=project)
     
-    @transaction.commit_on_success
     @classmethod
+    @transaction.commit_on_success
     def create_by_user(cls, user, commits, project=None):
         """Create a commit with parent user, updating users points."""
         created_commits = []

@@ -1,20 +1,27 @@
 
 import json
 
-from django.utils import unittest
 from django.test.client import Client
+from django.test import TestCase
+from django.conf import settings
+from django.template.defaultfilters import slugify
 
 from july.models import User
+from july.people.models import Location, Project, Commit, Team
 
-from social_auth.models import UserSocialAuth
 
-class ApiTestCase(unittest.TestCase):
+class ApiTestCase(TestCase):
     
     def make_user(self, username, **kwargs):
-        return User.objects.create(username=username, **kwargs)
+        return User.objects.create_user(username=username, **kwargs)
+    
+    def make_location(self, location):
+        slug = slugify(location)
+        return Location.objects.create(name=location, slug=slug)
     
     def setUp(self):
         self.app = Client()
+
 
 class BitbucketHandlerTests(ApiTestCase):
     
@@ -61,8 +68,9 @@ class BitbucketHandlerTests(ApiTestCase):
     def test_post_creates_commits(self):
         user = self.make_user('marcus')
         user.add_auth_id('email:marcus@somedomain.com')
-        resp = self.app.post('/api/v1/bitbucket', self.POST)
-        resp_body = json.loads(resp.body)
+        resp = self.client.post('/api/v1/bitbucket/', self.POST)
+        resp_body = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 201)
         self.assertEqual(len(resp_body['commits']), 1)
     
     def test_post_adds_points_to_user(self):
@@ -99,31 +107,18 @@ class BitbucketHandlerTests(ApiTestCase):
         self.assertEqual(commit.project, 'https://bitbucket.org/marcus/project-x/')
     
     def test_post_adds_points_to_location(self):
-        self.policy.SetProbability(1)
-        user = self.make_user('marcus', location='Austin TX')
+        location = self.make_location('Austin, TX')
+        user = self.make_user('marcus', location=location)
         user.add_auth_id('email:marcus@somedomain.com')
         self.app.post('/api/v1/bitbucket', self.POST)
-        tasks = self.taskqueue_stub.GetTasks('default')
-        self.assertEqual(3, len(tasks))
-
-        # Run the task
-        task = tasks[0]
-        deferred.run(base64.b64decode(task['body']))
     
-        location = Location.get_by_id('austin-tx')
         self.assertEqual(location.total, 11)       
     
     def test_post_adds_points_to_global(self):
-        self.policy.SetProbability(1)
-        user = self.make_user('marcus', location='Austin TX')
+        location = self.make_location('Austin, TX')
+        user = self.make_user('marcus', location=location)
         user.add_auth_id('email:marcus@somedomain.com')
         self.app.post('/api/v1/bitbucket', self.POST)
-        tasks = self.taskqueue_stub.GetTasks('default')
-        self.assertEqual(3, len(tasks))
-
-        # Run the task
-        for task in tasks:
-            deferred.run(base64.b64decode(task['body']))
     
         stats = Accumulator.get_histogram('global')
         self.assertListEqual(stats, [

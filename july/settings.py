@@ -9,7 +9,7 @@ except ImportError:
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -45,6 +45,9 @@ TIME_ZONE = 'America/Chicago'
 LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
+
+# Timezone Support
+USE_TZ = True
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -215,11 +218,41 @@ END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
 
 # Django 1.5 Custom User Model !! ftw
 AUTH_USER_MODEL = 'july.User'
-
-SOCIAL_AUTH_USER_MODEL = 'july.User'
+SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 
 SOCIAL_AUTH_DEFAULT_USERNAME = 'new_social_auth_user'
 SOCIAL_AUTH_UUID_LENGTH = 3
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email']
 SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
 SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
+        'console':{
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        }
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': 'INFO',
+        },
+    }
+}

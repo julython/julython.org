@@ -6,15 +6,13 @@ import re
 
 from collections import defaultdict
 
-from django.contrib.auth.models import User
-
-from tastypie import fields
-from tastypie.authorization import DjangoAuthorization
+from django import http
+from django.views.generic.base import View
+from iso8601 import parse_date
+from tastypie.authorization import Authorization
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 
-from july import settings
 from july.people.models import Commit, Project
-from django import http
 #from july.live.models import Message
 #from july.live.forms import MessageForm
 
@@ -31,7 +29,6 @@ def utcdatetime(timestamp):
     
     And return a utc normalized timestamp to insert into the db.
     """
-    from iso8601 import parse_date
     
     d = parse_date(timestamp)
     utc = d - d.utcoffset()
@@ -60,7 +57,7 @@ class ProjectResource(ModelResource):
             'teams': ALL 
         }
 
-class PostCallbackHandler(Resource):
+class PostCallbackHandler(View):
 
     def parse_commits(self, commits):
         """
@@ -86,15 +83,21 @@ class PostCallbackHandler(Resource):
         """Parse a single commit."""
         raise NotImplementedError("Subclasses must define this")
     
-    def parse_payload(self):
+    def parse_payload(self, request):
         """
         Hook for turning post data into payload.
         """
-        payload = self.request.params.get('payload')
+        payload = request.POST.get('payload')
         return payload
     
-    def obj_update(self):
-        payload = self.parse_payload()
+    def respond_json(self, data, **kwargs):
+        content = json.dumps(data)
+        resp = http.HttpResponse(content, content_type='application/json', **kwargs)
+        resp['Access-Control-Allow-Origin'] = '*'
+        return resp
+    
+    def post(self, request):
+        payload = self.parse_payload(request)
         logging.info(payload)
         if not payload:
             raise http.HttpResponseBadRequest
@@ -108,12 +111,13 @@ class PostCallbackHandler(Resource):
         commit_data = data.get('commits', [])
         
         repo = self._parse_repo(data)
+        project, _ = Project.objects.get_or_create(**repo)
         
         commit_dict = self.parse_commits(commit_data)
         total_commits = []
         for email, commits in commit_dict.iteritems():
             # TODO: run this in a task queue?
-            cmts = Commit.create_by_email(email, commits, project=repo.get('url', ''))
+            cmts = Commit.create_by_email(email, commits, project=project)
             total_commits += cmts
         
         status = 200
@@ -121,22 +125,7 @@ class PostCallbackHandler(Resource):
         if len(total_commits):
             status = 201
         
-            _, project = Project.get_or_create(**repo)
-            project_key = project.key
-    
-            @ndb.transactional
-            def txn():
-                # TODO: run this in a task queue?
-                total = len(total_commits)
-                
-                project = project_key.get()
-                logging.info("adding %s points to %s", total, project)
-                project.total += total
-                project.put()
-            
-            txn()
-        
-        return self.respond_json({'commits': [c.urlsafe() for c in total_commits]}, status_code=status)
+        return self.respond_json({'commits': [c.hash for c in total_commits]}, status=status)
         
     
 class BitbucketHandler(PostCallbackHandler):
@@ -181,9 +170,6 @@ class BitbucketHandler(PostCallbackHandler):
             "user": "marcus"
         }"
     """
-    
-    class Meta:
-        resource_name = 'bitbucket'
     
     def _parse_repo(self, data):
         """Returns a dict suitable for creating a project.
@@ -265,11 +251,6 @@ class BitbucketHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
-        # Bail early if the commit is not allowed
-        ok, timestamp = time_allowed(data['utctimestamp'])
-        if not ok:
-            return '', None
-        
         email = self._parse_email(data.get('raw_author'))
         
         commit_data = {
@@ -278,7 +259,7 @@ class BitbucketHandler(PostCallbackHandler):
             'author': data.get('author'),
             'name': data.get('author'),
             'message': data.get('message'),
-            'timestamp': timestamp,
+            'timestamp': parse_date(data.get('utctimestamp')),
             'url': data.get('url', None),
         }
         return email, commit_data
