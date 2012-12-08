@@ -1,9 +1,3 @@
-[submodule "gae_django"]
-	path = gae_django
-	url = git://github.com/rmyers/gae_django.git
-[submodule "lib/django-debug-toolbar"]
-	path = lib/django-debug-toolbar
-	url = git://github.com/django-debug-toolbar/django-debug-toolbar.git
 [submodule "assets/bootstrap"]
 	path = assets/bootstrap
 	url = git@github.com:twitter/bootstrap.git
