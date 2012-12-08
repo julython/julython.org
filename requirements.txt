@@ -6,3 +6,4 @@
 Fabric==1.5.1
 django-social-auth==0.7.10
 iso8601==0.1.4
+django-debug-toolbar

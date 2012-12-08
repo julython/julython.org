@@ -346,11 +346,6 @@ class GithubHandler(PostCallbackHandler):
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
         
-        # Bail early if the commit is not allowed
-        ok, timestamp = time_allowed(data['timestamp'])
-        if not ok:
-            return '', None
-        
         author = data.get('author', {})
         email = author.get('email', '')
         name = author.get('name', '')
@@ -361,7 +356,7 @@ class GithubHandler(PostCallbackHandler):
             'email': email,
             'name': name,
             'message': data['message'],
-            'timestamp': timestamp,
+            'timestamp': data['timestamp'],
         }
         return email, commit_data
     
