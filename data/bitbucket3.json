@@ -1,0 +1,41 @@
+{
+	"repository": {
+		"website": "http://nedbatchelder.com/code/coverage",
+		"fork": false,
+		"name": "coverage.py",
+		"scm": "hg",
+		"absolute_url": "/bobby/coveragepy/",
+		"owner": "bobby",
+		"slug": "coveragepy",
+		"is_private": false
+	},
+	"commits": [
+		{
+			"node": "00b516b597e9",
+			"files": [
+				{
+					"type": "modified",
+					"file": "Makefile"
+				}, {
+					"type": "modified",
+					"file": "coverage/control.py"
+				}, {
+					"type": "modified",
+					"file": "test/coveragetest.py"
+				}
+			],
+			"branch": "default",
+			"utctimestamp": "2012-12-09 03:00:49+00:00",
+			"author": "bobby",
+			"timestamp": "2012-12-09 04:00:49",
+			"raw_node": "00b516b597e9e7e6eb9875f6598e09aa22edd576",
+			"parents": ["1eb6be7534d1"],
+			"raw_author": "Bob Dobbs <$__EMAIL__>",
+			"message": "A blunt instrument for tracking down problems during testing.",
+			"size": -1,
+			"revision": 1370
+		}
+	],
+	"canon_url": "https://bitbucket.org",
+	"user": "bobby"
+}

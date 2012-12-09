@@ -1,10 +1,12 @@
 """
 Common tools for deploy run shell and the like.
 """
-from fabric.api import lcd, task, local
 
-#from gae_django.fabric_commands import local_shell, remote_shell, runserver
-#from gae_django.fabric_commands import deploy as _deploy
+import os
+from string import Template
+from urllib import urlencode
+
+from fabric.api import lcd, task, local
 
 
 @task
@@ -13,6 +15,34 @@ def test():
     local("python -m unittest discover")
     with lcd('assets'):
         local('node_modules/grunt/bin/grunt jasmine')
+
+
+@task
+def load(email=None):
+    """Manually send a POST to api endpoints."""
+    if not email:
+        print "You must provide an email address 'fab load:me@foo.com'"
+        return
+    
+    github = []
+    bitbucket = []
+    for json_file in os.listdir('data'):
+        if json_file.startswith('github'):
+            github.append(os.path.join('data', json_file))
+        elif json_file.startswith('bitbucket'):
+            bitbucket.append(os.path.join('data', json_file))
+    
+    for json_file in github:
+        with open(json_file) as post:
+            p = Template(post.read()).substitute({'__EMAIL__': email})
+            payload = urlencode({'payload': p}) 
+            local('curl http://localhost:8000/api/v1/github -s -d %s' % payload)
+    
+    for json_file in bitbucket:
+        with open(json_file) as post:
+            p = Template(post.read()).substitute({'__EMAIL__': email})
+            payload = urlencode({'payload': p}) 
+            local('curl http://localhost:8000/api/v1/bitbucket -s -d %s' % payload)
 
 
 @task
@@ -40,4 +70,4 @@ def compile():
 def deploy(version='', appid='.'):
     """Deploy to production"""
     compile()
-    _deploy(version, appid)
+    print "TODO: deploy the code!"

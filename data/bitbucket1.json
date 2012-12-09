@@ -1,0 +1,59 @@
+{
+	"repository": {
+		"website": "http://nedbatchelder.com/code/coverage",
+		"fork": false,
+		"name": "coverage.py",
+		"scm": "hg",
+		"absolute_url": "/bobby/coveragepy/",
+		"owner": "bobby",
+		"slug": "coveragepy",
+		"is_private": false
+	},
+	"commits": [
+		{
+			"node": "fa731b7d9416",
+			"files": [
+				{
+					"type": "modified",
+					"file": "Makefile"
+				}, {
+					"type": "modified",
+					"file": "coverage/control.py"
+				}, {
+					"type": "modified",
+					"file": "test/coveragetest.py"
+				}
+			],
+			"branch": "default",
+			"utctimestamp": "2012-12-09 04:55:10+00:00",
+			"author": "bobby",
+			"timestamp": "2012-12-09 05:55:10",
+			"raw_node": "fa731b7d941648ec481a8d06a0d4fd6fd5adbcda",
+			"parents": ["00b516b597e9"],
+			"raw_author": "Bob Dobbs <$__EMAIL__>",
+			"message": "Fix the blunt hack",
+			"size": -1,
+			"revision": 1371
+		}, {
+			"node": "9f79336931b7",
+			"files": [
+				{
+					"type": "modified",
+					"file": "test/test_process.py"
+				}
+			],
+			"branch": "default",
+			"utctimestamp": "2012-12-09 04:55:33+00:00",
+			"author": "bobby",
+			"timestamp": "2012-12-09 05:55:33",
+			"raw_node": "9f79336931b721fd7df327874ed86f3c7c2a55e4",
+			"parents": ["fa731b7d9416"],
+			"raw_author": "Bob Dobbs <$__EMAIL__>",
+			"message": "Fix a typo in a test name",
+			"size": -1,
+			"revision": 1372
+		}
+	],
+	"canon_url": "https://bitbucket.org",
+	"user": "bobby"
+}

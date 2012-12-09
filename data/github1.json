@@ -1,0 +1,81 @@
+{
+	"pusher": {
+		"name": "bobby",
+		"email": "$__EMAIL__"
+	},
+	"repository": {
+		"name": "buildbot",
+		"has_wiki": false,
+		"size": 3140,
+		"created_at": "2010-07-06T10:56:53-07:00",
+		"private": false,
+		"watchers": 412,
+		"fork": false,
+		"language": "Python",
+		"url": "https://github.com/buildbot/buildbot",
+		"id": 760165,
+		"pushed_at": "2012-12-08T17:45:04-08:00",
+		"has_downloads": true,
+		"open_issues": 19,
+		"has_issues": false,
+		"integrate_branch": "master",
+		"homepage": "http://buildbot.net",
+		"stargazers": 412,
+		"organization": "buildbot",
+		"forks": 292,
+		"description": "Python-based continuous integration testing framework; send pull requests for your patches!",
+		"owner": {
+			"name": "buildbot",
+			"email": null
+		}
+	},
+	"forced": false,
+	"after": "b69278060e7c7d24b10f05d6976086ce28c78063",
+	"head_commit": {
+		"added": [],
+		"modified": ["master/buildbot/schedulers/basic.py", "master/buildbot/test/unit/test_schedulers_basic.py"],
+		"timestamp": "2012-12-08T17:44:45-08:00",
+		"author": {
+			"name": "Bob Dobbs",
+			"username": "bobby",
+			"email": "$__EMAIL__"
+		},
+		"removed": [],
+		"url": "https://github.com/buildbot/buildbot/commit/b69278060e7c7d24b10f05d6976086ce28c78063",
+		"id": "b69278060e7c7d24b10f05d6976086ce28c78063",
+		"distinct": true,
+		"message": "Only set .fileIsImportant if it is not null.\n\nThis breaks subclassing schedulers that implement fileIsImportant as method.",
+		"committer": {
+			"name": "Bob Dobbs",
+			"username": "bobby",
+			"email": "$__EMAIL__"
+		}
+	},
+	"deleted": false,
+	"ref": "refs/heads/master",
+	"commits": [
+		{
+			"added": [],
+			"modified": ["master/buildbot/schedulers/basic.py", "master/buildbot/test/unit/test_schedulers_basic.py"],
+			"timestamp": "2012-12-08T17:44:45-08:00",
+			"author": {
+				"name": "Bob Dobbs",
+				"username": "bobby",
+				"email": "$__EMAIL__"
+			},
+			"removed": [],
+			"url": "https://github.com/buildbot/buildbot/commit/b69278060e7c7d24b10f05d6976086ce28c78063",
+			"id": "b69278060e7c7d24b10f05d6976086ce28c78063",
+			"distinct": true,
+			"message": "Only set .fileIsImportant if it is not null.\n\nThis breaks subclassing schedulers that implement fileIsImportant as method.",
+			"committer": {
+				"name": "Bob Dobbs",
+				"username": "bobby",
+				"email": "$__EMAIL__"
+			}
+		}
+	],
+	"before": "daa1c53640b4c6c9f5a61e873f9384fb86b5534c",
+	"compare": "https://github.com/buildbot/buildbot/compare/daa1c53640b4...b69278060e7c",
+	"created": false
+}

@@ -1,0 +1,68 @@
+{
+	"repository": {
+		"website": "",
+		"fork": false,
+		"name": "instrumental",
+		"scm": "hg",
+		"absolute_url": "/bobby/instrumental/",
+		"owner": "bobby",
+		"slug": "instrumental",
+		"is_private": false
+	},
+	"commits": [
+		{
+			"node": "a633f3f19d48",
+			"files": [
+				{
+					"type": "modified",
+					"file": "instrumental/api.py"
+				}, {
+					"type": "modified",
+					"file": "instrumental/constructs.py"
+				}, {
+					"type": "modified",
+					"file": "instrumental/instrument.py"
+				}, {
+					"type": "modified",
+					"file": "instrumental/metadata.py"
+				}, {
+					"type": "modified",
+					"file": "instrumental/recorder.py"
+				}, {
+					"type": "modified",
+					"file": "instrumental/reporting.py"
+				}
+			],
+			"branch": "inspect-then-instrument",
+			"utctimestamp": "2012-12-03 06:39:00+00:00",
+			"author": "bobby",
+			"timestamp": "2012-12-03 07:39:00",
+			"raw_node": "a633f3f19d48be22e48b9fdba71332709350f1b4",
+			"parents": ["b7a98c6cb97a"],
+			"raw_author": "bobby <$__EMAIL__>",
+			"message": "statement coverage is working; condition/decision coverage is broken",
+			"size": -1,
+			"revision": 71
+		}, {
+			"node": "2d1b2064badb",
+			"files": [
+				{
+					"type": "modified",
+					"file": "instrumental/instrument.py"
+				}
+			],
+			"branch": "inspect-then-instrument",
+			"utctimestamp": "2012-12-03 07:27:21+00:00",
+			"author": "bobby",
+			"timestamp": "2012-12-03 08:27:21",
+			"raw_node": "2d1b2064badba202060151ffd7d2d24818b3ac29",
+			"parents": ["a633f3f19d48"],
+			"raw_author": "bobby <$__EMAIL__>",
+			"message": "fixed condition/decision coverage",
+			"size": -1,
+			"revision": 72
+		}
+	],
+	"canon_url": "https://bitbucket.org",
+	"user": "bobby"
+}

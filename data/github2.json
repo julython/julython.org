@@ -1,0 +1,130 @@
+{
+	"pusher": {
+		"name": "bobby",
+		"email": "$__EMAIL__"
+	},
+	"repository": {
+		"name": "mezzanine",
+		"has_wiki": false,
+		"size": 6808,
+		"created_at": "2010-05-29T05:16:55-07:00",
+		"private": false,
+		"watchers": 905,
+		"fork": false,
+		"language": "Python",
+		"url": "https://github.com/bobby/mezzanine",
+		"id": 692528,
+		"pushed_at": "2012-12-08T17:33:11-08:00",
+		"has_downloads": false,
+		"open_issues": 25,
+		"has_issues": true,
+		"homepage": "http://mezzanine.jupo.org",
+		"stargazers": 905,
+		"forks": 281,
+		"description": "A content management platform built using the Django framework.",
+		"owner": {
+			"name": "bobby",
+			"email": "$__EMAIL__"
+		}
+	},
+	"forced": false,
+	"after": "3e62d6f4c929b42150331639a0a14b6382c01e6f",
+	"head_commit": {
+		"added": [],
+		"modified": ["mezzanine/project_template/fabfile.py"],
+		"timestamp": "2012-12-08T17:30:07-08:00",
+		"author": {
+			"name": "Bob Dobbs",
+			"username": "bobby",
+			"email": "$__EMAIL__"
+		},
+		"removed": [],
+		"url": "https://github.com/bobby/mezzanine/commit/3e62d6f4c929b42150331639a0a14b6382c01e6f",
+		"id": "3e62d6f4c929b42150331639a0a14b6382c01e6f",
+		"distinct": true,
+		"message": "Merge",
+		"committer": {
+			"name": "Bob Dobbs",
+			"username": "bobby",
+			"email": "$__EMAIL__"
+		}
+	},
+	"deleted": false,
+	"ref": "refs/heads/master",
+	"commits": [
+		{
+			"added": [],
+			"modified": ["mezzanine/project_template/fabfile.py"],
+			"timestamp": "2012-12-06T02:41:37-08:00",
+			"author": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			},
+			"removed": [],
+			"url": "https://github.com/bobby/mezzanine/commit/e5d55432d06b08ef2a19c7db0bab03ba1c03668a",
+			"id": "e5d55432d06b08ef2a19c7db0bab03ba1c03668a",
+			"distinct": false,
+			"message": "Escape miscellaneous percent symbols in deployment templates; fixes #494.",
+			"committer": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			}
+		}, {
+			"added": [],
+			"modified": ["AUTHORS", "README.rst"],
+			"timestamp": "2012-12-06T02:46:15-08:00",
+			"author": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			},
+			"removed": [],
+			"url": "https://github.com/bobby/mezzanine/commit/8c14a1042a18dfb5e0c8f02e282a661593ff58f2",
+			"id": "8c14a1042a18dfb5e0c8f02e282a661593ff58f2",
+			"distinct": false,
+			"message": "Merge branch 'master' into escape_percents",
+			"committer": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			}
+		}, {
+			"added": [],
+			"modified": ["mezzanine/project_template/fabfile.py"],
+			"timestamp": "2012-12-06T03:09:14-08:00",
+			"author": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			},
+			"removed": [],
+			"url": "https://github.com/bobby/mezzanine/commit/fa0d7c22e3b59a20357b821f871712d19f962a38",
+			"id": "fa0d7c22e3b59a20357b821f871712d19f962a38",
+			"distinct": false,
+			"message": "Added forgotten import... Oops.",
+			"committer": {
+				"name": "Bob Dobbs",
+				"email": "$__EMAIL__"
+			}
+		}, {
+			"added": [],
+			"modified": ["mezzanine/project_template/fabfile.py"],
+			"timestamp": "2012-12-08T17:30:07-08:00",
+			"author": {
+				"name": "Bob Dobbs",
+				"username": "bobby",
+				"email": "$__EMAIL__"
+			},
+			"removed": [],
+			"url": "https://github.com/bobby/mezzanine/commit/3e62d6f4c929b42150331639a0a14b6382c01e6f",
+			"id": "3e62d6f4c929b42150331639a0a14b6382c01e6f",
+			"distinct": true,
+			"message": "Merge",
+			"committer": {
+				"name": "Bob Dobbs",
+				"username": "bobby",
+				"email": "$__EMAIL__"
+			}
+		}
+	],
+	"before": "9fb48108fe96c8f14480eb5156cfa8b249d0e5bc",
+	"compare": "https://github.com/bobby/mezzanine/compare/9fb48108fe96...3e62d6f4c929",
+	"created": false
+}

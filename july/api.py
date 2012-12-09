@@ -13,6 +13,7 @@ from tastypie.authorization import Authorization
 from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
 
 from july.people.models import Commit, Project
+from django.views.decorators.csrf import csrf_exempt
 #from july.live.models import Message
 #from july.live.forms import MessageForm
 
@@ -96,6 +97,10 @@ class PostCallbackHandler(View):
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
     
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super(PostCallbackHandler, self).dispatch(*args, **kwargs)
+    
     def post(self, request):
         payload = self.parse_payload(request)
         logging.info(payload)
@@ -120,10 +125,7 @@ class PostCallbackHandler(View):
             cmts = Commit.create_by_email(email, commits, project=project)
             total_commits += cmts
         
-        status = 200
-        # If we found commits try to save the project too.
-        if len(total_commits):
-            status = 201
+        status = 201 if len(total_commits) else 200
         
         return self.respond_json({'commits': [c.hash for c in total_commits]}, status=status)
         
