@@ -178,9 +178,9 @@ class Project(models.Model):
 class Group(models.Model):
     total = models.IntegerField(default=0)
     name = models.CharField(max_length=64, blank=False)
-    slug = models.SlugField(blank=False)
+    slug = models.SlugField(primary_key=True)
 
-    class __Meta__:
+    class Meta:
         abstract=True
 
     def __str__(self):
