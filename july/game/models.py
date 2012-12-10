@@ -49,6 +49,10 @@ class Game(models.Model):
     players = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Player')
     boards = models.ManyToManyField(Project, through='Board')
     
+    class Meta:
+        ordering = ['-end']
+        get_latest_by = 'end'
+    
     def __unicode__(self):
         if self.end.month == 8:
             return 'Julython %s' % self.end.year
@@ -68,9 +72,10 @@ class Game(models.Model):
         return Team.objects.raw(TEAM_SQL, [self.pk])
     
     @classmethod
-    def active(cls):
+    def active(cls, now=None):
         """Returns the active game or None."""
-        now = datetime.datetime.now()
+        if now is None:
+            now = datetime.datetime.now()
         try:
             return cls.objects.get(start__lte=now, end__gte=now)
         except cls.DoesNotExist:
