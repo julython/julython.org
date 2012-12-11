@@ -137,6 +137,10 @@ class Project(models.Model):
     def __unicode__(self):
         return self.__str__()
     
+    def save(self, *args, **kwargs):
+        self.slug = self.project_name
+        super(Project, self).save(*args, **kwargs)
+    
     @property
     def project_name(self):
         return self.parse_project_name(self.url)
@@ -172,6 +176,7 @@ class Project(models.Model):
         name = '-'.join(tokens)
         if name.endswith('-'):
             name = name[:-1]
+        name = name.replace('.', '_')
         return '%s-%s' % (host_abbr, name)
 
 
