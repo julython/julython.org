@@ -124,9 +124,10 @@ class Player(models.Model):
 
     class Meta:
         ordering = ['-points']
+        get_latest_by = 'game__end'
 
     def __unicode__(self):
-        return self.user
+        return unicode(self.user)
 
 class Board(models.Model):
     """A project with commits in the game."""
@@ -137,9 +138,10 @@ class Board(models.Model):
 
     class Meta:
         ordering = ['-points']
+        get_latest_by = 'game__end'
 
     def __unicode__(self):
-        return self.project
+        return unicode(self.project)
 
 @receiver(post_save, sender=Commit)
 def add_commit(sender, **kwargs):

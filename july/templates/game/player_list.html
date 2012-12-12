@@ -10,21 +10,21 @@
     <div class="row locations">
         <div class="span6 offset3"><br />
             <h3>{% trans "High Scores" %}</h3><hr/>
-              {% for user in users %}
+              {% for player in object_list %}
                 <div class="row"> 
                     <div class="span5">
                       <h3>
-                        <img src="{{ user.picture_url }}" alt="{{ user.first_name}} {{ user.last_name }}" width="50"/>
-                        <a href="{% url 'member-profile' user.username %}">{{ user }}</a>
+                        <img src="{{ player.user.picture_url }}" alt="{{ player.user.first_name}} {{ player.user.last_name }}" width="50"/>
+                        <a href="{% url 'member-profile' player.user.username %}">{{ player }}</a>
                       </h3>
                       <div>
-                        <dl><a href="/location/{{ user.location_slug }}">{{ user.location }}</a> </dl>
-                        <dl>{% blocktrans count number_of_projects=user.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</dl>
+                        <dl><a href="/location/{{ player.user.location__slug }}">{{ player.user.location }}</a> </dl>
+                        <dl>{% blocktrans count number_of_projects=player.boards.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</dl>
                       </div>
                      </div>
                      <div class="span1">
                      <div class="points pull-right">
-                        <p>{{ user.total|default:"0" }}</p>
+                        <p>{{ player.points|default:"0" }}</p>
                         <p class="small">{% trans "points" %}</p>
                     </div>
                     </div>

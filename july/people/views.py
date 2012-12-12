@@ -9,7 +9,6 @@ from social_auth.models import UserSocialAuth
 from july.models import User
 
 from july.people.models import Commit, Location, Project, Team
-#from july.cron import fix_location, fix_team
 
 def people_projects(request, username):
     user = get_object_or_404(User, username=username)
@@ -31,84 +30,11 @@ def user_profile(request, username):
             'profile': user,
             'active': 'commits',
         }, 
-        context_instance=RequestContext(request)) 
-
-def leaderboard(request, template_name='people/leaderboard.html'):
-
-    #TODO - limit, order and offset the users for this view.
-    users = User.objects.order_by('-total')
-    return render_to_response(template_name, 
-                             { 'users':users},
-                             context_instance=RequestContext(request)) 
-
-def users_by_location(request, location_slug, 
-                      template_name='people/people_list.html'):
-
-
-    location = get_object_or_404(Location,slug=location_slug)
-    users = location.location_members.order_by('-total')
-
-    return render_to_response(template_name,
-                             { 'users':users,
-                              'location': location, 'slug': location_slug}, 
-                             context_instance=RequestContext(request)) 
-
-def locations(request, template_name='people/locations.html'):
-    
-    #TODO Sort by score for location (on LocationGame?)
-    locations = Location.objects.order_by('-total')
-    
-
-    return render_to_response(template_name,
-                              {'locations': locations},
-                              context_instance=RequestContext(request))
-
-def teams(request, template_name='people/teams.html'):
-    #TODO - Make the teams ordered by score.
-    teams = Team.objects.order_by('-total')
-
-    return render_to_response(template_name,
-                              {'teams': teams},
-                              context_instance=RequestContext(request))
-
-def team_details(request, team_slug, template_name='people/team_details.html'):
-
-    team = get_object_or_404(Team, slug=team_slug)
-    users = team.team_members.order_by('-total')
-    
-    return render_to_response(template_name,
-                             { 'users':users,
-                              'team': team, 'slug': team_slug}, 
-                             context_instance=RequestContext(request))
-
-def projects(request, template_name='projects/index.html'):
-
-    projects = Project.objects.order_by('-total')
-
-
-    return render_to_response(template_name,
-        {'projects': projects},
-        context_instance=RequestContext(request))
-
-def project_details(request, slug, template_name='projects/details.html'):
-
-    project = Project.objects.get(slug=slug)
-    if project is None:
-        raise Http404("Project Not Found.")
-    
-
-    # TODO: pagination
-    users = project.user_set.all().order_by('-total')
-    commits = project.commit_set.all().order_by('-timestamp')
-
-    return render_to_response(template_name,
-        {'project': project, 'users': users, 'commits': commits},
         context_instance=RequestContext(request))
 
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
-    from django.shortcuts import get_object_or_404
     user = request.user
 
     if user == None:

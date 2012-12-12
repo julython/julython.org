@@ -125,7 +125,6 @@ class Project(models.Model):
     watchers = models.IntegerField(default=0)
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    total = models.IntegerField(default=0)
     slug = models.SlugField()
     
     def __str__(self):
@@ -140,6 +139,18 @@ class Project(models.Model):
     def save(self, *args, **kwargs):
         self.slug = self.project_name
         super(Project, self).save(*args, **kwargs)
+    
+    @property
+    def points(self):
+        try:
+            board = self.board_set.latest()
+        except:
+            return 0
+        return board.points
+    
+    @property
+    def total(self):
+        return self.points
     
     @property
     def project_name(self):

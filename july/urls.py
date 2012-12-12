@@ -16,6 +16,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
     # This line should only be active during maintenance!
     #url(r'^.*', 'july.views.maintenance'),
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^_admin/', admin.site.urls),
     url(r'^api/v1/bitbucket', api.BitbucketHandler.as_view()),
     url(r'^api/v1/github', api.GithubHandler.as_view()),
@@ -28,6 +29,7 @@ urlpatterns = patterns('',
     url(r'^signout/$', views.logout, {'next_page': '/'}, name="signout"),
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
+    url(r'^', include('july.game.urls')),
     url(r'^', include('july.people.urls')),
 
 )

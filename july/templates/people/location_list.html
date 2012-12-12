@@ -7,12 +7,12 @@
   <div class="row locations">
     <div class="span8 offset2">
         <h2 class="teaming-up">{% trans "Locations" %}</h2>
-        {% for location in locations %}
+        {% for location in object_list|slice:":100" %}
           <div class="row location">
             <div class="span5">
-              <h3><a href="{{ location.slug }}">{{ location }}</a></h3>
+              <h3><a href="{% url 'location-detail' location.slug %}">{{ location }}</a></h3>
               <p>
-                {% blocktrans count number_of_projects=location.projects|length %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                {% blocktrans count number_of_players=location.location_members.count %}{{ number_of_players }} player{% plural %}{{ number_of_players }} players{% endblocktrans %}
               </p>
             </div>
             <div class="points pull-right">

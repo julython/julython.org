@@ -7,14 +7,14 @@
   <div class="row locations">
     <div class="span6 offset3">
         <h2 class="teaming-up">{% trans "Projects" %}</h2>
-        {% for project in projects %}
+        {% for board in object_list %}
           <div class="row location">
             <div class="span5">
-              <h3><a href="{% url 'project-details' project.slug %}">{{ project }}</a></h3>
-              <p><a href="{{ project.url }}">{{ project.url }}</a></p>
+              <h3><a href="{% url 'project-details' board.project.slug %}">{{ board.project }}</a></h3>
+              <p><a href="{{ board.project.url }}">{{ board.project.url }}</a></p>
             </div>
             <div class="points pull-right">
-                <p>{{ project.total }}</p>
+                <p>{{ board.points }}</p>
                 <p class="small">{% trans "points" %}</p>
             </div>
           </div>

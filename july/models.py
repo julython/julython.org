@@ -15,12 +15,13 @@ from july.people.models import Location, Team, Project
 
 class User(AbstractUser):
     
-    location = models.ForeignKey(Location, blank=True, null=True, related_name='location_members')
-    team = models.ForeignKey(Team, blank=True, null=True, related_name='team_members')
-    projects = models.ManyToManyField(Project)
+    location = models.ForeignKey(Location, blank=True, null=True, 
+        related_name='location_members')
+    team = models.ForeignKey(Team, blank=True, null=True, 
+        related_name='team_members')
+    projects = models.ManyToManyField(Project, blank=True, null=True)
     description = models.TextField(blank=True)
-    url = models.URLField()
-    total = models.IntegerField(default=0)
+    url = models.URLField(blank=True, null=True)
     picture_url = models.URLField(blank=True, null=True)
 
     
@@ -53,3 +54,15 @@ class User(AbstractUser):
         if sa is None:
             return None
         return sa.user
+
+    @property
+    def points(self):
+        try:
+            player = self.player_set.latest()
+        except:
+            return 0
+        return player.points
+    
+    @property
+    def total(self):
+        return self.points

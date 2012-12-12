@@ -17,5 +17,4 @@ admin.site.register(Team,
 )
 admin.site.register(Project, 
     list_display=["__unicode__", "url", "name", 'total'],
-    ordering=['-total']
 )
