@@ -24,7 +24,9 @@ class User(AbstractUser):
     url = models.URLField(blank=True, null=True)
     picture_url = models.URLField(blank=True, null=True)
 
-    
+    def __unicode__(self):
+        return self.get_full_name() or self.username
+
     def add_auth_id(self, auth_str):
         """
         Add a social auth identifier for this user.
@@ -55,6 +57,11 @@ class User(AbstractUser):
             return None
         return sa.user
 
+    @property
+    def auth_ids(self):
+        auths = self.social_auth.all()
+        return [':'.join([a.provider, a.uid]) for a in auths]
+        
     @property
     def points(self):
         try:
