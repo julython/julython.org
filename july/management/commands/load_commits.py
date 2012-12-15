@@ -1,9 +1,29 @@
 import json
 import logging
+from datetime import datetime
 
-from django.core.management.base import BaseCommand, CommandError
+import pytz
+
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
+from django.utils.timezone import make_aware
 
 from july.people.models import Commit, Project
+
+def to_datetime(ts):
+    d = datetime.fromtimestamp(ts)
+    t = make_aware(d, pytz.UTC)
+    return t
+
+def to_commit(commit):
+    new = {}
+    attrs = ['hash', 'author', 'name', 'message', 'url', 'email']
+    new['timestamp'] = to_datetime(commit['timestamp'])
+    new['created_on'] = to_datetime(commit['created_on'])
+    for key in attrs:
+        new[key] = commit.get(key) or ''
+    
+    return new
 
 class Command(BaseCommand):
     args = '<commits.json>'
@@ -18,6 +38,7 @@ class Command(BaseCommand):
             for commit in commits['models']:
                 try:
                     project = Project.objects.get(url=commit['project'])
-                    Commit.create_by_email(commit['email'], commit, project)
-                except Exception, e:
-                    logging.exception("Error: %s" % e)
+                    c = to_commit(commit)
+                    Commit.create_by_email(c['email'], c, project)
+                except Exception:
+                    logging.exception("Error: %s" % commit)

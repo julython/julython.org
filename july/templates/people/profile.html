@@ -32,10 +32,10 @@
                             <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
                             {% endif %}
                             {% if profile.location %}
-                            <li><a href="/location/{{ profile.location_slug }}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+                            <li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
                             {% endif %}
-                            {% if profile.team  and profile.team.slug != '' %}
-                            <li><a href="{% url 'team-details' user.team.slug %}">{{ user.team.name }}</a></li>
+                            {% if profile.team %}
+                            <li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
                             {% endif %}
                         </ul>
             		</div>
@@ -77,7 +77,7 @@
 	            	<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
             	  </a>
             	  <div class="media-body">
-            		<h4 class="media-heading"><a href="{{ commit.project }}">{{ commit.project }}</a></h4>
+            		<h4 class="media-heading"><a href="{% url 'project-details' commit.project.slug %}">{{ commit.project }}</a></h4>
             		<strong>{{ commit.message}}</strong>
             		<p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}</p>
               	  </div>

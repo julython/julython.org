@@ -28,7 +28,7 @@ class PlayerList(list.ListView, GameMixin):
     
     def get_queryset(self):
         game = self.get_game()
-        return Player.objects.filter(game=game)
+        return Player.objects.filter(game=game).select_related()
 
 
 class BoardList(list.ListView, GameMixin):
@@ -37,7 +37,7 @@ class BoardList(list.ListView, GameMixin):
     
     def get_queryset(self):
         game = self.get_game()
-        return Board.objects.filter(game=game)
+        return Board.objects.filter(game=game).select_related()
 
 
 class ProjectView(detail.DetailView):

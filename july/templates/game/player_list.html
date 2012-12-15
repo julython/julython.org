@@ -18,8 +18,8 @@
                         <a href="{% url 'member-profile' player.user.username %}">{{ player }}</a>
                       </h3>
                       <div>
-                        <dl><a href="/location/{{ player.user.location__slug }}">{{ player.user.location }}</a> </dl>
-                        <dl>{% blocktrans count number_of_projects=player.boards.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</dl>
+                        
+                        
                       </div>
                      </div>
                      <div class="span1">

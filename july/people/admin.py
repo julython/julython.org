@@ -3,7 +3,7 @@ from django.contrib import admin
 from models import Team, Commit, Location, Project
 
 admin.site.register(Commit, 
-    list_display=['hash', 'email', 'timestamp', 'project'], 
+    list_display=['hash', 'email', 'timestamp', 'project', 'user'], 
     search_fields=['hash', 'email'], 
     ordering=['-timestamp']
 )

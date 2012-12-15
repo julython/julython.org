@@ -20,7 +20,8 @@ SELECT july_user.location_id AS slug,
     AND july_user.location_id = people_location.slug 
     AND game_player.game_id = %s
     GROUP BY july_user.location_id 
-    ORDER BY points DESC;
+    ORDER BY total DESC
+    LIMIT 50;
 """
 
 
@@ -35,7 +36,8 @@ SELECT july_user.team_id AS slug,
     AND july_user.team_id = people_team.slug 
     AND game_player.game_id = %s
     GROUP BY july_user.team_id 
-    ORDER BY points DESC;
+    ORDER BY total DESC
+    LIMIT 50;
 """
 
 
@@ -146,8 +148,8 @@ class Board(models.Model):
 @receiver(post_save, sender=Commit)
 def add_commit(sender, **kwargs):
     """Listens for new commits and adds them to the game."""
-    active_game = Game.active()
+    commit = kwargs.get('instance')
+    active_game = Game.active(now=commit.timestamp)
     if active_game is not None:
-        commit = kwargs.get('instance')
         from_orphan = not kwargs.get('created', False)
         active_game.add_commit(commit, from_orphan=from_orphan)
