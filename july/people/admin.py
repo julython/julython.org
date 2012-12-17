@@ -4,7 +4,7 @@ from models import Team, Commit, Location, Project
 
 admin.site.register(Commit, 
     list_display=['hash', 'email', 'timestamp', 'project', 'user'], 
-    search_fields=['hash', 'email'], 
+    search_fields=['hash', 'email', 'project__name', 'user__username'], 
     ordering=['-timestamp']
 )
 admin.site.register(Location, 

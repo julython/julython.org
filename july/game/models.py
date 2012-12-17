@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from july.people.models import Project, Location, Team, Commit
+import logging
 
 
 LOCATION_SQL = """\

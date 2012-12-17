@@ -13,12 +13,12 @@ class Commit(models.Model):
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
     hash = models.CharField(max_length=255, unique=True)
-    author = models.CharField(max_length=255)
-    name = models.CharField(max_length=255)
-    email = models.CharField(max_length=255)
-    message = models.CharField(max_length=255)
-    url = models.CharField(max_length=255, blank=True, null=True)
-    project = models.ForeignKey("Project")
+    author = models.CharField(max_length=255, blank=True)
+    name = models.CharField(max_length=255, blank=True)
+    email = models.CharField(max_length=255, blank=True)
+    message = models.CharField(max_length=255, blank=True)
+    url = models.CharField(max_length=512, blank=True)
+    project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
     
@@ -68,8 +68,6 @@ class Commit(models.Model):
                 # increment the counts
                 created_commits.append(commit)
             else:
-                user.projects.add(project)
-                user.save()
                 commit.user = user
                 commit.save()
                 
@@ -127,14 +125,11 @@ class Project(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     slug = models.SlugField()
     
-    def __str__(self):
+    def __unicode__(self):
         if self.name:
             return self.name
         else:
-            return self.url
-    
-    def __unicode__(self):
-        return self.__str__()
+            return self.slug
     
     def save(self, *args, **kwargs):
         self.slug = self.project_name
@@ -155,6 +150,12 @@ class Project(models.Model):
     @property
     def project_name(self):
         return self.parse_project_name(self.url)
+    
+    @classmethod
+    def create(cls, **kwargs):
+        """Get or create shortcut."""
+        slug = cls.parse_project_name(kwargs.get('url'))
+        return cls.objects.get_or_create(slug=slug, defaults=kwargs)
     
     @classmethod
     def parse_project_name(cls, url):

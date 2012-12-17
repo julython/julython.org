@@ -37,22 +37,45 @@
           <div class="row">
             <div class="span10">   
             <h2 class="spread-the-word">{% trans "Commits" %}</h2>
-              {% for commit in project.commit_set.all|slice:":100" %}
+              <div id="commits" data-bdind="with: commits">
+              	<div data-bind="foreach: commits">
+              	   <div class="row commit">
+	                  <div class="span7 pull-left">
+	                      <strong data-bind="text: message"></strong>
+	                      <p class="hash">
+	                      	<a data-bind="visible: username, text: author, attrs: {href: '/' + username }"></a> <span data-bind="visible: username, text: '&mdash'"></span>
+	                      	{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}
+	                      </p>
+	                  </div>
+	              </div>
+              	</div>
+              	<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
               {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
               <div class="row commit">
                   <div class="span7 pull-left">
                       <strong>{{ commit.message}}</strong>
                       <p class="hash">
-                      	<a href="{% url 'member-profile' commit.user.username %}">{{ commit.user }}</a> &mdash;
+                      	{% if commit.user %}<a href="{% url 'member-profile' commit.user.username %}">{{ commit.user }}</a> &mdash;{% endif %}
                       	{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}
                       </p>
                   </div>
               </div>
-              {% endfor %}
+              </div>
             </div>
           </div>
         </div>
     </div>
 </div>
 
+{% endblock %}
+{% block extra_javascript %}
+<script type="text/javascript">
+	var view = new JULY.ProjectCommitsView({projectId: {{ project.id }}});
+	//var c = new Backbone.Collection([{message: 'wwooo'}, {message: 'yah'}]);
+	//c.fetch();
+	//var view = {
+	//	commits: kb.collectionObservable(c)
+	//}
+	ko.applyBindings(view, $('#commits')[0]);
+</script>
 {% endblock %}

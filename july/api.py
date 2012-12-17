@@ -1,51 +1,30 @@
 
-import logging
-import json
-import urlparse
-import re
-
 from collections import defaultdict
+import json
+import logging
+import re
+import urlparse
 
 from django import http
 from django.views.generic.base import View
+from django.views.decorators.csrf import csrf_exempt
 from iso8601 import parse_date
-from tastypie.authorization import Authorization
-from tastypie.resources import ModelResource, Resource, ALL, ALL_WITH_RELATIONS
+from tastypie.resources import ModelResource
+from tastypie.resources import ALL
+from tastypie.resources import ALL_WITH_RELATIONS
+from tastypie import fields
 
 from july.people.models import Commit, Project
-from django.views.decorators.csrf import csrf_exempt
-#from july.live.models import Message
-#from july.live.forms import MessageForm
+from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
 
-SIMPLE_TYPES = (int, long, float, bool, dict, basestring, list)
-
-def utcdatetime(timestamp):
-    """
-    Take a timestamp in the formats::
-        
-        2012-05-30 04:07:03+00:00
-        2012-05-30T04:07:03-08:00
-    
-    And return a utc normalized timestamp to insert into the db.
-    """
-    
-    d = parse_date(timestamp)
-    utc = d - d.utcoffset()
-    utc = utc.replace(tzinfo=None)
-    return utc
-
-class CommitResource(ModelResource):
+class UserResource(ModelResource):
     
     class Meta:
-        queryset = Commit.objects.all()
-        allowed_methods = ['get']
-        default_format = 'application/json'
-        filtering = {
-            'user': ALL_WITH_RELATIONS,
-            'timestamp': ['exact', 'range', 'gt', 'lt'],
-        }
+        queryset = User.objects.all()
+        excludes = ['password', 'email', 'is_superuser']
+
 
 class ProjectResource(ModelResource):
     
@@ -58,7 +37,45 @@ class ProjectResource(ModelResource):
             'teams': ALL 
         }
 
-class PostCallbackHandler(View):
+
+class CommitResource(ModelResource):
+    user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
+    project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
+    
+    class Meta:
+        queryset = Commit.objects.all().select_related().order_by('-timestamp')
+        allowed_methods = ['get']
+        default_format = 'application/json'
+        filtering = {
+            'user': ALL_WITH_RELATIONS,
+            'project': ALL_WITH_RELATIONS,
+            'timestamp': ['exact', 'range', 'gt', 'lt'],
+        }
+    
+    def dehydrate(self, bundle):
+        #logging.error(dir(bundle))
+        #logging.error(bundle.obj.user)
+        bundle.data['username'] = getattr(bundle.obj.user, 'username', '')
+        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', '')
+            
+        #logging.error(bundle.data)
+        return bundle
+
+
+class JSONMixin(object):
+    
+    def respond_json(self, data, **kwargs):
+        content = json.dumps(data)
+        resp = http.HttpResponse(content, content_type='application/json', **kwargs)
+        resp['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+class PlayerCommitsCollection(View, JSONMixin):
+    
+    def get(self):
+        pass
+
+class PostCallbackHandler(View, JSONMixin):
 
     def parse_commits(self, commits):
         """
@@ -91,11 +108,6 @@ class PostCallbackHandler(View):
         payload = request.POST.get('payload')
         return payload
     
-    def respond_json(self, data, **kwargs):
-        content = json.dumps(data)
-        resp = http.HttpResponse(content, content_type='application/json', **kwargs)
-        resp['Access-Control-Allow-Origin'] = '*'
-        return resp
     
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
@@ -116,7 +128,7 @@ class PostCallbackHandler(View):
         commit_data = data.get('commits', [])
         
         repo = self._parse_repo(data)
-        project, _ = Project.objects.get_or_create(**repo)
+        project, _ = Project.create(**repo)
         
         commit_dict = self.parse_commits(commit_data)
         total_commits = []
@@ -261,8 +273,8 @@ class BitbucketHandler(PostCallbackHandler):
             'author': data.get('author'),
             'name': data.get('author'),
             'message': data.get('message'),
-            'timestamp': parse_date(data.get('utctimestamp')),
-            'url': data.get('url', None),
+            'timestamp': data.get('utctimestamp'),
+            'url': data.get('url', ''),
         }
         return email, commit_data
 
@@ -361,18 +373,3 @@ class GithubHandler(PostCallbackHandler):
             'timestamp': data['timestamp'],
         }
         return email, commit_data
-    
-    
-class StatsResource(Resource):
-    """Get the commits for the last 7 days"""
-    
-    def get(self, metric):
-        from july.people.models import Accumulator
-        stats = Accumulator.get_histogram(metric)
-        
-        self.respond_json({
-            'metric': metric,
-            'stats': stats,
-            'total': sum(stats),
-        })
-

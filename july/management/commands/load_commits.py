@@ -9,6 +9,7 @@ from django.core.management.base import CommandError
 from django.utils.timezone import make_aware
 
 from july.people.models import Commit, Project
+import os
 
 def to_datetime(ts):
     d = datetime.fromtimestamp(ts)
@@ -33,12 +34,21 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError('Must supply a JSON file of commits.')
         
-        with open(args[0], 'r') as commit_file:
-            commits = json.loads(commit_file.read())
-            for commit in commits['models']:
-                try:
-                    project = Project.objects.get(url=commit['project'])
-                    c = to_commit(commit)
-                    Commit.create_by_email(c['email'], c, project)
-                except Exception:
-                    logging.exception("Error: %s" % commit)
+        commit_path = args[0]
+        
+        if os.path.isdir(commit_path):
+            files = [os.path.join(commit_path, f) for f in os.listdir(commit_path) if f.startswith('commits')]
+        else:
+            files = [commit_path]
+        
+        for commits_json in files:
+            logging.info("Parsing File: %s", commits_json)
+            with open(commits_json, 'r') as commit_file:
+                commits = json.loads(commit_file.read())
+                for commit in commits['models']:
+                    try:
+                        project, _ = Project.create(url=commit['project'])
+                        c = to_commit(commit)
+                        Commit.create_by_email(c['email'], c, project)
+                    except Exception:
+                        logging.exception("Error: %s" % commit)
