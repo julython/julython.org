@@ -11,7 +11,7 @@ var deps = [
 ];
 
 var apps = [
-	'js/src/*.js'
+	'js/src/**/*.js'
 ];
 
 module.exports = function(grunt) {
