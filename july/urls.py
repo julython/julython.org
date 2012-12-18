@@ -9,6 +9,7 @@ from july import api
 v1_api = Api(api_name='v1')
 v1_api.register(api.CommitResource())
 v1_api.register(api.ProjectResource())
+v1_api.register(api.UserResource())
 
 admin.autodiscover()
 

@@ -4,11 +4,21 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
+from django.views.generic import detail
 from social_auth.models import UserSocialAuth
 
 from july.models import User
 
-from july.people.models import Commit, Location, Project, Team
+
+class UserProfile(detail.DetailView):
+    model = User
+    slug_field = 'username'
+    context_object_name = 'profile'
+    slug_url_kwarg = 'username'
+
+
+# TODO (rmyers): move the rest of these views to knockback/backbone routes
+
 
 def people_projects(request, username):
     user = get_object_or_404(User, username=username)
@@ -20,17 +30,6 @@ def people_projects(request, username):
         },  
         context_instance=RequestContext(request)) 
 
-def user_profile(request, username):
-    user = get_object_or_404(User, username=username)
-
-    commits = Commit.objects.filter(user=user).order_by('-timestamp')
-
-    return render_to_response('people/profile.html', {
-            'commits': commits, 
-            'profile': user,
-            'active': 'commits',
-        }, 
-        context_instance=RequestContext(request))
 
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):

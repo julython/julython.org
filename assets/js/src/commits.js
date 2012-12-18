@@ -20,42 +20,25 @@ JULY.Commit = Backbone.Model.extend({
 	url: '/api/v1/commit/'
 });
 
-JULY.PlayerCommits = Backbone.Collection.extend({
-	model: JULY.Commit,
-	
-	url: function() {return '/api/v1/commit/?' + this.params()},
-	
-	initialize: function(data, options) {
-		this.user = options.userId;
-		this.limit = options.limit || 20;
-		this.offset = options.offset || 0;
-	},
-	
-	params: function() {return jQuery.param({
-		user: this.userId,
-		limit: this.limit,
-		offset: this.offset,
-	})}
-	
-});
-
-JULY.ProjectCommits = Backbone.Collection.extend({
+JULY.CommitCollection = Backbone.Collection.extend({
 	model: JULY.Commit,
 	
 	url: function() {return '/api/v1/commit/?' + this.params()},
 	
 	initialize: function(data, options) {
 		this.projectId = options.projectId;
+		this.userId = options.userId;
 		this.limit = options.limit || 20;
 		this.offset = options.offset || 0;
 		this.total = 0;
 	},
 	
-	params: function() {return jQuery.param({
-		project: this.projectId,
-		limit: this.limit,
-		offset: this.offset,
-	})},
+	params: function() {
+		var p = {limit: this.limit, offset: this.offset}
+		if (this.projectId) {p.project = this.projectId}
+		if (this.userId) {p.user = this.userId}
+		return jQuery.param(p);
+	},
 	
 	parse: function(resp) {
 		this.total = resp.meta.total_count;
@@ -65,10 +48,10 @@ JULY.ProjectCommits = Backbone.Collection.extend({
 	
 });
 
-JULY.ProjectCommitsView = JULY.ViewModel.extend({
+JULY.CommitsView = JULY.ViewModel.extend({
 	
 	initialize: function(options) {
-		this.c = new JULY.ProjectCommits(null, options);
+		this.c = new JULY.CommitCollection(null, options);
 		this.c.fetch({add: true});
 		this.commits = kb.collectionObservable(this.c);
 	},

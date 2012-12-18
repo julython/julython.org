@@ -62,7 +62,7 @@
 <div class="container section-container no-border">
   <div class="row">
     <div class="span10 offset1">
-        {% if commits %}
+        {% if profile.commit_set.count %}
         <div class="row">
            <div id="user-barchart" class="commit-chart span10" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
         </div>
@@ -70,19 +70,26 @@
             <div class="span10">
               
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
-              {% for commit in commits %}
-              {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
-              <div class="media">
-            	  <a class="thumbnail pull-left" href=".">        			
-	            	<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
-            	  </a>
-            	  <div class="media-body">
-            		<h4 class="media-heading"><a href="{% url 'project-details' commit.project.slug %}">{{ commit.project }}</a></h4>
-            		<strong>{{ commit.message}}</strong>
-            		<p class="hash">{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}</p>
-              	  </div>
+              <div id="commits" data-bdind="with: commits">
+              	<div data-bind="foreach: commits">
+              		<div class="media">
+	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
+		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
+	            	  </a>
+	            	  <div class="media-body">
+	            	  	<h4 class="media-heading"><span data-bind="text: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
+	            		<strong data-bind="text: message"></strong>
+	            		<p class="hash">
+	                      	<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
+	                      	<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash"></span></a>
+	                      	<span data-bind="visible: !url(), text: hash"></span>
+	                      </p>
+	              	  </div>
+	                </div>
+              	</div>
+              	<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
               </div>
-              {% endfor %}
+            </div>
             </div>
         </div>
         {% else %}
@@ -130,5 +137,7 @@
             }
         })
   });
+  var view = new JULY.CommitsView({userId: {{ profile.id }}});
+  JULY.applyBindings(view, '#commits');
 </script>
 {% endblock %}

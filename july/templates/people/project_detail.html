@@ -39,27 +39,22 @@
             <h2 class="spread-the-word">{% trans "Commits" %}</h2>
               <div id="commits" data-bdind="with: commits">
               	<div data-bind="foreach: commits">
-              	   <div class="row commit">
-	                  <div class="span7 pull-left">
-	                      <strong data-bind="text: message"></strong>
-	                      <p class="hash">
-	                      	<a data-bind="visible: username, text: author, attrs: {href: '/' + username }"></a> <span data-bind="visible: username, text: '&mdash'"></span>
-	                      	{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}
+              		<div class="media">
+	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
+		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
+	            	  </a>
+	            	  <div class="media-body">
+	            	  	<h4 class="media-heading" data-bind="text: timestamp"></h4>
+	            		<strong data-bind="text: message"></strong>
+	            		<p class="hash">
+	                      	<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
+	                      	<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash"></span></a>
+	                      	<span data-bind="visible: !url(), text: hash"></span>
 	                      </p>
-	                  </div>
-	              </div>
+	              	  </div>
+	                </div>
               	</div>
               	<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
-              {% ifchanged %}<h3>{{ commit.timestamp|date:"M j, Y" }}</h3>{% endifchanged %}
-              <div class="row commit">
-                  <div class="span7 pull-left">
-                      <strong>{{ commit.message}}</strong>
-                      <p class="hash">
-                      	{% if commit.user %}<a href="{% url 'member-profile' commit.user.username %}">{{ commit.user }}</a> &mdash;{% endif %}
-                      	{% if commit.url %}<a href="{{ commit.url }}">{{ commit.hash }}</a>{% else %}{{ commit.hash }}{% endif %}
-                      </p>
-                  </div>
-              </div>
               </div>
             </div>
           </div>
@@ -70,12 +65,7 @@
 {% endblock %}
 {% block extra_javascript %}
 <script type="text/javascript">
-	var view = new JULY.ProjectCommitsView({projectId: {{ project.id }}});
-	//var c = new Backbone.Collection([{message: 'wwooo'}, {message: 'yah'}]);
-	//c.fetch();
-	//var view = {
-	//	commits: kb.collectionObservable(c)
-	//}
-	ko.applyBindings(view, $('#commits')[0]);
+	var view = new JULY.CommitsView({projectId: {{ project.id }}});
+	JULY.applyBindings(view, '#commits');
 </script>
 {% endblock %}

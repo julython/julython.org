@@ -16,6 +16,8 @@ from tastypie import fields
 
 from july.people.models import Commit, Project
 from july.models import User
+from django.template.defaultfilters import date
+from django.core.urlresolvers import reverse
 
 EMAIL_MATCH = re.compile('<(.+?)>')
 
@@ -43,7 +45,7 @@ class CommitResource(ModelResource):
     project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
     
     class Meta:
-        queryset = Commit.objects.all().select_related().order_by('-timestamp')
+        queryset = Commit.objects.all()
         allowed_methods = ['get']
         default_format = 'application/json'
         filtering = {
@@ -52,11 +54,17 @@ class CommitResource(ModelResource):
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
     
+    def get_object_list(self, request):
+        return Commit.objects.all().select_related('user', 'project').order_by("-timestamp")
+    
     def dehydrate(self, bundle):
-        #logging.error(dir(bundle))
-        #logging.error(bundle.obj.user)
-        bundle.data['username'] = getattr(bundle.obj.user, 'username', '')
-        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', '')
+        # TODO (rmyers): use gravatar for commits?
+        email = bundle.data.pop('email')
+        bundle.data['project_name'] = bundle.obj.project.name
+        bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
+        bundle.data['timestamp'] = date(bundle.obj.timestamp)
+        bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
+        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', None)
             
         #logging.error(bundle.data)
         return bundle
