@@ -1,12 +1,20 @@
 var JULY = JULY || {};
 
+ko.bindingHandlers.pageBottom={
+	init:function(e,t,n,r){
+		var i=t(),s=n(),o=s.callbackThreshold||1e3,u=s.callbackInterval||500;
+		if(typeof i!="function")throw new Error("The value of the pageBottom binding must be a function");
+		i=$.proxy(i,r);
+		var a=$(document),f=$(window);
+		setInterval(function(){a.height()-f.height()-f.scrollTop()<o&&i()},u)
+	}
+};
+
 JULY.ViewModel = function(options) {
 	this.initialize.apply(this,arguments);
 };
 _.extend(JULY.ViewModel.prototype,{
-	
 	initialize: function() {}
-
 });
 JULY.ViewModel.extend=Backbone.View.extend;
 
@@ -54,7 +62,16 @@ JULY.CommitsView = JULY.ViewModel.extend({
 		this.c = new JULY.CommitCollection(null, options);
 		this.c.fetch({add: true});
 		this.commits = kb.collectionObservable(this.c);
+		this.hasMore = ko.computed(function() {
+			return this.c.length < this.c.total}, this);
 	},
+	
+	scrolled: function(data, event) {
+        var elem = event.target;
+        if (elem.scrollTop > (elem.scrollHeight - elem.offsetHeight - 200)) {
+            this.fetch();
+        }
+    },
 	
 	fetch: function(){
 		this.commits.collection().fetch({add:true});

@@ -57,16 +57,22 @@ class CommitResource(ModelResource):
     def get_object_list(self, request):
         return Commit.objects.all().select_related('user', 'project').order_by("-timestamp")
     
+    def gravatar(self, email):
+        """Return a link to gravatar image."""
+        url = 'http://www.gravatar.com/avatar/%s?s=48'
+        from hashlib import md5
+        email = email.strip().lower()
+        hashed = md5(email).hexdigest()
+        return url % hashed
+    
     def dehydrate(self, bundle):
-        # TODO (rmyers): use gravatar for commits?
         email = bundle.data.pop('email')
+        gravatar = self.gravatar(email)
         bundle.data['project_name'] = bundle.obj.project.name
         bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
         bundle.data['timestamp'] = date(bundle.obj.timestamp)
         bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
-        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', None)
-            
-        #logging.error(bundle.data)
+        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', gravatar)
         return bundle
 
 

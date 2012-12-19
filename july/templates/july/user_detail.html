@@ -64,13 +64,10 @@
     <div class="span10 offset1">
         {% if profile.commit_set.count %}
         <div class="row">
-           <div id="user-barchart" class="commit-chart span10" data-chart="barchart" data-chartid="{{ profile.username }}"></div>
-        </div>
-        <div class="row">
             <div class="span10">
               
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
-              <div id="commits" data-bdind="with: commits">
+              <div id="commits" data-bind="pageBottom: fetch">
               	<div data-bind="foreach: commits">
               		<div class="media">
 	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
@@ -114,30 +111,12 @@
       {% endif %}
     </div>
   </div>
-</div>
 {% endblock %}
 
 {% block extra_javascript %}
 
 <script type="text/javascript">
-  $(document).ready(function(){
-        $(".commit-chart").hide();
-        jQuery.ajax({
-            url: '/api/v1/stats/commits/own:{{ profile.username }}',
-            success: function(data){
-                new Charts.BarChart("user-barchart")
-                  .load(data.stats)
-                  .set("xLabel", function(d, i) { return i+1; })
-                  .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
-                  .render();
-                $(".commit-chart").slideDown('slow');
-            },
-            error: function() {
-                $('.commit-chart').html('{% trans "Commit data not found" %}');
-            }
-        })
-  });
   var view = new JULY.CommitsView({userId: {{ profile.id }}});
-  JULY.applyBindings(view, '#commits');
+  ko.applyBindings(view);
 </script>
 {% endblock %}

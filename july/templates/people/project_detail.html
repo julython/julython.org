@@ -37,7 +37,7 @@
           <div class="row">
             <div class="span10">   
             <h2 class="spread-the-word">{% trans "Commits" %}</h2>
-              <div id="commits" data-bdind="with: commits">
+              <div id="commits" data-bind="pageBottom: fetch">
               	<div data-bind="foreach: commits">
               		<div class="media">
 	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
@@ -54,7 +54,7 @@
 	              	  </div>
 	                </div>
               	</div>
-              	<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
+              	<a class="btn btn-primary" data-bind="visible: hasMore, click: fetch">Load More</a>
               </div>
             </div>
           </div>

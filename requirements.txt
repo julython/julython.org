@@ -4,6 +4,10 @@
 -e git+https://github.com/toastdriven/django-tastypie.git#egg=django-tastypie
 
 Fabric==1.5.1
-django-social-auth==0.7.10
+django-social-auth==0.7.12
 iso8601==0.1.4
 django-debug-toolbar
+requests
+South
+# You can comment this out if running locally with sqlite
+MySQL-python==1.2.4c1
