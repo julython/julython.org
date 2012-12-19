@@ -269,7 +269,7 @@
 
 {% block javascript %}
     {{ block.super }}
-    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
+    <script type="text/javascript" src="http://live.julython.org/_ah/channel/jsapi"></script>
 <script type="text/javascript">
   $(document).ready(function(){
     // navigation bar
@@ -279,11 +279,21 @@
     var win = $(window);
     win.scroll(function () { nav.update.apply(nav, arguments); });
     // charts!
-    new Charts.BarChart("user-barchart")
-      .load({{stats}})
-      .set("xLabel", function(d, i) { return i+1; })
-      .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
-      .render();
+    // TODO (rmyers): Move this to the new server
+    jQuery.ajax({
+        url: 'http://live.julython.org/api/v1/stats/commits/global',
+        success: function(data){
+            new Charts.BarChart("user-barchart")
+              .load(data.stats)
+              .set("xLabel", function(d, i) { return i+1; })
+              .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
+              .render();
+            $('#commit-total').html(data.total);
+        },
+        error: function() {
+            $('.commit-chart').html('Commit data not found');
+        }
+    });
     //var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
       //  maxMessages: 30,
       //  totalEl: "#commit-total",
