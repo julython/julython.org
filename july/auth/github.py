@@ -1,38 +1,38 @@
-__author__ = 'Kevin'
-
 import logging
 
 from social_auth.backends import USERNAME
-from social_auth.backends import twitter
+from social_auth.backends.contrib import github
 from july.people.models import Location
 
-class TwitterBackend(twitter.TwitterBackend):
-    """Twitter OAuth authentication backend"""
-
+class GithubBackend(github.GithubBackend):
+    
     def get_user_details(self, response):
-        """Return user details from Twitter account"""
+        """Return user details from Github account"""
         data = {
-            USERNAME: response['screen_name'],
-            'email': '',  # not supplied
+            USERNAME: response.get('login'),
+            'email': response.get('email') or '',
             'fullname': response['name'],
             'last_name': '',
-            'url': response.get('url', ''),
-            'description': response.get('description', ''),
-            'picture_url': response.get('profile_image_url', '')        
+            'url': response.get('blog', ''),
+            'description': response.get('bio', ''),
+            'picture_url': response.get('avatar_url', '')        
         }
+        
         try:
             data['first_name'], data['last_name'] = response['name'].split(' ', 1)
         except:
-            data['first_name'] = response['name']
+            data['first_name'] = response.get('name') or 'Annon'
+            
         try:
             location = response.get('location', '')
             if location:
                 data['location'], _ = Location.create(location)
         except:
             logging.exception('Problem finding location') 
+        
         return data
 
 # Backend definition
 BACKENDS = {
-    'twitter': twitter.TwitterAuth,
-    }
+    'github': github.GithubAuth,
+}

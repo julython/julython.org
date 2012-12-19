@@ -159,11 +159,12 @@ INSTALLED_APPS = (
     'july.game',
     'july.people',
     'social_auth',
+    'south',
 )
 
 AUTHENTICATION_BACKENDS = [
     'july.auth.twitter.TwitterBackend',
-    'social_auth.backends.contrib.github.GithubBackend',
+    'july.auth.github.GithubBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -223,7 +224,7 @@ SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 
 SOCIAL_AUTH_DEFAULT_USERNAME = 'new_social_auth_user'
 SOCIAL_AUTH_UUID_LENGTH = 3
-SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email']
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email', 'location', 'url', 'description']
 SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
 SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
 

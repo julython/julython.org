@@ -3,6 +3,7 @@ from urlparse import urlparse
 
 from django.db import models, transaction
 from django.conf import settings
+from django.template.defaultfilters import slugify
 
 
 class Commit(models.Model):
@@ -205,6 +206,11 @@ class Group(models.Model):
 
     def __unicode__(self):
         return self.name
+    
+    @classmethod
+    def create(cls, name):
+        slug = slugify(name)
+        return cls.objects.get_or_create(slug=slug, defaults={'name': name})
 
 
 class Location(Group):
