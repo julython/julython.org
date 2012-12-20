@@ -5,6 +5,7 @@ from social_auth.backends.contrib import github
 from july.people.models import Location
 
 class GithubBackend(github.GithubBackend):
+    ID_KEY = 'login'
     
     def get_user_details(self, response):
         """Return user details from Github account"""
