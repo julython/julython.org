@@ -1,15 +1,19 @@
-# Django settings for men project.
 import os
-import datetime
 
 try:
+    DEBUG = False
     from secrets import *
 except ImportError:
+    DEBUG = True
     SECRET_KEY = 'foobar'
+    DATABASE_ENGINE = 'django.db.backends.sqlite3'
+    DATABASE_NAME = 'julython.db'
+    DATABASE_PASSWORD = ''
+    DATABASE_SERVER = ''
+    DATABASE_USER = ''
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -22,11 +26,11 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'julython.db',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+        'ENGINE': DATABASE_ENGINE,       # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': DATABASE_NAME,           # Or path to database file if using sqlite3.
+        'USER': DATABASE_USER,           # Not used with sqlite3.
+        'PASSWORD': DATABASE_PASSWORD,   # Not used with sqlite3.
+        'HOST': DATABASE_SERVER,         # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
@@ -101,12 +105,9 @@ STATICFILES_FINDERS = (
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
 
 MIDDLEWARE_CLASSES = (
-    #'google.appengine.ext.appstats.recording.AppStatsDjangoMiddleware',
-    #'google.appengine.ext.ndb.django_middleware.NdbDjangoMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -115,18 +116,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
-
-#DEBUG_TOOLBAR_PANELS = (
-#    'debug_toolbar.panels.version.VersionDebugPanel',
-#    'debug_toolbar.panels.timer.TimerDebugPanel',
-#    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-#    'debug_toolbar.panels.headers.HeaderDebugPanel',
-#    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-#    'debug_toolbar.panels.template.TemplateDebugPanel',
-#    #'gae_django.toolbar.panel.AppStatsPanel',
-#    'debug_toolbar.panels.signals.SignalDebugPanel',
-#    'debug_toolbar.panels.logger.LoggingPanel',
-#)
 
 def custom_show_toolbar(request):
     return True # Always show toolbar, for example purposes only.
@@ -179,45 +168,6 @@ HCACHES = {
     }
 }
 
-CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
-
-# SETUP local and prod settings
-VERSION = os.environ.get('CURRENT_VERSION_ID', '1.1')
-
-# TODO: possibly break this up into separate files if needed.
-if VERSION == '1.1':
-    # We are running locally
-    MAIN_URL = 'http://localhost:8080/'
-    DEBUG = True
-    TESTING = True
-    TEMPLATE_DEBUG = DEBUG
-    try:
-        # allow developers to override url or other settings.
-        from settings_local import *
-    except:
-        pass
-else:
-    # Production settings!!
-    TESTING = False
-    MAIN_URL = 'http://www.julython.org/'
-    STATIC_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
-    ADMIN_MEDIA_PREFIX = 'http://d1v9vqkrs9fyao.cloudfront.net/static/admin/'
-    MEDIA_URL = 'http://d1v9vqkrs9fyao.cloudfront.net/static/'
-    TEMPLATE_LOADERS = [
-        ('django.template.loaders.cached.Loader', [
-            'django.template.loaders.app_directories.Loader',
-        ])
-    ]
-    # Don't go live with a default setting for SECRET_KEY
-    assert(SECRET_KEY != 'foobar')
-
-TWITTER_CALLBACK = '%saccounts/twitter/verify/' % MAIN_URL
-GITHUB_CALLBACK = '%saccounts/github/verify/' % MAIN_URL
-
-# TIMES COMMITS SCORE POINTS
-START_DATETIME = datetime.datetime(year=2012, month=6, day=30, hour=12, minute=0)
-END_DATETIME = datetime.datetime(year=2012, month=8, day=1, hour=12, minute=0)
-
 # Django 1.5 Custom User Model !! ftw
 AUTH_USER_MODEL = 'july.User'
 SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
@@ -227,6 +177,10 @@ SOCIAL_AUTH_UUID_LENGTH = 3
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email', 'location', 'url', 'description']
 SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
 SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
+
+# Just so we can use the same names for variables - why different social_auth??
+GITHUB_APP_ID = GITHUB_CONSUMER_KEY
+GITHUB_API_SECRET = GITHUB_CONSUMER_SECRET
 
 LOGGING = {
     'version': 1,
