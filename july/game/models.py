@@ -14,9 +14,7 @@ LOCATION_SQL = """\
 SELECT july_user.location_id AS slug,
     people_location.name AS name,
     sum(game_player.points) AS total 
-    FROM game_player 
-    LEFT JOIN july_user
-    LEFT JOIN people_location 
+    FROM game_player, july_user, people_location 
     WHERE game_player.user_id = july_user.id
     AND july_user.location_id = people_location.slug 
     AND game_player.game_id = %s
@@ -30,9 +28,7 @@ TEAM_SQL = """\
 SELECT july_user.team_id AS slug,
     people_team.name AS name,
     sum(game_player.points) AS total 
-    FROM game_player 
-    LEFT JOIN july_user
-    LEFT JOIN people_team 
+    FROM game_player, july_user, people_team 
     WHERE game_player.user_id = july_user.id
     AND july_user.team_id = people_team.slug 
     AND game_player.game_id = %s
