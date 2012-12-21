@@ -106,8 +106,8 @@ class Command(BaseCommand):
             for user in users['models']:
                 count += 1
                 try:
-                    f = FakeUser(user, options.commit)
+                    f = FakeUser(user, options['commit'])
                     f.create()
-                    logging.info("Loaded %s of %s: %s", (count, total, f.username))
+                    logging.info("Loaded %s of %s: %s", count, total, f.username)
                 except Exception, e:
                     logging.exception("Error: %s" % e)
