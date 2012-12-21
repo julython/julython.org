@@ -9,5 +9,6 @@ iso8601==0.1.4
 django-debug-toolbar
 requests
 South
-# You can comment this out if running locally with sqlite
-MySQL-python==1.2.4c1
+# You can comment these out if running locally with sqlite
+MySQL-python
+gunicorn

@@ -46,20 +46,11 @@ follow us on twitter at `@julython <https://twitter.com/#!/julython>`_.
 Hacking
 -------
 
-The site is written in Django and hosted on Appengine. You can use `this
-gist <https://gist.github.com/2839803>`_ to setup your dev environment to
-help out.
+The site is written in Django and hosted on Rackspace. To install the dev
+environment. Fork this repo and create a virtualenv then install alll the 
+requirements::
 
-Pull in the git submodules (Django Debug Toolbar and
-`GAE Django admin/auth <https://github.com/rmyers/gae_django>`_ helper
-packages)::
-
-    $ git submodule update --init
-
-You'll also need the `Google App Engine Python SDK <https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python>`_
-for your OS. Once it's set up simply add an existing application from
-the Julython project root and visit ``localhost`` on the port you
-specified for the development server.
+    $ pip install -r requirements.txt
 
 Media
 ++++++

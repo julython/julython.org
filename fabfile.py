@@ -48,6 +48,7 @@ def load(email=None):
 @task
 def install():
     """Install the node_modules dependencies"""
+    local('git submodule update --init')
     with lcd('assets'):
         local('npm install')
 
