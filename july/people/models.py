@@ -17,7 +17,7 @@ class Commit(models.Model):
     author = models.CharField(max_length=255, blank=True)
     name = models.CharField(max_length=255, blank=True)
     email = models.CharField(max_length=255, blank=True)
-    message = models.CharField(max_length=255, blank=True)
+    message = models.CharField(max_length=2024, blank=True)
     url = models.CharField(max_length=512, blank=True)
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
