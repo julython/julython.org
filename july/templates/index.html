@@ -148,7 +148,7 @@
       <div class="row">
         <div class="span12">
           <div class="row">
-            <div class="span12">
+            <div class="span8">
               <h2 class="spread-the-word">{% blocktrans %}You all did awesome! <span id="commit-total">{{ total }}</span> commits!{% endblocktrans %}</h2>
               <div id="user-barchart"
                 class="commit-chart hidden-phone"
@@ -156,12 +156,27 @@
                 data-chartid="global">
               </div>
             </div>
-            {% comment %}
             <div class="span4">
-              <h2 class="participating"><a href="{% url 'julython-live' %}">{% trans "What's Happening?" %}</a></h2>
-              <ul class="message-list" id="live-messages"></ul>
+              <h2 class="participating"><a href="">{% trans "What's Happening?" %}</a></h2>
+              <ul class="message-list" id="live-messages" data-bind="foreach: commits, event: {scroll: scrolled}">
+              	<li class="message">
+              		<div class="media">
+              		  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
+		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
+	            	  </a>
+	            	  <div class="media-body">
+	            	  	<h4 class="media-heading"><span data-bind="timeago: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
+	            		<strong data-bind="text: message().substring(0, 100)"></strong>
+	            		<p class="hash">
+	                      	<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
+	                      	<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash().substring(0, 8)"></span></a>
+	                      	<span data-bind="visible: !url(), text: hash().substring(0, 8)"></span>
+	                      </p>
+	              	  </div>
+              		</div>
+				</li>
+              </ul>
             </div>
-            {% endcomment %}
           </div>
         </div>
       </div>
@@ -208,20 +223,16 @@
     win.scroll(function () { nav.update.apply(nav, arguments); });
     // charts!
     // TODO (rmyers): Move this to the new server
-    jQuery.ajax({
-        url: 'http://live.julython.org/api/v1/stats/commits/global',
-        success: function(data){
-            new Charts.BarChart("user-barchart")
-              .load(data.stats)
-              .set("xLabel", function(d, i) { return i+1; })
-              .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
-              .render();
-            $('#commit-total').html(data.total);
-        },
-        error: function() {
-            $('.commit-chart').html('Commit data not found');
-        }
-    });
+    var stats = [515, 529, 500, 459, 471, 422, 423, 489, 673, 572, 708, 637, 588, 349, 532, 600, 629, 618, 507, 573, 483, 630, 475, 597, 600, 459, 465, 366, 258, 397, 636];
+    new Charts.BarChart("user-barchart")
+      .load(stats)
+      .set("xLabel", function(d, i) { return i+1; })
+      .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
+      .render();
+    $('#commit-total').html(16160);
+    
+    var view = new JULY.CommitsView();
+	JULY.applyBindings(view, '#live-messages');
     //var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
       //  maxMessages: 30,
       //  totalEl: "#commit-total",

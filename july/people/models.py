@@ -4,6 +4,7 @@ from urlparse import urlparse
 from django.db import models, transaction
 from django.conf import settings
 from django.template.defaultfilters import slugify
+from django.core.urlresolvers import reverse
 
 
 class Commit(models.Model):
@@ -22,6 +23,9 @@ class Commit(models.Model):
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
     
     def __str__(self):
         return self.__unicode__()
@@ -151,6 +155,9 @@ class Project(models.Model):
     @property
     def project_name(self):
         return self.parse_project_name(self.url)
+    
+    def get_absolute_url(self):
+        return reverse('project-details', args=[self.slug])
     
     @classmethod
     def create(cls, **kwargs):

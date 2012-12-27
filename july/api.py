@@ -5,6 +5,7 @@ import logging
 import re
 import urlparse
 
+from django.core.urlresolvers import reverse
 from django import http
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
@@ -16,8 +17,6 @@ from tastypie import fields
 
 from july.people.models import Commit, Project
 from july.models import User
-from django.template.defaultfilters import date
-from django.core.urlresolvers import reverse
 
 EMAIL_MATCH = re.compile('<(.+?)>')
 
@@ -25,11 +24,11 @@ class UserResource(ModelResource):
     
     class Meta:
         queryset = User.objects.all()
-        excludes = ['password', 'email', 'is_superuser']
+        excludes = ['password', 'email', 'is_superuser', 'is_staff', 'is_active']
 
 
 class ProjectResource(ModelResource):
-    
+
     class Meta:
         queryset = Project.objects.all()
         allowed_methods = ['get']
@@ -43,19 +42,15 @@ class ProjectResource(ModelResource):
 class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
     project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
-    
+
     class Meta:
-        queryset = Commit.objects.all()
+        queryset = Commit.objects.all().select_related('user', 'project')
         allowed_methods = ['get']
-        default_format = 'application/json'
         filtering = {
             'user': ALL_WITH_RELATIONS,
             'project': ALL_WITH_RELATIONS,
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
-    
-    def get_object_list(self, request):
-        return Commit.objects.all().select_related('user', 'project').order_by("-timestamp")
     
     def gravatar(self, email):
         """Return a link to gravatar image."""
@@ -70,7 +65,6 @@ class CommitResource(ModelResource):
         gravatar = self.gravatar(email)
         bundle.data['project_name'] = bundle.obj.project.name
         bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
-        bundle.data['timestamp'] = date(bundle.obj.timestamp)
         bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
         bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', gravatar)
         return bundle

@@ -10,6 +10,23 @@ ko.bindingHandlers.pageBottom={
 	}
 };
 
+ko.bindingHandlers.timeago = {
+    init: function(element, valueAccessor, allBindingsAccessor) {
+        // First get the latest data that we're bound to
+        var value = valueAccessor(), allBindings = allBindingsAccessor();
+     
+        // Next, whether or not the supplied model property is observable, 
+        // get its current value
+        var valueUnwrapped = ko.utils.unwrapObservable(value);
+        
+        // set the title attribute to the value passed
+        $(element).attr('title', valueUnwrapped);
+        
+        // apply timeago to change the text of the element
+        $(element).timeago();
+    }
+};
+
 JULY.ViewModel = function(options) {
 	this.initialize.apply(this,arguments);
 };
@@ -39,6 +56,7 @@ JULY.CommitCollection = Backbone.Collection.extend({
 		this.limit = options.limit || 20;
 		this.offset = options.offset || 0;
 		this.total = 0;
+		this.hasMore = false;
 	},
 	
 	params: function() {
@@ -51,6 +69,7 @@ JULY.CommitCollection = Backbone.Collection.extend({
 	parse: function(resp) {
 		this.total = resp.meta.total_count;
 		this.offset = resp.meta.offset + this.limit;
+		this.hasMore = this.total > this.models.length;
 		return resp.objects;
 	}
 	
@@ -62,8 +81,10 @@ JULY.CommitsView = JULY.ViewModel.extend({
 		this.c = new JULY.CommitCollection(null, options);
 		this.c.fetch({add: true});
 		this.commits = kb.collectionObservable(this.c);
-		this.hasMore = ko.computed(function() {
-			return this.c.length < this.c.total}, this);
+	},
+	
+	hasMore: function() {
+		return this.commits.collection().hasMore;
 	},
 	
 	scrolled: function(data, event) {
@@ -74,7 +95,9 @@ JULY.CommitsView = JULY.ViewModel.extend({
     },
 	
 	fetch: function(){
-		this.commits.collection().fetch({add:true});
+		if (this.hasMore()) {
+			this.commits.collection().fetch({add:true});
+		}
 	}
 });
 
