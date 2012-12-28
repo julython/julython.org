@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import urlparse
+import requests
 
 from django.core.urlresolvers import reverse
 from django import http
@@ -116,6 +117,23 @@ class PostCallbackHandler(View, JSONMixin):
         payload = request.POST.get('payload')
         return payload
     
+    def _publish_commits(self, commits):
+        """Publish the commits to the real time channel."""
+        host = self.request.META.get('HTTP_HOST', 'localhost:8000')
+        url = 'http://%s/events/pub/' % host
+        for commit in commits:
+            try:
+                resource = CommitResource()
+                bundle = resource.build_bundle(obj=commit)
+                dehydrated = resource.full_dehydrate(bundle)
+                serialized = resource.serialize(
+                    None, dehydrated, format='application/json')
+                if commit.user:
+                    requests.post(url + 'user:%s' % commit.user.id, serialized)
+                requests.post(url + 'project:%s' % commit.project.id, serialized)
+                requests.post(url + 'global', serialized)
+            except:
+                logging.exception("Error publishing message")
     
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
@@ -146,6 +164,8 @@ class PostCallbackHandler(View, JSONMixin):
             total_commits += cmts
         
         status = 201 if len(total_commits) else 200
+        
+        self._publish_commits(total_commits)
         
         return self.respond_json({'commits': [c.hash for c in total_commits]}, status=status)
         
