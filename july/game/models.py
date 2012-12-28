@@ -18,7 +18,8 @@ SELECT july_user.location_id AS slug,
     WHERE game_player.user_id = july_user.id
     AND july_user.location_id = people_location.slug 
     AND game_player.game_id = %s
-    GROUP BY july_user.location_id 
+    {where_clause}
+    GROUP BY july_user.location_id
     ORDER BY total DESC
     LIMIT 50;
 """
@@ -32,6 +33,7 @@ SELECT july_user.team_id AS slug,
     WHERE game_player.user_id = july_user.id
     AND july_user.team_id = people_team.slug 
     AND game_player.game_id = %s
+    {where_clause}
     GROUP BY july_user.team_id 
     ORDER BY total DESC
     LIMIT 50;
@@ -63,12 +65,12 @@ class Game(models.Model):
     @property
     def locations(self):
         """Preform a raw query to mimic a real model."""
-        return Location.objects.raw(LOCATION_SQL, [self.pk])
+        return Location.objects.raw(LOCATION_SQL.format(where_clause=''), [self.pk])
 
     @property
     def teams(self):
         """Preform a raw query to mimic a real model."""
-        return Team.objects.raw(TEAM_SQL, [self.pk])
+        return Team.objects.raw(TEAM_SQL.format(where_clause=''), [self.pk])
     
     @classmethod
     def active(cls, now=None):

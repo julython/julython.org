@@ -216,6 +216,9 @@ class Group(models.Model):
 
     def members_by_points(self):
         raise NotImplementedError("members_by_points must be implemented by the subclass!")
+
+    def total_points(self):
+        raise NotImplementedError("total_points must be implemented by the subclass!")
     
     @classmethod
     def create(cls, name):
@@ -231,6 +234,15 @@ class Location(Group):
         latest = Game.objects.latest()
         return latest.players.filter(location=self).order_by('-player__points')
 
+    def total_points(self):
+        from july.game.models import Game, LOCATION_SQL
+        latest = Game.objects.latest()
+        where_clause = "AND july_user.location_id = '{id}'".format(id=self.pk)
+        l = Location.objects.raw( LOCATION_SQL.format(where_clause=where_clause), [latest.pk] )
+        if len(list(l)) != 0:
+            return l[0].total
+        return "0"
+
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('member-list', kwargs={'location_slug': self.slug})
@@ -243,6 +255,15 @@ class Team(Group):
         from july.game.models import Game
         latest = Game.objects.latest()
         return latest.players.filter(team=self).order_by('-player__points')
+
+    def total_points(self):
+        from july.game.models import Game, TEAM_SQL
+        latest = Game.objects.latest()
+        where_clause = "AND july_user.location_id = '{id}'".format(id=self.pk)
+        l = Location.objects.raw( TEAM_SQL.format(where_clause=where_clause), [latest.pk] )
+        if len(list(l)) != 0:
+            return l[0].total
+        return "0"
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
