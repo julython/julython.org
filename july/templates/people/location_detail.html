@@ -25,7 +25,7 @@
           </div>
             <h4>Players</h4>
             <ul>
-              {% for user in location.location_members.all %}
+              {% for user in location.members_by_points %}
                 <li>
                   <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
                     {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}

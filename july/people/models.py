@@ -213,6 +213,9 @@ class Group(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def members_by_points(self):
+        raise NotImplementedError("members_by_points must be implemented by the subclass!")
     
     @classmethod
     def create(cls, name):
@@ -223,6 +226,11 @@ class Group(models.Model):
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""
 
+    def members_by_points(self):
+        from july.game.models import Game
+        latest = Game.objects.latest()
+        return latest.players.filter(location=self).order_by('-player__points')
+
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('member-list', kwargs={'location_slug': self.slug})
@@ -230,6 +238,11 @@ class Location(Group):
 
 class Team(Group):
     """Simple model for holding point totals and projects for a Team"""
+
+    def members_by_points(self):
+        from july.game.models import Game
+        latest = Game.objects.latest()
+        return latest.players.filter(team=self).order_by('-player__points')
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
