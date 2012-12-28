@@ -259,8 +259,9 @@ class Team(Group):
     def total_points(self):
         from july.game.models import Game, TEAM_SQL
         latest = Game.objects.latest()
-        where_clause = "AND july_user.location_id = '{id}'".format(id=self.pk)
+        where_clause = "AND july_user.team_id = '{id}'".format(id=self.pk)
         l = Location.objects.raw( TEAM_SQL.format(where_clause=where_clause), [latest.pk] )
+        print TEAM_SQL.format(where_clause=where_clause)
         if len(list(l)) != 0:
             return l[0].total
         return "0"
