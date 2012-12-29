@@ -13,12 +13,12 @@ class GameMixin(object):
         year = int(self.kwargs.get('year', 0))
         month = int(self.kwargs.get('month', 0))
         if not year:
-            game = Game.objects.latest()
+            game = Game.active()           
         else:
             date = datetime.datetime(year=year, month=month, day=15)
             game = Game.active(now=date)
         if game is None:
-            raise Http404
+            game = Game.objects.latest()
         return game
         
 

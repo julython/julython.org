@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
+from django.db.models.aggregates import Sum
 
 
 class Commit(models.Model):
@@ -231,17 +232,16 @@ class Location(Group):
 
     def members_by_points(self):
         from july.game.models import Game
-        latest = Game.objects.latest()
+        latest = Game.active_or_latest()
         return latest.players.filter(location=self).order_by('-player__points')
 
     def total_points(self):
-        from july.game.models import Game, LOCATION_SQL
-        latest = Game.objects.latest()
-        where_clause = "AND july_user.location_id = '{id}'".format(id=self.pk)
-        l = Location.objects.raw( LOCATION_SQL.format(where_clause=where_clause), [latest.pk] )
-        if len(list(l)) != 0:
-            return l[0].total
-        return "0"
+        from july.game.models import Game, Player
+        latest = Game.active_or_latest()
+        query = Player.objects.filter(user__location=self, game=latest)
+        total = query.aggregate(Sum('points'))
+        points = total.get('points__sum')
+        return points or 0
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
@@ -253,18 +253,17 @@ class Team(Group):
 
     def members_by_points(self):
         from july.game.models import Game
-        latest = Game.objects.latest()
+        latest = Game.active_or_latest()
         return latest.players.filter(team=self).order_by('-player__points')
 
     def total_points(self):
-        from july.game.models import Game, TEAM_SQL
-        latest = Game.objects.latest()
-        where_clause = "AND july_user.team_id = '{id}'".format(id=self.pk)
-        l = Location.objects.raw( TEAM_SQL.format(where_clause=where_clause), [latest.pk] )
-        print TEAM_SQL.format(where_clause=where_clause)
-        if len(list(l)) != 0:
-            return l[0].total
-        return "0"
+        from july.game.models import Game, Player
+        latest = Game.active_or_latest()
+        query = Player.objects.filter(user__team=self, game=latest)
+        total = query.aggregate(Sum('points'))
+        points = total.get('points__sum')
+        return points or 0
+
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse

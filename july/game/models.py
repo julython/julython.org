@@ -13,12 +13,11 @@ import logging
 LOCATION_SQL = """\
 SELECT july_user.location_id AS slug,
     people_location.name AS name,
-    sum(game_player.points) AS total 
+    SUM(game_player.points) AS total 
     FROM game_player, july_user, people_location 
     WHERE game_player.user_id = july_user.id
     AND july_user.location_id = people_location.slug 
     AND game_player.game_id = %s
-    {where_clause}
     GROUP BY july_user.location_id
     ORDER BY total DESC
     LIMIT 50;
@@ -28,12 +27,11 @@ SELECT july_user.location_id AS slug,
 TEAM_SQL = """\
 SELECT july_user.team_id AS slug,
     people_team.name AS name,
-    sum(game_player.points) AS total 
+    SUM(game_player.points) AS total 
     FROM game_player, july_user, people_team 
     WHERE game_player.user_id = july_user.id
     AND july_user.team_id = people_team.slug 
     AND game_player.game_id = %s
-    {where_clause}
     GROUP BY july_user.team_id 
     ORDER BY total DESC
     LIMIT 50;
@@ -65,12 +63,12 @@ class Game(models.Model):
     @property
     def locations(self):
         """Preform a raw query to mimic a real model."""
-        return Location.objects.raw(LOCATION_SQL.format(where_clause=''), [self.pk])
+        return Location.objects.raw(LOCATION_SQL, [self.pk])
 
     @property
     def teams(self):
         """Preform a raw query to mimic a real model."""
-        return Team.objects.raw(TEAM_SQL.format(where_clause=''), [self.pk])
+        return Team.objects.raw(TEAM_SQL, [self.pk])
     
     @classmethod
     def active(cls, now=None):
@@ -81,6 +79,14 @@ class Game(models.Model):
             return cls.objects.get(start__lte=now, end__gte=now)
         except cls.DoesNotExist:
             return None
+    
+    @classmethod
+    def active_or_latest(cls):
+        """Return the an active game or the latest one."""
+        game = cls.active()
+        if game is None:
+            game = cls.objects.latest()
+        return game
     
     def add_commit(self, commit, from_orphan=False):
         """
