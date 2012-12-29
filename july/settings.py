@@ -1,16 +1,18 @@
 import os
 
+# Default settings that can be overwritten in secrets
+DATABASE_ENGINE = 'django.db.backends.sqlite3'
+DATABASE_NAME = 'julython.db'
+DATABASE_PASSWORD = ''
+DATABASE_SERVER = ''
+DATABASE_USER = ''
+
 try:
     DEBUG = False
     from secrets import *
 except ImportError:
     DEBUG = True
     SECRET_KEY = 'foobar'
-    DATABASE_ENGINE = 'django.db.backends.sqlite3'
-    DATABASE_NAME = 'julython.db'
-    DATABASE_PASSWORD = ''
-    DATABASE_SERVER = ''
-    DATABASE_USER = ''
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -202,11 +204,19 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
-        }
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'simple',
+            'maxBytes': 1024000,
+            'backupCount': 3,
+            'filename': os.path.expanduser('~/julython.log')
+        },
     },
     'loggers': {
         '': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'propagate': True,
             'level': 'INFO',
         },
