@@ -89,7 +89,7 @@ class PlayerCommitsCollection(View, JSONMixin):
 
 class PostCallbackHandler(View, JSONMixin):
 
-    def parse_commits(self, commits):
+    def parse_commits(self, commits, project):
         """
         Takes a list of raw commit data and returns a dict of::
             
@@ -97,7 +97,7 @@ class PostCallbackHandler(View, JSONMixin):
         
         """
         commit_dict = defaultdict(list)
-        for k, v in [self._parse_commit(data) for data in commits]:
+        for k, v in [self._parse_commit(data, project) for data in commits]:
             # Did we not actual parse a commit?
             if v is None:
                 continue
@@ -109,7 +109,7 @@ class PostCallbackHandler(View, JSONMixin):
         """Parse a repository."""
         raise NotImplementedError("Subclasses must define this")
     
-    def _parse_commit(self, commit):
+    def _parse_commit(self, commit, project):
         """Parse a single commit."""
         raise NotImplementedError("Subclasses must define this")
     
@@ -159,7 +159,7 @@ class PostCallbackHandler(View, JSONMixin):
         repo = self._parse_repo(data)
         project, _ = Project.create(**repo)
         
-        commit_dict = self.parse_commits(commit_data)
+        commit_dict = self.parse_commits(commit_data, project)
         total_commits = []
         for email, commits in commit_dict.iteritems():
             # TODO: run this in a task queue?
@@ -266,7 +266,7 @@ class BitbucketHandler(PostCallbackHandler):
             return m.group(1)
         return ''
         
-    def _parse_commit(self, data):
+    def _parse_commit(self, data, project):
         """Parse a single commit.
         
         Example::
@@ -298,6 +298,8 @@ class BitbucketHandler(PostCallbackHandler):
         
         email = self._parse_email(data.get('raw_author'))
         
+        url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
+        
         commit_data = {
             'hash': data['raw_node'],
             'email': email,
@@ -305,7 +307,7 @@ class BitbucketHandler(PostCallbackHandler):
             'name': data.get('author'),
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
-            'url': data.get('url', ''),
+            'url': data.get('url', url),
         }
         return email, commit_data
 
@@ -371,7 +373,7 @@ class GithubHandler(PostCallbackHandler):
         }
     
     
-    def _parse_commit(self, data):
+    def _parse_commit(self, data, project):
         """Return a tuple of (email, dict) to simplify commit creation.
         
         Raw commit data::

@@ -1,6 +1,7 @@
 
 import datetime
 import json
+from pytz import UTC
 
 from django.test.client import Client
 from django.test import TestCase
@@ -23,8 +24,8 @@ class SCMTestMixin(object):
     PROJECT_URL = ""
     USER = "bobby"
     POST = ""
-    START = datetime.datetime(year=2012, month=12, day=1)
-    END = datetime.datetime(year=2012, month=12, day=21) # End of time itself
+    START = datetime.datetime(year=2012, month=12, day=1, tzinfo=UTC)
+    END = datetime.datetime(year=2012, month=12, day=21, tzinfo=UTC) # End of time itself
     
     def setUp(self):
         self.user = self.make_user(self.USER)
