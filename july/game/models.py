@@ -1,10 +1,9 @@
 
-import datetime
-
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from july.people.models import Project, Location, Team, Commit
 import logging
@@ -74,7 +73,7 @@ class Game(models.Model):
     def active(cls, now=None):
         """Returns the active game or None."""
         if now is None:
-            now = datetime.datetime.now()
+            now = timezone.now()
         try:
             return cls.objects.get(start__lte=now, end__gte=now)
         except cls.DoesNotExist:
