@@ -8,6 +8,7 @@ import requests
 
 from django.core.urlresolvers import reverse
 from django import http
+from django.template.defaultfilters import date
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 from iso8601 import parse_date
@@ -67,6 +68,8 @@ class CommitResource(ModelResource):
         bundle.data['project_name'] = bundle.obj.project.name
         bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
         bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
+        # Format the date properly using django template filter
+        bundle.data['timestamp'] = date(bundle.obj.timestamp, 'c')
         bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', gravatar)
         return bundle
 
