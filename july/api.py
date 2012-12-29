@@ -132,8 +132,8 @@ class PostCallbackHandler(View, JSONMixin):
                 serialized = resource.serialize(
                     None, dehydrated, format='application/json')
                 if commit.user:
-                    requests.post(url + 'user:%s' % commit.user.id, serialized)
-                requests.post(url + 'project:%s' % commit.project.id, serialized)
+                    requests.post(url + 'user-%s' % commit.user.id, serialized)
+                requests.post(url + 'project-%s' % commit.project.id, serialized)
                 requests.post(url + 'global', serialized)
             except:
                 logging.exception("Error publishing message")
