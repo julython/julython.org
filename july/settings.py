@@ -14,6 +14,12 @@ except ImportError:
     DEBUG = True
     SECRET_KEY = 'foobar'
 
+if DEBUG:
+    import warnings
+    warnings.filterwarnings(
+            'error', r"DateTimeField received a naive datetime",
+            RuntimeWarning, r'django\.db\.models\.fields')
+
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 TEMPLATE_DEBUG = DEBUG
