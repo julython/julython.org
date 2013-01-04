@@ -17,7 +17,7 @@ Why only 31 days? Why not all year? Well, for one we all have lives
 and jobs which get in the way. Having a month set aside where we 
 all get together and write code will allow us to rely on each other
 to keep us on track towards our goals. There will also be a little
-bit of healthy competition and public flogging to encourge everyone
+bit of healthy competition and public flogging to encourage everyone
 to finish.
 
 Goals
@@ -27,9 +27,9 @@ Since it is very hard to quantify code we have come up with a
 simple metric to decide the 'winners' of the competition. The goal
 is to commit at least once a day for the entire month. If you are 
 working on the next twitter or Instagram you don't have to give your
-code away. Your commits could be just to a local git or mecurial
+code away. Your commits could be just to a local git or mercurial
 repository on your machine. Since there are no real prizes you will
-only be cheating yourself by commiting 30 days of lorem ipsum.
+only be cheating yourself by committing 30 days of lorem ipsum.
 
 For those on the leader board though you will have to push your
 commits to a public repository which everyone will clearly be able
@@ -47,7 +47,7 @@ Hacking
 -------
 
 The site is written in Django and hosted on Rackspace. To install the dev
-environment. Fork this repo and create a virtualenv then install alll the 
+environment. Fork this repo and create a virtualenv then install all the
 requirements::
 
     $ pip install -r requirements.txt
