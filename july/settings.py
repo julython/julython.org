@@ -6,6 +6,7 @@ DATABASE_NAME = 'julython.db'
 DATABASE_PASSWORD = ''
 DATABASE_SERVER = ''
 DATABASE_USER = ''
+LOGFILE_PATH = os.path.expanduser('~/julython.log')
 
 try:
     DEBUG = False
@@ -215,9 +216,9 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'simple',
-            'maxBytes': 1024000,
+            'maxBytes': 100000000,
             'backupCount': 3,
-            'filename': os.path.expanduser('~/julython.log')
+            'filename': LOGFILE_PATH,
         },
     },
     'loggers': {
