@@ -1,79 +1,23 @@
 import json
 
-#from google.appengine.ext import ndb
-#from google.appengine.api import memcache
-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from django.template import Context
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
-from django.contrib.auth.models import User
-
-#from july.people.models import Accumulator, Location, Project, Team
-#from google.appengine.api import channel
-#from july.live.models import Message#, Connection
-#from july.api import to_dict
+from july.game.models import Game
 
 
 def index(request):
     """Render the home page"""
-    
-    # For now we are just using hard coded sections
-    #sections = cache.get('front_page')
-    #if sections is None:
-    #    sections = Section.all().order('order').fetch(10)
-    #    cache.set('front_page', sections, 120)
-    
-    stats = []
-    total = 0
-    people = []
-    locations = []
-    projects = []
-    teams = []
-    messages = []
-    token = ''
-    
-    # this is only shown on authenticated page loads
-    # to save on the overhead. 
-    if False:
-        stats = Accumulator.get_histogram('global')
-        total = sum(stats)
-        location_future = Location.query().order(-Location.total).fetch_async(15)
-        #people_future = User.query().order(-ndb.GenericProperty('total')).fetch_async(10)
-        project_future = Project.query().order(-Project.total).fetch_async(10)
-        team_future = Team.query().order(-Team.total).fetch_async(15)
-        message_future = Message.query().order(-Message.timestamp).fetch_async(30)
-        
-        # Julython live stuffs
-        #token_key = 'live_token:%s' % request.user.username
-        #token = memcache.get(token_key)
-        #if token is None:
-            #token = channel.create_channel(request.user.username)
-            #memcache.set(token_key, token, time=7000)
-
-        
-        locations = location_future.get_result()
-        people = people_future.get_result()
-        projects = project_future.get_result()
-        teams = team_future.get_result()
-        message_models = message_future.get_result()
-        
-        m_list = [to_dict(m) for m in message_models]
-        m_list.reverse()
-        messages = json.dumps(m_list)
+    game = Game.active_or_latest()
+    stats = game.histogram
     
     ctx = Context({
-        'sections': [],
-        'people': people,
-        'projects': projects,
-        'locations': locations,
-        'teams': teams,
         'stats': json.dumps(stats),
-        'total': total,
-        'token': token,
-        'messages': messages,
+        'game': game,
+        'total': sum(stats),
         'user': request.user,
         'MEDIA_URL': settings.MEDIA_URL,
         'STATIC_URL': settings.STATIC_URL})
