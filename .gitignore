@@ -9,9 +9,7 @@ build/
 .venv
 assets/node_modules
 july/static_root/css
-july/static/css
 july/static_root/js
-july/static/js
 assets/_specrunner.html
 julython.db
 .idea/
