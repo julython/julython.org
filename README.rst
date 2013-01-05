@@ -52,6 +52,13 @@ requirements::
 
     $ pip install -r requirements.txt
 
+Database
+++++++++
+
+We're using MySQL in production. If you don't have MySQL locally and just 
+want to use SQLite, then edit requirements.txt and comment out 
+`MySQL-Python` before pip installing.
+
 Media
 ++++++
 
