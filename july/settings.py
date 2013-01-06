@@ -1,6 +1,8 @@
 import os
 
 # Default settings that can be overwritten in secrets
+DEBUG = True
+SECRET_KEY = 'foobar'
 DATABASE_ENGINE = 'django.db.backends.sqlite3'
 DATABASE_NAME = 'julython.db'
 DATABASE_PASSWORD = ''
@@ -13,7 +15,6 @@ try:
     from secrets import *
 except ImportError:
     DEBUG = True
-    SECRET_KEY = 'foobar'
 
 if DEBUG:
     import warnings
