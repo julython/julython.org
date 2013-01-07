@@ -50,14 +50,27 @@ The site is written in Django and hosted on Rackspace. To install the dev
 environment. Fork this repo and create a virtualenv then install all the
 requirements::
 
-    $ pip install -r requirements.txt
+    $ pip install -r requirements-dev.txt
 
 Database
 ++++++++
 
-We're using MySQL in production. If you don't have MySQL locally and just 
-want to use SQLite, then edit requirements.txt and comment out 
-`MySQL-Python` before pip installing.
+Create an initial database with some dummy data::
+
+	$ cp july/secrets.py.template july/secrets.py
+	$ python manage.py syncdb
+	$ python manage.py migrate
+	$ python manage.py loaddata july/fixtures/development.json
+
+Run the server and verify you can login with the admin user ``username=admin``
+``password=password``::
+
+	$ python manage.py runserver
+
+While the server is running you can test the webhook and create dummy commits
+with the command::
+
+	$ fab load:admin@example.com
 
 Media
 ++++++
@@ -80,14 +93,16 @@ Authentication
 
 In order to set up Twitter authentication:
 
-1. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
-2. Ensure you have set a Callback URL for your twitter app. This can be
+#. `Register an application with Twitter <https://dev.twitter.com/apps/new>`_
+#. Ensure you have set a Callback URL for your twitter app. This can be
    any valid URL, such as your blog URL. Without this setting your twitter
    app will be locked in 'desktop' mode and you will be unable to
    authenticate.
-3. ``cp july/secrets.py.template july/secrets.py``
-4. Open ``july/secrets.py`` and add the consumer key and secret provided
+#. Open ``july/secrets.py`` and add the consumer key and secret provided
    by Twitter for your app.
+
+Translations
+------------
 
 In order to maintain internationalization (i18n) support, please try
 to make sure and run the following command after changing any translated text:
