@@ -13,3 +13,4 @@ july/static_root/js
 assets/_specrunner.html
 julython.db
 .idea/
+npm-debug.log
