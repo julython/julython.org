@@ -45,7 +45,14 @@ def maintenance(request):
     
     return render_to_response('maintenance.html', context_instance=ctx)
 
-def warmup(request):
-    """Fire up the servers!"""
-    from django.http import HttpResponse
-    return HttpResponse('OK')
+def live(request):
+    """Render the live view."""
+    game = Game.active_or_latest()
+    
+    ctx = Context({
+        'game': game,
+        'user': request.user,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'STATIC_URL': settings.STATIC_URL})
+    
+    return render_to_response('live/index.html', context_instance=ctx)

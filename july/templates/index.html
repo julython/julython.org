@@ -159,7 +159,7 @@
               </div>
             </div>
             <div class="span4">
-              <h2 class="participating"><a href="">{% trans "What's Happening?" %}</a></h2>
+              <h2 class="participating"><a href="{% url 'julython-live' %}">{% trans "What's Happening?" %}</a></h2>
               <ul class="message-list" id="live-messages" data-bind="foreach: commits, event: {scroll: scrolled}">
               	<li class="message">
               		<div class="media">
@@ -213,10 +213,8 @@
 {% endblock %}
 
 {% block javascript %}
-    {{ block.super }}
-    <script type="text/javascript" src="http://live.julython.org/_ah/channel/jsapi"></script>
+{{ block.super }}
 <script type="text/javascript">
-  $(document).ready(function(){
     // navigation bar
     var nav = new Nav("#navigation", $("#topnav").height());
     nav.setup();
@@ -232,13 +230,6 @@
     
     var view = new JULY.CommitsView();
 	JULY.applyBindings(view, '#live-messages');
-    //var channel = new julython.Channel($("#live-messages"), "{{ token }}", {
-      //  maxMessages: 30,
-      //  totalEl: "#commit-total",
-     //   total: {{ total }}
-    //});
-    //channel.prepopulate("{{ messages|safe|addslashes }}");
-  });
 </script>
 {% endblock %}
 

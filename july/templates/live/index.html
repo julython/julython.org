@@ -3,40 +3,40 @@
 {% load i18n %}
 
 {% block content %}
-    <div class="container">
-      <div class="row">
-        <div class="span12">
-          <h1 id="logo">{% trans "Julython" %} {% now "Y" %}</h1>
+    <div id="live" class="container section-container no-border"  data-bind="pageBottom: fetch">
+        <div class="row">
+            <div class="span12">
+              <h2 class="participating">{% trans "What's Happening?" %}</h2>
+              <ul class="message-list" data-bind="foreach: commits">
+              	<li class="message">
+              		<div class="media">
+              		  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
+		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
+	            	  </a>
+	            	  <div class="media-body">
+	            	  	<h4 class="media-heading"><span data-bind="timeago: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
+	            		<strong data-bind="text: message().substring(0, 100)"></strong>
+	            		<p class="hash">
+	                      	<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
+	                      	<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash().substring(0, 8)"></span></a>
+	                      	<span data-bind="visible: !url(), text: hash().substring(0, 8)"></span>
+	                      </p>
+	              	  </div>
+              		</div>
+				</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="container section-container no-border">
-      <div class="row">
-          <div class="span8 offset2">
-              <h2 class="participating">{% blocktrans %}You are all doing awesome! <span id="commit-total">{{ total }}</span> commits so far!{% endblocktrans %}</h2>
-              <ul class="message-list" id="live">
-                  <li>Live Feed Disabled</li>
-              </ul>
-          </div>
-      </div>
-      </div>
-   </div>
+    </div>
 {% endblock %}
 
 {% block javascript %}
-    {{ block.super }}
-    {% comment %}
-    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/channel-v4.js"></script>
-    <script type="text/javascript">
-      $(document).ready(function(){
-        var channel = new julython.Channel($("#live"), "{{ token }}", {
-            maxMessages: 300,
-            totalEl: "#commit-total",
-            total: {{ total }}
-        });
-        channel.prepopulate("{{ messages|safe|addslashes }}");
-      });
-    </script>
-    {% endcomment %}
+  {{ block.super }}
+  <script type="text/javascript">
+    
+    var view = new JULY.CommitsView();
+	JULY.applyBindings(view, '#live');
+</script>
 {% endblock %}
