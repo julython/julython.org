@@ -22,6 +22,7 @@ from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
 
+
 class UserResource(ModelResource):
     
     class Meta:
@@ -128,6 +129,8 @@ class PostCallbackHandler(View, JSONMixin):
             try:
                 resource = CommitResource()
                 bundle = resource.build_bundle(obj=commit)
+                # Make the timestamp a date object (again?)
+                bundle.obj.timestamp = parse_date(bundle.obj.timestamp)
                 dehydrated = resource.full_dehydrate(bundle)
                 serialized = resource.serialize(
                     None, dehydrated, format='application/json')
