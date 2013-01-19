@@ -40,3 +40,10 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_javascript %}
+<script>
+  var profile = new JULY.ProfileView();
+  JULY.applyBindings(profile, "#contents")
+</script>
+{% endblock %}

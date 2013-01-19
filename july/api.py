@@ -17,7 +17,7 @@ from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie import fields
 
-from july.people.models import Commit, Project
+from july.people.models import Commit, Project, Location, Team
 from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
@@ -39,6 +39,26 @@ class ProjectResource(ModelResource):
             'user': ALL_WITH_RELATIONS,
             'locations': ALL,
             'teams': ALL 
+        }
+
+
+class LocationResource(ModelResource):
+    
+    class Meta:
+        queryset = Location.objects.all()
+        allowed_methods = ['get']
+        filtering = {
+            'name': ['istartswith', 'exact'],
+        }
+
+
+class TeamResource(ModelResource):
+    
+    class Meta:
+        queryset = Team.objects.all()
+        allowed_methods = ['get']
+        filtering = {
+            'name': ['istartswith', 'exact'],
         }
 
 

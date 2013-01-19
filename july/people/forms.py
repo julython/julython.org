@@ -69,12 +69,18 @@ class EditUserForm(forms.Form):
 
     location = forms.CharField(
         label=ugettext_lazy('Location'),
-        max_length=160, required=False)
+        max_length=160, required=False,
+        widget=forms.TextInput(attrs={
+            'data-bind':'typeahead: $data.filterLocation'
+    }))
 
     team = forms.CharField(
         label=ugettext_lazy('Team'),
-        max_length=160, required=False)
-
+        max_length=160, required=False,
+        widget=forms.TextInput(attrs={
+            'data-bind':'typeahead: $data.filterTeam'
+    }))
+    
     email = forms.EmailField(
         label=ugettext_lazy("Add Email Address"), required=False)
 
