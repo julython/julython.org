@@ -48,7 +48,7 @@ class LocationResource(ModelResource):
         queryset = Location.objects.all()
         allowed_methods = ['get']
         filtering = {
-            'name': ['istartswith', 'exact'],
+            'name': ['istartswith', 'exact', 'icontains'],
         }
 
 
@@ -58,7 +58,7 @@ class TeamResource(ModelResource):
         queryset = Team.objects.all()
         allowed_methods = ['get']
         filtering = {
-            'name': ['istartswith', 'exact'],
+            'name': ['istartswith', 'exact', 'icontains'],
         }
 
 

@@ -23,7 +23,7 @@ JULY.GroupCollection = Backbone.Collection.extend({
       offset: this.offset
     };
     if (this.query) {
-      p['name__istartswith'] = this.query;
+      p['name__icontains'] = this.query;
     }
     return jQuery.param(p);
   },
