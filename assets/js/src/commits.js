@@ -1,54 +1,5 @@
 var JULY = JULY || {};
 
-ko.bindingHandlers.pageBottom={
-  init:function(e,t,n,r){
-    var i=t(),s=n(),o=s.callbackThreshold||1e3,u=s.callbackInterval||500;
-    if(typeof i!="function")throw new Error("The value of the pageBottom binding must be a function");
-    i = $.proxy(i,r);
-    var a=$(document),f=$(window);
-    setInterval(function () {
-      if (a.height() - f.height() - f.scrollTop() < o) {
-        i();
-      }
-    },u);
-  }
-};
-
-ko.bindingHandlers.timeago = {
-    init: function(element, valueAccessor, allBindingsAccessor) {
-        // First get the latest data that we're bound to
-        var value = valueAccessor();
-        allBindingsAccessor();
-
-        // Next, whether or not the supplied model property is observable,
-        // get its current value
-        var valueUnwrapped = ko.utils.unwrapObservable(value);
-
-        // set the title attribute to the value passed
-        $(element).attr('title', valueUnwrapped);
-
-        // apply timeago to change the text of the element
-        $(element).timeago();
-    }
-};
-
-JULY.ViewModel = function(options) {
-  this.initialize.apply(this,arguments);
-};
-_.extend(JULY.ViewModel.prototype,{
-  initialize: function() {}
-});
-JULY.ViewModel.extend=Backbone.View.extend;
-
-JULY.applyBindings = function(e,t) {
-  var n=$(t);
-  if (n.length > 0) {
-    ko.applyBindings(e,n[0]);
-  } else {
-    console.log('Binding error:  no elements found for "'+t+'"');
-  }
-};
-
 JULY.Commit = Backbone.Model.extend({
   // Commit model
   url: '/api/v1/commit/'
