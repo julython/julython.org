@@ -81,12 +81,16 @@ class EditUserForm(forms.Form):
             'data-bind':'typeahead: $data.filterTeam'
     }))
     
+    gittip = forms.CharField(
+        label=ugettext_lazy("Gittip Username"), required=False)
+    
     email = forms.EmailField(
         label=ugettext_lazy("Add Email Address"), required=False)
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.emails = set([])
+        self._gittip = None
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
             self.fields['first_name'].initial=self.user.first_name
@@ -100,12 +104,15 @@ class EditUserForm(forms.Form):
             # initialize the emails
             for auth in self.user.social_auth.filter(provider="email"):
                 self.emails.add(auth.uid)
+            self._gittip = self.user.get_provider("gittip")
+            if self._gittip:
+                self.fields['gittip'].initial = self._gittip.uid
 
     def clean_location(self):
             location = self.data.get('location', '')
             try:
                 l = Location.objects.get(slug=slugify(location))
-            except Location.DoesNotExist as ex:
+            except Location.DoesNotExist:
                 l = Location.objects.create(name=location, slug=slugify(location), total=0)
             return l
 
@@ -117,6 +124,25 @@ class EditUserForm(forms.Form):
             t = Team.objects.create(slug=slugify(team), name=team, total=0)
         return t
 
+    def clean_gittip(self):
+        uid = self.cleaned_data['gittip']
+        if not uid:
+            return None
+        if self._gittip is not None:
+            self._gittip.uid = uid
+            self._gittip.save()
+            return uid
+        else:
+            try:
+                self.user.add_auth_id('gittip:%s' % uid)
+            except:
+                error_msg = ugettext_lazy(
+                    "This gittip username is already in use, if this is not"
+                    " right please email help@julython.org"
+                )
+                raise forms.ValidationError(error_msg)
+        return uid
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:

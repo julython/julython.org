@@ -42,6 +42,25 @@ class User(AbstractUser):
         provider, uid = auth_str.split(':')
         UserSocialAuth.create_social_auth(self, uid, provider)
     
+    def get_provider(self, provider):
+        """Return the uid of the provider or None if not set."""
+        try:
+            return self.social_auth.filter(provider=provider).get()
+        except UserSocialAuth.DoesNotExist:
+            return None
+    
+    @property
+    def gittip(self):
+        return self.get_provider('gittip')
+    
+    @property
+    def twitter(self):
+        return self.get_provider('twitter')
+    
+    @property
+    def github(self):
+        return self.get_provider('github')
+    
     @classmethod
     def get_by_auth_id(cls, auth_str):
         """

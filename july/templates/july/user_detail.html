@@ -16,7 +16,7 @@
             		<div class="media-body">
             			<h2 class="media-heading">{{ profile }}
                             {% if profile.twitter %}
-                                <a href="https://twitter.com/{{ profile.twitter }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
+                                <a href="https://twitter.com/{{ profile.twitter.uid }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">{% trans "Follow" %}</a>
                                 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
                             {% endif %}
                             <small class="points pull-right">
@@ -26,7 +26,7 @@
             			<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
             			<ul class="nav nav-pills">
                             {% if profile.github %}
-                            <li><i class="icon-globe"></i> <a href="http://github.com/{{ profile.github }}">{% trans "Follow on Github" %}</a></li>
+                            <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
                             {% endif %}
                             {% if profile.url %}
                             <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
@@ -37,6 +37,9 @@
                             {% if profile.team %}
                             <li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
                             {% endif %}
+                            {% if profile.gittip %}
+                            <iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
+ 							{% endif %}                       
                         </ul>
             		</div>
             		<ul class="nav nav-tabs">
