@@ -48,7 +48,7 @@ def edit_profile(request, username, template_name='people/edit.html'):
 
     if form.is_valid():
         for key, value in form.cleaned_data.iteritems():
-            if key == 'email':
+            if key in ['email', 'gittip']:
                 # Don't save the email to the profile
                 continue
             if key == 'team':

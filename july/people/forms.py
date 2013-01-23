@@ -127,6 +127,8 @@ class EditUserForm(forms.Form):
     def clean_gittip(self):
         uid = self.cleaned_data['gittip']
         if not uid:
+            if self._gittip is not None:
+                self._gittip.delete()
             return None
         if self._gittip is not None:
             self._gittip.uid = uid
