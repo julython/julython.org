@@ -21,7 +21,7 @@ bit of healthy competition and public flogging to encourage everyone
 to finish.
 
 Goals
------
+------
 
 Since it is very hard to quantify code we have come up with a 
 simple metric to decide the 'winners' of the competition. The goal
