@@ -12,7 +12,7 @@ class GithubBackend(github.GithubBackend):
         data = {
             USERNAME: response.get('login'),
             'email': response.get('email') or '',
-            'fullname': response['name'],
+            'fullname': response.get('name', 'Secret Agent'),
             'last_name': '',
             'url': response.get('blog', ''),
             'description': response.get('bio', ''),
@@ -20,9 +20,10 @@ class GithubBackend(github.GithubBackend):
         }
         
         try:
-            data['first_name'], data['last_name'] = response['name'].split(' ', 1)
+            names = data['fullname'].split(' ')
+            data['first_name'], data['last_name'] = names[0], names[-1]
         except:
-            data['first_name'] = response.get('name') or 'Annon'
+            data['first_name'] = data['fullname']
             
         try:
             location = response.get('location', '')
