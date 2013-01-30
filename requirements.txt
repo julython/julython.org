@@ -10,5 +10,6 @@ django-debug-toolbar
 requests
 South
 # You can comment these out if running locally with sqlite
+distribute>=0.6.28
 MySQL-python
 gunicorn
