@@ -101,7 +101,7 @@ class Game(models.Model):
             results[1] += results[0]
             results = results[1:] # trim the first day
         if len(results) == 32:
-            results[31] += results[32]
+            results[30] += results[31]
             results = results[:1] # trim the last day
         padding = [0 for day in xrange(31 - len(results))]
         results += padding
