@@ -1,13 +1,14 @@
 import json
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login as auth_login
 from django.shortcuts import render_to_response, render, redirect
 from django.template import Context
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from july.game.models import Game
-from july.forms import UserCreationForm
+from july.forms import RegistrationForm
 
 
 def index(request):
@@ -38,16 +39,17 @@ def help_view(request):
 
 def register(request):
     """Register a new user"""
-    form = UserCreationForm()
     if request.POST:
-        form = UserCreationForm(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
-            # Save user
             user = form.save(commit=False)
             user.save()
+            # To login immediately after registering
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            auth_login(request, user)
             return redirect('july.views.index')
     else:
-        form = UserCreationForm()
+        form = RegistrationForm()
 
     return render(
         request,
@@ -57,7 +59,7 @@ def register(request):
 @login_required
 def login_redirect(request):
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/%s' % request.user.id )
+        return HttpResponseRedirect('/%s' % request.user.username )
     return HttpResponseRedirect('/')
 
 

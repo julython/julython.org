@@ -14,8 +14,6 @@ from july.people.models import Location, Team, Project
 
 
 class User(AbstractUser):
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
     location = models.ForeignKey(Location, blank=True, null=True,
                                  related_name='location_members')
     team = models.ForeignKey(Team, blank=True, null=True,
