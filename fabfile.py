@@ -14,7 +14,7 @@ def test():
     """Run the test suite"""
     local("python -m unittest discover")
     with lcd('assets'):
-        local('node_modules/grunt/bin/grunt jasmine')
+        local('node_modules/grunt-cli/bin/grunt jasmine')
 
 
 @task
@@ -23,7 +23,7 @@ def load(email=None):
     if not email:
         print "You must provide an email address 'fab load:me@foo.com'"
         return
-    
+
     github = []
     bitbucket = []
     for json_file in os.listdir('data'):
@@ -31,17 +31,17 @@ def load(email=None):
             github.append(os.path.join('data', json_file))
         elif json_file.startswith('bitbucket'):
             bitbucket.append(os.path.join('data', json_file))
-    
+
     for json_file in github:
         with open(json_file) as post:
             p = Template(post.read()).substitute({'__EMAIL__': email})
-            payload = urlencode({'payload': p}) 
+            payload = urlencode({'payload': p})
             local('curl http://localhost:8000/api/v1/github -s -d %s' % payload)
-    
+
     for json_file in bitbucket:
         with open(json_file) as post:
             p = Template(post.read()).substitute({'__EMAIL__': email})
-            payload = urlencode({'payload': p}) 
+            payload = urlencode({'payload': p})
             local('curl http://localhost:8000/api/v1/bitbucket -s -d %s' % payload)
 
 
@@ -57,14 +57,14 @@ def install():
 def watch():
     """Grunt watch development files"""
     with lcd('assets'):
-        local('node_modules/grunt/bin/grunt concat less:dev watch')
+        local('node_modules/grunt-cli/bin/grunt concat less:dev watch')
 
 
 @task
 def compile():
     """Compile assets for production."""
     with lcd('assets'):
-        local('node_modules/grunt/bin/grunt less:prod min')
+        local('node_modules/grunt-cli/bin/grunt less:prod uglify')
 
 
 @task
