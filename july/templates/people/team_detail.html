@@ -12,7 +12,7 @@
             <div class="row location">
             <div class="span5">
               <a href="{% url 'teams' %}">{% trans "All teams" %}</a>
-              {% if team %}
+              {% if team %} 
               <h3>{{ team }}</h3>
               {% else %}
               <h3>{{ slug }}</h3>
@@ -27,11 +27,11 @@
             <ul>
               {% for user in team.members_by_points|slice:":100" %}
                 <li>
-                  <a href="{% url 'member-profile' user.id %}">{{ user }}</a> &mdash;
+                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
                     {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
-                    <a href="{% url 'user-projects' user.id %}">{% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
+                    <a href="{% url 'user-projects' user.username %}">{% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
                 </li>
-              {% endfor %}
+              {% endfor %}  
             </ul>
         </div>
     </div>

@@ -11,7 +11,7 @@
         <div class="span10 offset1"><br />
             <div class="row project">
             <div class="span6">
-              <a href="{% url 'projects' %}">{% trans "All projects" %}</a>
+              <a href="{% url 'projects' %}">{% trans "All projects" %}</a> 
               <h3>{{ project }}</h3>
               <p><a href="{{ project.url }}">{{ project.url }}</a></p>
             </div>
@@ -21,26 +21,26 @@
             </div>
           </div>
           <div class="row">
-            <div class="span6">
+            <div class="span6">   
             <h4>{% trans "Players" %}</h4>
             <ul>
               {% for user in project.user_set.all|slice:":100" %}
                 <li>
-                  <a href="{% url 'member-profile' user.id %}">{{ user }}</a> &mdash;
+                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
                     {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
                     {% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
                 </li>
-              {% endfor %}
+              {% endfor %}  
             </ul>
             </div>
           </div>
           <div class="row">
-            <div class="span10">
+            <div class="span10">   
             <h2 class="spread-the-word">{% trans "Commits" %}</h2>
               <div id="commits" data-bind="pageBottom: fetch">
               	<div data-bind="foreach: commits">
               		<div class="media">
-			  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">
+	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
 		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
 	            	  </a>
 	            	  <div class="media-body">

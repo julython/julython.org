@@ -10,7 +10,7 @@
         <div class="row">
             <div class="span10 offset1">
             	<div class="media">
-			<a class="thumbnail pull-left avatar" href=".">
+            		<a class="thumbnail pull-left avatar" href=".">        			
 	            		<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
             		</a>
             		<div class="media-body">
@@ -39,19 +39,19 @@
                             {% endif %}
                             {% if profile.gittip %}
                             <iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
-							{% endif %}
+ 							{% endif %}                       
                         </ul>
             		</div>
             		<ul class="nav nav-tabs">
-                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' id=profile.id %}">{% trans "Commits" %}</a></li>
-                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' id=profile.id %}">{% trans "Projects" %}</a></li>
-                            {% if profile.id == user.id %}
-                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' id=profile.id %}">{% trans "Edit Profile" %}</a></li>
+                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
+                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
+                            {% if profile.username == user.username %}
+                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
                             {% endif %}
                     </ul>
-
+            		
             	</div>
-
+            	
         </div>
     </div>
 </div>
@@ -60,7 +60,7 @@
 {% block content %}
 
 {# Used within blocktrans #}
-{% url 'edit-profile' id=user.id as edit_profile_url %}
+{% url 'edit-profile' username=user.username as edit_profile_url %}
 
 <div class="container section-container no-border">
   <div class="row">
@@ -68,12 +68,12 @@
         {% if profile.commit_set.count %}
         <div class="row">
             <div class="span10">
-
+              
               <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
               <div id="commits" data-bind="pageBottom: fetch">
               	<div data-bind="foreach: commits">
               		<div class="media">
-			  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">
+	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
 		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
 	            	  </a>
 	            	  <div class="media-body">
@@ -93,7 +93,7 @@
             </div>
         </div>
         {% else %}
-        {% if profile.id != user.id %}
+        {% if profile.username != user.username %}
         <div class="row">
             <div class="span10">
               <h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>

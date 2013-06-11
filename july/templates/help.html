@@ -7,7 +7,7 @@
 {% block content %}
 
 {# Used within blocktrans #}
-{% url 'edit-profile' username=user.id as edit_profile_url %}
+{% url 'edit-profile' username=user.username as edit_profile_url %}
 {% url 'signin' as signin_url %}
 <div class="container section-container no-border">
   <div class="row">

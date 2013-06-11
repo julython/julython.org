@@ -11,15 +11,15 @@
         <div class="span6 offset3"><br />
             <h3>{% trans "High Scores" %}</h3><hr/>
               {% for player in object_list %}
-                <div class="row">
+                <div class="row"> 
                     <div class="span5">
                       <h3>
                         <img src="{{ player.user.picture_url }}" alt="{{ player.user.first_name}} {{ player.user.last_name }}" width="50"/>
-                        <a href="{% url 'member-profile' player.user.id %}">{{ player }}</a>
+                        <a href="{% url 'member-profile' player.user.username %}">{{ player }}</a>
                       </h3>
                       <div>
-
-
+                        
+                        
                       </div>
                      </div>
                      <div class="span1">
@@ -31,7 +31,7 @@
                 </div>
 
                 <hr/>
-              {% endfor %}
+              {% endfor %}  
         </div>
     </div>
 </div>
