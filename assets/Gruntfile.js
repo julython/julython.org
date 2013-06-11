@@ -35,9 +35,9 @@ module.exports = function(grunt) {
     },
 
     // Production-mode - minify app and vendor
-    min: {
+    uglify: {
       app: {
-	    src: apps,
+        src: apps,
         dest: '../july/static/js/app.js'
       },
       vendor: {
@@ -59,7 +59,7 @@ module.exports = function(grunt) {
       prod: {
         options: {
             paths: ["assets/bootstrap/less"],
-            compress: true            
+            compress: true
         },
         files: {
             "../july/static/css/main.css": "less/layout.less"
@@ -96,6 +96,9 @@ module.exports = function(grunt) {
 
   });
 
-  grunt.loadNpmTasks('grunt-jasmine-runner');
+  grunt.loadNpmTasks('grunt-contrib-jasmine');
   grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
 };
