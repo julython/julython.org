@@ -10,7 +10,7 @@ from django.contrib.auth.models import AbstractUser
 
 from social_auth.models import UserSocialAuth
 
-from july.people.models import Location, Team, Project
+from july.people.models import Location, Team, Project, AchievedBadge
 
 
 class User(AbstractUser):
@@ -79,6 +79,13 @@ class User(AbstractUser):
     def auth_ids(self):
         auths = self.social_auth.all()
         return [':'.join([a.provider, a.uid]) for a in auths]
+
+    @property
+    def badges(self):
+        try:
+            return AchievedBadge.objects.filter(user=self)
+        except:
+            return []
 
     @property
     def points(self):

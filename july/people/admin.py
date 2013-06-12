@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from models import Team, Commit, Location, Project
+from models import Team, Commit, Location, Project, AchievedBadge, Badge
 
 admin.site.register(Commit, 
     list_display=['hash', 'email', 'timestamp', 'project', 'user'], 
@@ -15,6 +15,7 @@ admin.site.register(Team,
     list_display=["__unicode__", "slug", 'total'],
     ordering=['-total']
 )
-admin.site.register(Project, 
-    list_display=["__unicode__", "url", "name", 'total'],
+admin.site.register(AchievedBadge)
+admin.site.register(Badge,
+    list_display=["__unicode__"]
 )

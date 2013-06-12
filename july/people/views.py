@@ -31,6 +31,17 @@ def people_projects(request, username):
         context_instance=RequestContext(request)) 
 
 
+def people_badges(request, username):
+    user = get_object_or_404(User, username=username)
+
+    return render_to_response('people/people_badges.html', {
+            'badges': user.badges,
+            'profile': user,
+            'active': 'badges',
+        },  
+        context_instance=RequestContext(request)) 
+
+
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
