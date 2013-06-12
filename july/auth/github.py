@@ -1,6 +1,5 @@
 import logging
 
-from social_auth.backends import USERNAME
 from social_auth.backends.contrib import github
 from july.people.models import Location
 
@@ -10,7 +9,7 @@ class GithubBackend(github.GithubBackend):
     def get_user_details(self, response):
         """Return user details from Github account"""
         data = {
-            USERNAME: response.get('login'),
+            'username': response.get('login'),
             'email': response.get('email') or '',
             'fullname': response.get('name', 'Secret Agent'),
             'last_name': '',
