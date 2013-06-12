@@ -1,0 +1,43 @@
+{% extends "july/user_detail.html" %}
+{% load i18n %}
+
+
+{% block bodyclass %}profile{% endblock %}
+
+{% block content %} 
+<div class="container section-container no-border" id="contents">
+    <div class="row">
+        <div class="span10 offset1">
+            <h2 class="spread-the-word">{% if badges|length == 0 %}{% trans "No Badges Yet!" %}{% else %}{% trans "Achieved Badges" %}{% endif %}</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="span10 offset1">
+            {% for badge in badges%}
+            <div class="row">
+                <div class="span8">
+                    <h3>{{ badge }}</h3>
+                    <span></span>
+                </div>
+                <div class="span8">
+                    <dl><span class="description">{{ badge.description }}</span></dl>
+                </div>
+            </div>
+            {% if not forloop.last %} 
+            <hr/>
+            {% endif %}
+            {% empty %}
+            <div class="row">
+                <div class="span10">
+                <div class="lead">
+                        <div>
+                            {%blocktrans%}Badges could be achieved on various ways like winning of Julython,  participation on previous Julythons etc.{% endblocktrans %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

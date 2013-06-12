@@ -10,4 +10,5 @@ urlpatterns = patterns('july.people.views',
     url(r'^(?P<username>[a-zA-Z0-9_]+)/address/$', 'edit_address', name='edit-address'),
     url(r'^(?P<username>[a-zA-Z0-9_]+)/email/(?P<email>.*)$', 'delete_email', name='delete-email'),
     url(r'^(?P<username>[a-zA-Z0-9_]+)/projects/$', 'people_projects', name='user-projects'),
+    url(r'^(?P<username>[a-zA-Z0-9_]+)/badges/$', 'people_badges', name='user-badges'),
 )
