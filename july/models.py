@@ -83,7 +83,7 @@ class User(AbstractUser):
     @property
     def badges(self):
         try:
-            badges = AchievedBadge.objects.get(user=self)
+            return AchievedBadge.objects.filter(user=self)
         except:
             return []
 

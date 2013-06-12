@@ -13,14 +13,12 @@
     </div>
     <div class="row">
         <div class="span10 offset1">
-            {% for badge in badges%}
-            <div class="row">
+            {% for row in badges %}
+            <div class="row" style="background-color: #fff; border: 1px solid #ddd; border-radius: 4px; margin-right: 22px;">
+                <span style="float:right; padding: 8px; font-size: 10px;">{{ row.achieved_on|date:"d b Y" }}</span>
                 <div class="span8">
-                    <h3>{{ badge }}</h3>
-                    <span></span>
-                </div>
-                <div class="span8">
-                    <dl><span class="description">{{ badge.description }}</span></dl>
+                    <h3>{{ row.badge.name }}</h3>
+                    <dl><span class="description">{{ row.badge.description }}</span></dl>
                 </div>
             </div>
             {% if not forloop.last %} 
