@@ -11,7 +11,7 @@
                 <a class="signin btn btn-large btn-info" href="/accounts/login/twitter/"><i class="icon-user icon-white"></i> Sign In With Twitter</a>
                 <a class="signin btn btn-large" href="/accounts/login/github/"><i class="icon-user"></i> Sign In With Github</a></p>
             <h2>{% trans "Old School Login" %}</h2>
-            <p><a href="{% url 'july.views.register' %}">{% trans "I do not have an account!" %}</a></p>
+            <p><a href="{% url 'register' %}">{% trans "I do not have an account!" %}</a></p>
             <form method="post" action="{% url 'django.contrib.auth.views.login' %}">
                 {% csrf_token %}
                 <div class="well">
