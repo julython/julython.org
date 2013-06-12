@@ -146,6 +146,9 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+    'july',
+    'july.game',
+    'july.people',
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
@@ -154,9 +157,6 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'django.contrib.contenttypes',
     'debug_toolbar',
-    'july',
-    'july.game',
-    'july.people',
     'social_auth',
     'south',
 )

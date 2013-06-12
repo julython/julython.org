@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, include, url
-from django.contrib.auth import views
+from django.contrib.auth import views as auth_views
 from django.contrib import admin
 
 from tastypie.api import Api
@@ -32,9 +32,19 @@ urlpatterns = patterns(
     url(r'^events/(?P<action>pub|sub|ws)/(?P<channel>.*)$',
         'july.live.views.events', name='events'),
     url(r'^help/', 'july.views.help_view', name='help'),
-    url(r'^signin/$', views.login, name="signin"),
+    url(r'^signin/$', auth_views.login, name="signin"),
     url(r'^register/$', 'july.views.register', name="register"),
-    url(r'^signout/$', views.logout, {'next_page': '/'}, name="signout"),
+    url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
+    # Password reset urls
+    url(r'^password_reset/$', auth_views.password_reset, name="password_reset"),
+    url(r'^password_reset_sent/$', auth_views.password_reset_done),
+    url(r'^password_reset_confirm/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
+        auth_views.password_reset_confirm,
+        {'post_reset_redirect': '/password_reset_complete/'},
+        name='password_reset_confirm'),
+    url(r'^password_reset_complete/$', auth_views.password_reset_complete,
+        name='password_reset_complete'),
+
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),
