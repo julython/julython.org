@@ -22,6 +22,7 @@ class User(AbstractUser):
     description = models.TextField(blank=True)
     url = models.URLField(blank=True, null=True)
     picture_url = models.URLField(blank=True, null=True)
+    verified = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.get_full_name() or self.username
