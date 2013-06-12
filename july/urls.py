@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, include, url
-from django.contrib.auth import views
+from django.contrib.auth import views as auth_views
 from django.contrib import admin
 
 from tastypie.api import Api
@@ -32,9 +32,11 @@ urlpatterns = patterns(
     url(r'^events/(?P<action>pub|sub|ws)/(?P<channel>.*)$',
         'july.live.views.events', name='events'),
     url(r'^help/', 'july.views.help_view', name='help'),
-    url(r'^signin/$', views.login, name="signin"),
+    url(r'^signin/$', auth_views.login, name="signin"),
     url(r'^register/$', 'july.views.register', name="register"),
-    url(r'^signout/$', views.logout, {'next_page': '/'}, name="signout"),
+    url(r'^email_verify/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
+        'july.views.email_verify', name='email_verify'),
+    url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),

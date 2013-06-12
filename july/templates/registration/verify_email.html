@@ -1,0 +1,9 @@
+{% load i18n %}
+
+<h1>{% trans "Julython" %}</h1>
+<p>
+        {% trans "Plese verify your email on Julython by following the link:" %}
+        <a href="http://{{ domain }}{% url 'email_verify' uidb36=uid token=token %}">
+                http://{{ domain }}{% url 'email_verify' uidb36=uid token=token %}
+        </a>
+</p>
