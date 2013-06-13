@@ -37,6 +37,16 @@ urlpatterns = patterns(
     url(r'^email_verify/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
         'july.views.email_verify', name='email_verify'),
     url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
+    # Password reset urls
+    url(r'^password_reset/$', auth_views.password_reset, name="password_reset"),
+    url(r'^password_reset_sent/$', auth_views.password_reset_done),
+    url(r'^password_reset_confirm/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
+        auth_views.password_reset_confirm,
+        {'post_reset_redirect': '/password_reset_complete/'},
+        name='password_reset_confirm'),
+    url(r'^password_reset_complete/$', auth_views.password_reset_complete,
+        name='password_reset_complete'),
+
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),

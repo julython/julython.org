@@ -2,7 +2,6 @@ __author__ = 'Kevin'
 
 import logging
 
-from social_auth.backends import USERNAME
 from social_auth.backends import twitter
 from july.people.models import Location
 
@@ -12,7 +11,7 @@ class TwitterBackend(twitter.TwitterBackend):
     def get_user_details(self, response):
         """Return user details from Twitter account"""
         data = {
-            USERNAME: response['screen_name'],
+            'username': response['screen_name'],
             'email': '',  # not supplied
             'fullname': response['name'],
             'last_name': '',
