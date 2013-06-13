@@ -24,25 +24,25 @@ class Commit(models.Model):
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-timestamp']
-    
+
     def __str__(self):
         return self.__unicode__()
-    
+
     def __unicode__(self):
         return u'Commit: %s' % self.hash
-    
+
     @classmethod
     def create_by_email(cls, email, commits, project=None):
         """Create a commit by email address"""
         return cls.create_by_auth_id('email:%s' % email, commits, project=project)
-    
+
     @classmethod
     def user_model(cls):
         return cls._meta.get_field('user').rel.to
-    
+
     @classmethod
     def create_by_auth_id(cls, auth_id, commits, project=None):
         if not isinstance(commits, (list, tuple)):
@@ -53,13 +53,13 @@ class Commit(models.Model):
         if user:
             return cls.create_by_user(user, commits, project=project)
         return cls.create_orphan(commits, project=project)
-    
+
     @classmethod
     @transaction.commit_on_success
     def create_by_user(cls, user, commits, project=None):
         """Create a commit with parent user, updating users points."""
         created_commits = []
-        
+
         for c in commits:
             c['user'] = user
             c['project'] = project
@@ -76,16 +76,16 @@ class Commit(models.Model):
             else:
                 commit.user = user
                 commit.save()
-                
+
         # Check if there are no new commits and return
         if not created_commits:
             return []
-        
+
         if project is not None:
             user.projects.add(project)
             user.save()
-        
-        # TODO: (Rober Myers) add a call to the defer a task to calculate 
+
+        # TODO: (Rober Myers) add a call to the defer a task to calculate
         # game stats in a queue?
         return created_commits
 
@@ -99,7 +99,7 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
-            
+
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,
                 defaults=c
@@ -113,14 +113,14 @@ class Commit(models.Model):
 class Project(models.Model):
     """
     Project Model:
-    
+
     This is either a brand new project or an already existing project
-    such as #django, #fabric, #tornado, #pip, etc. 
-    
+    such as #django, #fabric, #tornado, #pip, etc.
+
     When a user Tweets a url we can automatically create anew project
     for any of the repo host we know already. (github, bitbucket)
     """
-    
+
     url = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     name = models.CharField(max_length=255, blank=True)
@@ -130,17 +130,19 @@ class Project(models.Model):
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     slug = models.SlugField()
-    
+    service = models.CharField(max_length=30, blank=True, default='')
+    repo_id = models.IntegerField(blank=True, null=True)
+
     def __unicode__(self):
         if self.name:
             return self.name
         else:
             return self.slug
-    
+
     def save(self, *args, **kwargs):
         self.slug = self.project_name
         super(Project, self).save(*args, **kwargs)
-    
+
     @property
     def points(self):
         try:
@@ -148,36 +150,57 @@ class Project(models.Model):
         except:
             return 0
         return board.points
-    
+
     @property
     def total(self):
         return self.points
-    
+
     @property
     def project_name(self):
         return self.parse_project_name(self.url)
-    
+
     def get_absolute_url(self):
         return reverse('project-details', args=[self.slug])
-    
+
     @classmethod
     def create(cls, **kwargs):
         """Get or create shortcut."""
-        slug = cls.parse_project_name(kwargs.get('url'))
-        return cls.objects.get_or_create(slug=slug, defaults=kwargs)
-    
-    @classmethod
-    def parse_project_name(cls, url):
+        repo_id = kwargs.get('repo_id')
+        url = kwargs.get('url')
+        slug = cls.parse_project_name(url)
+        service = kwargs.get('service')
+
+        # If the repo is on a service with no repo id, we can't handle renames.
+        if not repo_id:
+            project, _ = cls.objects.get_or_create(slug=slug, defaults=kwargs)
+        else:
+            # Try catching renaming of the repo.
+            try:
+                project = cls.objects.get(service=service, repo_id=repo_id)
+            except cls.DoesNotExist:
+                try:
+                    project = cls.objects.get(slug=slug)
+                    # If repo exists but doesn't have repo_id, update it.
+                    project.service = service
+                    project.repo_id = repo_id
+                    project.save()
+                except cls.DoesNotExist:
+                    project = cls.objects.create(**kwargs)
+
+        return project
+
+    @staticmethod
+    def parse_project_name(url):
         """
         Parse a project url and return a name for it.
-        
+
         Example::
-        
+
             Given:
               http://github.com/julython/julython.org
             Return:
               gh-julython-julython.org
-        
+
         This is used as the Key name in order to speed lookups during
         api requests.
         """
@@ -244,7 +267,7 @@ class Group(models.Model):
 
     def total_points(self):
         raise NotImplementedError("total_points must be implemented by the subclass!")
-    
+
     @classmethod
     def create(cls, name):
         slug = slugify(name)
