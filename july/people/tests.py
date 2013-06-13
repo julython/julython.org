@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.template.defaultfilters import slugify
 
 from july.models import User
-from july.people.models import Location, Commit, Team
+from july.people.models import Location, Commit, Team, Project
 from july.game.models import Game, Board, Player
 
 
@@ -21,7 +21,7 @@ class SCMTestMixin(object):
     API_URL = ""
     PROJECT_URL = ""
     USER = "bobby"
-    POST = ""
+    post = ""
     START = datetime.datetime(year=2012, month=12, day=1, tzinfo=UTC)
     # End of time itself
     END = datetime.datetime(year=2012, month=12, day=21, tzinfo=UTC)
@@ -30,6 +30,10 @@ class SCMTestMixin(object):
         self.user = self.make_user(self.USER)
         self.user.add_auth_id(self.AUTH_ID)
         self.game = Game.objects.create(start=self.START, end=self.END)
+
+    @staticmethod
+    def make_post(post):
+        return {'payload': json.dumps(post)}
 
     def make_user(self, username, **kwargs):
         return User.objects.create_user(username=username, **kwargs)
@@ -43,23 +47,23 @@ class SCMTestMixin(object):
         return Team.objects.create(name=team, slug=slug)
 
     def test_post_creates_commits(self):
-        resp = self.client.post(self.API_URL, self.POST)
+        resp = self.client.post(self.API_URL, self.post)
         resp_body = json.loads(resp.content)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(len(resp_body['commits']), 2)
 
     def test_post_adds_points_to_user(self):
-        self.client.post(self.API_URL, self.POST)
+        self.client.post(self.API_URL, self.post)
         u = Player.objects.get(game=self.game, user=self.user)
         self.assertEqual(u.points, 12)
 
     def test_post_adds_points_to_project(self):
-        self.client.post(self.API_URL, self.POST)
+        self.client.post(self.API_URL, self.post)
         p = Board.objects.get(game=self.game, project__slug=self.PROJECT_SLUG)
         self.assertEqual(p.points, 12)
 
     def test_post_adds_project_to_commit(self):
-        resp = self.client.post(self.API_URL, self.POST)
+        resp = self.client.post(self.API_URL, self.post)
         resp_body = json.loads(resp.content)
         c_hash = resp_body['commits'][0]
         commit = Commit.objects.get(hash=c_hash)
@@ -70,14 +74,14 @@ class SCMTestMixin(object):
         location = self.make_location('Austin, TX')
         self.user.location = location
         self.user.save()
-        self.client.post(self.API_URL, self.POST)
+        self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.locations[0].total, 12)
 
     def test_post_adds_points_to_team(self):
         team = self.make_team('Rackers')
         self.user.team = team
         self.user.save()
-        self.client.post(self.API_URL, self.POST)
+        self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.teams[0].total, 12)
 
 
@@ -88,22 +92,22 @@ class GithubTest(SCMTestMixin, TestCase):
     API_URL = '/api/v1/github'
     PROJECT_URL = 'http://github.com/defunkt/github'
     PROJECT_SLUG = 'gh-defunkt-github'
-    POST = {'payload':
-        json.dumps({
-            "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
-            "repository": {
-                "url": "http://github.com/defunkt/github",
-                "name": "github",
-                "description": "You're lookin' at it.",
-                "watchers": 5,
-                "forks": 2,
-                "private": 1,
-                "owner": {
-                    "email": "chris@ozmm.org",
-                    "name": "defunkt"
-                }
-            },
-            "commits": [
+    payload = {
+        "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+        "repository": {
+            "url": "http://github.com/defunkt/github",
+            "name": "github",
+            "description": "You're lookin' at it.",
+            "watchers": 5,
+            "forks": 2,
+            "private": 1,
+            "id": 1,
+            "owner": {
+                "email": "chris@ozmm.org",
+                "name": "defunkt"
+            }
+        },
+        "commits": [
             {
                 "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
                 "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
@@ -125,11 +129,51 @@ class GithubTest(SCMTestMixin, TestCase):
                 "message": "update pricing a tad",
                 "timestamp": "2012-12-15T14:36:34-08:00"
             }
-            ],
-            "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-            "ref": "refs/heads/master"
-        })
+        ],
+        "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+        "ref": "refs/heads/master"
     }
+
+    @property
+    def post(self):
+        return self.make_post(self.payload)
+
+    def test_repo_id(self):
+        repo_id = 1
+        payload = self.payload
+
+        # Creating a Project with no repo_id
+        del(payload['repository']['id'])
+        self.client.post(self.API_URL, self.post)
+        project = Project.objects.get(slug=self.PROJECT_SLUG)
+        first_id = project.pk
+        self.assertFalse(project.repo_id)
+
+        # Catching more commits for the repo, this time with repo_id
+        payload['repository']['id'] = repo_id
+        self.client.post(self.API_URL, self.post)
+        project = Project.objects.get(slug=self.PROJECT_SLUG)
+        second_id = project.pk
+        # Making sure repo_id was attached
+        self.assertEquals(project.repo_id, repo_id)
+        # Making sure we didn't create new projects.
+        number_of_projects = Project.objects.all().count()
+        self.assertEquals(number_of_projects, 1)
+        self.assertEquals(first_id, second_id)
+
+    def test_repo_renamed(self):
+        repo = self.payload['repository']
+        self.client.post(self.API_URL, self.post)
+        project = Project.objects.get(repo_id=repo['id'])
+        self.assertEquals(project.slug, self.PROJECT_SLUG)
+        repo['url'] = 'http://github.com/defunkt/notgithub'
+        repo['name'] = 'notgithub'
+        self.client.post(self.API_URL, self.post)
+        project = Project.objects.get(repo_id=repo['id'])
+        self.assertNotEquals(project.slug, self.PROJECT_SLUG)
+        self.assertEquals(project.url, repo['url'])
+        self.assertEquals(project.name, repo['name'])
+
 
 class BitbucketHandlerTests(SCMTestMixin, TestCase):
 
@@ -138,7 +182,7 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
     API_URL = '/api/v1/bitbucket'
     PROJECT_URL = 'https://bitbucket.org/marcus/project-x/'
     PROJECT_SLUG = 'bb-marcus-project-x'
-    POST = {'payload':
+    post = {'payload':
         json.dumps({
             "canon_url": "https://bitbucket.org",
             "commits": [
