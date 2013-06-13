@@ -180,12 +180,12 @@ class Project(models.Model):
             except cls.DoesNotExist:
                 try:
                     project = cls.objects.get(slug=slug)
-                    # If repo exists but doesn't have repo_id, update it.
-                    project.service = service
-                    project.repo_id = repo_id
-                    project.save()
+
                 except cls.DoesNotExist:
                     project = cls.objects.create(**kwargs)
+            finally:
+                # Update existing project if needed.
+                cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
 
         return project
 
