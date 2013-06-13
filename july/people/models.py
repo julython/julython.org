@@ -172,20 +172,22 @@ class Project(models.Model):
 
         # If the repo is on a service with no repo id, we can't handle renames.
         if not repo_id:
-            project, _ = cls.objects.get_or_create(slug=slug, defaults=kwargs)
-        else:
-            # Try catching renaming of the repo.
-            try:
-                project = cls.objects.get(service=service, repo_id=repo_id)
-            except cls.DoesNotExist:
-                try:
-                    project = cls.objects.get(slug=slug)
+            project, created = cls.objects.get_or_create(
+                slug=slug, defaults=kwargs)
 
-                except cls.DoesNotExist:
-                    project = cls.objects.create(**kwargs)
-            finally:
-                # Update existing project if needed.
-                cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
+        # Catch renaming of the repo.
+        else:
+            query = cls.objects.filter(service=service, repo_id=repo_id)
+            if query.count() == 1:
+                project = query[0]
+                created = False
+            else:
+                project, created = cls.objects.get_or_create(
+                    slug=slug, defaults=kwargs)
+
+        # Update stale project information.
+        if not created:
+            cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
 
         return project
 
