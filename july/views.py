@@ -1,5 +1,8 @@
 import json
+from settings import SECRET_KEY as SECRET
 
+from django.utils.http import base36_to_int
+from django.utils.crypto import salted_hmac
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login as auth_login
 from django.shortcuts import render_to_response, render, redirect
@@ -9,6 +12,7 @@ from django.http import HttpResponseRedirect
 
 from july.game.models import Game
 from july.forms import RegistrationForm
+from july.models import User
 
 
 def index(request):
@@ -59,7 +63,7 @@ def register(request):
 @login_required
 def login_redirect(request):
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/%s' % request.user.username )
+        return HttpResponseRedirect('/%s' % request.user.username)
     return HttpResponseRedirect('/')
 
 
@@ -81,3 +85,31 @@ def live(request):
         'STATIC_URL': settings.STATIC_URL})
 
     return render_to_response('live/index.html', context_instance=ctx)
+
+
+def email_verify(request, uidb36=None, token=None):
+    """Verification for the user's email address"""
+    assert uidb36 is not None and token is not None
+
+    def find_valid_email(user):
+        result = None
+        for email_auth in user.social_auth.filter(provider="email"):
+            email = email_auth.uid
+            expected_token = salted_hmac(SECRET, email).hexdigest()
+            if  expected_token == token:
+                result =  email_auth
+        return result
+
+    valid = None
+    try:
+        uid_int = base36_to_int(uidb36)
+        user = User._default_manager.get(pk=uid_int)
+    except (ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    if user:
+        valid = find_valid_email(user)
+    if valid:
+        valid.extra_data['verified'] = True
+        valid.save()
+    return render(
+        request, 'registration/email_verified.html', {'valid': valid})

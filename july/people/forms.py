@@ -80,16 +80,15 @@ class EditUserForm(forms.Form):
         widget=forms.TextInput(attrs={
             'data-bind':'typeahead: $data.filterTeam'
     }))
-    
+
     gittip = forms.CharField(
         label=ugettext_lazy("Gittip Username"), required=False)
-    
+
     email = forms.EmailField(
         label=ugettext_lazy("Add Email Address"), required=False)
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
-        self.emails = set([])
         self._gittip = None
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
@@ -102,8 +101,7 @@ class EditUserForm(forms.Form):
             if self.user.team:
                 self.fields['team'].initial=self.user.team.name
             # initialize the emails
-            for auth in self.user.social_auth.filter(provider="email"):
-                self.emails.add(auth.uid)
+            self.emails = set(self.user.social_auth.filter(provider="email"))
             self._gittip = self.user.get_provider("gittip")
             if self._gittip:
                 self.fields['gittip'].initial = self._gittip.uid
@@ -144,32 +142,32 @@ class EditUserForm(forms.Form):
                 )
                 raise forms.ValidationError(error_msg)
         return uid
-    
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
             return None
-        if email in self.emails:
+        if email in [auth.uid for auth in self.emails]:
             error_msg = ugettext_lazy("You already have that email address!")
             raise forms.ValidationError(error_msg)
-        
+
         # add the email address to the user, this will cause a ndb.put()
         try:
-            self.user.add_auth_id('email:%s' % email)
-        except:
+            self.user.add_auth_email(email)
+        except Exception, e:
             error_msg = ugettext_lazy(
                 "This email is already taken, if this is not right please "
-                "email help@julython.org"
+                "email help@julython.org " + e
             )
             raise forms.ValidationError(error_msg)
-        
+
         # Defer a task to fix orphan commits
         # TODO - make this a celery task?
         # deferred.defer(fix_orphans, email=email)
         return email
-        
+
 class CommitForm(forms.Form):
-    
+
     message = forms.CharField(required=True)
     timestamp = forms.CharField(required=False)
     url = forms.URLField(required=False)
@@ -177,7 +175,7 @@ class CommitForm(forms.Form):
     author = forms.CharField(required=False)
     name = forms.CharField(required=False)
     hash = forms.CharField(required=False)
-    
+
     def clean_timestamp(self):
         data = self.cleaned_data.get('timestamp')
         if data:
@@ -186,11 +184,11 @@ class CommitForm(forms.Form):
         return data
 
 class ProjectForm(forms.Form):
-    
+
     url = forms.URLField(required=True)
     forked = forms.BooleanField(required=False, initial=False)
     parent_url = forms.URLField(required=False)
-    
+
     def clean_parent_url(self):
         data = self.cleaned_data
         if data['parent_url'] == '':

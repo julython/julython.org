@@ -7,6 +7,7 @@ class RegistrationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = User
+        fields = ('username',)
 
     def clean_username(self):
         # Since User.username is unique, this check is redundant,
