@@ -34,6 +34,8 @@ urlpatterns = patterns(
     url(r'^help/', 'july.views.help_view', name='help'),
     url(r'^signin/$', auth_views.login, name="signin"),
     url(r'^register/$', 'july.views.register', name="register"),
+    url(r'^email_verify/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
+        'july.views.email_verify', name='email_verify'),
     url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
     # Password reset urls
     url(r'^password_reset/$', auth_views.password_reset, name="password_reset"),
