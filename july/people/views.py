@@ -71,10 +71,7 @@ def edit_profile(request, username, template_name='people/edit.html'):
                 # send verification email
                 email = value
                 token = salted_hmac(SECRET, email).hexdigest()
-                if request:
-                    domain = get_current_site(request).domain
-                else:
-                    domain = 'www.julython.org'
+                domain = get_current_site(request).domain
                 c = {
                     'email': email,
                     'domain': domain,
