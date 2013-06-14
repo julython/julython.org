@@ -89,7 +89,6 @@ class EditUserForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
-        self.emails = set([])
         self._gittip = None
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
@@ -102,8 +101,7 @@ class EditUserForm(forms.Form):
             if self.user.team:
                 self.fields['team'].initial=self.user.team.name
             # initialize the emails
-            for auth in self.user.social_auth.filter(provider="email"):
-                self.emails.add(auth.uid)
+            self.emails = set(self.user.social_auth.filter(provider="email"))
             self._gittip = self.user.get_provider("gittip")
             if self._gittip:
                 self.fields['gittip'].initial = self._gittip.uid
@@ -149,7 +147,7 @@ class EditUserForm(forms.Form):
         email = self.cleaned_data['email']
         if not email:
             return None
-        if email in self.emails:
+        if email in [auth.uid for auth in self.emails]:
             error_msg = ugettext_lazy("You already have that email address!")
             raise forms.ValidationError(error_msg)
 

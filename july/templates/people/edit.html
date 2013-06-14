@@ -2,7 +2,7 @@
 
 {% load i18n %}
 
-{% block content %} 
+{% block content %}
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
@@ -24,7 +24,13 @@
                     <div class="controls">
                         <ul>
                             {% for email in form.emails %}
-                            <li>{{ email }} <a href="{% url 'delete-email' user.username email %}" class="delete">{% trans "delete" %}</a></li>
+                            <li>{{ email.uid }} <a href="{% url 'delete-email' user.username email %}" class="delete">{% trans "delete" %}</a>
+                                {% if email.extra_data.verified %}
+                                    [{% trans "verified" %}]
+                                {% else %}
+                                    [{% trans "unverified" %}]
+                                {% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -34,7 +40,7 @@
                 <div class="form-actions">
                     <input type="submit" class="btn btn-primary" value="{% trans "Save" %}" />
                     <a href=".." class="btn">{% trans "Cancel" %}</a>
-                </div>            
+                </div>
             </form>
         </div>
     </div>
