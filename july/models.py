@@ -7,7 +7,6 @@ This is experimental, but so much worth it!
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
 from social_auth.models import UserSocialAuth
 
 from july.people.models import Location, Team, Project, AchievedBadge
@@ -22,7 +21,6 @@ class User(AbstractUser):
     description = models.TextField(blank=True)
     url = models.URLField(blank=True, null=True)
     picture_url = models.URLField(blank=True, null=True)
-    verified = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.get_full_name() or self.username
@@ -40,7 +38,16 @@ class User(AbstractUser):
             user.add_auth_id('email:foo@example.com')
         """
         provider, uid = auth_str.split(':')
-        UserSocialAuth.create_social_auth(self, uid, provider)
+        return UserSocialAuth.create_social_auth(self, uid, provider)
+
+    def add_auth_email(self, email, request=None):
+        """
+        Adds a new, non verified email address, and sends a verification email.
+        """
+        auth_email = self.add_auth_id('email:%s' % email)
+        auth_email.extra_data = {'verified': False}
+        auth_email.save()
+        return auth_email
 
     def get_provider(self, provider):
         """Return the uid of the provider or None if not set."""

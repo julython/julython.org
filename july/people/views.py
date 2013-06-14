@@ -5,8 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
 from django.views.generic import detail
+from django.utils.crypto import salted_hmac
+from django.utils.translation import ugettext_lazy as _
+from django.utils.http import int_to_base36
+from django.core.mail import send_mail
+from django.template import loader
+from django.contrib.sites.models import get_current_site
 from social_auth.models import UserSocialAuth
-
+from july.settings import SECRET_KEY as SECRET
 from july.models import User
 
 
@@ -27,8 +33,8 @@ def people_projects(request, username):
             'projects': user.projects.all(),
             'profile': user,
             'active': 'projects',
-        },  
-        context_instance=RequestContext(request)) 
+        },
+        context_instance=RequestContext(request))
 
 
 def people_badges(request, username):
@@ -38,8 +44,8 @@ def people_badges(request, username):
             'badges': user.badges,
             'profile': user,
             'active': 'badges',
-        },  
-        context_instance=RequestContext(request)) 
+        },
+        context_instance=RequestContext(request))
 
 
 @login_required
@@ -49,18 +55,37 @@ def edit_profile(request, username, template_name='people/edit.html'):
 
     if user == None:
         raise Http404("User not found")
-    
+
     if user.username != request.user.username:
         http403 = HttpResponse("This ain't you!")
         http403.status = 403
         return http403
-    
+
     form = EditUserForm(request.POST or None, user=request.user)
 
     if form.is_valid():
         for key, value in form.cleaned_data.iteritems():
-            if key in ['email', 'gittip']:
-                # Don't save the email to the profile
+            if key in ['gittip']:
+                continue
+            if key in ['email']:
+                # send verification email
+                email = value
+                token = salted_hmac(SECRET, email).hexdigest()
+                if request:
+                    domain = get_current_site(request).domain
+                else:
+                    domain = 'www.julython.org'
+                c = {
+                    'email': email,
+                    'domain': domain,
+                    'uid': int_to_base36(request.user.pk),
+                    'token': token
+                }
+                subject = _('Julython - verify your email')
+                body = loader.render_to_string(
+                    'registration/verify_email.html', c)
+                send_mail(subject, body, None, [email])
+                # Don't actually add email to user model.
                 continue
             if key == 'team':
                 # slugify the team to allow easy lookups
@@ -75,10 +100,10 @@ def edit_profile(request, username, template_name='people/edit.html'):
         )
 
     return render_to_response(template_name, {
-            'form': form, 
+            'form': form,
             'profile': user,
             'active': 'edit',
-        }, 
+        },
         context_instance=RequestContext(request))
 
 
@@ -108,10 +133,10 @@ def edit_address(request, username, template_name='people/edit_address.html'):
                 kwargs={'username':request.user.username}
             )
         )
-    
+
 
     return render_to_response(template_name, {
-            'form': form, 
+            'form': form,
             'profile': user,
             'active': 'edit',
         },
@@ -119,7 +144,7 @@ def edit_address(request, username, template_name='people/edit_address.html'):
 
 @login_required
 def delete_email(request, username, email):
-    
+
     # the ID we are to delete
     user = User.objects.get(username=username)
     auth = UserSocialAuth.objects.get(provider="email", uid=email)
@@ -127,21 +152,21 @@ def delete_email(request, username, email):
 
     if user is None or e_user is None:
         raise Http404("User not found")
-    
+
     if user != request.user or user != e_user:
         http403 = HttpResponse("This ain't you!")
         http403.status = 403
         return http403
-    
+
     if request.method == "POST":
         # delete the email from the user
         auth.delete()
         return HttpResponseRedirect(
             reverse('member-profile', kwargs={'username':request.user.username})
         )
-        
-    
 
-    return render_to_response('people/delete_email.html', 
-        {'email': email}, 
+
+
+    return render_to_response('people/delete_email.html',
+        {'email': email},
         context_instance=RequestContext(request))

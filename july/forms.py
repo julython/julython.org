@@ -18,18 +18,3 @@ class RegistrationForm(UserCreationForm):
         except User.DoesNotExist:
             return username
         raise forms.ValidationError(self.error_messages['duplicate_username'])
-
-    def clean_email(self):
-        email = self.cleaned_data["email"]
-        try:
-            User._default_manager.get(email=email)
-        except User.DoesNotExist:
-            return email
-        raise forms.ValidationError(self.error_messages['duplicate_email'])
-
-    def save(self, commit=True):
-        user = super(UserCreationForm, self).save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
-        if commit:
-            user.save()
-        return user
