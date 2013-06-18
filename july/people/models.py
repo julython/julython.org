@@ -67,9 +67,9 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
-            commit, created = cls.objects.get_or_create(hash=commit_hash,
-                defaults=c
-            )
+            commit, created = cls.objects.get_or_create(
+                hash=commit_hash,
+                defaults=c)
             if created:
                 # increment the counts
                 created_commits.append(commit)
@@ -256,7 +256,7 @@ class Group(models.Model):
     slug = models.SlugField(primary_key=True)
 
     class Meta:
-        abstract=True
+        abstract = True
 
     def __str__(self):
         return self.name
@@ -312,7 +312,6 @@ class Team(Group):
         total = query.aggregate(Sum('points'))
         points = total.get('points__sum')
         return points or 0
-
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
