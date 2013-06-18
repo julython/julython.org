@@ -24,6 +24,7 @@ class Commit(models.Model):
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
+    languages = models.ManyToManyField('Language', blank=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -132,6 +133,7 @@ class Project(models.Model):
     slug = models.SlugField()
     service = models.CharField(max_length=30, blank=True, default='')
     repo_id = models.IntegerField(blank=True, null=True)
+    languages = models.ManyToManyField('Language', blank=True)
 
     def __unicode__(self):
         if self.name:
@@ -316,3 +318,28 @@ class Team(Group):
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
         return reverse('team-details', kwargs={'team_slug': self.slug})
+
+
+class Language(models.Model):
+    """Model for holding points and projects per programming language."""
+
+    name = models.CharField(max_length=64, blank=False)
+    slug = models.SlugField(primary_key=True)
+
+    def __unicode__(self):
+        return 'Language:%s' % self.name
+
+
+class Extension(models.Model):
+    """Model that holds a file extension of a language."""
+    extension = models.CharField(max_length=10, blank=False, primary_key=True)
+    language = models.ForeignKey('Language')
+
+    def __unicode__(self):
+        return 'Extension:%s' % self.extension
+
+    @classmethod
+    def language_by_extension(cls, lookup_extension):
+        extension = cls.objects.get(extension=lookup_extension)
+        language = extension.language
+        return language
