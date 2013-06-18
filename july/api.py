@@ -17,7 +17,7 @@ from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie import fields
 
-from july.people.models import Commit, Project, Location, Team
+from july.people.models import Commit, Project, Location, Team, Language
 from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
@@ -280,7 +280,6 @@ class BitbucketHandler(PostCallbackHandler):
 
         return result
 
-
     def _parse_email(self, raw_email):
         """
         Takes a raw email like: 'John Doe <joe@example.com>'
@@ -401,6 +400,17 @@ class GithubHandler(PostCallbackHandler):
             'repo_id': data.get('id')
         }
 
+    @staticmethod
+    def parse_extensions(data):
+        """Returns a list of file extensions in the commit data"""
+        added = data.get('added', [])
+        modified = data.get('modified', [])
+        removed = data.get('removed', [])
+        files = added + modified + removed
+        extensions = [
+            f.rpartition('.')[2].lower() for f in files if f.rpartition('.')[0]]
+        return extensions
+
     def _parse_commit(self, data, project):
         """Return a tuple of (email, dict) to simplify commit creation.
 
@@ -425,6 +435,10 @@ class GithubHandler(PostCallbackHandler):
         email = author.get('email', '')
         name = author.get('name', '')
 
+        extensions = self.parse_extensions(data)
+        languages = Language.get_by_extensions(extensions)
+        project.languages.add(languages)
+
         commit_data = {
             'hash': data['id'],
             'url': data['url'],
@@ -432,5 +446,6 @@ class GithubHandler(PostCallbackHandler):
             'name': name,
             'message': data['message'],
             'timestamp': data['timestamp'],
+            'languages': languages,
         }
         return email, commit_data

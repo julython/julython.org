@@ -323,23 +323,28 @@ class Team(Group):
 class Language(models.Model):
     """Model for holding points and projects per programming language."""
 
-    name = models.CharField(max_length=64, blank=False)
-    slug = models.SlugField(primary_key=True)
+    name = models.CharField(max_length=64, primary_key=True)
 
     def __unicode__(self):
         return 'Language:%s' % self.name
 
+    @staticmethod
+    def get_by_extensions(lookup_extensions):
+        """
+        Takes an extension or list of extensions, and returns all the languages
+        they correspond to.
+        """
+        if not isinstance(lookup_extensions, list):
+            lookup_extensions = [lookup_extensions]
+        extensions = Extension.objects.filter(extension__in=lookup_extensions)
+        languages = set([extension.language for extension in extensions])
+        return languages
+
 
 class Extension(models.Model):
     """Model that holds a file extension of a language."""
-    extension = models.CharField(max_length=10, blank=False, primary_key=True)
+    extension = models.SlugField(max_length=10, primary_key=True)
     language = models.ForeignKey('Language')
 
     def __unicode__(self):
         return 'Extension:%s' % self.extension
-
-    @classmethod
-    def language_by_extension(cls, lookup_extension):
-        extension = cls.objects.get(extension=lookup_extension)
-        language = extension.language
-        return language
