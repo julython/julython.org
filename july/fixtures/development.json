@@ -1,62 +1,72 @@
 [
 {
-  "pk": "austin-tx", 
-  "model": "people.location", 
+  "pk": "Python",
+  "model": "people.language",
+  "fields": {}
+},
+{
+  "pk": "py",
+  "model": "people.extension",
+  "fields": {"language": "Python"}
+},
+{
+  "pk": "austin-tx",
+  "model": "people.location",
   "fields": {
-    "total": 0, 
+    "total": 0,
     "name": "Austin, TX"
   }
 },
 {
-  "pk": "julython", 
-  "model": "people.team", 
+  "pk": "julython",
+  "model": "people.team",
   "fields": {
-    "total": 0, 
+    "total": 0,
     "name": "Julython"
   }
 },
 {
-  "pk": 1, 
-  "model": "july.user", 
+  "pk": 1,
+  "model": "july.user",
   "fields": {
-    "username": "admin", 
-    "first_name": "Addy", 
-    "last_name": "Admin", 
-    "description": "A dummy user with much power", 
-    "url": "", 
-    "picture_url": "http://www.gravatar.com/avatar/5ada183e83f733cf4d35b50dcd4fae38?s=48", 
-    "is_active": true, 
-    "is_superuser": true, 
-    "is_staff": true, 
-    "last_login": "2013-01-06T23:32:10Z", 
-    "location": "austin-tx", 
-    "groups": [], 
-    "team": "julython", 
-    "user_permissions": [], 
-    "password": "pbkdf2_sha256$10000$NvhI9TyGTyWf$DqO/OZp3HF3HZP9XIB/TgX6Xn3c3LyGvFzhzPMlqSw4=", 
-    "email": "admin@example.com", 
-    "projects": [], 
+    "username": "admin",
+    "first_name": "Addy",
+    "last_name": "Admin",
+    "description": "A dummy user with much power",
+    "url": "",
+    "picture_url": "http://www.gravatar.com/avatar/5ada183e83f733cf4d35b50dcd4fae38?s=48",
+    "is_active": true,
+    "is_superuser": true,
+    "is_staff": true,
+    "last_login": "2013-01-06T23:32:10Z",
+    "location": "austin-tx",
+    "groups": [],
+    "team": "julython",
+    "user_permissions": [],
+    "password": "pbkdf2_sha256$10000$NvhI9TyGTyWf$DqO/OZp3HF3HZP9XIB/TgX6Xn3c3LyGvFzhzPMlqSw4=",
+    "email": "admin@example.com",
+    "projects": [],
     "date_joined": "2013-01-06T23:31:23Z"
   }
 },
 {
-  "pk": 1, 
-  "model": "game.game", 
+  "pk": 1,
+  "model": "game.game",
   "fields": {
-    "start": "2012-12-01T00:00:00Z", 
-    "problem_points": 5, 
-    "end": "2012-12-31T00:00:00Z", 
-    "project_points": 10, 
+    "start": "2012-12-01T00:00:00Z",
+    "problem_points": 5,
+    "end": "2012-12-31T00:00:00Z",
+    "project_points": 10,
     "commit_points": 1
   }
 },
 {
-  "pk": 1, 
-  "model": "social_auth.usersocialauth", 
+  "pk": 1,
+  "model": "social_auth.usersocialauth",
   "fields": {
-    "uid": "admin@example.com", 
-    "extra_data": "{}", 
-    "user": 1, 
+    "uid": "admin@example.com",
+    "extra_data": "{}",
+    "user": 1,
     "provider": "email"
   }
 }
