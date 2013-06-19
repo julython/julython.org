@@ -121,7 +121,6 @@
 	var view = new JULY.CommitsView({userId: {{ profile.id }}});
 	ko.applyBindings(view);
 </script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.1.6/d3.min.js"></script>
 <script type="text/javascript">
 	// Reference sources for this WIP:
 	// Calendar example: http://bl.ocks.org/mbostock/4063318
@@ -141,7 +140,7 @@
 		width = (cellSize + border * 2) * 5;
 
 	var color = d3.scale.linear()
-		.domain([0,35])
+		.domain([0, Math.max.apply(null, data)])
 		.range(['white', 'green']);
 
 	var svg = d3.select('#commit-calendar')
