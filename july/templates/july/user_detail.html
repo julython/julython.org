@@ -23,7 +23,7 @@
 						{% firstof profile.total '0' %} {% trans "points" %}
 					</small>
 					</h2>
-					<svg id="commit-calendar" style="float: right;"></svg>
+					<svg id="commit-calendar" style="float: right; background-color: #BEC9AF"></svg>
 					<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
 					<ul class="nav nav-pills">
 						{% if profile.github %}
@@ -135,8 +135,10 @@
 	];
 
 	var cellSize = 10,
-		width = cellSize * 7,
-		height = cellSize * 5;
+		border = 1,
+		weekLength = 7,
+		height = (cellSize + border * 2) * weekLength,
+		width = (cellSize + border * 2) * 5;
 
 	var color = d3.scale.linear()
 		.domain([0,35])
@@ -151,12 +153,12 @@
 		.enter().append('rect')
 			.attr('width', cellSize).attr('height', cellSize)
 			.attr('x', function(d,i) {
-				var week = Math.floor(i/7);
-				return week * cellSize;
+				var week = Math.floor(i / weekLength);
+				return (cellSize + 2 * border) * week + border;
 			})
 			.attr('y', function(d,i) {
-				var weekday = i%7;
-				return weekday * cellSize;
+				var weekday = i % weekLength;
+				return (cellSize + 2 * border) * weekday + border;
 			})
 			.style('fill', color);
 
