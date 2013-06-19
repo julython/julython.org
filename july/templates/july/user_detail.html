@@ -7,54 +7,52 @@
 {% block contentheader %}
 
 <div class="container profile-container">
-        <div class="row">
-            <div class="span10 offset1">
-            	<div class="media">
-            		<a class="thumbnail pull-left avatar" href=".">        			
-	            		<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
-            		</a>
-            		<div class="media-body">
-            			<h2 class="media-heading">{{ profile }}
-                            {% if profile.twitter %}
-                                <a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
-                                <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
-                            {% endif %}
-                            <small class="points pull-right">
-                            	{% firstof profile.total '0' %} {% trans "points" %}
-                            </small>
-            			</h2>
-            			<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
-            			<ul class="nav nav-pills">
-                            {% if profile.github %}
-                            <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
-                            {% endif %}
-                            {% if profile.url %}
-                            <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
-                            {% endif %}
-                            {% if profile.location %}
-                            <li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
-                            {% endif %}
-                            {% if profile.team %}
-                            <li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
-                            {% endif %}
-                            {% if profile.gittip %}
-                            <iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
- 							{% endif %}                       
-                        </ul>
-            		</div>
-            		<ul class="nav nav-tabs">
-                            <li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
-                            <li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
-                            <li {% if active == "badges" %}class="active"{% endif %}><a href="{% url 'user-badges' username=profile.username %}">{% trans "Badges" %}</a></li>
-                            {% if profile.username == user.username %}
-                            <li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
-                            {% endif %}
-                    </ul>
-            		
-            	</div>
-            	
-        </div>
-    </div>
+	<div class="row">
+		<div class="span10 offset1">
+			<div class="media">
+				<a class="thumbnail pull-left avatar" href=".">
+					<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
+				</a>
+				<div class="media-body">
+					<h2 class="media-heading">{{ profile }}
+					{% if profile.twitter %}
+					<a href="https://twitter.com/{{ profile.username }}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
+					<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+					{% endif %}
+					<small class="points pull-right">
+						{% firstof profile.total '0' %} {% trans "points" %}
+					</small>
+					</h2>
+					<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
+					<ul class="nav nav-pills">
+						{% if profile.github %}
+						<li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
+						{% endif %}
+						{% if profile.url %}
+						<li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
+						{% endif %}
+						{% if profile.location %}
+						<li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+						{% endif %}
+						{% if profile.team %}
+						<li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
+						{% endif %}
+						{% if profile.gittip %}
+						<iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
+						{% endif %}
+					</ul>
+				</div>
+				<ul class="nav nav-tabs">
+					<li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
+					<li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
+					<li {% if active == "badges" %}class="active"{% endif %}><a href="{% url 'user-badges' username=profile.username %}">{% trans "Badges" %}</a></li>
+					{% if profile.username == user.username %}
+					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
+					{% endif %}
+				</ul>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}
 
@@ -64,63 +62,63 @@
 {% url 'edit-profile' username=user.username as edit_profile_url %}
 
 <div class="container section-container no-border">
-  <div class="row">
-    <div class="span10 offset1">
-        {% if profile.commit_set.count %}
-        <div class="row">
-            <div class="span10">
-              
-              <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
-              <div id="commits" data-bind="pageBottom: fetch">
-              	<div data-bind="foreach: commits">
-              		<div class="media">
-	            	  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
-		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
-	            	  </a>
-	            	  <div class="media-body">
-	            	  	<h4 class="media-heading"><span data-bind="timeago: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
-	            		<strong data-bind="text: message"></strong>
-	            		<p class="hash">
-	                      	<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
-	                      	<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash().substring(0, 8)"></span></a>
-	                      	<span data-bind="visible: !url(), text: hash().substring(0, 8)"></span>
-	                      </p>
-	              	  </div>
-	                </div>
-              	</div>
-              	<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
-              </div>
-            </div>
-            </div>
-        </div>
-        {% else %}
-        {% if profile.username != user.username %}
-        <div class="row">
-            <div class="span10">
-              <h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>
-              <p class="lead">{% trans "This user has not committed to any project yet." %}</p>
-            </div>
-        </div>
-        {% else %}
-          <div class="row">
-            <div class="span10">
-              <h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
-              <p class="lead">
-                {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
-              </p>
-            </div>
-          </div>
-          {% include "includes/hook-instructions.html" %}
-        {% endif %}
-      {% endif %}
-    </div>
-  </div>
+	<div class="row">
+		<div class="span10 offset1">
+			{% if profile.commit_set.count %}
+			<div class="row">
+				<div class="span10">
+					<h2 class="spread-the-word">{{ profile }}'s Commits</h2>
+					<div id="commits" data-bind="pageBottom: fetch">
+						<div data-bind="foreach: commits">
+							<div class="media">
+								<a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">
+									<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
+								</a>
+								<div class="media-body">
+									<h4 class="media-heading"><span data-bind="timeago: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
+									<strong data-bind="text: message"></strong>
+									<p class="hash">
+										<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
+										<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash().substring(0, 8)"></span></a>
+										<span data-bind="visible: !url(), text: hash().substring(0, 8)"></span>
+									</p>
+								</div>
+							</div>
+						</div>
+						<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		{% else %}
+			{% if profile.username != user.username %}
+			<div class="row">
+				<div class="span10">
+					<h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>
+					<p class="lead">{% trans "This user has not committed to any project yet." %}</p>
+				</div>
+			</div>
+			{% else %}
+			<div class="row">
+				<div class="span10">
+					<h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
+					<p class="lead">
+					{% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
+					</p>
+				</div>
+			</div>
+			{% include "includes/hook-instructions.html" %}
+			{% endif %}
+		{% endif %}
+	</div>
+ </div>
 {% endblock %}
 
 {% block extra_javascript %}
 
 <script type="text/javascript">
-  var view = new JULY.CommitsView({userId: {{ profile.id }}});
-  ko.applyBindings(view);
+	var view = new JULY.CommitsView({userId: {{ profile.id }}});
+	ko.applyBindings(view);
 </script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.1.6/d3.min.js"></script>
 {% endblock %}
