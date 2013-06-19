@@ -42,6 +42,8 @@
 						{% endif %}
 					</ul>
 				</div>
+				<svg id="commit-calendar">
+				</svg>
 				<ul class="nav nav-tabs">
 					<li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
 					<li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
@@ -121,4 +123,44 @@
 	ko.applyBindings(view);
 </script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.1.6/d3.min.js"></script>
+<script type="text/javascript">
+	// Reference sources for this WIP:
+	// Calendar example: http://bl.ocks.org/mbostock/4063318
+	// d3.chart quickstart: https://github.com/misoproject/d3.chart/wiki/quickstart
+	var data = [
+		34,12,2,31,4,5,6,7,8,9,
+		15,1,12,13,14,15,16,
+		17,19,25,21,22,23,2,
+		25,20,27,28,29,30,31,
+		15,21,3
+	];
+
+	var cellSize = 10,
+		width = cellSize * 7,
+		height = cellSize * 5;
+
+	var color = d3.scale.linear()
+		.domain([0,35])
+		.range(['white', 'green']);
+
+	var svg = d3.select('#commit-calendar')
+		.attr('width', width)
+		.attr('height', height);
+
+	var cells = svg.selectAll('rect')
+		.data(data)
+		.enter().append('rect')
+			.attr('width', cellSize).attr('height', cellSize)
+			.attr('x', function(d,i) {
+				var week = Math.floor(i/7);
+				return week * cellSize;
+			})
+			.attr('y', function(d,i) {
+				var weekday = i%7;
+				return weekday * cellSize;
+			})
+			.style('fill', color);
+
+
+</script>
 {% endblock %}
