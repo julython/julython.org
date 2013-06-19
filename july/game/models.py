@@ -235,6 +235,7 @@ def add_commit(sender, **kwargs):
         from_orphan = not kwargs.get('created', False)
         active_game.add_commit(commit, from_orphan=from_orphan)
 
+
 @receiver(m2m_changed, sender=Commit.languages.through)
 def add_points_to_language_boards(sender, **kwargs):
     """
@@ -242,7 +243,6 @@ def add_points_to_language_boards(sender, **kwargs):
     """
     if not kwargs['action'] == 'post_add':
         return
-    import pdb; pdb.set_trace()
     commit = kwargs.get('instance')
     active_game = Game.active(now=commit.timestamp)
     if active_game is not None:
