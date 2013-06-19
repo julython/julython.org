@@ -68,9 +68,11 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
+            languages = c.pop('languages', [])
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,
                 defaults=c)
+            commit.languages.add(*languages)
             if created:
                 # increment the counts
                 created_commits.append(commit)
@@ -101,10 +103,11 @@ class Commit(models.Model):
                 logging.info("Commit hash missing in create.")
                 continue
 
+            languages = c.pop('languages', [])
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,
-                defaults=c
-            )
+                defaults=c)
+            commit.languages.add(*languages)
             if created:
                 created_commits.append(commit)
 
@@ -326,7 +329,7 @@ class Language(models.Model):
     name = models.CharField(max_length=64, primary_key=True)
 
     def __unicode__(self):
-        return 'Language:%s' % self.name
+        return self.name
 
     @staticmethod
     def get_by_extensions(lookup_extensions):
@@ -338,7 +341,7 @@ class Language(models.Model):
             lookup_extensions = [lookup_extensions]
         extensions = Extension.objects.filter(extension__in=lookup_extensions)
         languages = set([extension.language for extension in extensions])
-        return languages
+        return list(languages)
 
 
 class Extension(models.Model):
@@ -347,4 +350,4 @@ class Extension(models.Model):
     language = models.ForeignKey('Language')
 
     def __unicode__(self):
-        return 'Extension:%s' % self.extension
+        return self.extension

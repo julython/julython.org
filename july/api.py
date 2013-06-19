@@ -5,6 +5,7 @@ import logging
 import re
 import urlparse
 import requests
+from os.path import splitext
 
 from django.core.urlresolvers import reverse
 from django import http
@@ -169,7 +170,6 @@ class PostCallbackHandler(View, JSONMixin):
 
     def post(self, request):
         payload = self.parse_payload(request)
-        logging.info(payload)
         if not payload:
             raise http.HttpResponseBadRequest
 
@@ -291,6 +291,15 @@ class BitbucketHandler(PostCallbackHandler):
             return m.group(1)
         return ''
 
+    @staticmethod
+    def parse_extensions(data):
+        """Returns a list of file extensions in the commit data"""
+        file_dicts = data.get('files')
+        extensions = [
+            ext[1:] for root, ext in
+            [splitext(file_dict['file']) for file_dict in file_dicts]]
+        return extensions
+
     def _parse_commit(self, data, project):
         """Parse a single commit.
 
@@ -325,6 +334,10 @@ class BitbucketHandler(PostCallbackHandler):
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
 
+        extensions = self.parse_extensions(data)
+        languages = Language.get_by_extensions(extensions)
+        project.languages.add(*languages)
+
         commit_data = {
             'hash': data['raw_node'],
             'email': email,
@@ -333,6 +346,7 @@ class BitbucketHandler(PostCallbackHandler):
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
+            'languages': languages
         }
         return email, commit_data
 
@@ -406,9 +420,10 @@ class GithubHandler(PostCallbackHandler):
         added = data.get('added', [])
         modified = data.get('modified', [])
         removed = data.get('removed', [])
-        files = added + modified + removed
+        paths = added + modified + removed
         extensions = [
-            f.rpartition('.')[2].lower() for f in files if f.rpartition('.')[0]]
+            ext[1:] for root, ext in
+            [splitext(path) for path in paths]]
         return extensions
 
     def _parse_commit(self, data, project):
@@ -437,7 +452,7 @@ class GithubHandler(PostCallbackHandler):
 
         extensions = self.parse_extensions(data)
         languages = Language.get_by_extensions(extensions)
-        project.languages.add(languages)
+        project.languages.add(*languages)
 
         commit_data = {
             'hash': data['id'],

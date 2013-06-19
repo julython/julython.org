@@ -3,7 +3,7 @@ from collections import namedtuple
 
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -136,24 +136,25 @@ class Game(models.Model):
             board.save()
         return board
 
-    def add_points_to_language_boards(self, commit, from_orphan=False):
+    def add_points_to_language_boards(self, languages, user):
         language_boards = []
-        for language in commit.languages:
-            language_board, created = LanguageBoard.objects.get_or_create(
+        for language in languages:
+            language_board, created = LanguageBoard.objects.select_for_update().get_or_create(
                 game=self, language=language,
                 defaults={'points': self.commit_points})
-            if not created and not from_orphan:
+            if not created:
                 language_board.points += self.commit_points
-                language_board.save
+                language_board.save()
             language_boards.append(language_board)
-        return language_boards
+        if user:
+            player = Player.objects.get(game=self, user=user)
+            player.language_boards.add(*language_boards)
 
-    def add_points_to_player(self, board, language_boards, commit):
+    def add_points_to_player(self, board, commit):
         player, created = Player.objects.select_for_update().get_or_create(
             game=self, user=commit.user,
             defaults={'points': self.project_points + self.commit_points})
         player.boards.add(board)
-        player.language_boards.add(language_boards)
         if not created:
             # we need to get the total points for the user
             project_points = player.boards.all().count() * self.project_points
@@ -175,10 +176,8 @@ class Game(models.Model):
         of a post create signal.
         """
         board = self.add_points_to_board(commit, from_orphan)
-        language_boards = self.add_points_to_language_boards(
-            commit, from_orphan)
         if commit.user:
-            self.add_points_to_player(board, language_boards, commit)
+            self.add_points_to_player(board, commit)
 
 
 class Player(models.Model):
@@ -235,3 +234,18 @@ def add_commit(sender, **kwargs):
     if active_game is not None:
         from_orphan = not kwargs.get('created', False)
         active_game.add_commit(commit, from_orphan=from_orphan)
+
+@receiver(m2m_changed, sender=Commit.languages.through)
+def add_points_to_language_boards(sender, **kwargs):
+    """
+    Listens to languages being added to commits, adds point to language boards
+    """
+    if not kwargs['action'] == 'post_add':
+        return
+    import pdb; pdb.set_trace()
+    commit = kwargs.get('instance')
+    active_game = Game.active(now=commit.timestamp)
+    if active_game is not None:
+        user = commit.user
+        languages_added = Language.objects.filter(name__in=list(kwargs['pk_set']))
+        active_game.add_points_to_language_boards(languages_added, user)
