@@ -155,7 +155,7 @@ JULY.makeCalendar = function(elmentId, username) {
   calendar.fetch({async:false, remove:false});
 
   // An array containing only the commit counts, to build the graphic of the calendar.
-  data = calendar.map(function(day){return day.get('commit_count')})
+  data = calendar.map(function(day){return day.get('commit_count')});
 
   // Calendar dimensions.
   var cellSize = 10,
@@ -189,4 +189,4 @@ JULY.makeCalendar = function(elmentId, username) {
         return (cellSize + 2 * border) * weekday + border;
       })
       .style('fill', color);
-}
+};
