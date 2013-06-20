@@ -10,3 +10,4 @@ South
 distribute>=0.6.28
 MySQL-python
 gunicorn
+mock

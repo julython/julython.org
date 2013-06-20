@@ -24,7 +24,7 @@
                     <div class="controls">
                         <ul>
                             {% for email in form.emails %}
-                            <li>{{ email.uid }} <a href="{% url 'delete-email' user.username email %}" class="delete">{% trans "delete" %}</a>
+                            <li>{{ email.uid }} <a href="{% url 'delete-email' user.username email.uid %}" class="delete">{% trans "delete" %}</a>
                                 {% if email.extra_data.verified %}
                                     [{% trans "verified" %}]
                                 {% else %}

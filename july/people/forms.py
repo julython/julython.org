@@ -115,7 +115,7 @@ class EditUserForm(forms.Form):
             return l
 
     def clean_team(self):
-        team = self.data.get('team','')
+        team = self.data.get('team', '')
         try:
             t = Team.objects.get(slug=slugify(team))
         except Team.DoesNotExist:
@@ -154,10 +154,10 @@ class EditUserForm(forms.Form):
         # add the email address to the user, this will cause a ndb.put()
         try:
             self.user.add_auth_email(email)
-        except Exception, e:
+        except Exception:
             error_msg = ugettext_lazy(
                 "This email is already taken, if this is not right please "
-                "email help@julython.org " + e
+                "email help@julython.org "
             )
             raise forms.ValidationError(error_msg)
 

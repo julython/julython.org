@@ -2,6 +2,7 @@
 import datetime
 import json
 from pytz import UTC
+from mock import MagicMock
 
 from django.test import TestCase
 from django.template.defaultfilters import slugify
@@ -9,6 +10,8 @@ from django.template.defaultfilters import slugify
 from july.models import User
 from july.people.models import Location, Commit, Team, Project
 from july.game.models import Game, Board, Player
+
+import requests
 
 
 class SCMTestMixin(object):
@@ -27,6 +30,8 @@ class SCMTestMixin(object):
     END = datetime.datetime(year=2012, month=12, day=21, tzinfo=UTC)
 
     def setUp(self):
+        self.requests = requests
+        self.requests.post = MagicMock()
         self.user = self.make_user(self.USER)
         self.user.add_auth_id(self.AUTH_ID)
         self.game = Game.objects.create(start=self.START, end=self.END)
@@ -51,16 +56,19 @@ class SCMTestMixin(object):
         resp_body = json.loads(resp.content)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(len(resp_body['commits']), 2)
+        self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_points_to_user(self):
         self.client.post(self.API_URL, self.post)
         u = Player.objects.get(game=self.game, user=self.user)
         self.assertEqual(u.points, 12)
+        self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_points_to_project(self):
         self.client.post(self.API_URL, self.post)
         p = Board.objects.get(game=self.game, project__slug=self.PROJECT_SLUG)
         self.assertEqual(p.points, 12)
+        self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_project_to_commit(self):
         resp = self.client.post(self.API_URL, self.post)
@@ -69,6 +77,7 @@ class SCMTestMixin(object):
         commit = Commit.objects.get(hash=c_hash)
         self.assertEqual(commit.project.url, self.PROJECT_URL)
         self.assertEqual(commit.project.slug, self.PROJECT_SLUG)
+        self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_points_to_location(self):
         location = self.make_location('Austin, TX')
@@ -76,6 +85,7 @@ class SCMTestMixin(object):
         self.user.save()
         self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.locations[0].total, 12)
+        self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_points_to_team(self):
         team = self.make_team('Rackers')
@@ -83,6 +93,7 @@ class SCMTestMixin(object):
         self.user.save()
         self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.teams[0].total, 12)
+        self.assertEqual(self.requests.post.call_count, 6)
 
 
 class GithubTest(SCMTestMixin, TestCase):
@@ -173,6 +184,7 @@ class GithubTest(SCMTestMixin, TestCase):
         self.assertNotEquals(project.slug, self.PROJECT_SLUG)
         self.assertEquals(project.url, repo['url'])
         self.assertEquals(project.name, repo['name'])
+
 
 
 class BitbucketHandlerTests(SCMTestMixin, TestCase):
