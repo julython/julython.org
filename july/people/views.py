@@ -102,7 +102,8 @@ def edit_profile(request, username, template_name='people/edit.html'):
         'profile': user,
         'active': 'edit',
     }
-    return render(template_name, ctx, context_instance=RequestContext(request))
+    return render(request, template_name,
+                  ctx, context_instance=RequestContext(request))
 
 
 @login_required
@@ -131,7 +132,8 @@ def edit_address(request, username, template_name='people/edit_address.html'):
         'profile': user,
         'active': 'edit',
     }
-    return render(template_name, ctx, context_instance=RequestContext(request))
+    return render(request, template_name, ctx,
+                  context_instance=RequestContext(request))
 
 
 @login_required
