@@ -23,7 +23,7 @@
 						{% firstof profile.total '0' %} {% trans "points" %}
 					</small>
 					</h2>
-					<svg id="commit-calendar" style="float: right; background-color: #BEC9AF"></svg>
+					<svg id="commit-calendar"></svg>
 					<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
 					<ul class="nav nav-pills">
 						{% if profile.github %}
@@ -120,47 +120,6 @@
 <script type="text/javascript">
 	var view = new JULY.CommitsView({userId: {{ profile.id }}});
 	ko.applyBindings(view);
-</script>
-<script type="text/javascript">
-	// Reference sources for this WIP:
-	// Calendar example: http://bl.ocks.org/mbostock/4063318
-	// d3.chart quickstart: https://github.com/misoproject/d3.chart/wiki/quickstart
-	var data = [
-		0,0,2,31,4,5,6,7,8,9,
-		15,1,12,13,14,15,16,
-		17,19,25,21,22,23,2,
-		25,20,27,28,29,30,31,
-		0,0,0
-	];
-
-	var cellSize = 10,
-		border = 1,
-		weekLength = 7,
-		height = (cellSize + border * 2) * weekLength,
-		width = (cellSize + border * 2) * 5;
-
-	var color = d3.scale.linear()
-		.domain([0, Math.max.apply(null, data)])
-		.range(['white', 'green']);
-
-	var svg = d3.select('#commit-calendar')
-		.attr('width', width)
-		.attr('height', height);
-
-	var cells = svg.selectAll('rect')
-		.data(data)
-		.enter().append('rect')
-			.attr('width', cellSize).attr('height', cellSize)
-			.attr('x', function(d,i) {
-				var week = Math.floor(i / weekLength);
-				return (cellSize + 2 * border) * week + border;
-			})
-			.attr('y', function(d,i) {
-				var weekday = i % weekLength;
-				return (cellSize + 2 * border) * weekday + border;
-			})
-			.style('fill', color);
-
-
+	JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
 </script>
 {% endblock %}
