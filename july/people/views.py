@@ -1,6 +1,6 @@
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.template.context import RequestContext
 from django.template.defaultfilters import slugify
@@ -8,7 +8,8 @@ from django.views.generic import detail
 from django.utils.crypto import salted_hmac
 from django.utils.translation import ugettext_lazy as _
 from django.utils.http import int_to_base36
-from django.core.mail import send_mail
+from django.utils.html import strip_tags
+from django.core.mail import EmailMultiAlternatives
 from django.template import loader
 from django.contrib.sites.models import get_current_site
 from social_auth.models import UserSocialAuth
@@ -48,13 +49,27 @@ def people_badges(request, username):
         context_instance=RequestContext(request))
 
 
+def send_verify_email(email, user_id, domain):
+    token = salted_hmac(SECRET, email).hexdigest()
+    c = {
+        'email': email,
+        'domain': domain,
+        'uid': int_to_base36(user_id),
+        'token': token
+    }
+    subject = _('Julython - verify your email')
+    html = loader.render_to_string(
+        'registration/verify_email.html', c)
+    text = strip_tags(html)
+    msg = EmailMultiAlternatives(subject, text, None, [email])
+    msg.attach_alternative(html, 'text/html')
+    msg.send()
+
+
 @login_required
 def edit_profile(request, username, template_name='people/edit.html'):
     from forms import EditUserForm
     user = request.user
-
-    if user == None:
-        raise Http404("User not found")
 
     if user.username != request.user.username:
         http403 = HttpResponse("This ain't you!")
@@ -69,19 +84,8 @@ def edit_profile(request, username, template_name='people/edit.html'):
                 continue
             if key in ['email']:
                 # send verification email
-                email = value
-                token = salted_hmac(SECRET, email).hexdigest()
                 domain = get_current_site(request).domain
-                c = {
-                    'email': email,
-                    'domain': domain,
-                    'uid': int_to_base36(request.user.pk),
-                    'token': token
-                }
-                subject = _('Julython - verify your email')
-                body = loader.render_to_string(
-                    'registration/verify_email.html', c)
-                send_mail(subject, body, None, [email])
+                send_verify_email(value, user.pk, domain)
                 # Don't actually add email to user model.
                 continue
             if key == 'team':
@@ -91,18 +95,14 @@ def edit_profile(request, username, template_name='people/edit.html'):
         user.save()
 
         return HttpResponseRedirect(
-            reverse('member-profile',
-                    kwargs={'username':request.user.username}
-                   )
-        )
+            reverse('member-profile', kwargs={'username': user.username}))
 
-    return render_to_response(template_name, {
-            'form': form,
-            'profile': user,
-            'active': 'edit',
-        },
-        context_instance=RequestContext(request))
-
+    ctx = {
+        'form': form,
+        'profile': user,
+        'active': 'edit',
+    }
+    return render(template_name, ctx, context_instance=RequestContext(request))
 
 
 @login_required
@@ -110,9 +110,6 @@ def edit_address(request, username, template_name='people/edit_address.html'):
     from forms import EditAddressForm
 
     user = request.user
-
-    if user == None:
-        raise Http404("User not found")
 
     if user.key != request.user.key:
         http403 = HttpResponse("This ain't you!")
@@ -123,21 +120,19 @@ def edit_address(request, username, template_name='people/edit_address.html'):
 
     if form.is_valid():
         for key, value in form.cleaned_data.iteritems():
-            setattr(user,key,value)
+            setattr(user, key, value)
             user.put()
         return HttpResponseRedirect(
-            reverse('member-profile',
-                kwargs={'username':request.user.username}
-            )
+            reverse('member-profile', kwargs={'username': user.username})
         )
 
+    ctx = {
+        'form': form,
+        'profile': user,
+        'active': 'edit',
+    }
+    return render(template_name, ctx, context_instance=RequestContext(request))
 
-    return render_to_response(template_name, {
-            'form': form,
-            'profile': user,
-            'active': 'edit',
-        },
-        context_instance=RequestContext(request))
 
 @login_required
 def delete_email(request, username, email):
@@ -161,8 +156,6 @@ def delete_email(request, username, email):
         return HttpResponseRedirect(
             reverse('member-profile', kwargs={'username':request.user.username})
         )
-
-
 
     return render_to_response('people/delete_email.html',
         {'email': email},

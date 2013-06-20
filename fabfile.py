@@ -12,7 +12,7 @@ from fabric.api import lcd, task, local
 @task
 def test():
     """Run the test suite"""
-    local("python -m unittest discover")
+    local("python manage.py test")
     with lcd('assets'):
         local('node_modules/grunt-cli/bin/grunt jasmine')
 
