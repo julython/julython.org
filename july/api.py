@@ -5,6 +5,7 @@ import logging
 import re
 import urlparse
 import requests
+from os.path import splitext
 
 from django.core.urlresolvers import reverse
 from django import http
@@ -108,6 +109,154 @@ class PlayerCommitsCollection(View, JSONMixin):
 
     def get(self):
         pass
+
+
+def get_language(file_dict):
+    """Parse a filename for the language.
+
+    >>> d = {"file": "somefile.py", "type": "added"}
+    >>> get_language(d)
+    'Python'
+    """
+    name = file_dict.get('file', '')
+    path, ext = splitext(name.lower())
+    type_map = {
+        # 
+        # C/C++
+        #
+        '.c': 'C/C++',
+        '.cc': 'C/C++',
+        '.cpp': 'C/C++',
+        '.h': 'C/C++',
+        '.hpp': 'C/C++',
+        '.so': 'C/C++',
+        #
+        # C#
+        #
+        '.cs': 'C#',
+        #
+        # Clojure
+        #
+        '.clj': 'Clojure',
+        #
+        # Documentation
+        #
+        '.txt': 'Documentation',
+        '.md': 'Documentation',
+        '.rst': 'Documentation',
+        '.hlp': 'Documentation',
+        '.pdf': 'Documentation',
+        '.man': 'Documentation',
+        #
+        # Erlang
+        #
+        '.erl': 'Erlang',
+        #
+        # Fortran
+        #
+        '.f': 'Fortran',
+        '.f77': 'Fortran',
+        #
+        # Go
+        #
+        '.go': 'Golang',
+        #
+        # Groovy
+        #
+        '.groovy': 'Groovy',
+        #
+        # html/css/images
+        #
+        '.xml': 'html/css',
+        '.html': 'html/css',
+        '.htm': 'html/css',
+        '.css': 'html/css',
+        '.sass': 'html/css',
+        '.less': 'html/css',
+        '.scss': 'html/css',
+        '.jpg': 'html/css',
+        '.gif': 'html/css',
+        '.png': 'html/css',
+        '.jpeg': 'html/css',
+        #
+        # Java
+        #
+        '.class': 'Java',
+        '.ear': 'Java',
+        '.jar': 'Java',
+        '.java': 'Java',
+        '.war': 'Java',
+        #
+        # JavaScript
+        #
+        '.js': 'JavaScript',
+        '.json': 'JavaScript',
+        '.coffee': 'CoffeeScript',
+        '.litcoffee': 'CoffeeScript',
+        '.dart': 'Dart',
+        #
+        # Lisp
+        #
+        '.lisp': 'Common Lisp',
+        #
+        # Lua
+        #
+        '.lua': 'Lua',
+        #
+        # Objective-C
+        #
+        '.m': 'Objective-C',
+        #
+        # Perl
+        #
+        '.pl': 'Perl',
+        #
+        # PHP
+        #
+        '.php': 'PHP',
+        #
+        # Python
+        #
+        '.py': 'Python',
+        '.pyc': 'Python',
+        '.pyd': 'Python',
+        '.pyo': 'Python',
+        '.pyx': 'Python',
+        '.pxd': 'Python',
+        #
+        # R
+        #
+        '.r': 'R',
+        #
+        # Ruby
+        #
+        '.rb': 'Ruby',
+        #
+        # Scala
+        #
+        '.scala': 'Scala',
+        #
+        # Scheme
+        #
+        '.scm': 'Scheme',
+        '.scheme': 'Scheme',
+        #
+        # No Extension
+        #
+        '': '',
+    }
+    # Common extentionless files
+    doc_map = {
+        'license': 'Legalese',
+        'copyright': 'Legalese',
+        'changelog': 'Documentation',
+        'contributing': 'Documentation',
+        'readme': 'Documentation',
+        'makefile': 'Build Tools',
+    }
+    if ext == '':
+        return doc_map.get(path)
+    return type_map.get(ext)
 
 
 class PostCallbackHandler(View, JSONMixin):
@@ -280,7 +429,6 @@ class BitbucketHandler(PostCallbackHandler):
 
         return result
 
-
     def _parse_email(self, raw_email):
         """
         Takes a raw email like: 'John Doe <joe@example.com>'
@@ -323,6 +471,8 @@ class BitbucketHandler(PostCallbackHandler):
             raise AttributeError("Expected a dict object")
 
         email = self._parse_email(data.get('raw_author'))
+        files = data.get('files', [])
+        languages = filter(None, map(get_language, files))
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
 
@@ -334,6 +484,8 @@ class BitbucketHandler(PostCallbackHandler):
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
+            'files': files,
+            'languages': languages,
         }
         return email, commit_data
 
@@ -401,6 +553,16 @@ class GithubHandler(PostCallbackHandler):
             'repo_id': data.get('id')
         }
 
+    def _parse_files(self, data):
+        """Make files look like bitbuckets json list."""
+        def wrapper(key, data):
+            return [{"file": f, "type": key} for f in data.get(key, [])]
+
+        added = wrapper('added', data)
+        modified = wrapper('modified', data)
+        removed = wrapper('removed', data)
+        return added + modified + removed
+
     def _parse_commit(self, data, project):
         """Return a tuple of (email, dict) to simplify commit creation.
 
@@ -424,6 +586,8 @@ class GithubHandler(PostCallbackHandler):
         author = data.get('author', {})
         email = author.get('email', '')
         name = author.get('name', '')
+        files = self._parse_files(data)
+        languages = filter(None, map(get_language, files))
 
         commit_data = {
             'hash': data['id'],
@@ -432,5 +596,7 @@ class GithubHandler(PostCallbackHandler):
             'name': name,
             'message': data['message'],
             'timestamp': data['timestamp'],
+            'files': files,
+            'languages': languages,
         }
         return email, commit_data

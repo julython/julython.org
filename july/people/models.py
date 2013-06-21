@@ -1,4 +1,5 @@
 import logging
+import json
 from urlparse import urlparse
 
 from django.db import models, transaction
@@ -24,6 +25,7 @@ class Commit(models.Model):
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
+    files = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -64,6 +66,14 @@ class Commit(models.Model):
             c['user'] = user
             c['project'] = project
             commit_hash = c.pop('hash', None)
+            files = c.pop('files', [])
+            try:
+                c['files'] = json.dumps(files)
+            except:
+                pass
+
+            languages = c.pop('languages', [])
+            # TODO: (rmyers) do something with files, languages
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
@@ -99,6 +109,14 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
+            files = c.pop('files', [])
+            try:
+                c['files'] = json.dumps(files)
+            except:
+                pass
+
+            languages = c.pop('languages', [])
+            # TODO: (rmyers) do something with files, languages
 
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,

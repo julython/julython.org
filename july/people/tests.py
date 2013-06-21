@@ -2,7 +2,7 @@
 import datetime
 import json
 from pytz import UTC
-from mock import MagicMock
+from mock import MagicMock, patch
 
 from django.test import TestCase
 from django.template.defaultfilters import slugify
@@ -95,6 +95,28 @@ class SCMTestMixin(object):
         self.assertEqual(self.game.teams[0].total, 12)
         self.assertEqual(self.requests.post.call_count, 6)
 
+    def test_files(self):
+        resp = self.client.post(self.API_URL, self.post)
+        resp_body = json.loads(resp.content)
+        c_hash = resp_body['commits'][0]
+        commit = Commit.objects.get(hash=c_hash)
+        # Assert commit files
+        files = json.loads(commit.files)
+        expected = [
+            {"file": "filepath.rb", "type": "added"},
+            {"file": "test.py", "type": "modified"},
+            {"file": "bad.php", "type": "modified"},
+            {"file": "frank.scheme", "type": "removed"}
+        ]
+        self.assertEqual(files, expected)
+
+    def test_orphan(self):
+        with patch.object(User, 'get_by_auth_id') as mock:
+            mock.return_value = None
+            self.client.post(self.API_URL, self.post)
+            self.assertEqual([l for l in self.game.locations], [])
+            self.assertEqual(self.requests.post.call_count, 4)
+
 
 class GithubTest(SCMTestMixin, TestCase):
 
@@ -128,7 +150,9 @@ class GithubTest(SCMTestMixin, TestCase):
                 },
                 "message": "okay i give in",
                 "timestamp": "2012-12-15T14:57:17-08:00",
-                "added": ["filepath.rb"]
+                "added": ["filepath.rb"],
+                "modified": ["test.py", "bad.php"],
+                "removed": ["frank.scheme"]
             },
             {
                 "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
@@ -137,6 +161,7 @@ class GithubTest(SCMTestMixin, TestCase):
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
                 },
+                "modified": ["somefile.py"],
                 "message": "update pricing a tad",
                 "timestamp": "2012-12-15T14:36:34-08:00"
             }
@@ -203,8 +228,20 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
                     "branch": "featureA",
                     "files": [
                         {
-                            "file": "somefile.py",
+                            "file": "filepath.rb",
+                            "type": "added"
+                        },
+                        {
+                            "file": "test.py",
                             "type": "modified"
+                        },
+                        {
+                            "file": "bad.php",
+                            "type": "modified"
+                        },
+                        {
+                            "file": "frank.scheme",
+                            "type": "removed"
                         }
                     ],
                     "message": "Added some featureA things",
