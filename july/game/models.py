@@ -125,7 +125,9 @@ class Game(models.Model):
         now = timezone.now()
         game = cls.active(now)
         if game is None:
-            game = cls.objects.filter(end__lte=now)
+            query = cls.objects.filter(end__lte=now)
+            if len(query):
+                game = query[0]
         return game
 
     def add_commit(self, commit, from_orphan=False):
