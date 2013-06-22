@@ -96,8 +96,8 @@ def email_verify(request, uidb36=None, token=None):
         for email_auth in user.social_auth.filter(provider="email"):
             email = email_auth.uid
             expected_token = salted_hmac(SECRET, email).hexdigest()
-            if  expected_token == token:
-                result =  email_auth
+            if expected_token == token:
+                result = email_auth
         return result
 
     valid = None

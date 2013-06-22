@@ -39,7 +39,8 @@ class Commit(models.Model):
     @classmethod
     def create_by_email(cls, email, commits, project=None):
         """Create a commit by email address"""
-        return cls.create_by_auth_id('email:%s' % email, commits, project=project)
+        return cls.create_by_auth_id(
+            'email:%s' % email, commits, project=project)
 
     @classmethod
     def user_model(cls):
@@ -77,7 +78,8 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
-            commit, created = cls.objects.get_or_create(hash=commit_hash,
+            commit, created = cls.objects.get_or_create(
+                hash=commit_hash,
                 defaults=c
             )
             if created:
@@ -274,7 +276,7 @@ class Group(models.Model):
     slug = models.SlugField(primary_key=True)
 
     class Meta:
-        abstract=True
+        abstract = True
 
     def __str__(self):
         return self.name
@@ -283,10 +285,12 @@ class Group(models.Model):
         return self.name
 
     def members_by_points(self):
-        raise NotImplementedError("members_by_points must be implemented by the subclass!")
+        raise NotImplementedError("members_by_points must be implemented "
+                                  "by the subclass!")
 
     def total_points(self):
-        raise NotImplementedError("total_points must be implemented by the subclass!")
+        raise NotImplementedError("total_points must be implemented "
+                                  "by the subclass!")
 
     @classmethod
     def create(cls, name):
@@ -330,7 +334,6 @@ class Team(Group):
         total = query.aggregate(Sum('points'))
         points = total.get('points__sum')
         return points or 0
-
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse

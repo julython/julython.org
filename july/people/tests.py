@@ -143,7 +143,7 @@ class GithubTest(SCMTestMixin, TestCase):
         "commits": [
             {
                 "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                "url": "http://github.com/defunkt/github/commit/41a212ee05f59",
                 "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
@@ -156,7 +156,7 @@ class GithubTest(SCMTestMixin, TestCase):
             },
             {
                 "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                "url": "http://github.com/defunkt/github/commit/de8251ff9e3d0",
                 "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
@@ -211,7 +211,6 @@ class GithubTest(SCMTestMixin, TestCase):
         self.assertEquals(project.name, repo['name'])
 
 
-
 class BitbucketHandlerTests(SCMTestMixin, TestCase):
 
     USER = 'marcus'
@@ -219,7 +218,8 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
     API_URL = '/api/v1/bitbucket'
     PROJECT_URL = 'https://bitbucket.org/marcus/project-x/'
     PROJECT_SLUG = 'bb-marcus-project-x'
-    post = {'payload':
+    post = {
+        'payload':
         json.dumps({
             "canon_url": "https://bitbucket.org",
             "commits": [

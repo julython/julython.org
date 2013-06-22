@@ -10,19 +10,24 @@ from july.models import User
 from july.people.models import Location, Team
 from optparse import make_option
 
-def get_twitter_id(username):
+
+def get_twitter_id(name):
     # don't overload twitter api
     sleep(60)
-    resp = requests.get('https://api.twitter.com/1/users/lookup.json?screen_name=%s' % username)
+    resp = requests.get(
+        'https://api.twitter.com/1/users/lookup.json?screen_name=%s' % name)
     data = json.loads(resp.content)
     return data[0]
+
 
 def get_location(location):
     if location is None:
         return
     slug = slugify(location)
-    loc, _ = Location.objects.get_or_create(slug=slug, defaults={'name': location})
+    loc, _ = Location.objects.get_or_create(
+        slug=slug, defaults={'name': location})
     return loc
+
 
 def get_team(team):
     if team is None:
@@ -31,8 +36,9 @@ def get_team(team):
     t, _ = Team.objects.get_or_create(slug=slug, defaults={'name': team})
     return t
 
+
 class FakeUser(object):
-    
+
     def __init__(self, user, commit=False):
         self.username = None
         self.first_name = user.get('first_name', '')
@@ -59,12 +65,12 @@ class FakeUser(object):
                 self.auth_ids.append('twitter:%s' % tid)
             else:
                 self.auth_ids.append(auth)
-    
+
     def create(self):
         if self.username is None:
             print self.__dict__
             return
-        defaults={
+        defaults = {
             'first_name': self.first_name,
             'last_name': self.last_name,
             'url': self.url,
@@ -84,21 +90,23 @@ class FakeUser(object):
             if auth not in user_auth_ids:
                 user.add_auth_id(auth)
 
+
 class Command(BaseCommand):
     args = '<user.json>'
     help = 'Load users from json file'
     option_list = BaseCommand.option_list + (
-        make_option('--commit',
+        make_option(
+            '--commit',
             action='store_true',
             dest='commit',
             default=False,
             help='Actually poll twitter/github for account info.'),
     )
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError('Must supply a JSON file of users.')
-        
+
         with open(args[0], 'r') as user_file:
             users = json.loads(user_file.read())
             total = len(users['models'])
@@ -108,6 +116,6 @@ class Command(BaseCommand):
                 try:
                     f = FakeUser(user, options['commit'])
                     f.create()
-                    logging.info("Loaded %s of %s: %s", count, total, f.username)
                 except Exception, e:
                     logging.exception("Error: %s" % e)
+                logging.info("Loaded %s of %s: %s", count, total, f.username)

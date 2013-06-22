@@ -10,11 +10,18 @@ from fabric.api import lcd, task, local
 
 
 @task
+def pep8():
+    """Run Pep8"""
+    local("pep8 july --exclude='*migrations*','*static*','*assets*'")
+
+
+@task
 def test():
     """Run the test suite"""
     local("python manage.py test")
     with lcd('assets'):
         local('node_modules/grunt-cli/bin/grunt jasmine')
+    pep8()
 
 
 @task

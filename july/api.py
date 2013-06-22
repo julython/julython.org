@@ -28,7 +28,8 @@ class UserResource(ModelResource):
 
     class Meta:
         queryset = User.objects.all()
-        excludes = ['password', 'email', 'is_superuser', 'is_staff', 'is_active']
+        excludes = ['password', 'email', 'is_superuser', 'is_staff',
+                    'is_active']
 
 
 class ProjectResource(ModelResource):
@@ -65,7 +66,8 @@ class TeamResource(ModelResource):
 
 class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
-    project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
+    project = fields.ForeignKey(ProjectResource, 'project',
+                                blank=True, null=True)
 
     class Meta:
         queryset = Commit.objects.all().select_related('user', 'project')
@@ -88,11 +90,14 @@ class CommitResource(ModelResource):
         email = bundle.data.pop('email')
         gravatar = self.gravatar(email)
         bundle.data['project_name'] = bundle.obj.project.name
-        bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
+        bundle.data['project_url'] = reverse('project-details',
+                                             args=[bundle.obj.project.slug])
         bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
         # Format the date properly using django template filter
         bundle.data['timestamp'] = date(bundle.obj.timestamp, 'c')
-        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', gravatar)
+        bundle.data['picture_url'] = getattr(bundle.obj.user,
+                                             'picture_url',
+                                             gravatar)
         return bundle
 
 
@@ -100,7 +105,9 @@ class JSONMixin(object):
 
     def respond_json(self, data, **kwargs):
         content = json.dumps(data)
-        resp = http.HttpResponse(content, content_type='application/json', **kwargs)
+        resp = http.HttpResponse(content,
+                                 content_type='application/json',
+                                 **kwargs)
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
@@ -121,7 +128,7 @@ def get_language(file_dict):
     name = file_dict.get('file', '')
     path, ext = splitext(name.lower())
     type_map = {
-        # 
+        #
         # C/C++
         #
         '.c': 'C/C++',
@@ -307,7 +314,8 @@ class PostCallbackHandler(View, JSONMixin):
                     None, dehydrated, format='application/json')
                 if commit.user:
                     requests.post(url + 'user-%s' % commit.user.id, serialized)
-                requests.post(url + 'project-%s' % commit.project.id, serialized)
+                requests.post(url + 'project-%s' % commit.project.id,
+                              serialized)
                 requests.post(url + 'global', serialized)
             except:
                 logging.exception("Error publishing message")
@@ -344,7 +352,9 @@ class PostCallbackHandler(View, JSONMixin):
 
         self._publish_commits(total_commits)
 
-        return self.respond_json({'commits': [c.hash for c in total_commits]}, status=status)
+        return self.respond_json(
+            {'commits': [c.hash for c in total_commits]},
+            status=status)
 
 
 class BitbucketHandler(PostCallbackHandler):
@@ -511,7 +521,7 @@ class GithubHandler(PostCallbackHandler):
               "commits": [
                 {
                   "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                  "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                  "url": "http://github.com/defunkt/github/commit/41a212ef59",
                   "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
@@ -522,7 +532,7 @@ class GithubHandler(PostCallbackHandler):
                 },
                 {
                   "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                  "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                  "url": "http://github.com/defunkt/github/commit/de8f8ae3d0",
                   "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
@@ -570,7 +580,7 @@ class GithubHandler(PostCallbackHandler):
 
             {
               "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-              "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "url": "http://github.com/defunkt/github/commit/41a212ee83ca",
               "author": {
                 "email": "chris@ozmm.org",
                 "name": "Chris Wanstrath"

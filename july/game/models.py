@@ -13,10 +13,10 @@ from july.people.models import Project, Location, Team, Commit
 LOCATION_SQL = """\
 SELECT july_user.location_id AS slug,
     people_location.name AS name,
-    SUM(game_player.points) AS total 
-    FROM game_player, july_user, people_location 
+    SUM(game_player.points) AS total
+    FROM game_player, july_user, people_location
     WHERE game_player.user_id = july_user.id
-    AND july_user.location_id = people_location.slug 
+    AND july_user.location_id = people_location.slug
     AND game_player.game_id = %s
     GROUP BY july_user.location_id
     ORDER BY total DESC
@@ -27,12 +27,12 @@ SELECT july_user.location_id AS slug,
 TEAM_SQL = """\
 SELECT july_user.team_id AS slug,
     people_team.name AS name,
-    SUM(game_player.points) AS total 
-    FROM game_player, july_user, people_team 
+    SUM(game_player.points) AS total
+    FROM game_player, july_user, people_team
     WHERE game_player.user_id = july_user.id
-    AND july_user.team_id = people_team.slug 
+    AND july_user.team_id = people_team.slug
     AND game_player.game_id = %s
-    GROUP BY july_user.team_id 
+    GROUP BY july_user.team_id
     ORDER BY total DESC
     LIMIT 50;
 """
@@ -40,7 +40,7 @@ SELECT july_user.team_id AS slug,
 
 # Number of commits on each day during the game
 HISTOGRAM = """\
-SELECT count(*), DATE(people_commit.timestamp), 
+SELECT count(*), DATE(people_commit.timestamp),
     game_game.start AS start, game_game.end AS end
     FROM people_commit, game_game
     WHERE game_game.id = %s
@@ -52,19 +52,21 @@ SELECT count(*), DATE(people_commit.timestamp),
 
 
 class Game(models.Model):
-    
+
     start = models.DateTimeField()
     end = models.DateTimeField()
     commit_points = models.IntegerField(default=1)
     project_points = models.IntegerField(default=10)
     problem_points = models.IntegerField(default=5)
-    players = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Player')
+    players = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through='Player')
     boards = models.ManyToManyField(Project, through='Board')
-    
+
     class Meta:
         ordering = ['-end']
         get_latest_by = 'end'
-    
+
     def __unicode__(self):
         if self.end.month == 8:
             return 'Julython %s' % self.end.year
@@ -72,7 +74,7 @@ class Game(models.Model):
             return 'J(an)ulython %s' % self.end.year
         else:
             return 'Testathon %s' % self.end.year
-    
+
     @property
     def locations(self):
         """Preform a raw query to mimic a real model."""
@@ -99,14 +101,14 @@ class Game(models.Model):
         results = [int(day.count) for day in days]
         if len(results) >= 2:
             results[1] += results[0]
-            results = results[1:] # trim the first day
+            results = results[1:]  # trim the first day
         if len(results) == 32:
             results[30] += results[31]
-            results = results[:31] # trim the last day
+            results = results[:31]  # trim the last day
         padding = [0 for day in xrange(31 - len(results))]
         results += padding
         return results
-        
+
     @classmethod
     def active(cls, now=None):
         """Returns the active game or None."""
@@ -116,34 +118,35 @@ class Game(models.Model):
             return cls.objects.get(start__lte=now, end__gte=now)
         except cls.DoesNotExist:
             return None
-    
+
     @classmethod
     def active_or_latest(cls):
         """Return the an active game or the latest one."""
-        game = cls.active()
+        now = timezone.now()
+        game = cls.active(now)
         if game is None:
-            game = cls.objects.latest()
+            game = cls.objects.filter(end__lte=now)
         return game
-    
+
     def add_commit(self, commit, from_orphan=False):
         """
         Add a commit to the game, update the scores for the player/board.
         If the commit was previously an orphan commit don't update the board
         total, since it was already updated.
-        
-        TODO (rmyers): This may need to be run by celery in the future instead 
+
+        TODO (rmyers): This may need to be run by celery in the future instead
         of a post create signal.
         """
         board, created = Board.objects.select_for_update().get_or_create(
-            game=self, project=commit.project, 
+            game=self, project=commit.project,
             defaults={'points': self.project_points + self.commit_points})
         if not created and not from_orphan:
             board.points += self.commit_points
             board.save()
-        
+
         if commit.user:
             player, created = Player.objects.select_for_update().get_or_create(
-                game=self, user=commit.user, 
+                game=self, user=commit.user,
                 defaults={'points': self.project_points + self.commit_points})
             player.boards.add(board)
             if not created:
@@ -156,11 +159,11 @@ class Game(models.Model):
                 # TODO (rmyers): Add in problem points
                 player.points = boards + commits
                 player.save()
-                
+
 
 class Player(models.Model):
     """A player in the game."""
-    
+
     game = models.ForeignKey(Game)
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     points = models.IntegerField(default=0)
@@ -173,9 +176,10 @@ class Player(models.Model):
     def __unicode__(self):
         return unicode(self.user)
 
+
 class Board(models.Model):
     """A project with commits in the game."""
-    
+
     game = models.ForeignKey(Game)
     project = models.ForeignKey(Project)
     points = models.IntegerField(default=0)
@@ -186,6 +190,7 @@ class Board(models.Model):
 
     def __unicode__(self):
         return unicode(self.project)
+
 
 @receiver(post_save, sender=Commit)
 def add_commit(sender, **kwargs):
