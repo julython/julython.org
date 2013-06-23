@@ -12,13 +12,18 @@ from fabric.api import lcd, task, local
 @task
 def pep8():
     """Run Pep8"""
-    local("pep8 july --exclude='*migrations*','*static*','*assets*'")
+    local("pep8 july --exclude='*migrations*','*static*'")
 
 
 @task
-def test():
+def test(coverage='False'):
     """Run the test suite"""
-    local("python manage.py test")
+    if coverage != 'False':
+        local("rm -rf htmlcov")
+        local("coverage run --include='july*' --omit='*migration*' manage.py test")
+        local("coverage html")
+    else:
+        local("python manage.py test")
     with lcd('assets'):
         local('node_modules/grunt-cli/bin/grunt jasmine')
     pep8()
