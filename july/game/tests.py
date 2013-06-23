@@ -12,6 +12,7 @@ from django.utils import timezone, unittest
 from july.models import User
 from july.people.models import Location, Commit, Team, Project
 from july.game.models import Game, Board, Player
+from july.game.views import GameMixin
 
 
 class ModelMixin(object):
@@ -139,3 +140,50 @@ class GameModelTests(TestCase, ModelMixin):
         self.assertEqual(game.histogram, [1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3])
+
+
+class Mixer(GameMixin):
+    """Helper class to test mixin"""
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+
+class GameViewTests(TestCase, ModelMixin):
+
+    def setUp(self):
+        self.now = timezone.now()
+        self.yesterday = self.now - datetime.timedelta(days=1)
+        self.tomorrow = self.now + datetime.timedelta(days=1)
+        self.early = self.now - datetime.timedelta(days=2)
+        self.late = self.now + datetime.timedelta(days=2)
+
+    def test_game_mixin_active(self):
+        active = self.make_game()
+        mixed = Mixer()
+        game = mixed.get_game()
+        self.assertEqual(game, active)
+
+    def test_game_mixin_latest(self):
+        past = self.make_game(start=self.early, end=self.yesterday)
+        mixed = Mixer()
+        game = mixed.get_game()
+        self.assertEqual(game, past)
+
+    def test_game_mixin_future(self):
+        past = self.make_game(start=self.early, end=self.yesterday)
+        future = self.make_game(start=self.tomorrow, end=self.late)
+        mixed = Mixer()
+        game = mixed.get_game()
+        self.assertNotEqual(game, future)
+        self.assertEqual(game, past)
+
+    def test_game_mixin_old(self):
+        recent = self.make_game(start=self.early, end=self.yesterday)
+        start = self.early - datetime.timedelta(days=4)
+        middle = self.early - datetime.timedelta(days=3)
+        end = self.early - datetime.timedelta(days=2)
+        past = self.make_game(start=start, end=end)
+        mixed = Mixer(year=middle.year, month=middle.month, day=middle.day)
+        game = mixed.get_game()
+        self.assertNotEqual(game, recent)
+        self.assertEqual(game, past)
