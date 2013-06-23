@@ -1,5 +1,6 @@
 import datetime
 import logging
+from pytz import UTC
 
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -14,15 +15,17 @@ class GameMixin(object):
 
     def get_game(self):
         year = int(self.kwargs.get('year', 0))
-        month = int(self.kwargs.get('month', 0))
-        if not year:
-            game = Game.active()
+        mon = int(self.kwargs.get('month', 0))
+        day = self.kwargs.get('day')
+        if day is None:
+            day = 15
+        day = int(day)
+        if not all([year, mon]):
+            now = None
         else:
-            date = datetime.datetime(year=year, month=month, day=15)
-            game = Game.active(now=date)
-        if game is None:
-            game = Game.objects.latest()
-        return game
+            now = datetime.datetime(year=year, month=mon, day=day, tzinfo=UTC)
+            logging.debug("Getting game for date: %s", now)
+        return Game.active_or_latest(now=now)
 
 
 class PlayerList(ListView, GameMixin):

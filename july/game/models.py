@@ -120,9 +120,10 @@ class Game(models.Model):
             return None
 
     @classmethod
-    def active_or_latest(cls):
+    def active_or_latest(cls, now=None):
         """Return the an active game or the latest one."""
-        now = timezone.now()
+        if now is None:
+            now = timezone.now()
         game = cls.active(now)
         if game is None:
             query = cls.objects.filter(end__lte=now)
