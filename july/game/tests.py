@@ -123,11 +123,8 @@ class GameModelTests(TestCase, ModelMixin):
         self.make_commit(project=project)
         self.make_commit(project=project)
         self.make_commit(project=project)
-        self.assertEqual(game.histogram, [4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self.assertEqual(game.histogram, [0, 4, 0])
 
-    @unittest.skip("histogram broken see ticket #66")
     def test_histogram_end(self):
         # TODO: Fix histogram
         delta = datetime.timedelta(days=31)
@@ -137,9 +134,9 @@ class GameModelTests(TestCase, ModelMixin):
         self.make_commit(project=project, timestamp=self.yesterday)
         self.make_commit(project=project, timestamp=self.yesterday)
         self.make_commit(project=project, timestamp=self.yesterday)
-        self.assertEqual(game.histogram, [1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        self.assertEqual(game.histogram, [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3])
+                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0])
 
 
 class Mixer(GameMixin):
