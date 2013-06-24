@@ -88,10 +88,13 @@ module.exports = function(grunt) {
     // Run our Jasmine tests
     jasmine: {
       julython: {
-        src: deps.concat(apps),
-        specs: 'js/spec/**/*Spec.js',
-        junit: {
-          output: 'junit/'
+        src: apps,
+        options: {
+          vendor: deps,
+          specs: 'js/spec/**/*Spec.js',
+          junit: {
+            output: 'junit/'
+          }
         }
       }
     }
