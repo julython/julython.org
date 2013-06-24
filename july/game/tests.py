@@ -184,3 +184,45 @@ class GameViewTests(TestCase, ModelMixin):
         game = mixed.get_game()
         self.assertNotEqual(game, recent)
         self.assertEqual(game, past)
+
+    def test_player_view(self):
+        self.make_game()
+        project = self.make_project()
+        user = self.make_user('ted')
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/people/')
+        self.assertContains(resp, 'ted')
+
+    def test_project_view(self):
+        self.make_game()
+        project = self.make_project(name="fred")
+        user = self.make_user('ted')
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/projects/')
+        self.assertContains(resp, "fred")
+
+    def test_loction_view(self):
+        self.make_game()
+        project = self.make_project()
+        location = self.make_location("Austin, TX")
+        user = self.make_user('ted', location=location)
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/location/')
+        self.assertContains(resp, "Austin, TX")
+
+    def test_team_view(self):
+        self.make_game()
+        project = self.make_project()
+        team = self.make_team("Commit Rangers")
+        user = self.make_user('ted', team=team)
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/teams/')
+        self.assertContains(resp, "Commit Rangers")
+
+    def test_event_handler(self):
+        resp = self.client.post('/events/pub/test/', {"foo": "bar"})
+        self.assertEqual(resp.status_code, 200)
