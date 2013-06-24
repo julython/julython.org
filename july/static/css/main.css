@@ -911,3 +911,4 @@ button{background:none}
 .message-list{list-style:none;margin:-14px 0 0;padding:0}
 .message-list .message{display:block;border-radius:10px;background:#EEE;padding:5px;border:1px solid #BBB;margin-bottom:10px}.message-list .message img{max-width:48px}
 .message-list h4{font-size:16px;line-height:20px}
+#commit-calendar{float:right}
