@@ -8,8 +8,8 @@ from django.test import TestCase
 from django.template.defaultfilters import slugify
 
 from july.models import User
-from july.people.models import Location, Commit, Team, Project
-from july.game.models import Game, Board, Player
+from july.people.models import Location, Commit, Team, Project, Language
+from july.game.models import Game, Board, Player, LanguageBoard
 
 import requests
 
@@ -94,6 +94,24 @@ class SCMTestMixin(object):
         self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.teams[0].total, 12)
         self.assertEqual(self.requests.post.call_count, 6)
+
+    def test_post_adds_points_to_language_boards(self):
+        self.client.post(self.API_URL, self.post)
+        number_of_languages = LanguageBoard.objects.all().count()
+        self.assertEqual(number_of_languages, 4)
+
+        python_board = LanguageBoard.objects.get(language='Python')
+        self.assertEqual(python_board.points, 2)
+
+        ruby_board = LanguageBoard.objects.get(language='Ruby')
+        self.assertEqual(ruby_board.points, 1)
+
+    def test_post_adds_languages_to_projects(self):
+        self.client.post(self.API_URL, self.post)
+        project = Project.objects.get(slug=self.PROJECT_SLUG)
+        languages = [language.name for language in project.languages.all()]
+        expected_languages = ['Python', 'Ruby', 'Documentation', 'Scheme']
+        self.assertItemsEqual(languages, expected_languages)
 
     def test_files(self):
         resp = self.client.post(self.API_URL, self.post)
