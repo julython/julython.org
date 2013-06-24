@@ -1,15 +1,14 @@
-
-import logging
-import datetime
 from collections import namedtuple
+import datetime
+import logging
 
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from july.people.models import Project, Location, Team, Commit
+from july.people.models import Project, Location, Team, Commit, Language
 
 
 LOCATION_SQL = """\
@@ -61,9 +60,10 @@ class Game(models.Model):
     project_points = models.IntegerField(default=10)
     problem_points = models.IntegerField(default=5)
     players = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        through='Player')
+        settings.AUTH_USER_MODEL, through='Player')
     boards = models.ManyToManyField(Project, through='Board')
+    language_boards = models.ManyToManyField(
+        Language, through='LanguageBoard')
 
     class Meta:
         ordering = ['-end']
@@ -129,9 +129,49 @@ class Game(models.Model):
                 game = query[0]
         return game
 
+    def add_points_to_board(self, commit, from_orphan=False):
+        board, created = Board.objects.select_for_update().get_or_create(
+            game=self, project=commit.project,
+            defaults={'points': self.project_points + self.commit_points})
+        if not created and not from_orphan:
+            board.points += self.commit_points
+            board.save()
+        return board
+
+    def add_points_to_language_boards(self, languages, user):
+        language_boards = []
+        for language in languages:
+            language_board, created = LanguageBoard.objects. \
+                select_for_update().get_or_create(
+                    game=self, language=language,
+                    defaults={'points': self.commit_points})
+            if not created:
+                language_board.points += self.commit_points
+                language_board.save()
+            language_boards.append(language_board)
+        if user:
+            player = Player.objects.get(game=self, user=user)
+            player.language_boards.add(*language_boards)
+
+    def add_points_to_player(self, board, commit):
+        player, created = Player.objects.select_for_update().get_or_create(
+            game=self, user=commit.user,
+            defaults={'points': self.project_points + self.commit_points})
+        player.boards.add(board)
+        if not created:
+            # we need to get the total points for the user
+            project_points = player.boards.all().count() * self.project_points
+            commit_points = Commit.objects.filter(
+                user=commit.user,
+                timestamp__gte=self.start,
+                timestamp__lte=self.end).count() * self.commit_points
+            # TODO (rmyers): Add in problem points
+            player.points = project_points + commit_points
+            player.save()
+
     def add_commit(self, commit, from_orphan=False):
         """
-        Add a commit to the game, update the scores for the player/board.
+        Add a commit to the game, update the scores for the player/boards.
         If the commit was previously an orphan commit don't update the board
         total, since it was already updated.
 
@@ -169,6 +209,7 @@ class Player(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     points = models.IntegerField(default=0)
     boards = models.ManyToManyField('Board')
+    language_boards = models.ManyToManyField('LanguageBoard')
 
     class Meta:
         ordering = ['-points']
@@ -178,19 +219,33 @@ class Player(models.Model):
         return unicode(self.user)
 
 
-class Board(models.Model):
-    """A project with commits in the game."""
-
+class AbstractBoard(models.Model):
+    """Keeps points per metric per game"""
     game = models.ForeignKey(Game)
-    project = models.ForeignKey(Project)
     points = models.IntegerField(default=0)
 
     class Meta:
+        abstract = True
         ordering = ['-points']
         get_latest_by = 'game__end'
 
+
+class Board(AbstractBoard):
+    """A project with commits in the game."""
+
+    project = models.ForeignKey(Project)
+
     def __unicode__(self):
-        return unicode(self.project)
+        return 'Board for %s' % unicode(self.project)
+
+
+class LanguageBoard(AbstractBoard):
+    """A language with commits in the game."""
+
+    language = models.ForeignKey(Language)
+
+    def __unicode__(self):
+        return 'Board for %s' % unicode(self.language)
 
 
 @receiver(post_save, sender=Commit)
@@ -201,3 +256,19 @@ def add_commit(sender, **kwargs):
     if active_game is not None:
         from_orphan = not kwargs.get('created', False)
         active_game.add_commit(commit, from_orphan=from_orphan)
+
+
+@receiver(m2m_changed, sender=Commit.languages.through)
+def add_points_to_language_boards(sender, **kwargs):
+    """
+    Listens to languages being added to commits, adds point to language boards
+    """
+    if not kwargs['action'] == 'post_add':
+        return
+    commit = kwargs.get('instance')
+    active_game = Game.active(now=commit.timestamp)
+    if active_game is not None:
+        user = commit.user
+        languages_added = Language.objects.filter(
+            name__in=list(kwargs['pk_set']))
+        active_game.add_points_to_language_boards(languages_added, user)

@@ -1,8 +1,5 @@
-
-# livin' on the edge
--e git+https://github.com/django/django.git@1.5b1#egg=django
--e git+https://github.com/toastdriven/django-tastypie.git#egg=django-tastypie
-
+Django==1.5.1
+django-tastypie==0.9.15
 Fabric==1.5.1
 django-social-auth==0.7.12
 iso8601==0.1.4
