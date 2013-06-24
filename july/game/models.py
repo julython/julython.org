@@ -1,4 +1,6 @@
 from collections import namedtuple
+import datetime
+import logging
 
 from django.conf import settings
 from django.db import models
@@ -92,21 +94,17 @@ class Game(models.Model):
         cursor = connection.cursor()
         cursor.execute(HISTOGRAM, [self.pk])
         Day = namedtuple('Day', 'count date start end')
-        days = map(Day._make, cursor.fetchall())
-        # TODO (rmyers): This should be moved to view or templatetag?
-        # return just the totals for now and condense and pad the results
-        # so that there are 31 days. The games start noon UTC time the last
-        # day of the previous month and end noon the 1st of the next month.
-        # This, is, really, ugly, don't look!
-        results = [int(day.count) for day in days]
-        if len(results) >= 2:
-            results[1] += results[0]
-            results = results[1:]  # trim the first day
-        if len(results) == 32:
-            results[30] += results[31]
-            results = results[:31]  # trim the last day
-        padding = [0 for day in xrange(31 - len(results))]
-        results += padding
+        days = {i.date: i for i in map(Day._make, cursor.fetchall())}
+        num_days = self.end - self.start
+        records = []
+        for day_n in xrange(num_days.days + 1):
+            day = self.start + datetime.timedelta(days=day_n)
+            frmt = day.strftime('%Y-%m-%d')
+            records.append(days.get(frmt, Day(0, frmt, '', '')))
+
+        logging.debug(records)
+        # TODO (rmyers): This should return a json array with labels
+        results = [int(day.count) for day in records]
         return results
 
     @classmethod
