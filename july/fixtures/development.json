@@ -4,30 +4,16 @@
   "model": "people.language",
   "fields": {}
 },
-{
-  "pk": "py",
-  "model": "people.extension",
-  "fields": {"language": "Python"}
-},
+
 {
   "pk": "Ruby",
   "model": "people.language",
   "fields": {}
 },
 {
-  "pk": "rb",
-  "model": "people.extension",
-  "fields": {"language": "Ruby"}
-},
-{
   "pk": "Javascript",
   "model": "people.language",
   "fields": {}
-},
-{
-  "pk": "js",
-  "model": "people.extension",
-  "fields": {"language": "Javascript"}
 },
 {
   "pk": "austin-tx",
