@@ -118,14 +118,15 @@ class PlayerCommitsCollection(View, JSONMixin):
         pass
 
 
-def get_language(file_dict):
+def add_language(file_dict):
     """Parse a filename for the language.
 
     >>> d = {"file": "somefile.py", "type": "added"}
-    >>> get_language(d)
-    'Python'
+    >>> add_language(d)
+    {"file": "somefile.py", "type": "added", "language": "Python"}
     """
     name = file_dict.get('file', '')
+    language = None
     path, ext = splitext(name.lower())
     type_map = {
         #
@@ -262,8 +263,11 @@ def get_language(file_dict):
         'makefile': 'Build Tools',
     }
     if ext == '':
-        return doc_map.get(path)
-    return type_map.get(ext)
+        language = doc_map.get(path)
+    else:
+        language = type_map.get(ext)
+    file_dict['language'] = language
+    return file_dict
 
 
 class PostCallbackHandler(View, JSONMixin):
@@ -328,13 +332,13 @@ class PostCallbackHandler(View, JSONMixin):
         payload = self.parse_payload(request)
         logging.info(payload)
         if not payload:
-            raise http.HttpResponseBadRequest
+            return http.HttpResponseBadRequest()
 
         try:
             data = json.loads(payload)
         except:
             logging.exception("Unable to serialize POST")
-            raise http.HttpResponseBadRequest
+            return http.HttpResponseBadRequest()
 
         commit_data = data.get('commits', [])
 
@@ -455,34 +459,33 @@ class BitbucketHandler(PostCallbackHandler):
 
         Example::
 
-                {
-                    "author": "marcus",
-                    "branch": "featureA",
-                    "files": [
-                        {
-                            "file": "somefile.py",
-                            "type": "modified"
-                        }
-                    ],
-                    "message": "Added some featureA things",
-                    "node": "d14d26a93fd2",
-                    "parents": [
-                        "1b458191f31a"
-                    ],
-                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
-                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
-                    "revision": 3,
-                    "size": -1,
-                    "timestamp": "2012-05-30 06:07:03",
-                    "utctimestamp": "2012-05-30 04:07:03+00:00"
-                }
+            {
+                "author": "marcus",
+                "branch": "featureA",
+                "files": [
+                    {
+                        "file": "somefile.py",
+                        "type": "modified"
+                    }
+                ],
+                "message": "Added some featureA things",
+                "node": "d14d26a93fd2",
+                "parents": [
+                    "1b458191f31a"
+                ],
+                "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
+                "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
+                "revision": 3,
+                "size": -1,
+                "timestamp": "2012-05-30 06:07:03",
+                "utctimestamp": "2012-05-30 04:07:03+00:00"
+            }
         """
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
 
         email = self._parse_email(data.get('raw_author'))
-        files = data.get('files', [])
-        languages = filter(None, map(get_language, files))
+        files = map(add_language, data.get('files', []))
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
 
@@ -495,7 +498,6 @@ class BitbucketHandler(PostCallbackHandler):
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
             'files': files,
-            'languages': languages,
         }
         return email, commit_data
 
@@ -505,8 +507,8 @@ class GithubHandler(PostCallbackHandler):
     Takes a POST response from github in the following format::
 
         payload=>"{
-              "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
-              "repository": {
+            "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+            "repository": {
                 "url": "http://github.com/defunkt/github",
                 "name": "github",
                 "description": "You're lookin' at it.",
@@ -514,36 +516,36 @@ class GithubHandler(PostCallbackHandler):
                 "forks": 2,
                 "private": 1,
                 "owner": {
-                  "email": "chris@ozmm.org",
-                  "name": "defunkt"
+                    "email": "chris@ozmm.org",
+                    "name": "defunkt"
                 }
+            },
+            "commits": [
+            {
+              "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "url": "http://github.com/defunkt/github/commit/41a212ef59",
+              "author": {
+                "email": "chris@ozmm.org",
+                "name": "Chris Wanstrath"
               },
-              "commits": [
-                {
-                  "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                  "url": "http://github.com/defunkt/github/commit/41a212ef59",
-                  "author": {
-                    "email": "chris@ozmm.org",
-                    "name": "Chris Wanstrath"
-                  },
-                  "message": "okay i give in",
-                  "timestamp": "2008-02-15T14:57:17-08:00",
-                  "added": ["filepath.rb"]
-                },
-                {
-                  "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                  "url": "http://github.com/defunkt/github/commit/de8f8ae3d0",
-                  "author": {
-                    "email": "chris@ozmm.org",
-                    "name": "Chris Wanstrath"
-                  },
-                  "message": "update pricing a tad",
-                  "timestamp": "2008-02-15T14:36:34-08:00"
-                }
-              ],
-              "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-              "ref": "refs/heads/master"
-            }"
+              "message": "okay i give in",
+              "timestamp": "2008-02-15T14:57:17-08:00",
+              "added": ["filepath.rb"]
+            },
+            {
+              "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+              "url": "http://github.com/defunkt/github/commit/de8f8ae3d0",
+              "author": {
+                "email": "chris@ozmm.org",
+                "name": "Chris Wanstrath"
+              },
+              "message": "update pricing a tad",
+              "timestamp": "2008-02-15T14:36:34-08:00"
+            }
+            ],
+            "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+            "ref": "refs/heads/master"
+        }"
     """
 
     def _parse_repo(self, data):
@@ -596,8 +598,7 @@ class GithubHandler(PostCallbackHandler):
         author = data.get('author', {})
         email = author.get('email', '')
         name = author.get('name', '')
-        files = self._parse_files(data)
-        languages = filter(None, map(get_language, files))
+        files = map(add_language, self._parse_files(data))
 
         commit_data = {
             'hash': data['id'],
@@ -607,6 +608,5 @@ class GithubHandler(PostCallbackHandler):
             'message': data['message'],
             'timestamp': data['timestamp'],
             'files': files,
-            'languages': languages,
         }
         return email, commit_data

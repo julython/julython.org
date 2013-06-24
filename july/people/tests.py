@@ -101,14 +101,14 @@ class SCMTestMixin(object):
         c_hash = resp_body['commits'][0]
         commit = Commit.objects.get(hash=c_hash)
         # Assert commit files
-        files = json.loads(commit.files)
         expected = [
-            {"file": "filepath.rb", "type": "added"},
-            {"file": "test.py", "type": "modified"},
-            {"file": "bad.php", "type": "modified"},
-            {"file": "frank.scheme", "type": "removed"}
+            {"file": "filepath.rb", "type": "added", "language": "Ruby"},
+            {"file": "test.py", "type": "modified", "language": "Python"},
+            {"file": "README", "type": "modified",
+             "language": "Documentation"},
+            {"file": "frank.scheme", "type": "removed", "language": "Scheme"},
         ]
-        self.assertEqual(files, expected)
+        self.assertEqual(commit.files, expected)
 
     def test_orphan(self):
         with patch.object(User, 'get_by_auth_id') as mock:
@@ -116,6 +116,14 @@ class SCMTestMixin(object):
             self.client.post(self.API_URL, self.post)
             self.assertEqual([l for l in self.game.locations], [])
             self.assertEqual(self.requests.post.call_count, 4)
+
+    def test_missing_payload(self):
+        resp = self.client.post(self.API_URL, {})
+        self.assertEqual(resp.status_code, 400)
+
+    def test_malformed_payload(self):
+        resp = self.client.post(self.API_URL, {"payload": "Bad Data"})
+        self.assertEqual(resp.status_code, 400)
 
 
 class GithubTest(SCMTestMixin, TestCase):
@@ -151,7 +159,7 @@ class GithubTest(SCMTestMixin, TestCase):
                 "message": "okay i give in",
                 "timestamp": "2012-12-15T14:57:17-08:00",
                 "added": ["filepath.rb"],
-                "modified": ["test.py", "bad.php"],
+                "modified": ["test.py", "README"],
                 "removed": ["frank.scheme"]
             },
             {
@@ -236,7 +244,7 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
                             "type": "modified"
                         },
                         {
-                            "file": "bad.php",
+                            "file": "README",
                             "type": "modified"
                         },
                         {
