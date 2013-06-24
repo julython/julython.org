@@ -98,6 +98,7 @@ class CommitResource(ModelResource):
         bundle.data['picture_url'] = getattr(bundle.obj.user,
                                              'picture_url',
                                              gravatar)
+        bundle.data['files'] = bundle.obj.files
         return bundle
 
 
