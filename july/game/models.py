@@ -141,9 +141,10 @@ class Game(models.Model):
     def add_points_to_language_boards(self, languages, user):
         language_boards = []
         for language in languages:
-            language_board, created = LanguageBoard.objects.select_for_update().get_or_create(
-                game=self, language=language,
-                defaults={'points': self.commit_points})
+            language_board, created = LanguageBoard.objects. \
+                select_for_update().get_or_create(
+                    game=self, language=language,
+                    defaults={'points': self.commit_points})
             if not created:
                 language_board.points += self.commit_points
                 language_board.save()
@@ -268,5 +269,6 @@ def add_points_to_language_boards(sender, **kwargs):
     active_game = Game.active(now=commit.timestamp)
     if active_game is not None:
         user = commit.user
-        languages_added = Language.objects.filter(name__in=list(kwargs['pk_set']))
+        languages_added = Language.objects.filter(
+            name__in=list(kwargs['pk_set']))
         active_game.add_points_to_language_boards(languages_added, user)

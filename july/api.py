@@ -78,7 +78,8 @@ class CommitResource(ModelResource):
         LanguageResource, 'languages', blank=True, null=True)
 
     class Meta:
-        queryset = Commit.objects.all().select_related('user', 'project', 'languages')
+        queryset = Commit.objects.all().select_related(
+            'user', 'project', 'languages')
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,
