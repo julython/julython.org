@@ -20,7 +20,7 @@
   </head>
 
   <body class="{% block bodyclass %}{% endblock %}">
-    
+
     {% block navbar %}
     <div class="navbar navbar-fixed-top" id="topnav">
       <div class="navbar-inner">
@@ -31,13 +31,14 @@
 	            <span class="icon-bar"></span>
 	        </a>
             <a class="brand" href="/"><img class="logo" alt="julython.org" src="{{ STATIC_URL }}images/julython_logo_small.png"/></a>
-            
+
             <div class="nav-collapse pull-right collapse">
               <ul class="nav">
 	              {% block navbar-links %}
 	              <li><a href="{% url 'leaderboard' %}">{% trans "People" %}</a></li>
 	              <li><a href="{% url 'projects' %}">{% trans "Projects" %}</a></li>
-	              <li><a href="{% url 'locations' %}">{% trans "Locations" %}</a></li>
+                <li><a href="{% url 'locations' %}">{% trans "Locations" %}</a></li>
+	              <li><a href="{% url 'languages' %}">{% trans "Languages" %}</a></li>
 	              <li><a href="{% url 'teams' %}">{% trans "Teams" %}</a></li>
 	              <li><a href="http://blog.julython.org">{% trans "Blog" %}</a></li>
 	              <li><a href="{% url 'help' %}">{% trans "Help" %}</a></li>
@@ -136,7 +137,7 @@
             ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
           })();
-    </script> 
+    </script>
   </body>
 
 </html>

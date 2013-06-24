@@ -1,17 +1,16 @@
 
 import datetime
-import json
+
 import uuid
 from pytz import UTC
-from mock import MagicMock, patch
 
 from django.test import TestCase
 from django.template.defaultfilters import slugify
-from django.utils import timezone, unittest
+from django.utils import timezone
 
 from july.models import User
 from july.people.models import Location, Commit, Team, Project
-from july.game.models import Game, Board, Player
+from july.game.models import Game
 from july.game.views import GameMixin
 
 

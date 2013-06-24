@@ -18,7 +18,7 @@ from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie import fields
 
-from july.people.models import Commit, Project, Location, Team
+from july.people.models import Commit, Project, Location, Team, Language
 from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
@@ -64,17 +64,27 @@ class TeamResource(ModelResource):
         }
 
 
+class LanguageResource(ModelResource):
+
+    class Meta:
+        queryset = Language.objects.all()
+
+
 class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
     project = fields.ForeignKey(ProjectResource, 'project',
                                 blank=True, null=True)
+    languages = fields.ToManyField(
+        LanguageResource, 'languages', blank=True, null=True)
 
     class Meta:
-        queryset = Commit.objects.all().select_related('user', 'project')
+        queryset = Commit.objects.all().select_related(
+            'user', 'project', 'languages')
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,
             'project': ALL_WITH_RELATIONS,
+            'languages': ALL_WITH_RELATIONS,
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
 
@@ -98,6 +108,8 @@ class CommitResource(ModelResource):
         bundle.data['picture_url'] = getattr(bundle.obj.user,
                                              'picture_url',
                                              gravatar)
+        bundle.data['files'] = bundle.obj.files
+        bundle.data['languages'] = list(bundle.obj.languages.all())
         return bundle
 
 
@@ -270,6 +282,16 @@ def add_language(file_dict):
     return file_dict
 
 
+def get_or_create_languages_list_from_files(files):
+    result = []
+
+    languages = [file['language'] for file in files]
+    for language in set(languages):
+        language_object, _ = Language.objects.get_or_create(name=language)
+        result.append(language_object)
+    return result
+
+
 class PostCallbackHandler(View, JSONMixin):
 
     def parse_commits(self, commits, project):
@@ -333,7 +355,6 @@ class PostCallbackHandler(View, JSONMixin):
         logging.info(payload)
         if not payload:
             return http.HttpResponseBadRequest()
-
         try:
             data = json.loads(payload)
         except:
@@ -454,6 +475,15 @@ class BitbucketHandler(PostCallbackHandler):
             return m.group(1)
         return ''
 
+    @staticmethod
+    def parse_extensions(data):
+        """Returns a list of file extensions in the commit data"""
+        file_dicts = data.get('files')
+        extensions = [
+            ext[1:] for root, ext in
+            [splitext(file_dict['file']) for file_dict in file_dicts]]
+        return extensions
+
     def _parse_commit(self, data, project):
         """Parse a single commit.
 
@@ -486,6 +516,8 @@ class BitbucketHandler(PostCallbackHandler):
 
         email = self._parse_email(data.get('raw_author'))
         files = map(add_language, data.get('files', []))
+        languages = get_or_create_languages_list_from_files(files)
+        project.languages.add(*languages)
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
 
@@ -497,6 +529,7 @@ class BitbucketHandler(PostCallbackHandler):
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
+            'languages': languages,
             'files': files,
         }
         return email, commit_data
@@ -599,6 +632,8 @@ class GithubHandler(PostCallbackHandler):
         email = author.get('email', '')
         name = author.get('name', '')
         files = map(add_language, self._parse_files(data))
+        languages = get_or_create_languages_list_from_files(files)
+        project.languages.add(*languages)
 
         commit_data = {
             'hash': data['id'],
@@ -607,6 +642,7 @@ class GithubHandler(PostCallbackHandler):
             'name': name,
             'message': data['message'],
             'timestamp': data['timestamp'],
+            'languages': languages,
             'files': files,
         }
         return email, commit_data

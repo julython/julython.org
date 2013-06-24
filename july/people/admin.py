@@ -1,34 +1,30 @@
 from django.contrib import admin
-
-from models import Team, Commit, Location, AchievedBadge, Badge
+from models import Team, Commit, Location, AchievedBadge
+from models import Badge, Language
 
 
 admin.site.register(
     Commit,
     list_display=['hash', 'email', 'timestamp', 'project', 'user'],
     search_fields=['hash', 'email', 'project__name', 'user__username'],
-    ordering=['-timestamp']
-)
-
+    ordering=['-timestamp'])
 
 admin.site.register(
     Location,
     list_display=["__unicode__", "slug", 'total'],
-    ordering=['-total']
-)
+    ordering=['-total'])
 
+admin.site.register(
+    Language,
+    list_display=["__unicode__"])
 
 admin.site.register(
     Team,
     list_display=["__unicode__", "slug", 'total'],
-    ordering=['-total']
-)
-
-
-admin.site.register(AchievedBadge)
-
+    ordering=['-total'])
 
 admin.site.register(
     Badge,
-    list_display=["__unicode__"]
-)
+    list_display=["__unicode__"])
+
+admin.site.register(AchievedBadge)

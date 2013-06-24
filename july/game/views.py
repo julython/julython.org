@@ -2,13 +2,13 @@ import datetime
 import logging
 from pytz import UTC
 
+from django.views.generic import list, detail
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import detail
 from django.views.generic.list import ListView
 
-from july.game.models import Player, Game, Board
-from july.people.models import Project, Location, Team
+from july.game.models import Player, Game, Board, LanguageBoard
+from july.people.models import Project, Location, Team, Language
 
 
 class GameMixin(object):
@@ -46,8 +46,17 @@ class BoardList(ListView, GameMixin):
         return Board.objects.filter(game=game).select_related()
 
 
+class LanguageBoardList(list.ListView, GameMixin):
+    model = LanguageBoard
+    paginate_by = 100
+
+
 class ProjectView(detail.DetailView):
     model = Project
+
+
+class LanguageView(detail.DetailView):
+    model = Language
 
 
 class LocationCollection(ListView, GameMixin):

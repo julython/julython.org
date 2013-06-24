@@ -13,6 +13,7 @@ JULY.CommitCollection = Backbone.Collection.extend({
   initialize: function(data, options) {
     this.projectId = options.projectId;
     this.userId = options.userId;
+    this.languages = options.languages || [];
     this.limit = options.limit || 20;
     this.offset = options.offset || 0;
     this.total = 0;
@@ -52,6 +53,12 @@ JULY.CommitCollection = Backbone.Collection.extend({
     }
     if (this.userId) {
       p.user = this.userId;
+    }
+    if (this.languages) {
+      p.languages = _(this.languages).reduce(function(memo, language, index) {
+        var notFirst = index > 0;
+        return memo.concat((notFirst?';':'') + language);
+      }, '', this);
     }
     return jQuery.param(p);
   },
