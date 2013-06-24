@@ -64,17 +64,26 @@ class TeamResource(ModelResource):
         }
 
 
+class LanguageResource(ModelResource):
+
+    class Meta:
+        queryset = Language.objects.all()
+
+
 class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
     project = fields.ForeignKey(ProjectResource, 'project',
                                 blank=True, null=True)
+    languages = fields.ToManyField(
+        LanguageResource, 'languages', blank=True, null=True)
 
     class Meta:
-        queryset = Commit.objects.all().select_related('user', 'project')
+        queryset = Commit.objects.all().select_related('user', 'project', 'languages')
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,
             'project': ALL_WITH_RELATIONS,
+            'languages': ALL_WITH_RELATIONS,
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
 
@@ -99,6 +108,7 @@ class CommitResource(ModelResource):
                                              'picture_url',
                                              gravatar)
         bundle.data['files'] = bundle.obj.files
+        bundle.data['languages'] = list(bundle.obj.languages.all())
         return bundle
 
 

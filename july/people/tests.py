@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.template.defaultfilters import slugify
 
 from july.models import User
-from july.people.models import Location, Commit, Team, Project, Language
+from july.people.models import Location, Commit, Team, Project
 from july.game.models import Game, Board, Player, LanguageBoard
 
 import requests
@@ -112,6 +112,21 @@ class SCMTestMixin(object):
         languages = [language.name for language in project.languages.all()]
         expected_languages = ['Python', 'Ruby', 'Documentation', 'Scheme']
         self.assertItemsEqual(languages, expected_languages)
+
+    def test_commit_resource_by_language(self):
+        self.client.post(self.API_URL, self.post)
+
+        resp = self.client.get('/api/v1/commit/?languages=Python')
+        resp_body = json.loads(resp.content)
+        self.assertEqual(resp_body['meta']['total_count'], 2)
+
+        resp = self.client.get('/api/v1/commit/?languages=Ruby')
+        resp_body = json.loads(resp.content)
+        self.assertEqual(resp_body['meta']['total_count'], 1)
+
+        resp = self.client.get('/api/v1/commit/?languages=Ruby;Python')
+        resp_body = json.loads(resp.content)
+        self.assertEqual(resp_body['meta']['total_count'], 1)
 
     def test_files(self):
         resp = self.client.post(self.API_URL, self.post)
