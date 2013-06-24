@@ -11,10 +11,12 @@ from django.utils.timezone import make_aware
 from july.people.models import Commit, Project
 import os
 
+
 def to_datetime(ts):
     d = datetime.fromtimestamp(ts)
     t = make_aware(d, pytz.UTC)
     return t
+
 
 def to_commit(commit):
     new = {}
@@ -23,8 +25,9 @@ def to_commit(commit):
     new['created_on'] = to_datetime(commit['created_on'])
     for key in attrs:
         new[key] = commit.get(key) or ''
-    
+
     return new
+
 
 class Command(BaseCommand):
     args = '<commits.json>'
@@ -33,14 +36,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError('Must supply a JSON file of commits.')
-        
+
         commit_path = args[0]
-        
+
         if os.path.isdir(commit_path):
-            files = [os.path.join(commit_path, f) for f in os.listdir(commit_path) if f.startswith('commits')]
+            files = [os.path.join(commit_path, f) for f in
+                     os.listdir(commit_path) if f.startswith('commits')]
         else:
             files = [commit_path]
-        
+
         for commits_json in files:
             logging.info("Parsing File: %s", commits_json)
             with open(commits_json, 'r') as commit_file:

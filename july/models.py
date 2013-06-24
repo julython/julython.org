@@ -6,7 +6,9 @@ This is experimental, but so much worth it!
 """
 
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.utils.crypto import salted_hmac
 from social_auth.models import UserSocialAuth
 
 from july.people.models import Location, Team, Project, AchievedBadge
@@ -55,6 +57,15 @@ class User(AbstractUser):
             return self.social_auth.filter(provider=provider).get()
         except UserSocialAuth.DoesNotExist:
             return None
+
+    def find_valid_email(self, token):
+        result = None
+        for email_auth in self.social_auth.filter(provider="email"):
+            email = email_auth.uid
+            expected = salted_hmac(settings.SECRET_KEY, email).hexdigest()
+            if expected == token:
+                result = email_auth
+        return result
 
     @property
     def gittip(self):

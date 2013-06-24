@@ -28,7 +28,8 @@ class UserResource(ModelResource):
 
     class Meta:
         queryset = User.objects.all()
-        excludes = ['password', 'email', 'is_superuser', 'is_staff', 'is_active']
+        excludes = ['password', 'email', 'is_superuser', 'is_staff',
+                    'is_active']
 
 
 class ProjectResource(ModelResource):
@@ -65,7 +66,8 @@ class TeamResource(ModelResource):
 
 class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
-    project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
+    project = fields.ForeignKey(ProjectResource, 'project',
+                                blank=True, null=True)
 
     class Meta:
         queryset = Commit.objects.all().select_related('user', 'project')
@@ -88,11 +90,14 @@ class CommitResource(ModelResource):
         email = bundle.data.pop('email')
         gravatar = self.gravatar(email)
         bundle.data['project_name'] = bundle.obj.project.name
-        bundle.data['project_url'] = reverse('project-details', args=[bundle.obj.project.slug])
+        bundle.data['project_url'] = reverse('project-details',
+                                             args=[bundle.obj.project.slug])
         bundle.data['username'] = getattr(bundle.obj.user, 'username', None)
         # Format the date properly using django template filter
         bundle.data['timestamp'] = date(bundle.obj.timestamp, 'c')
-        bundle.data['picture_url'] = getattr(bundle.obj.user, 'picture_url', gravatar)
+        bundle.data['picture_url'] = getattr(bundle.obj.user,
+                                             'picture_url',
+                                             gravatar)
         return bundle
 
 
@@ -100,7 +105,9 @@ class JSONMixin(object):
 
     def respond_json(self, data, **kwargs):
         content = json.dumps(data)
-        resp = http.HttpResponse(content, content_type='application/json', **kwargs)
+        resp = http.HttpResponse(content,
+                                 content_type='application/json',
+                                 **kwargs)
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
@@ -109,6 +116,168 @@ class PlayerCommitsCollection(View, JSONMixin):
 
     def get(self):
         pass
+
+
+def add_language(file_dict):
+    """Parse a filename for the language.
+
+    >>> d = {"file": "somefile.py", "type": "added"}
+    >>> add_language(d)
+    {"file": "somefile.py", "type": "added", "language": "Python"}
+    """
+    name = file_dict.get('file', '')
+    language = None
+    path, ext = splitext(name.lower())
+    type_map = {
+        #
+        # C/C++
+        #
+        '.c': 'C/C++',
+        '.cc': 'C/C++',
+        '.cpp': 'C/C++',
+        '.h': 'C/C++',
+        '.hpp': 'C/C++',
+        '.so': 'C/C++',
+        #
+        # C#
+        #
+        '.cs': 'C#',
+        #
+        # Clojure
+        #
+        '.clj': 'Clojure',
+        #
+        # Documentation
+        #
+        '.txt': 'Documentation',
+        '.md': 'Documentation',
+        '.rst': 'Documentation',
+        '.hlp': 'Documentation',
+        '.pdf': 'Documentation',
+        '.man': 'Documentation',
+        #
+        # Erlang
+        #
+        '.erl': 'Erlang',
+        #
+        # Fortran
+        #
+        '.f': 'Fortran',
+        '.f77': 'Fortran',
+        #
+        # Go
+        #
+        '.go': 'Golang',
+        #
+        # Groovy
+        #
+        '.groovy': 'Groovy',
+        #
+        # html/css/images
+        #
+        '.xml': 'html/css',
+        '.html': 'html/css',
+        '.htm': 'html/css',
+        '.css': 'html/css',
+        '.sass': 'html/css',
+        '.less': 'html/css',
+        '.scss': 'html/css',
+        '.jpg': 'html/css',
+        '.gif': 'html/css',
+        '.png': 'html/css',
+        '.jpeg': 'html/css',
+        #
+        # Java
+        #
+        '.class': 'Java',
+        '.ear': 'Java',
+        '.jar': 'Java',
+        '.java': 'Java',
+        '.war': 'Java',
+        #
+        # JavaScript
+        #
+        '.js': 'JavaScript',
+        '.json': 'JavaScript',
+        '.coffee': 'CoffeeScript',
+        '.litcoffee': 'CoffeeScript',
+        '.dart': 'Dart',
+        #
+        # Lisp
+        #
+        '.lisp': 'Common Lisp',
+        #
+        # Lua
+        #
+        '.lua': 'Lua',
+        #
+        # Objective-C
+        #
+        '.m': 'Objective-C',
+        #
+        # Perl
+        #
+        '.pl': 'Perl',
+        #
+        # PHP
+        #
+        '.php': 'PHP',
+        #
+        # Python
+        #
+        '.py': 'Python',
+        '.pyc': 'Python',
+        '.pyd': 'Python',
+        '.pyo': 'Python',
+        '.pyx': 'Python',
+        '.pxd': 'Python',
+        #
+        # R
+        #
+        '.r': 'R',
+        #
+        # Ruby
+        #
+        '.rb': 'Ruby',
+        #
+        # Scala
+        #
+        '.scala': 'Scala',
+        #
+        # Scheme
+        #
+        '.scm': 'Scheme',
+        '.scheme': 'Scheme',
+        #
+        # No Extension
+        #
+        '': '',
+    }
+    # Common extentionless files
+    doc_map = {
+        'license': 'Legalese',
+        'copyright': 'Legalese',
+        'changelog': 'Documentation',
+        'contributing': 'Documentation',
+        'readme': 'Documentation',
+        'makefile': 'Build Tools',
+    }
+    if ext == '':
+        language = doc_map.get(path)
+    else:
+        language = type_map.get(ext)
+    file_dict['language'] = language
+    return file_dict
+
+
+def get_or_create_languages_list_from_files(files):
+    result = []
+
+    languages = [file['language'] for file in files]
+    for language in set(languages):
+        language_object, _ = Language.get_or_create(name=language)
+        result.append(language_object)
+    return result
 
 
 class PostCallbackHandler(View, JSONMixin):
@@ -159,7 +328,8 @@ class PostCallbackHandler(View, JSONMixin):
                     None, dehydrated, format='application/json')
                 if commit.user:
                     requests.post(url + 'user-%s' % commit.user.id, serialized)
-                requests.post(url + 'project-%s' % commit.project.id, serialized)
+                requests.post(url + 'project-%s' % commit.project.id,
+                              serialized)
                 requests.post(url + 'global', serialized)
             except:
                 logging.exception("Error publishing message")
@@ -171,13 +341,12 @@ class PostCallbackHandler(View, JSONMixin):
     def post(self, request):
         payload = self.parse_payload(request)
         if not payload:
-            raise http.HttpResponseBadRequest
-
+            return http.HttpResponseBadRequest()
         try:
             data = json.loads(payload)
         except:
             logging.exception("Unable to serialize POST")
-            raise http.HttpResponseBadRequest
+            return http.HttpResponseBadRequest()
 
         commit_data = data.get('commits', [])
 
@@ -195,7 +364,9 @@ class PostCallbackHandler(View, JSONMixin):
 
         self._publish_commits(total_commits)
 
-        return self.respond_json({'commits': [c.hash for c in total_commits]}, status=status)
+        return self.respond_json(
+            {'commits': [c.hash for c in total_commits]},
+            status=status)
 
 
 class BitbucketHandler(PostCallbackHandler):
@@ -305,38 +476,37 @@ class BitbucketHandler(PostCallbackHandler):
 
         Example::
 
-                {
-                    "author": "marcus",
-                    "branch": "featureA",
-                    "files": [
-                        {
-                            "file": "somefile.py",
-                            "type": "modified"
-                        }
-                    ],
-                    "message": "Added some featureA things",
-                    "node": "d14d26a93fd2",
-                    "parents": [
-                        "1b458191f31a"
-                    ],
-                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
-                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
-                    "revision": 3,
-                    "size": -1,
-                    "timestamp": "2012-05-30 06:07:03",
-                    "utctimestamp": "2012-05-30 04:07:03+00:00"
-                }
+            {
+                "author": "marcus",
+                "branch": "featureA",
+                "files": [
+                    {
+                        "file": "somefile.py",
+                        "type": "modified"
+                    }
+                ],
+                "message": "Added some featureA things",
+                "node": "d14d26a93fd2",
+                "parents": [
+                    "1b458191f31a"
+                ],
+                "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
+                "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
+                "revision": 3,
+                "size": -1,
+                "timestamp": "2012-05-30 06:07:03",
+                "utctimestamp": "2012-05-30 04:07:03+00:00"
+            }
         """
         if not isinstance(data, dict):
             raise AttributeError("Expected a dict object")
 
         email = self._parse_email(data.get('raw_author'))
+        files = map(add_language, data.get('files', []))
+        languages = get_or_create_languages_list_from_files(files)
+        project.languages.add(*languages)
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
-
-        extensions = self.parse_extensions(data)
-        languages = Language.get_by_extensions(extensions)
-        project.languages.add(*languages)
 
         commit_data = {
             'hash': data['raw_node'],
@@ -346,7 +516,8 @@ class BitbucketHandler(PostCallbackHandler):
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
-            'languages': languages
+            'languages': languages,
+            'files': files,
         }
         return email, commit_data
 
@@ -356,8 +527,8 @@ class GithubHandler(PostCallbackHandler):
     Takes a POST response from github in the following format::
 
         payload=>"{
-              "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
-              "repository": {
+            "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
+            "repository": {
                 "url": "http://github.com/defunkt/github",
                 "name": "github",
                 "description": "You're lookin' at it.",
@@ -365,36 +536,36 @@ class GithubHandler(PostCallbackHandler):
                 "forks": 2,
                 "private": 1,
                 "owner": {
-                  "email": "chris@ozmm.org",
-                  "name": "defunkt"
+                    "email": "chris@ozmm.org",
+                    "name": "defunkt"
                 }
+            },
+            "commits": [
+            {
+              "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "url": "http://github.com/defunkt/github/commit/41a212ef59",
+              "author": {
+                "email": "chris@ozmm.org",
+                "name": "Chris Wanstrath"
               },
-              "commits": [
-                {
-                  "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                  "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
-                  "author": {
-                    "email": "chris@ozmm.org",
-                    "name": "Chris Wanstrath"
-                  },
-                  "message": "okay i give in",
-                  "timestamp": "2008-02-15T14:57:17-08:00",
-                  "added": ["filepath.rb"]
-                },
-                {
-                  "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                  "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
-                  "author": {
-                    "email": "chris@ozmm.org",
-                    "name": "Chris Wanstrath"
-                  },
-                  "message": "update pricing a tad",
-                  "timestamp": "2008-02-15T14:36:34-08:00"
-                }
-              ],
-              "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-              "ref": "refs/heads/master"
-            }"
+              "message": "okay i give in",
+              "timestamp": "2008-02-15T14:57:17-08:00",
+              "added": ["filepath.rb"]
+            },
+            {
+              "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+              "url": "http://github.com/defunkt/github/commit/de8f8ae3d0",
+              "author": {
+                "email": "chris@ozmm.org",
+                "name": "Chris Wanstrath"
+              },
+              "message": "update pricing a tad",
+              "timestamp": "2008-02-15T14:36:34-08:00"
+            }
+            ],
+            "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
+            "ref": "refs/heads/master"
+        }"
     """
 
     def _parse_repo(self, data):
@@ -414,17 +585,15 @@ class GithubHandler(PostCallbackHandler):
             'repo_id': data.get('id')
         }
 
-    @staticmethod
-    def parse_extensions(data):
-        """Returns a list of file extensions in the commit data"""
-        added = data.get('added', [])
-        modified = data.get('modified', [])
-        removed = data.get('removed', [])
-        paths = added + modified + removed
-        extensions = [
-            ext[1:] for root, ext in
-            [splitext(path) for path in paths]]
-        return extensions
+    def _parse_files(self, data):
+        """Make files look like bitbuckets json list."""
+        def wrapper(key, data):
+            return [{"file": f, "type": key} for f in data.get(key, [])]
+
+        added = wrapper('added', data)
+        modified = wrapper('modified', data)
+        removed = wrapper('removed', data)
+        return added + modified + removed
 
     def _parse_commit(self, data, project):
         """Return a tuple of (email, dict) to simplify commit creation.
@@ -433,7 +602,7 @@ class GithubHandler(PostCallbackHandler):
 
             {
               "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-              "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+              "url": "http://github.com/defunkt/github/commit/41a212ee83ca",
               "author": {
                 "email": "chris@ozmm.org",
                 "name": "Chris Wanstrath"
@@ -449,9 +618,8 @@ class GithubHandler(PostCallbackHandler):
         author = data.get('author', {})
         email = author.get('email', '')
         name = author.get('name', '')
-
-        extensions = self.parse_extensions(data)
-        languages = Language.get_by_extensions(extensions)
+        files = map(add_language, self._parse_files(data))
+        languages = get_or_create_languages_list_from_files(files)
         project.languages.add(*languages)
 
         commit_data = {
@@ -462,5 +630,6 @@ class GithubHandler(PostCallbackHandler):
             'message': data['message'],
             'timestamp': data['timestamp'],
             'languages': languages,
+            'files': files,
         }
         return email, commit_data

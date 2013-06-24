@@ -1,4 +1,3 @@
-
 from collections import namedtuple
 
 from django.conf import settings
@@ -58,10 +57,11 @@ class Game(models.Model):
     commit_points = models.IntegerField(default=1)
     project_points = models.IntegerField(default=10)
     problem_points = models.IntegerField(default=5)
-    players = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Player')
+    players = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, through='Player')
     boards = models.ManyToManyField(Project, through='Board')
-    language_boards = models.ManyToManyField(Language,
-        through='LanguageBoard')
+    language_boards = models.ManyToManyField(
+        Language, through='LanguageBoard')
 
     class Meta:
         ordering = ['-end']
@@ -120,11 +120,15 @@ class Game(models.Model):
             return None
 
     @classmethod
-    def active_or_latest(cls):
+    def active_or_latest(cls, now=None):
         """Return the an active game or the latest one."""
-        game = cls.active()
+        if now is None:
+            now = timezone.now()
+        game = cls.active(now)
         if game is None:
-            game = cls.objects.latest()
+            query = cls.objects.filter(end__lte=now)
+            if len(query):
+                game = query[0]
         return game
 
     def add_points_to_board(self, commit, from_orphan=False):
@@ -175,9 +179,28 @@ class Game(models.Model):
         TODO (rmyers): This may need to be run by celery in the future instead
         of a post create signal.
         """
-        board = self.add_points_to_board(commit, from_orphan)
+        board, created = Board.objects.select_for_update().get_or_create(
+            game=self, project=commit.project,
+            defaults={'points': self.project_points + self.commit_points})
+        if not created and not from_orphan:
+            board.points += self.commit_points
+            board.save()
+
         if commit.user:
-            self.add_points_to_player(board, commit)
+            player, created = Player.objects.select_for_update().get_or_create(
+                game=self, user=commit.user,
+                defaults={'points': self.project_points + self.commit_points})
+            player.boards.add(board)
+            if not created:
+                # we need to get the total points for the user
+                boards = player.boards.all().count() * self.project_points
+                commits = Commit.objects.filter(
+                    user=commit.user,
+                    timestamp__gte=self.start,
+                    timestamp__lte=self.end).count() * self.commit_points
+                # TODO (rmyers): Add in problem points
+                player.points = boards + commits
+                player.save()
 
 
 class Player(models.Model):

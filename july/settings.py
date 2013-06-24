@@ -19,8 +19,8 @@ except ImportError:
 if DEBUG:
     import warnings
     warnings.filterwarnings(
-            'error', r"DateTimeField received a naive datetime",
-            RuntimeWarning, r'django\.db\.models\.fields')
+        'error', r"DateTimeField received a naive datetime",
+        RuntimeWarning, r'django\.db\.models\.fields')
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,12 +36,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': DATABASE_ENGINE,       # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': DATABASE_NAME,           # Or path to database file if using sqlite3.
-        'USER': DATABASE_USER,           # Not used with sqlite3.
-        'PASSWORD': DATABASE_PASSWORD,   # Not used with sqlite3.
-        'HOST': DATABASE_SERVER,         # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': DATABASE_ENGINE,
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_SERVER,
+        'PORT': '',
     }
 }
 
@@ -108,7 +108,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    #'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # List of callables that know how to import templates from various sources.
@@ -127,20 +127,21 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
+
 def custom_show_toolbar(request):
-    return True # Always show toolbar, for example purposes only.
+    return True  # Always show toolbar, for example purposes only.
 
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': True,
     'HIDE_DJANGO_SQL': True,
-    'ENABLE_STACKTRACES' : True,
+    'ENABLE_STACKTRACES': True,
     #'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
 }
 
 ROOT_URLCONF = 'july.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Put strings here, like "/home/html/django_templates"
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
 )
@@ -185,7 +186,7 @@ SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 SOCIAL_AUTH_DEFAULT_USERNAME = 'new_social_auth_user'
 SOCIAL_AUTH_UUID_LENGTH = 3
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email', 'location', 'url', 'description']
-SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
+SOCIAL_AUTH_COMPLETE_URL_NAME = 'socialauth_complete'
 SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
 
 # Just so we can use the same names for variables - why different social_auth??
@@ -197,7 +198,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(module)s %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -208,7 +209,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'django.utils.log.NullHandler',
         },
-        'console':{
+        'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple'

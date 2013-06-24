@@ -2,18 +2,19 @@ from django.conf.urls import patterns, url
 
 from july.game import views
 
+
 urlpatterns = patterns(
     'july.game.views',
     url(r'^people/$',
         views.PlayerList.as_view(),
         name='leaderboard'),
-    url(r'^people/(?P<year>\d{4})/(?P<month>\d{1,2})/$',
+    url(r'^people/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
         views.PlayerList.as_view(),
         name='leaderboard'),
     url(r'^teams/$',
         views.TeamCollection.as_view(),
         name='teams'),
-    url(r'^teams/(?P<year>\d{4})/(?P<month>\d{1,2})/$',
+    url(r'^teams/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
         views.TeamCollection.as_view(),
         name='teams'),
     url(r'^teams/(?P<slug>[a-zA-Z0-9\-]+)/$',
@@ -22,7 +23,7 @@ urlpatterns = patterns(
     url(r'^location/$',
         views.LocationCollection.as_view(),
         name='locations'),
-    url(r'^location/(?P<year>\d{4})/(?P<month>\d{1,2})/$',
+    url(r'^location/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
         views.LocationCollection.as_view(),
         name='locations'),
     url(r'^location/(?P<slug>[a-zA-Z0-9\-]+)/$',
@@ -31,7 +32,7 @@ urlpatterns = patterns(
     url(r'^projects/$',
         views.BoardList.as_view(),
         name='projects'),
-    url(r'^projects/(?P<year>\d{4})/(?P<month>\d{1,2})/$',
+    url(r'^projects/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
         views.BoardList.as_view(),
         name='projects'),
     url(r'^projects/(?P<slug>.+)/$',
@@ -46,4 +47,7 @@ urlpatterns = patterns(
     url(r'^languages/(?P<pk>.+)/$',
         views.LanguageView.as_view(),
         name='language-details'),
+    # for local only debug purposes
+    url(r'^events/(?P<action>pub|sub|ws)/(?P<channel>.*)$',
+        'events', name='events'),
 )

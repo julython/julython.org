@@ -2,9 +2,7 @@ from django import forms
 from django.utils.translation import ugettext_lazy
 from django.template.defaultfilters import slugify
 from models import Location, Team
-#from google.appengine.ext import ndb, deferred
 
-#from july.cron import fix_orphans
 
 class EditAddressForm(forms.Form):
 
@@ -13,12 +11,18 @@ class EditAddressForm(forms.Form):
         super(EditAddressForm, self).__init__(*args, **kwargs)
 
         if self.user:
-            self.fields['address_line1'].initial=getattr(self.user, 'address_line1', None)
-            self.fields['address_line2'].initial=getattr(self.user, 'address_line2', None)
-            self.fields['city'].initial=getattr(self.user, 'city', None)
-            self.fields['state'].initial=getattr(self.user, 'state', None)
-            self.fields['country'].initial=getattr(self.user, 'country', None)
-            self.fields['postal_code'].initial=getattr(self.user, 'postal_code', None)
+            self.fields['address_line1'].initial = getattr(
+                self.user, 'address_line1', None)
+            self.fields['address_line2'].initial = getattr(
+                self.user, 'address_line2', None)
+            self.fields['city'].initial = getattr(
+                self.user, 'city', None)
+            self.fields['state'].initial = getattr(
+                self.user, 'state', None)
+            self.fields['country'].initial = getattr(
+                self.user, 'country', None)
+            self.fields['postal_code'].initial = getattr(
+                self.user, 'postal_code', None)
 
     address_line1 = forms.CharField(
         label=ugettext_lazy('Address'),
@@ -46,7 +50,6 @@ class EditAddressForm(forms.Form):
     )
 
 
-
 class EditUserForm(forms.Form):
     # Match Twitter
     first_name = forms.CharField(
@@ -70,16 +73,22 @@ class EditUserForm(forms.Form):
     location = forms.CharField(
         label=ugettext_lazy('Location'),
         max_length=160, required=False,
-        widget=forms.TextInput(attrs={
-            'data-bind':'typeahead: $data.filterLocation'
-    }))
+        widget=forms.TextInput(
+            attrs={
+                'data-bind': 'typeahead: $data.filterLocation'
+            }
+        )
+    )
 
     team = forms.CharField(
         label=ugettext_lazy('Team'),
         max_length=160, required=False,
-        widget=forms.TextInput(attrs={
-            'data-bind':'typeahead: $data.filterTeam'
-    }))
+        widget=forms.TextInput(
+            attrs={
+                'data-bind': 'typeahead: $data.filterTeam'
+            }
+        )
+    )
 
     gittip = forms.CharField(
         label=ugettext_lazy("Gittip Username"), required=False)
@@ -92,14 +101,14 @@ class EditUserForm(forms.Form):
         self._gittip = None
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
-            self.fields['first_name'].initial=self.user.first_name
-            self.fields['last_name'].initial=self.user.last_name
-            self.fields['description'].initial=self.user.description
-            self.fields['url'].initial=self.user.url
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+            self.fields['description'].initial = self.user.description
+            self.fields['url'].initial = self.user.url
             if self.user.location:
-                self.fields['location'].initial=self.user.location.name
+                self.fields['location'].initial = self.user.location.name
             if self.user.team:
-                self.fields['team'].initial=self.user.team.name
+                self.fields['team'].initial = self.user.team.name
             # initialize the emails
             self.emails = set(self.user.social_auth.filter(provider="email"))
             self._gittip = self.user.get_provider("gittip")
@@ -111,7 +120,8 @@ class EditUserForm(forms.Form):
             try:
                 l = Location.objects.get(slug=slugify(location))
             except Location.DoesNotExist:
-                l = Location.objects.create(name=location, slug=slugify(location), total=0)
+                l = Location.objects.create(
+                    name=location, slug=slugify(location), total=0)
             return l
 
     def clean_team(self):
@@ -166,6 +176,7 @@ class EditUserForm(forms.Form):
         # deferred.defer(fix_orphans, email=email)
         return email
 
+
 class CommitForm(forms.Form):
 
     message = forms.CharField(required=True)
@@ -182,6 +193,7 @@ class CommitForm(forms.Form):
             import datetime
             data = datetime.datetime.fromtimestamp(float(data))
         return data
+
 
 class ProjectForm(forms.Form):
 

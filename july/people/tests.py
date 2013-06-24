@@ -2,7 +2,7 @@
 import datetime
 import json
 from pytz import UTC
-from mock import MagicMock
+from mock import MagicMock, patch
 
 from django.test import TestCase
 from django.template.defaultfilters import slugify
@@ -95,6 +95,36 @@ class SCMTestMixin(object):
         self.assertEqual(self.game.teams[0].total, 12)
         self.assertEqual(self.requests.post.call_count, 6)
 
+    def test_files(self):
+        resp = self.client.post(self.API_URL, self.post)
+        resp_body = json.loads(resp.content)
+        c_hash = resp_body['commits'][0]
+        commit = Commit.objects.get(hash=c_hash)
+        # Assert commit files
+        expected = [
+            {"file": "filepath.rb", "type": "added", "language": "Ruby"},
+            {"file": "test.py", "type": "modified", "language": "Python"},
+            {"file": "README", "type": "modified",
+             "language": "Documentation"},
+            {"file": "frank.scheme", "type": "removed", "language": "Scheme"},
+        ]
+        self.assertEqual(commit.files, expected)
+
+    def test_orphan(self):
+        with patch.object(User, 'get_by_auth_id') as mock:
+            mock.return_value = None
+            self.client.post(self.API_URL, self.post)
+            self.assertEqual([l for l in self.game.locations], [])
+            self.assertEqual(self.requests.post.call_count, 4)
+
+    def test_missing_payload(self):
+        resp = self.client.post(self.API_URL, {})
+        self.assertEqual(resp.status_code, 400)
+
+    def test_malformed_payload(self):
+        resp = self.client.post(self.API_URL, {"payload": "Bad Data"})
+        self.assertEqual(resp.status_code, 400)
+
 
 class GithubTest(SCMTestMixin, TestCase):
 
@@ -121,22 +151,25 @@ class GithubTest(SCMTestMixin, TestCase):
         "commits": [
             {
                 "id": "41a212ee83ca127e3c8cf465891ab7216a705f59",
-                "url": "http://github.com/defunkt/github/commit/41a212ee83ca127e3c8cf465891ab7216a705f59",
+                "url": "http://github.com/defunkt/github/commit/41a212ee05f59",
                 "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
                 },
                 "message": "okay i give in",
                 "timestamp": "2012-12-15T14:57:17-08:00",
-                "added": ["filepath.rb"]
+                "added": ["filepath.rb"],
+                "modified": ["test.py", "README"],
+                "removed": ["frank.scheme"]
             },
             {
                 "id": "de8251ff97ee194a289832576287d6f8ad74e3d0",
-                "url": "http://github.com/defunkt/github/commit/de8251ff97ee194a289832576287d6f8ad74e3d0",
+                "url": "http://github.com/defunkt/github/commit/de8251ff9e3d0",
                 "author": {
                     "email": "chris@ozmm.org",
                     "name": "Chris Wanstrath"
                 },
+                "modified": ["somefile.py"],
                 "message": "update pricing a tad",
                 "timestamp": "2012-12-15T14:36:34-08:00"
             }
@@ -186,7 +219,6 @@ class GithubTest(SCMTestMixin, TestCase):
         self.assertEquals(project.name, repo['name'])
 
 
-
 class BitbucketHandlerTests(SCMTestMixin, TestCase):
 
     USER = 'marcus'
@@ -194,7 +226,8 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
     API_URL = '/api/v1/bitbucket'
     PROJECT_URL = 'https://bitbucket.org/marcus/project-x/'
     PROJECT_SLUG = 'bb-marcus-project-x'
-    post = {'payload':
+    post = {
+        'payload':
         json.dumps({
             "canon_url": "https://bitbucket.org",
             "commits": [
@@ -203,8 +236,20 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
                     "branch": "featureA",
                     "files": [
                         {
-                            "file": "somefile.py",
+                            "file": "filepath.rb",
+                            "type": "added"
+                        },
+                        {
+                            "file": "test.py",
                             "type": "modified"
+                        },
+                        {
+                            "file": "README",
+                            "type": "modified"
+                        },
+                        {
+                            "file": "frank.scheme",
+                            "type": "removed"
                         }
                     ],
                     "message": "Added some featureA things",

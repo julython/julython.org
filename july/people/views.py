@@ -30,7 +30,8 @@ class UserProfile(detail.DetailView):
 def people_projects(request, username):
     user = get_object_or_404(User, username=username)
 
-    return render_to_response('people/people_projects.html', {
+    return render_to_response(
+        'people/people_projects.html', {
             'projects': user.projects.all(),
             'profile': user,
             'active': 'projects',
@@ -41,7 +42,8 @@ def people_projects(request, username):
 def people_badges(request, username):
     user = get_object_or_404(User, username=username)
 
-    return render_to_response('people/people_badges.html', {
+    return render_to_response(
+        'people/people_badges.html', {
             'badges': user.badges,
             'profile': user,
             'active': 'badges',
@@ -156,9 +158,12 @@ def delete_email(request, username, email):
         # delete the email from the user
         auth.delete()
         return HttpResponseRedirect(
-            reverse('member-profile', kwargs={'username':request.user.username})
+            reverse('member-profile',
+                    kwargs={'username': request.user.username})
         )
 
-    return render_to_response('people/delete_email.html',
+    return render_to_response(
+        'people/delete_email.html',
         {'email': email},
-        context_instance=RequestContext(request))
+        context_instance=RequestContext(request)
+    )

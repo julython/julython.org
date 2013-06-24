@@ -1,39 +1,49 @@
 import datetime
+import logging
+from pytz import UTC
 
 from django.views.generic import list, detail
+from django.http.response import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic.list import ListView
 
 from july.game.models import Player, Game, Board, LanguageBoard
 from july.people.models import Project, Location, Team, Language
 
 
 class GameMixin(object):
-    model = None
 
     def get_game(self):
         year = int(self.kwargs.get('year', 0))
-        month = int(self.kwargs.get('month', 0))
-        if not year:
-            game = Game.active()
+        mon = int(self.kwargs.get('month', 0))
+        day = self.kwargs.get('day')
+        if day is None:
+            day = 15
+        day = int(day)
+        if not all([year, mon]):
+            now = None
         else:
-            date = datetime.datetime(year=year, month=month, day=15)
-            game = Game.active(now=date)
-        if game is None:
-            game = Game.objects.latest()
-        return game
-
-    def get_queryset(self):
-        game = self.get_game()
-        return self.model.objects.filter(game=game).select_related()
+            now = datetime.datetime(year=year, month=mon, day=day, tzinfo=UTC)
+            logging.debug("Getting game for date: %s", now)
+        return Game.active_or_latest(now=now)
 
 
-class PlayerList(list.ListView, GameMixin):
+class PlayerList(ListView, GameMixin):
     model = Player
     paginate_by = 100
 
+    def get_queryset(self):
+        game = self.get_game()
+        return Player.objects.filter(game=game).select_related()
 
-class BoardList(list.ListView, GameMixin):
+
+class BoardList(ListView, GameMixin):
     model = Board
     paginate_by = 100
+
+    def get_queryset(self):
+        game = self.get_game()
+        return Board.objects.filter(game=game).select_related()
 
 
 class LanguageBoardList(list.ListView, GameMixin):
@@ -48,7 +58,8 @@ class ProjectView(detail.DetailView):
 class LanguageView(detail.DetailView):
     model = Language
 
-class LocationCollection(list.ListView, GameMixin):
+
+class LocationCollection(ListView, GameMixin):
     model = Location
 
     def get_queryset(self):
@@ -60,7 +71,7 @@ class LocationView(detail.DetailView):
     model = Location
 
 
-class TeamCollection(list.ListView, GameMixin):
+class TeamCollection(ListView, GameMixin):
     model = Team
 
     def get_queryset(self):
@@ -70,3 +81,11 @@ class TeamCollection(list.ListView, GameMixin):
 
 class TeamView(detail.DetailView):
     model = Team
+
+
+@csrf_exempt
+def events(request, action, channel):
+    logging.info('%s on %s', action, channel)
+    if request.method == 'POST':
+        logging.info(request.body)
+    return HttpResponse('ok')

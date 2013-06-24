@@ -6,6 +6,7 @@ from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
 from django.db.models.aggregates import Sum
+from jsonfield import JSONField
 
 
 class Commit(models.Model):
@@ -25,6 +26,7 @@ class Commit(models.Model):
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
     languages = models.ManyToManyField('Language', blank=True)
+    files = JSONField(blank=True, null=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -38,7 +40,8 @@ class Commit(models.Model):
     @classmethod
     def create_by_email(cls, email, commits, project=None):
         """Create a commit by email address"""
-        return cls.create_by_auth_id('email:%s' % email, commits, project=project)
+        return cls.create_by_auth_id(
+            'email:%s' % email, commits, project=project)
 
     @classmethod
     def user_model(cls):
@@ -65,6 +68,7 @@ class Commit(models.Model):
             c['user'] = user
             c['project'] = project
             commit_hash = c.pop('hash', None)
+
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
@@ -270,10 +274,12 @@ class Group(models.Model):
         return self.name
 
     def members_by_points(self):
-        raise NotImplementedError("members_by_points must be implemented by the subclass!")
+        raise NotImplementedError("members_by_points must be implemented "
+                                  "by the subclass!")
 
     def total_points(self):
-        raise NotImplementedError("total_points must be implemented by the subclass!")
+        raise NotImplementedError("total_points must be implemented "
+                                  "by the subclass!")
 
     @classmethod
     def create(cls, name):
@@ -330,24 +336,3 @@ class Language(models.Model):
 
     def __unicode__(self):
         return self.name
-
-    @staticmethod
-    def get_by_extensions(lookup_extensions):
-        """
-        Takes an extension or list of extensions, and returns all the languages
-        they correspond to.
-        """
-        if not isinstance(lookup_extensions, list):
-            lookup_extensions = [lookup_extensions]
-        extensions = Extension.objects.filter(extension__in=lookup_extensions)
-        languages = set([extension.language for extension in extensions])
-        return list(languages)
-
-
-class Extension(models.Model):
-    """Model that holds a file extension of a language."""
-    extension = models.SlugField(max_length=10, primary_key=True)
-    language = models.ForeignKey('Language')
-
-    def __unicode__(self):
-        return self.extension

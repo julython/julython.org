@@ -14,3 +14,5 @@ assets/_specrunner.html
 julython.db
 .idea/
 npm-debug.log
+.coverage
+htmlcov/*

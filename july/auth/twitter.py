@@ -5,6 +5,7 @@ import logging
 from social_auth.backends import twitter
 from july.people.models import Location
 
+
 class TwitterBackend(twitter.TwitterBackend):
     """Twitter OAuth authentication backend"""
 
@@ -17,10 +18,11 @@ class TwitterBackend(twitter.TwitterBackend):
             'last_name': '',
             'url': response.get('url', ''),
             'description': response.get('description', ''),
-            'picture_url': response.get('profile_image_url', '')        
+            'picture_url': response.get('profile_image_url', ''),
         }
         try:
-            data['first_name'], data['last_name'] = response['name'].split(' ', 1)
+            name = response['name']
+            data['first_name'], data['last_name'] = name.split(' ', 1)
         except:
             data['first_name'] = response['name']
         try:
@@ -28,10 +30,11 @@ class TwitterBackend(twitter.TwitterBackend):
             if location:
                 data['location'], _ = Location.create(location)
         except:
-            logging.exception('Problem finding location') 
+            logging.exception('Problem finding location')
         return data
+
 
 # Backend definition
 BACKENDS = {
     'twitter': twitter.TwitterAuth,
-    }
+}

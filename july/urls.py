@@ -25,12 +25,10 @@ urlpatterns = patterns(
     # bitbucket and github are special apis
     url(r'^api/v1/bitbucket', api.BitbucketHandler.as_view()),
     url(r'^api/v1/github', api.GithubHandler.as_view()),
+    # Tasty Pie apis
     url(r'^api/', include(v1_api.urls)),
     url(r'^$', 'july.views.index', name='index'),
     url(r'^live/', 'july.views.live', name='julython-live'),
-    # for local only debug purposes
-    url(r'^events/(?P<action>pub|sub|ws)/(?P<channel>.*)$',
-        'july.live.views.events', name='events'),
     url(r'^help/', 'july.views.help_view', name='help'),
     url(r'^signin/$', auth_views.login, name="signin"),
     url(r'^register/$', 'july.views.register', name="register"),
@@ -38,7 +36,8 @@ urlpatterns = patterns(
         'july.views.email_verify', name='email_verify'),
     url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
     # Password reset urls
-    url(r'^password_reset/$', auth_views.password_reset, name="password_reset"),
+    url(r'^password_reset/$', auth_views.password_reset,
+        name="password_reset"),
     url(r'^password_reset_sent/$', auth_views.password_reset_done),
     url(r'^password_reset_confirm/(?P<uidb36>\d+)-(?P<token>[\d\w-]+)$',
         auth_views.password_reset_confirm,
