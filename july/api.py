@@ -6,16 +6,19 @@ import re
 import urlparse
 import requests
 from os.path import splitext
+from datetime import datetime
 
 from django.core.urlresolvers import reverse
 from django import http
 from django.template.defaultfilters import date
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
+from django.conf.urls.defaults import url
 from iso8601 import parse_date
 from tastypie.resources import ModelResource
 from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
+from tastypie.utils import trailing_slash
 from tastypie import fields
 
 from july.people.models import Commit, Project, Location, Team, Language
@@ -87,6 +90,28 @@ class CommitResource(ModelResource):
             'languages': ALL_WITH_RELATIONS,
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/calendar%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_calendar'), name="api_get_calendar"),
+        ]
+
+    def get_calendar(self, request, **kwargs):
+        logging.info(request)
+        self.method_check(request, allowed=['get'])
+        self.throttle_check(request)
+        filters = {}
+
+        days = int(request.GET.get('days', 35))
+        end_date = request.GET.get('end_date', None)
+        end_date = end_date and datetime(end_date)
+        username = request.GET.get('username', None)
+        if username:
+            filters['user__username'] = username
+
+        # user = kwargs.get('user', None)
+        calendar = Commit.calendar(days=days, end_date=end_date, **filters)
+        return self.create_response(request, list(calendar))
 
     def gravatar(self, email):
         """Return a link to gravatar image."""

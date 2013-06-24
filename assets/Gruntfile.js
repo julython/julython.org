@@ -2,7 +2,7 @@
 var deps = [
   'js/vendor/jquery-*.js',
   'js/vendor/underscore-*.js',
-  'js/vendor/backbone-*.js',
+  'js/vendor/backbone*.js',
   'js/vendor/knockout-*.js',
   'js/vendor/knockback-*.js',
   'js/vendor/**/*.js',
