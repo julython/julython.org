@@ -340,6 +340,7 @@ class PostCallbackHandler(View, JSONMixin):
 
     def post(self, request):
         payload = self.parse_payload(request)
+        logging.info(payload)
         if not payload:
             return http.HttpResponseBadRequest()
         try:
