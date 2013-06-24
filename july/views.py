@@ -18,7 +18,7 @@ from july.models import User
 def index(request):
     """Render the home page"""
     game = Game.active_or_latest()
-    stats = game.histogram
+    stats = game.histogram if game else []
 
     ctx = Context({
         'stats': json.dumps(stats),
