@@ -14,10 +14,6 @@
               <a href="{% url 'languages' %}">{% trans "All languages" %}</a>
               <h3>{{ language }}</h3>
             </div>
-            <div class="points pull-right">
-                <p>{% firstof project.total '0' %}</p>
-                <p class="small">{% trans "points" %}</p>
-            </div>
           </div>
           <div class="row">
             <div class="span10">
@@ -50,7 +46,7 @@
 {% endblock %}
 {% block extra_javascript %}
 <script type="text/javascript">
-	var view = new JULY.CommitsView({projectId: {{ project.id }}});
+	var view = new JULY.CommitsView({languages: ['{{ language.name }}'] });
 	JULY.applyBindings(view, '#commits');
 </script>
 {% endblock %}
