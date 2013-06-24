@@ -275,7 +275,7 @@ def get_or_create_languages_list_from_files(files):
 
     languages = [file['language'] for file in files]
     for language in set(languages):
-        language_object, _ = Language.get_or_create(name=language)
+        language_object, _ = Language.objects.get_or_create(name=language)
         result.append(language_object)
     return result
 

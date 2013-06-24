@@ -1,10 +1,7 @@
 from django.contrib import admin
 from models import Team, Commit, Location, AchievedBadge
-from models import Badge, Language, Extension
+from models import Badge, Language
 
-
-class ExtensionInline(admin.TabularInline):
-    model = Extension
 
 admin.site.register(
     Commit,
@@ -19,8 +16,7 @@ admin.site.register(
 
 admin.site.register(
     Language,
-    list_display=["__unicode__"],
-    inlines=[ExtensionInline])
+    list_display=["__unicode__"])
 
 admin.site.register(
     Team,
