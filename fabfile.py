@@ -6,7 +6,7 @@ import os
 from string import Template
 from urllib import urlencode
 
-from fabric.api import lcd, task, local
+from fabric.api import lcd, task, local, put, env
 
 
 @task
@@ -80,7 +80,21 @@ def compile():
 
 
 @task
-def deploy(version='', appid='.'):
+def staging(user='rmyers'):
+    env.hosts = ['january.julython.org']
+    env.user = user
+
+
+@task
+def deploy():
     """Deploy to production"""
     compile()
-    print "TODO: deploy the code!"
+    local("tar -czvf july.tar.gz"
+          " --exclude '\.*'"
+          " --exclude '*.pyc'"
+          " --exclude 'assets*'"
+          " --exclude 'htmlcov*'"
+          " --exclude '*.db'"
+          " --exclude '*.tar.gz'"
+          " *")
+    put('july.tar.gz', '/tmp/')
