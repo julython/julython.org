@@ -77,27 +77,26 @@ class CommitResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
     project = fields.ForeignKey(ProjectResource, 'project',
                                 blank=True, null=True)
-    languages = fields.ToManyField(
-        LanguageResource, 'languages', blank=True, null=True)
 
     class Meta:
         queryset = Commit.objects.all().select_related(
-            'user', 'project', 'languages')
+            'user', 'project')
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,
             'project': ALL_WITH_RELATIONS,
-            'languages': ALL_WITH_RELATIONS,
             'timestamp': ['exact', 'range', 'gt', 'lt'],
         }
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/calendar%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_calendar'), name="api_get_calendar"),
+            url(r"^(?P<resource_name>%s)/calendar%s$" % (
+                self._meta.resource_name, trailing_slash()),
+                self.wrap_view('get_calendar'),
+                name="api_get_calendar"),
         ]
 
     def get_calendar(self, request, **kwargs):
-        logging.info(request)
         self.method_check(request, allowed=['get'])
         self.throttle_check(request)
         filters = {}
@@ -134,7 +133,6 @@ class CommitResource(ModelResource):
                                              'picture_url',
                                              gravatar)
         bundle.data['files'] = bundle.obj.files
-        bundle.data['languages'] = list(bundle.obj.languages.all())
         return bundle
 
 
@@ -305,16 +303,6 @@ def add_language(file_dict):
         language = type_map.get(ext)
     file_dict['language'] = language
     return file_dict
-
-
-def get_or_create_languages_list_from_files(files):
-    result = []
-
-    languages = [file['language'] for file in files]
-    for language in set(languages):
-        language_object, _ = Language.objects.get_or_create(name=language)
-        result.append(language_object)
-    return result
 
 
 class PostCallbackHandler(View, JSONMixin):
@@ -541,8 +529,6 @@ class BitbucketHandler(PostCallbackHandler):
 
         email = self._parse_email(data.get('raw_author'))
         files = map(add_language, data.get('files', []))
-        languages = get_or_create_languages_list_from_files(files)
-        project.languages.add(*languages)
 
         url = urlparse.urljoin(project.url, 'commits/%s' % data['raw_node'])
 
@@ -554,7 +540,6 @@ class BitbucketHandler(PostCallbackHandler):
             'message': data.get('message'),
             'timestamp': data.get('utctimestamp'),
             'url': data.get('url', url),
-            'languages': languages,
             'files': files,
         }
         return email, commit_data
@@ -657,8 +642,6 @@ class GithubHandler(PostCallbackHandler):
         email = author.get('email', '')
         name = author.get('name', '')
         files = map(add_language, self._parse_files(data))
-        languages = get_or_create_languages_list_from_files(files)
-        project.languages.add(*languages)
 
         commit_data = {
             'hash': data['id'],
@@ -667,7 +650,6 @@ class GithubHandler(PostCallbackHandler):
             'name': name,
             'message': data['message'],
             'timestamp': data['timestamp'],
-            'languages': languages,
             'files': files,
         }
         return email, commit_data

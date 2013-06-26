@@ -17,22 +17,10 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'game', ['LanguageBoard'])
 
-        # Adding M2M table for field language_boards on 'Player'
-        m2m_table_name = db.shorten_name(u'game_player_language_boards')
-        db.create_table(m2m_table_name, (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('player', models.ForeignKey(orm[u'game.player'], null=False)),
-            ('languageboard', models.ForeignKey(orm[u'game.languageboard'], null=False))
-        ))
-        db.create_unique(m2m_table_name, ['player_id', 'languageboard_id'])
-
 
     def backwards(self, orm):
         # Deleting model 'LanguageBoard'
         db.delete_table(u'game_languageboard')
-
-        # Removing M2M table for field language_boards on 'Player'
-        db.delete_table(db.shorten_name(u'game_player_language_boards'))
 
 
     models = {
@@ -87,7 +75,6 @@ class Migration(SchemaMigration):
             'boards': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['game.Board']", 'symmetrical': 'False'}),
             'game': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['game.Game']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'language_boards': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['game.LanguageBoard']", 'symmetrical': 'False'}),
             'points': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['july.User']"})
         },
@@ -115,7 +102,8 @@ class Migration(SchemaMigration):
         },
         u'people.language': {
             'Meta': {'object_name': 'Language'},
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '64', 'primary_key': 'True'})
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'})
         },
         u'people.location': {
             'Meta': {'object_name': 'Location'},
@@ -130,7 +118,6 @@ class Migration(SchemaMigration):
             'forked': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'forks': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'languages': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['people.Language']", 'symmetrical': 'False', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'parent_url': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'repo_id': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),

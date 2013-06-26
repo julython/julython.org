@@ -138,20 +138,16 @@ class Game(models.Model):
             board.save()
         return board
 
-    def add_points_to_language_boards(self, languages, user):
-        language_boards = []
-        for language in languages:
+    def add_points_to_language_boards(self, commit):
+        for language in commit.languages:
+            lang, _ = Language.objects.get_or_create(name=language)
             language_board, created = LanguageBoard.objects. \
                 select_for_update().get_or_create(
-                    game=self, language=language,
+                    game=self, language=lang,
                     defaults={'points': self.commit_points})
             if not created:
                 language_board.points += self.commit_points
                 language_board.save()
-            language_boards.append(language_board)
-        if user:
-            player = Player.objects.get(game=self, user=user)
-            player.language_boards.add(*language_boards)
 
     def add_points_to_player(self, board, commit):
         player, created = Player.objects.select_for_update().get_or_create(
@@ -178,28 +174,11 @@ class Game(models.Model):
         TODO (rmyers): This may need to be run by celery in the future instead
         of a post create signal.
         """
-        board, created = Board.objects.select_for_update().get_or_create(
-            game=self, project=commit.project,
-            defaults={'points': self.project_points + self.commit_points})
-        if not created and not from_orphan:
-            board.points += self.commit_points
-            board.save()
+        board = self.add_points_to_board(commit, from_orphan)
+        self.add_points_to_language_boards(commit)
 
         if commit.user:
-            player, created = Player.objects.select_for_update().get_or_create(
-                game=self, user=commit.user,
-                defaults={'points': self.project_points + self.commit_points})
-            player.boards.add(board)
-            if not created:
-                # we need to get the total points for the user
-                boards = player.boards.all().count() * self.project_points
-                commits = Commit.objects.filter(
-                    user=commit.user,
-                    timestamp__gte=self.start,
-                    timestamp__lte=self.end).count() * self.commit_points
-                # TODO (rmyers): Add in problem points
-                player.points = boards + commits
-                player.save()
+            self.add_points_to_player(board, commit)
 
 
 class Player(models.Model):
@@ -209,7 +188,6 @@ class Player(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     points = models.IntegerField(default=0)
     boards = models.ManyToManyField('Board')
-    language_boards = models.ManyToManyField('LanguageBoard')
 
     class Meta:
         ordering = ['-points']
@@ -256,19 +234,3 @@ def add_commit(sender, **kwargs):
     if active_game is not None:
         from_orphan = not kwargs.get('created', False)
         active_game.add_commit(commit, from_orphan=from_orphan)
-
-
-@receiver(m2m_changed, sender=Commit.languages.through)
-def add_points_to_language_boards(sender, **kwargs):
-    """
-    Listens to languages being added to commits, adds point to language boards
-    """
-    if not kwargs['action'] == 'post_add':
-        return
-    commit = kwargs.get('instance')
-    active_game = Game.active(now=commit.timestamp)
-    if active_game is not None:
-        user = commit.user
-        languages_added = Language.objects.filter(
-            name__in=list(kwargs['pk_set']))
-        active_game.add_points_to_language_boards(languages_added, user)

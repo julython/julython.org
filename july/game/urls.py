@@ -41,12 +41,9 @@ urlpatterns = patterns(
     url(r'^languages/$',
         views.LanguageBoardList.as_view(),
         name='languages'),
-    url(r'^languages/(?P<year>\d{4})/(?P<month>\d{1,2})/$',
+    url(r'^languages/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
         views.LanguageBoardList.as_view(),
         name='languages'),
-    url(r'^languages/(?P<pk>.+)/$',
-        views.LanguageView.as_view(),
-        name='language-details'),
     # for local only debug purposes
     url(r'^events/(?P<action>pub|sub|ws)/(?P<channel>.*)$',
         'events', name='events'),

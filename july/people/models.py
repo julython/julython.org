@@ -10,6 +10,7 @@ from jsonfield import JSONField
 from django.db.models.aggregates import Sum, Count
 from django.utils.timezone import utc
 
+
 class Commit(models.Model):
     """
     Commit record for the profile, the parent is the profile
@@ -26,7 +27,6 @@ class Commit(models.Model):
     project = models.ForeignKey("Project", blank=True, null=True)
     timestamp = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
-    languages = models.ManyToManyField('Language', blank=True)
     files = JSONField(blank=True, null=True)
 
     class Meta:
@@ -37,6 +37,15 @@ class Commit(models.Model):
 
     def __unicode__(self):
         return u'Commit: %s' % self.hash
+
+    @property
+    def languages(self):
+        langs = []
+        if self.files:
+            for f in self.files:
+                langs.append(f.get('language'))
+        langs = filter(None, langs)
+        return set(langs)
 
     @classmethod
     def create_by_email(cls, email, commits, project=None):
@@ -73,11 +82,9 @@ class Commit(models.Model):
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue
-            languages = c.pop('languages', [])
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,
                 defaults=c)
-            commit.languages.add(*languages)
             if created:
                 # increment the counts
                 created_commits.append(commit)
@@ -108,11 +115,9 @@ class Commit(models.Model):
                 logging.info("Commit hash missing in create.")
                 continue
 
-            languages = c.pop('languages', [])
             commit, created = cls.objects.get_or_create(
                 hash=commit_hash,
                 defaults=c)
-            commit.languages.add(*languages)
             if created:
                 created_commits.append(commit)
 
@@ -157,7 +162,6 @@ class Project(models.Model):
     slug = models.SlugField()
     service = models.CharField(max_length=30, blank=True, default='')
     repo_id = models.IntegerField(blank=True, null=True)
-    languages = models.ManyToManyField('Language', blank=True)
 
     def __unicode__(self):
         if self.name:
@@ -349,7 +353,7 @@ class Team(Group):
 class Language(models.Model):
     """Model for holding points and projects per programming language."""
 
-    name = models.CharField(max_length=64, primary_key=True)
+    name = models.CharField(max_length=64)
 
     def __unicode__(self):
         return self.name

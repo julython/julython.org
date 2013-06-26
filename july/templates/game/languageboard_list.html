@@ -10,7 +10,7 @@
         {% for language_board in object_list %}
           <div class="row location">
             <div class="span5">
-              <h3><a href="{% url 'language-details' language_board.language.name %}">{{ language_board.language }}</a></h3>
+              <h3>{{ language_board.language }}</h3>
             </div>
             <div class="points pull-right">
                 <p>{{ language_board.points }}</p>

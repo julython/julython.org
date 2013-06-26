@@ -10,46 +10,23 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding model 'Language'
         db.create_table(u'people_language', (
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=64, primary_key=True)),
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
         db.send_create_signal(u'people', ['Language'])
-
-        # Adding M2M table for field languages on 'Project'
-        m2m_table_name = db.shorten_name(u'people_project_languages')
-        db.create_table(m2m_table_name, (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('project', models.ForeignKey(orm[u'people.project'], null=False)),
-            ('language', models.ForeignKey(orm[u'people.language'], null=False))
-        ))
-        db.create_unique(m2m_table_name, ['project_id', 'language_id'])
 
         # Adding field 'Commit.files'
         db.add_column(u'people_commit', 'files',
                       self.gf('jsonfield.fields.JSONField')(null=True, blank=True),
                       keep_default=False)
 
-        # Adding M2M table for field languages on 'Commit'
-        m2m_table_name = db.shorten_name(u'people_commit_languages')
-        db.create_table(m2m_table_name, (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('commit', models.ForeignKey(orm[u'people.commit'], null=False)),
-            ('language', models.ForeignKey(orm[u'people.language'], null=False))
-        ))
-        db.create_unique(m2m_table_name, ['commit_id', 'language_id'])
-
 
     def backwards(self, orm):
         # Deleting model 'Language'
         db.delete_table(u'people_language')
 
-        # Removing M2M table for field languages on 'Project'
-        db.delete_table(db.shorten_name(u'people_project_languages'))
-
         # Deleting field 'Commit.files'
         db.delete_column(u'people_commit', 'files')
-
-        # Removing M2M table for field languages on 'Commit'
-        db.delete_table(db.shorten_name(u'people_commit_languages'))
 
 
     models = {
@@ -117,7 +94,6 @@ class Migration(SchemaMigration):
             'files': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
             'hash': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'languages': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['people.Language']", 'symmetrical': 'False', 'blank': 'True'}),
             'message': ('django.db.models.fields.CharField', [], {'max_length': '2024', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['people.Project']", 'null': 'True', 'blank': 'True'}),
@@ -127,7 +103,8 @@ class Migration(SchemaMigration):
         },
         u'people.language': {
             'Meta': {'object_name': 'Language'},
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '64', 'primary_key': 'True'})
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'})
         },
         u'people.location': {
             'Meta': {'object_name': 'Location'},
@@ -142,7 +119,6 @@ class Migration(SchemaMigration):
             'forked': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'forks': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'languages': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['people.Language']", 'symmetrical': 'False', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'parent_url': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'repo_id': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
