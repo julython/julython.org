@@ -94,13 +94,21 @@ class Game(models.Model):
         cursor = connection.cursor()
         cursor.execute(HISTOGRAM, [self.pk])
         Day = namedtuple('Day', 'count date start end')
-        days = {i.date: i for i in map(Day._make, cursor.fetchall())}
+
+        def mdate(d):
+            # SQLITE returns a string while mysql returns date object
+            # so make it look the same.
+            if isinstance(d, datetime.date):
+                return d
+            day = datetime.datetime.strptime(d, '%Y-%m-%d')
+            return day.date()
+
+        days = {mdate(i.date): i for i in map(Day._make, cursor.fetchall())}
         num_days = self.end - self.start
         records = []
         for day_n in xrange(num_days.days + 1):
             day = self.start + datetime.timedelta(days=day_n)
-            frmt = day.strftime('%Y-%m-%d')
-            records.append(days.get(frmt, Day(0, frmt, '', '')))
+            records.append(days.get(day.date(), Day(0, day.date(), '', '')))
 
         logging.debug(records)
         # TODO (rmyers): This should return a json array with labels
