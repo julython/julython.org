@@ -46,7 +46,9 @@
 				<ul class="nav nav-tabs">
 					<li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
 					<li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
+					{% comment %}
 					<li {% if active == "badges" %}class="active"{% endif %}><a href="{% url 'user-badges' username=profile.username %}">{% trans "Badges" %}</a></li>
+					{% endcomment %}
 					{% if profile.username == user.username %}
 					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
 					{% endif %}

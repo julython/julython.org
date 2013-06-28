@@ -48,6 +48,7 @@
 {% endblock %}
 
 {% block extra_javascript %}
+{{ block.super }}
 <script>
   var profile = new JULY.ProfileView();
   JULY.applyBindings(profile, "#contents")
