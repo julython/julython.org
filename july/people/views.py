@@ -1,3 +1,5 @@
+import logging
+
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response, render, get_object_or_404
@@ -13,6 +15,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template import loader
 from django.contrib.sites.models import get_current_site
 from social_auth.models import UserSocialAuth
+
 from july.settings import SECRET_KEY as SECRET
 from july.models import User
 
@@ -65,7 +68,10 @@ def send_verify_email(email, user_id, domain):
     text = strip_tags(html)
     msg = EmailMultiAlternatives(subject, text, None, [email])
     msg.attach_alternative(html, 'text/html')
-    msg.send()
+    try:
+        msg.send()
+    except:
+        logging.exception("Unable to send email!")
 
 
 @login_required
@@ -87,7 +93,8 @@ def edit_profile(request, username, template_name='people/edit.html'):
             if key in ['email']:
                 # send verification email
                 domain = get_current_site(request).domain
-                send_verify_email(value, user.pk, domain)
+                if value is not None:
+                    send_verify_email(value, user.pk, domain)
                 # Don't actually add email to user model.
                 continue
             if key == 'team':
