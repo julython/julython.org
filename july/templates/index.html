@@ -3,10 +3,10 @@
 {% load i18n %}
 
 {% block content %}
-    <div class="container">
+    <div class="container hidden-phone">
       <div class="row">
         <div class="span12">
-          <h1 id="logo">{% trans "Julython" %} {% now "Y" %}</h1>
+          <h1 class="hidden-phone" id="logo">{% trans "Julython" %} {% now "Y" %}</h1>
         </div>
       </div>
       
@@ -19,24 +19,28 @@
 			        width="48pt" height="22pt"></iframe>
         </div>
       </div>
-    {# Teaser #}
     </div>
 
-    <div class="gray-container" id="navigation">
+    <div class="gray-container hidden-phone" id="navigation">
       <div class="container">
         <div class="row">
           <div class="span12 sticky" id="sticky-bar">
-            <button class="what-is-this">{% trans "What is This?" %}</button>
-            <button class="participating">{% trans "Participating" %}</button>
-            <button class="the-rules">{% trans "The Rules" %}</button>
-            <button class="teaming-up">{% trans "Teaming Up" %}</button>
-            <button class="spread-the-word">{% trans "Spread The Word" %}</button>
+            <button class="what-is-this">
+              <a href="#what-is-this">{% trans "What is This?" %}</a></button>
+            <button class="participating">
+              <a href="#participating">{% trans "Participating" %}</a></button>
+            <button class="the-rules">
+              <a href="#the-rules">{% trans "The Rules" %}</a></button>
+            <button class="teaming-up">
+              <a href="#teaming-up">{% trans "Teaming Up" %}</a></button>
+            <button class="spread-the-word">
+              <a href="#spread-the-word">{% trans "Spread The Word" %}</a></button>
           </div>
         </div>
       </div>
     </div>
     
-    <div class="container section-container no-border">
+    <div id="what-is-this" class="container section-container no-border">
       <div class="row">
         <div class="span12">
           <div class="row">
@@ -60,7 +64,7 @@
         </div>
       </div>
     </div>
-    <div class="container section-container no-border">
+    <div id="participating" class="container section-container no-border">
       <div class="row">
         <div class="span4">
           <div class="row">
@@ -92,7 +96,7 @@
     
     
     
-    <div class="container section-container no-border">
+    <div id="the-rules" class="container section-container no-border">
       <div class="row">
         <div class="span12">
           <div class="row">
@@ -121,7 +125,7 @@
     
     
     
-    <div class="container section-container no-border">
+    <div id="teaming-up" class="container section-container no-border">
       <div class="row">
         <div class="span12">
           <div class="row">
@@ -147,7 +151,7 @@
       </div>
     </div>
     
-    <div class="container section-container no-border">
+    <div class="container section-container no-border hidden-phone">
       <div class="row">
         <div class="span12">
           <div class="row">
@@ -185,7 +189,7 @@
       </div>
     </div>
 
-    <div class="container section-container no-border">
+    <div id="spread-the-word" class="container section-container no-border">
       <div class="row">
         <div class="span12">
           <div class="row">
@@ -194,20 +198,29 @@
             </div>
           </div>
           <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "Twitter" %}</h3>
-              <p><a href="https://twitter.com/julython" class="twitter-follow-button" data-show-count="false">{% trans "Follow @julython" %}</a>
-                  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script></p>
+            <div class="span5">
+              <blockquote class="twitter-tweet"><p>HEY! Are you doing <a href="https://twitter.com/julython">@julython</a> ? Are a <a href="https://twitter.com/search?q=%23PyLady&amp;src=hash">#PyLady</a> or <a href="https://twitter.com/search?q=%23PyLaddy&amp;src=hash">#PyLaddy</a>? Join the PyLadies team!! <a href="http://t.co/TKDOXMHT0F">http://t.co/TKDOXMHT0F</a></p>&mdash; Lynn Root (@roguelynn) <a href="https://twitter.com/roguelynn/statuses/349062994006786049">June 24, 2013</a></blockquote>
+              <blockquote class="twitter-tweet"><p>Python? July? Everything I love together at last! <a href="http://t.co/kUJGSo9s">http://t.co/kUJGSo9s</a> <a href="https://twitter.com/julython">@julython</a></p>&mdash; gun.io (@GUNdotIO) <a href="https://twitter.com/GUNdotIO/statuses/226003111909675008">July 19, 2012</a></blockquote>
+              <blockquote class="twitter-tweet"><p>inspired by <a href="https://twitter.com/julython">@julython</a> to make July a big open source Python month for me, culminating in PyOhio where I&#39;ll talk about a few of the projects</p>&mdash; James Tauber (@jtauber) <a href="https://twitter.com/jtauber/statuses/218060737095008256">June 27, 2012</a></blockquote>
+              <blockquote class="twitter-tweet"><p><a href="https://twitter.com/julython">@julython</a> has actually got me off my arse and doing some python coding. Trying to commit to 30mins a day. Is working so far. Long overdue!</p>&mdash; Stephen Allison (@StephenAllison7) <a href="https://twitter.com/StephenAllison7/statuses/221762124366622720">July 8, 2012</a></blockquote>
             </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Facebook" %}</h3>
-              <p>{% trans "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>" %}</p>
+            <div class="span5">
+              <blockquote class="twitter-tweet"><p><a href="https://twitter.com/julython">@julython</a> I love the site, looks great and the idea is fantastic. I&#39;ll be making sure all my friends know. Thanks for being awesome!</p>&mdash; Wraithan (@Wraithan) <a href="https://twitter.com/Wraithan/statuses/219075478919716866">June 30, 2012</a></blockquote>
+              <blockquote class="twitter-tweet"><p><a href="http://t.co/RpkBlgnT">http://t.co/RpkBlgnT</a> is a great idea. Too bad my contributions can&#39;t be tracked in an scm :(</p>&mdash; jessenoller (@jessenoller) <a href="https://twitter.com/jessenoller/statuses/218697531654283264">June 29, 2012</a></blockquote>
+              <blockquote class="twitter-tweet"><p>python + july = julython! <a href="http://t.co/Cq7yebhh">http://t.co/Cq7yebhh</a></p>&mdash; Hilary Mason (@hmason) <a href="https://twitter.com/hmason/statuses/218066679362633728">June 27, 2012</a></blockquote>
+              <blockquote class="twitter-tweet"><p>. <a href="https://twitter.com/julython">@Julython</a> - work on pet Python projects during July, earn points, collaborate, and compete against other cities: <a href="http://t.co/kQ20gn1R">http://t.co/kQ20gn1R</a></p>&mdash; Get Python (@getpy) <a href="https://twitter.com/getpy/statuses/218743289061449728">June 29, 2012</a></blockquote>
             </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Github" %}</h3>
-              <p>{% trans "We love sharing code, follow us on <a href='http://github.com/julython'>github</a>." %}</p>
+            <div class="span2 section-blurb">
+                <h3>{% trans "Sponsors" %}</h3>
+                <p><a href="http://www.stxnext.com/"><img src="{{ STATIC_URL }}images/stx_logo.png" alt="STX Next"></a></p>
+                <p><a href="http://www.rackspace.com"><img src="{{ STATIC_URL }}images/rackspace_logo.png" alt="Rackspace Hosting"></a></p>
+                <p><script data-gittip-username="julython" src="https://www.gittip.com/assets/widgets/0002.js"></script></p>
+                <h3>{% trans "Follow Us" %}</h3>
+                  <p><a href="https://twitter.com/julython" class="twitter-follow-button" data-show-count="false">{% trans "Follow @julython" %}</a></p>
+                  <p>{% trans "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>" %}</p>
+                  <p>{% trans "We love sharing code, visit our <a href='http://github.com/julython'>github</a> organization." %}</p>
             </div>
-          </div>
+          <div>
         </div>
       </div>
     </div>
@@ -215,13 +228,14 @@
 
 {% block javascript %}
 {{ block.super }}
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 <script type="text/javascript">
     // navigation bar
-    var nav = new Nav("#navigation", $("#topnav").height());
-    nav.setup();
-    nav.update();
-    var win = $(window);
-    win.scroll(function () { nav.update.apply(nav, arguments); });
+    //var nav = new Nav("#navigation", $("#topnav").height());
+    //nav.setup();
+    //nav.update();
+    //var win = $(window);
+    //win.scroll(function () { nav.update.apply(nav, arguments); });
     // charts!
     new Charts.BarChart("user-barchart")
       .load({{stats}})
