@@ -464,7 +464,7 @@ class BitbucketHandler(PostCallbackHandler):
 
         result = {
             'url': abs_url,
-            'description': repo.get('website', ''),
+            'description': repo.get('website') or '',
             'name': repo.get('name'),
             'service': 'bitbucket'
         }

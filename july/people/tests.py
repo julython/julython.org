@@ -24,7 +24,7 @@ class SCMTestMixin(object):
     API_URL = ""
     PROJECT_URL = ""
     USER = "bobby"
-    post = ""
+    payload = ""
     START = datetime.datetime(year=2012, month=12, day=1, tzinfo=UTC)
     # End of time itself
     END = datetime.datetime(year=2012, month=12, day=21, tzinfo=UTC)
@@ -36,8 +36,11 @@ class SCMTestMixin(object):
         self.user.add_auth_id(self.AUTH_ID)
         self.game = Game.objects.create(start=self.START, end=self.END)
 
-    @staticmethod
-    def make_post(post):
+    @property
+    def post(self):
+        return self.make_post(self.payload)
+
+    def make_post(self, post={}):
         return {'payload': json.dumps(post)}
 
     def make_user(self, username, **kwargs):
@@ -189,10 +192,6 @@ class GithubTest(SCMTestMixin, TestCase):
         "ref": "refs/heads/master"
     }
 
-    @property
-    def post(self):
-        return self.make_post(self.payload)
-
     def test_repo_id(self):
         repo_id = 1
         payload = self.payload
@@ -237,76 +236,83 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
     API_URL = '/api/v1/bitbucket'
     PROJECT_URL = 'https://bitbucket.org/marcus/project-x/'
     PROJECT_SLUG = 'bb-marcus-project-x'
-    post = {
-        'payload':
-        json.dumps({
-            "canon_url": "https://bitbucket.org",
-            "commits": [
-                {
-                    "author": "marcus",
-                    "branch": "featureA",
-                    "files": [
-                        {
-                            "file": "filepath.rb",
-                            "type": "added"
-                        },
-                        {
-                            "file": "test.py",
-                            "type": "modified"
-                        },
-                        {
-                            "file": "README",
-                            "type": "modified"
-                        },
-                        {
-                            "file": "frank.scheme",
-                            "type": "removed"
-                        }
-                    ],
-                    "message": "Added some featureA things",
-                    "node": "d14d26a93fd2",
-                    "parents": [
-                        "1b458191f31a"
-                    ],
-                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
-                    "raw_node": "1c0cd3b6f339bb95bfed14d26a93fd28d3166fa8",
-                    "revision": 3,
-                    "size": -1,
-                    "timestamp": "2012-12-05 06:07:03",
-                    "utctimestamp": "2012-12-05 04:07:03+00:00"
-                },
-                {
-                    "author": "marcus",
-                    "branch": "featureB",
-                    "files": [
-                        {
-                            "file": "somefile.py",
-                            "type": "modified"
-                        }
-                    ],
-                    "message": "Added some featureB things",
-                    "node": "d14d26a93fd2",
-                    "parents": [
-                        "1b458191f31a"
-                    ],
-                    "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
-                    "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
-                    "revision": 3,
-                    "size": -1,
-                    "timestamp": "2012-12-06 06:07:03",
-                    "utctimestamp": "2012-12-06 04:07:03+00:00"
-                }
-            ],
-            "repository": {
-                "absolute_url": "/marcus/project-x/",
-                "fork": False,
-                "is_private": True,
-                "name": "Project X",
-                "owner": "marcus",
-                "scm": "hg",
-                "slug": "project-x",
-                "website": ""
+    payload = {
+        "canon_url": "https://bitbucket.org",
+        "commits": [
+            {
+                "author": "marcus",
+                "branch": "featureA",
+                "files": [
+                    {
+                        "file": "filepath.rb",
+                        "type": "added"
+                    },
+                    {
+                        "file": "test.py",
+                        "type": "modified"
+                    },
+                    {
+                        "file": "README",
+                        "type": "modified"
+                    },
+                    {
+                        "file": "frank.scheme",
+                        "type": "removed"
+                    }
+                ],
+                "message": "Added some featureA things",
+                "node": "d14d26a93fd2",
+                "parents": [
+                    "1b458191f31a"
+                ],
+                "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
+                "raw_node": "1c0cd3b6f339bb95bfed14d26a93fd28d3166fa8",
+                "revision": 3,
+                "size": -1,
+                "timestamp": "2012-12-05 06:07:03",
+                "utctimestamp": "2012-12-05 04:07:03+00:00"
             },
-            "user": "marcus"
-        })
+            {
+                "author": "marcus",
+                "branch": "featureB",
+                "files": [
+                    {
+                        "file": "somefile.py",
+                        "type": "modified"
+                    }
+                ],
+                "message": "Added some featureB things",
+                "node": "d14d26a93fd2",
+                "parents": [
+                    "1b458191f31a"
+                ],
+                "raw_author": "Marcus Bertrand <marcus@somedomain.com>",
+                "raw_node": "d14d26a93fd28d3166fa81c0cd3b6f339bb95bfe",
+                "revision": 3,
+                "size": -1,
+                "timestamp": "2012-12-06 06:07:03",
+                "utctimestamp": "2012-12-06 04:07:03+00:00"
+            }
+        ],
+        "repository": {
+            "absolute_url": "/marcus/project-x/",
+            "fork": False,
+            "is_private": True,
+            "name": "Project X",
+            "owner": "marcus",
+            "scm": "hg",
+            "slug": "project-x",
+            "website": ""
+        },
+        "user": "marcus"
     }
+
+    def test_website_null(self):
+        post = self.payload.copy()
+        post['repository']['website'] = None
+        payload = self.make_post(post)
+        resp = self.client.post(self.API_URL, payload)
+        resp_body = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(len(resp_body['commits']), 2)
+        self.assertEqual(self.requests.post.call_count, 6)
