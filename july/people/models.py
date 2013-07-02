@@ -9,6 +9,9 @@ from django.core.urlresolvers import reverse
 from jsonfield import JSONField
 from django.db.models.aggregates import Sum, Count
 from django.utils.timezone import utc
+from django.utils.html import strip_tags
+from django.core.mail import mail_admins
+from django.template import loader
 
 
 class Commit(models.Model):
@@ -73,6 +76,9 @@ class Commit(models.Model):
     def create_by_user(cls, user, commits, project=None):
         """Create a commit with parent user, updating users points."""
         created_commits = []
+
+        if not user.is_active:
+            return created_commits
 
         for c in commits:
             c['user'] = user
@@ -162,6 +168,7 @@ class Project(models.Model):
     slug = models.SlugField()
     service = models.CharField(max_length=30, blank=True, default='')
     repo_id = models.IntegerField(blank=True, null=True)
+    active = models.BooleanField(default=True)
 
     def __unicode__(self):
         if self.name:
@@ -207,14 +214,15 @@ class Project(models.Model):
 
         # Catch renaming of the repo.
         else:
-            query = cls.objects.filter(service=service, repo_id=repo_id)
-            if query.count() == 1:
-                project = query[0]
+            try:
+                project = cls.objects.get(service=service, repo_id=repo_id)
                 created = False
-            else:
+            except cls.DoesNotExist:
                 project, created = cls.objects.get_or_create(
                     slug=slug, defaults=kwargs)
 
+        if not project.active:
+            return None
         # Update stale project information.
         if not created:
             cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
@@ -281,9 +289,10 @@ class Badge(models.Model):
 
 
 class Group(models.Model):
-    total = models.IntegerField(default=0)
-    name = models.CharField(max_length=64, blank=False)
     slug = models.SlugField(primary_key=True)
+    name = models.CharField(max_length=64, blank=False)
+    total = models.IntegerField(default=0)
+    approved = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
@@ -303,13 +312,21 @@ class Group(models.Model):
                                   "by the subclass!")
 
     @classmethod
-    def create(cls, name):
+    def create(cls, slug, name):
         slug = slugify(name)
-        return cls.objects.get_or_create(slug=slug, defaults={'name': name})
+        obj, created = cls.objects.get_or_create(slug=slug,
+                                                 defaults={'name': name})
+        if created:
+            html = loader.render_to_string(cls.template, {'slug': slug})
+            text = strip_tags(html)
+            subject = "[group] %s awaiting approval." % slug
+            mail_admins(subject, text, html_message=html)
+        return obj
 
 
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""
+    template = 'registration/location.html'
 
     def members_by_points(self):
         from july.game.models import Game
@@ -326,11 +343,12 @@ class Location(Group):
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
-        return reverse('member-list', kwargs={'location_slug': self.slug})
+        return reverse('location-detail', kwargs={'slug': self.slug})
 
 
 class Team(Group):
     """Simple model for holding point totals and projects for a Team"""
+    template = 'registration/team.html'
 
     def members_by_points(self):
         from july.game.models import Game
@@ -344,10 +362,6 @@ class Team(Group):
         total = query.aggregate(Sum('points'))
         points = total.get('points__sum')
         return points or 0
-
-    def get_absolute_url(self):
-        from django.core.urlresolvers import reverse
-        return reverse('team-details', kwargs={'team_slug': self.slug})
 
 
 class Language(models.Model):

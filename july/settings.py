@@ -26,6 +26,8 @@ CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 TEMPLATE_DEBUG = DEBUG
 
+DEFAULT_FROM_EMAIL = 'Julython <mail@julython.org>'
+SERVER_EMAIL = 'Julython <mail@julython.org>'
 ADMINS = (
     ('Robert Myers', 'robert@julython.org'),
 )

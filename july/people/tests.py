@@ -46,13 +46,14 @@ class SCMTestMixin(object):
     def make_user(self, username, **kwargs):
         return User.objects.create_user(username=username, **kwargs)
 
-    def make_location(self, location):
+    def make_location(self, location, approved=True):
         slug = slugify(location)
-        return Location.objects.create(name=location, slug=slug)
+        return Location.objects.create(name=location, slug=slug,
+                                       approved=approved)
 
-    def make_team(self, team):
+    def make_team(self, team, approved=True):
         slug = slugify(team)
-        return Team.objects.create(name=team, slug=slug)
+        return Team.objects.create(name=team, slug=slug, approved=approved)
 
     def test_post_creates_commits(self):
         resp = self.client.post(self.API_URL, self.post)
@@ -88,6 +89,15 @@ class SCMTestMixin(object):
         self.user.save()
         self.client.post(self.API_URL, self.post)
         self.assertEqual(self.game.locations[0].total, 12)
+        self.assertEqual(self.requests.post.call_count, 6)
+
+    def test_post_new_location(self):
+        location = self.make_location('Austin, TX', approved=False)
+        self.user.location = location
+        self.user.save()
+        self.client.post(self.API_URL, self.post)
+        locations = [l for l in self.game.locations]
+        self.assertEqual(len(locations), 0)
         self.assertEqual(self.requests.post.call_count, 6)
 
     def test_post_adds_points_to_team(self):

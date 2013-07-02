@@ -26,6 +26,12 @@ class UserProfile(detail.DetailView):
     context_object_name = 'profile'
     slug_url_kwarg = 'username'
 
+    def get_object(self):
+        obj = super(UserProfile, self).get_object()
+        if not obj.is_active:
+            raise Http404("User not found")
+        return obj
+
 
 # TODO (rmyers): move the rest of these views to knockback/backbone routes
 

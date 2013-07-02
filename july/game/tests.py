@@ -27,13 +27,14 @@ class ModelMixin(object):
     def make_user(self, username, **kwargs):
         return User.objects.create_user(username=username, **kwargs)
 
-    def make_location(self, location):
+    def make_location(self, location, approved=True):
         slug = slugify(location)
-        return Location.objects.create(name=location, slug=slug)
+        return Location.objects.create(name=location, slug=slug,
+                                       approved=approved)
 
-    def make_team(self, team):
+    def make_team(self, team, approved=True):
         slug = slugify(team)
-        return Team.objects.create(name=team, slug=slug)
+        return Team.objects.create(name=team, slug=slug, approved=approved)
 
     def make_project(self, url='http://github.com/project', name='test'):
         return Project.create(url=url, name=name)
@@ -212,6 +213,16 @@ class GameViewTests(TestCase, ModelMixin):
         resp = self.client.get('/location/')
         self.assertContains(resp, "Austin, TX")
 
+    def test_loction_view_new(self):
+        self.make_game()
+        project = self.make_project()
+        location = self.make_location("Austin, TX", approved=False)
+        user = self.make_user('ted', location=location)
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/location/austin-tx/')
+        self.assertEqual(resp.status_code, 404)
+
     def test_team_view(self):
         self.make_game()
         project = self.make_project()
@@ -221,6 +232,16 @@ class GameViewTests(TestCase, ModelMixin):
         self.make_commit(auth_id='test:ted', project=project)
         resp = self.client.get('/teams/')
         self.assertContains(resp, "Commit Rangers")
+
+    def test_team_view_new(self):
+        self.make_game()
+        project = self.make_project()
+        team = self.make_team("Commit Rangers", approved=False)
+        user = self.make_user('ted', team=team)
+        user.add_auth_id('test:ted')
+        self.make_commit(auth_id='test:ted', project=project)
+        resp = self.client.get('/teams/commit-rangers/')
+        self.assertEqual(resp.status_code, 404)
 
     def test_event_handler(self):
         resp = self.client.post('/events/pub/test/', {"foo": "bar"})

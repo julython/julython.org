@@ -4,6 +4,7 @@ from pytz import UTC
 
 from django.views.generic import list, detail
 from django.http.response import HttpResponse
+from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.list import ListView
 
@@ -34,7 +35,8 @@ class PlayerList(ListView, GameMixin):
 
     def get_queryset(self):
         game = self.get_game()
-        return Player.objects.filter(game=game).select_related()
+        return Player.objects.filter(
+            game=game, user__is_active=True).select_related()
 
 
 class BoardList(ListView, GameMixin):
@@ -43,7 +45,8 @@ class BoardList(ListView, GameMixin):
 
     def get_queryset(self):
         game = self.get_game()
-        return Board.objects.filter(game=game).select_related()
+        return Board.objects.filter(
+            game=game, project__active=True).select_related()
 
 
 class LanguageBoardList(list.ListView, GameMixin):
@@ -70,6 +73,12 @@ class LocationCollection(ListView, GameMixin):
 class LocationView(detail.DetailView):
     model = Location
 
+    def get_object(self):
+        obj = super(LocationView, self).get_object()
+        if not obj.approved:
+            raise Http404("Location not found")
+        return obj
+
 
 class TeamCollection(ListView, GameMixin):
     model = Team
@@ -81,6 +90,12 @@ class TeamCollection(ListView, GameMixin):
 
 class TeamView(detail.DetailView):
     model = Team
+
+    def get_object(self):
+        obj = super(TeamView, self).get_object()
+        if not obj.approved:
+            raise Http404("Team not found")
+        return obj
 
 
 @csrf_exempt

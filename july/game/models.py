@@ -18,6 +18,7 @@ SELECT july_user.location_id AS slug,
     FROM game_player, july_user, people_location
     WHERE game_player.user_id = july_user.id
     AND july_user.location_id = people_location.slug
+    AND people_location.approved = 1
     AND game_player.game_id = %s
     GROUP BY july_user.location_id
     ORDER BY total DESC
@@ -32,6 +33,7 @@ SELECT july_user.team_id AS slug,
     FROM game_player, july_user, people_team
     WHERE game_player.user_id = july_user.id
     AND july_user.team_id = people_team.slug
+    AND people_team.approved = 1
     AND game_player.game_id = %s
     GROUP BY july_user.team_id
     ORDER BY total DESC

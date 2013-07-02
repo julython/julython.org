@@ -30,7 +30,7 @@ EMAIL_MATCH = re.compile('<(.+?)>')
 class UserResource(ModelResource):
 
     class Meta:
-        queryset = User.objects.all()
+        queryset = User.objects.filter(is_active=True)
         excludes = ['password', 'email', 'is_superuser', 'is_staff',
                     'is_active']
 
@@ -50,7 +50,7 @@ class ProjectResource(ModelResource):
 class LocationResource(ModelResource):
 
     class Meta:
-        queryset = Location.objects.all()
+        queryset = Location.objects.filter(approved=True)
         allowed_methods = ['get']
         filtering = {
             'name': ['istartswith', 'exact', 'icontains'],
@@ -60,7 +60,7 @@ class LocationResource(ModelResource):
 class TeamResource(ModelResource):
 
     class Meta:
-        queryset = Team.objects.all()
+        queryset = Team.objects.filter(approved=True)
         allowed_methods = ['get']
         filtering = {
             'name': ['istartswith', 'exact', 'icontains'],
@@ -342,7 +342,7 @@ class PostCallbackHandler(View, JSONMixin):
         """Publish the commits to the real time channel."""
         host = self.request.META.get('HTTP_HOST', 'localhost:8000')
         url = 'http://%s/events/pub/' % host
-        for commit in commits:
+        for commit in commits[:3]:
             try:
                 resource = CommitResource()
                 bundle = resource.build_bundle(obj=commit)
@@ -365,7 +365,6 @@ class PostCallbackHandler(View, JSONMixin):
 
     def post(self, request):
         payload = self.parse_payload(request)
-        logging.info(payload)
         if not payload:
             return http.HttpResponseBadRequest()
         try:
@@ -377,7 +376,14 @@ class PostCallbackHandler(View, JSONMixin):
         commit_data = data.get('commits', [])
 
         repo = self._parse_repo(data)
+        logging.info(repo)
         project = Project.create(**repo)
+
+        if project is None:
+            logging.error("Project Disabled")
+            # TODO: discover what response codes are helpful to github
+            # and bitbucket
+            return self.respond_json({'error': 'abuse'}, status=202)
 
         commit_dict = self.parse_commits(commit_data, project)
         total_commits = []

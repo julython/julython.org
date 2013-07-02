@@ -133,8 +133,10 @@ username = Julython Joe &lt;me@example.com&gt;</pre>
               </p>
               {% endif %}
               <p class="lead">
-                {% trans "The location is a free form field, so it is really up to you to enter it properly. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'" %}
+                {% trans "The location is a free form field, so it is really up to you to enter it properly*. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'" %}
               </p>
+              <p>
+                {% trans "* New locations must be approved first before they appear on the site." %}</p>
             </div>
           </div>
     </div>
@@ -157,8 +159,27 @@ username = Julython Joe &lt;me@example.com&gt;</pre>
               </p>
               {% endif %}
               <p class="lead">
-                {% trans "The team is a free form field, so it is really up to you to enter it properly. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Worker Bees' and 'worker bees' are turned into 'worker-bees'" %}
+                {% trans "The team is a free form field, so it is really up to you to enter it properly*. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Worker Bees' and 'worker bees' are turned into 'worker-bees'" %}
               </p>
+              <p>
+                {% trans "* New teams must be approved first before they appear on the site." %}</p>
+            </div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<div class="container section-container no-border" id="conduct">
+  <div class="row">
+    <div class="span10 offset1">
+           <div class="row">
+            <div class="span10">
+              <h2 class="what-is-this">{% trans "What is the code of conduct?" %}</h2>
+              <p class="lead">Julython uses roughly the same code of conduct policy as <a href="https://us.pycon.org/2013/about/code-of-conduct/">Pycon</a></p>
+              <p>Julython is dedicated to providing a harassment-free conference experience for everyone, regardless of gender, sexual orientation, disability, physical appearance, body size, race, or religion. We do not tolerate harassment of Julython participants in any form.</p>
+              <p>Be kind to others. Do not insult or put down other attendees. Behave professionally. Remember that harassment and sexist, racist, or exclusionary jokes are not appropriate for Julython.</p>
+              <p>Violating these rules may result in your account and all points associated removed.</p>
+              <p>Thank you for helping make this a welcoming, friendly event for all.</p>
             </div>
           </div>
     </div>

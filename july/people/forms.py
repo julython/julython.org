@@ -72,6 +72,9 @@ class EditUserForm(forms.Form):
 
     location = forms.CharField(
         label=ugettext_lazy('Location'),
+        help_text=ugettext_lazy(
+            'Note new locations need to be approved first before'
+            ' they will show up.'),
         max_length=160, required=False,
         widget=forms.TextInput(
             attrs={
@@ -82,6 +85,9 @@ class EditUserForm(forms.Form):
 
     team = forms.CharField(
         label=ugettext_lazy('Team'),
+        help_text=ugettext_lazy(
+            'Note new teams need to be approved first before'
+            ' they will show up'),
         max_length=160, required=False,
         widget=forms.TextInput(
             attrs={
@@ -116,21 +122,12 @@ class EditUserForm(forms.Form):
                 self.fields['gittip'].initial = self._gittip.uid
 
     def clean_location(self):
-            location = self.data.get('location', '')
-            try:
-                l = Location.objects.get(slug=slugify(location))
-            except Location.DoesNotExist:
-                l = Location.objects.create(
-                    name=location, slug=slugify(location), total=0)
-            return l
+        location = self.data.get('location', '')
+        return Location.create(slug=slugify(location), name=location)
 
     def clean_team(self):
         team = self.data.get('team', '')
-        try:
-            t = Team.objects.get(slug=slugify(team))
-        except Team.DoesNotExist:
-            t = Team.objects.create(slug=slugify(team), name=team, total=0)
-        return t
+        return Team.create(slug=slugify(team), name=team)
 
     def clean_gittip(self):
         uid = self.cleaned_data['gittip']
