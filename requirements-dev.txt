@@ -7,3 +7,4 @@ django-debug-toolbar
 requests
 South
 jsonfield
+pytz
