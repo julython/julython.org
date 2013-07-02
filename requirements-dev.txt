@@ -6,3 +6,5 @@ iso8601==0.1.4
 django-debug-toolbar
 requests
 South
+jsonfield
+pytz

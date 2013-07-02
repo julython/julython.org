@@ -16,6 +16,7 @@ setup(
         'iso8601 >= 0.1.4',
         'mock',
         'jsonfield',
+        'pytz',
     ],
     url='http://github.com/julython/julython.org',
     description=("31 days and nights Python"),
