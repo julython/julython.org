@@ -1,21 +1,5 @@
 [
 {
-  "pk": "Python",
-  "model": "people.language",
-  "fields": {}
-},
-
-{
-  "pk": "Ruby",
-  "model": "people.language",
-  "fields": {}
-},
-{
-  "pk": "Javascript",
-  "model": "people.language",
-  "fields": {}
-},
-{
   "pk": "austin-tx",
   "model": "people.location",
   "fields": {
