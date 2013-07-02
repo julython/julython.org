@@ -314,6 +314,8 @@ class Group(models.Model):
     @classmethod
     def create(cls, slug, name):
         slug = slugify(name)
+        if not slug:
+            return None
         obj, created = cls.objects.get_or_create(slug=slug,
                                                  defaults={'name': name})
         if created:
