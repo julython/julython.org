@@ -5,6 +5,8 @@ from july.people import views
 
 urlpatterns = patterns(
     'july.people.views',
+    url(r'^(?P<username>[a-zA-Z0-9_-]+)/abuse/$',
+        'send_abuse', name='user-abuse'),
     url(r'^(?P<username>[a-zA-Z0-9_-]+)/$',
         views.UserProfile.as_view(),
         name='member-profile'),

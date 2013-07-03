@@ -1,4 +1,5 @@
 import logging
+import json
 
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
@@ -11,7 +12,7 @@ from django.utils.crypto import salted_hmac
 from django.utils.translation import ugettext_lazy as _
 from django.utils.http import int_to_base36
 from django.utils.html import strip_tags
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, mail_admins
 from django.template import loader
 from django.contrib.sites.models import get_current_site
 from social_auth.models import UserSocialAuth
@@ -180,3 +181,28 @@ def delete_email(request, username, email):
         {'email': email},
         context_instance=RequestContext(request)
     )
+
+@login_required
+def send_abuse(request, username):
+    from forms import AbuseForm
+    response = HttpResponse(
+        json.dumps({}),
+        content_type="application/json"
+    )
+
+    if request.user.username == username:
+        return response
+
+    form = AbuseForm(request.POST)
+    desc = form.data['desc']
+
+    subject = 'Abuse report for user %s' % username
+    text = """\
+User %s has reported abuse for user %s:
+
+%s
+    """ % (request.user.username, username, desc)
+
+    mail_admins(subject, text)
+
+    return response

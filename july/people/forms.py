@@ -203,3 +203,6 @@ class ProjectForm(forms.Form):
         if data['parent_url'] == '':
             return None
         return data['parent_url']
+
+class AbuseForm(forms.Form):
+    desc = forms.CharField(widget=forms.Textarea)
