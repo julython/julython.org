@@ -61,7 +61,9 @@
 					{% if profile.username == user.username %}
 					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
 					{% endif %}
+					{% if request.can_report_abuse %}
 					<li id="abuseli" style="float: right"><a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a></li>
+					{% endif %}
 				</ul>
 			</div>
 		</div>
@@ -75,8 +77,9 @@
 	</div>
 	<div class="modal-body">
 		<p>What would you like to report?</p>
-		<form id="abuse-form" action="{% url 'user-abuse' username=profile.username %}" method="POST">
+		<form id="abuse-form" action="{% url 'abuse' %}" method="POST">
 			{% csrf_token %}
+			<input name="url" type="hidden" value="{{ request.build_absolute_uri }}">
 			<textarea name="desc" rows="4"></textarea>
 		</form>
 	</div>
@@ -150,25 +153,5 @@
 	var view = new JULY.CommitsView({userId: {{ profile.id }}});
 	ko.applyBindings(view);
 	JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
-	$(document).ready(function(){
-		var $send_abuse = $('#send-abuse');
-		var $form = $('#abuse-form');
-		var $modal = $('#abuse-modal');
-		var $abuseli = $('#abuseli');
-		$send_abuse.click(function(){
-			var desc = $form.find('textarea').val();
-			if(!desc) return;
-			$.ajax({
-				type: $form.attr('method'),
-				url: $form.attr('action'),
-				data: $form.serialize()
-			});
-			$modal.find('.modal-footer').html('');
-			$modal.find('.modal-body').html('<h4>Thank you !</h4>');
-			$send_abuse.remove();
-			$abuseli.remove();
-			return false;
-		})
-	});
 </script>
 {% endblock %}

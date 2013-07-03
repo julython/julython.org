@@ -18,3 +18,8 @@ class RegistrationForm(UserCreationForm):
         except User.DoesNotExist:
             return username
         raise forms.ValidationError(self.error_messages['duplicate_username'])
+
+
+class AbuseForm(forms.Form):
+    desc = forms.CharField(widget=forms.Textarea, required=True)
+    url = forms.URLField(required=True)

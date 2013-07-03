@@ -181,28 +181,3 @@ def delete_email(request, username, email):
         {'email': email},
         context_instance=RequestContext(request)
     )
-
-@login_required
-def send_abuse(request, username):
-    from forms import AbuseForm
-    response = HttpResponse(
-        json.dumps({}),
-        content_type="application/json"
-    )
-
-    if request.user.username == username:
-        return response
-
-    form = AbuseForm(request.POST)
-    desc = form.data['desc']
-
-    subject = 'Abuse report for user %s' % username
-    text = """\
-User %s has reported abuse for user %s:
-
-%s
-    """ % (request.user.username, username, desc)
-
-    mail_admins(subject, text)
-
-    return response

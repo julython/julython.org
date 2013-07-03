@@ -1,4 +1,5 @@
 import os
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
 
 # Default settings that can be overwritten in secrets
 DEBUG = True
@@ -126,9 +127,13 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'july.middleware.AbuseMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = TCP + (
+    'django.core.context_processors.request',
+)
 
 def custom_show_toolbar(request):
     return True  # Always show toolbar, for example purposes only.
@@ -194,6 +199,8 @@ SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
 # Just so we can use the same names for variables - why different social_auth??
 GITHUB_APP_ID = GITHUB_CONSUMER_KEY
 GITHUB_API_SECRET = GITHUB_CONSUMER_SECRET
+
+ABUSE_LIMIT = 3
 
 LOGGING = {
     'version': 1,
