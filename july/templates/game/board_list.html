@@ -9,7 +9,7 @@
         <h2 class="teaming-up">{% trans "Projects" %}</h2>
         {% for board in object_list %}
           <div class="row location">
-            <div class="span5">
+            <div class="span4">
               <h3><a href="{% url 'project-details' board.project.slug %}">{{ board.project }}</a></h3>
               <p><a href="{{ board.project.url }}" target="_blank">{{ board.project.url }}</a></p>
             </div>
