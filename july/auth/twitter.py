@@ -3,7 +3,6 @@ __author__ = 'Kevin'
 import logging
 
 from social_auth.backends import twitter
-from july.people.models import Location
 
 
 class TwitterBackend(twitter.TwitterBackend):
@@ -25,12 +24,8 @@ class TwitterBackend(twitter.TwitterBackend):
             data['first_name'], data['last_name'] = name.split(' ', 1)
         except:
             data['first_name'] = response['name']
-        try:
-            location = response.get('location', '')
-            if location:
-                data['location'], _ = Location.create(location)
-        except:
-            logging.exception('Problem finding location')
+
+        logging.debug("Twitter auth: %s", data)
         return data
 
 

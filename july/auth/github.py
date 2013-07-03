@@ -1,7 +1,6 @@
 import logging
 
 from social_auth.backends.contrib import github
-from july.people.models import Location
 
 
 class GithubBackend(github.GithubBackend):
@@ -25,13 +24,7 @@ class GithubBackend(github.GithubBackend):
         except:
             data['first_name'] = data['fullname']
 
-        try:
-            location = response.get('location', '')
-            if location:
-                data['location'], _ = Location.create(location)
-        except:
-            logging.exception('Problem finding location')
-
+        logging.debug("Github Auth: %s", data)
         return data
 
 
