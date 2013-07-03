@@ -152,7 +152,9 @@ class SCMTestMixin(object):
 
     def test_location_check(self):
         location = check_location(u'wrocław')
-        self.assertEqual(location, 'Wroclaw, Poland')
+        self.assertEqual(len(location), 3)
+        self.assertEqual(', '.join(location), 
+                'Wroclaw, Lower Silesian Voivodeship, Poland')
 
 
 class GithubTest(SCMTestMixin, TestCase):

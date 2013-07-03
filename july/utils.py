@@ -9,9 +9,21 @@ def check_location(location):
     data = resp.json()
     if data['status'] == 'ZERO_RESULTS':
         return None
+    
     try:
-        return data['results'][0]['formatted_address']
+        location = data['results'][0]['address_components']
     except (KeyError, IndexError):
         return None
+    
+    res = []
+    for component in location:
+        if 'locality' in component['types']:
+            res.append(component['long_name'])
+        if 'administrative_area_level_1' in component['types']:
+            res.append(component['long_name'])
+        if 'country' in component['types']:
+            res.append(component['long_name'])
+
+    return res
 
 

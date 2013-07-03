@@ -130,7 +130,7 @@ class EditUserForm(forms.Form):
                 "Specified location is invalid"
             )
             raise forms.ValidationError(error_msg)
-        return Location.create(slug=slugify(location), name=location)
+        return Location.create(slug=slugify(location), name=', '.join(location))
 
     def clean_team(self):
         team = self.data.get('team', '')
