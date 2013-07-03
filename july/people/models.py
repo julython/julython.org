@@ -8,10 +8,11 @@ from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
 from jsonfield import JSONField
 from django.db.models.aggregates import Sum, Count
-from django.utils.timezone import utc
+from django.utils.timezone import utc, now
 from django.utils.html import strip_tags
 from django.core.mail import mail_admins
 from django.template import loader
+import requests
 
 
 class Commit(models.Model):
@@ -165,6 +166,7 @@ class Project(models.Model):
     watchers = models.IntegerField(default=0)
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
     slug = models.SlugField()
     service = models.CharField(max_length=30, blank=True, default='')
     repo_id = models.IntegerField(blank=True, null=True)
@@ -224,10 +226,35 @@ class Project(models.Model):
         if not project.active:
             return None
         # Update stale project information.
-        if not created:
-            cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
-
+        project.update(slug, **kwargs)
         return project
+
+    @classmethod
+    def _get_bitbucket_data(cls, **kwargs):
+        """Update info from bitbucket if needed."""
+        url = kwargs.get('url', '')
+        parsed = urlparse(url)
+        if parsed.netloc == 'bitbucket.org':
+            # grab data from the bitbucket api
+            # TODO: (rmyers) authenticate with oauth?
+            api = 'https://bitbucket.org/api/1.0/repositories%s'
+            try:
+                r = requests.get(api % parsed.path)
+                data = r.json()
+                kwargs['description'] = data.get('description') or ''
+                kwargs['forks'] = data.get('forks_count') or 0
+                kwargs['watchers'] = data.get('followers_count') or 0
+            except:
+                logging.exception("Unable to parse: %s", url)
+        return kwargs
+
+    def update(self, slug, **kwargs):
+        last = now() - self.updated_on
+        if last.seconds >= (3600 * 6):
+            for key, value in self._get_bitbucket_data(**kwargs):
+                setattr(self, key, value)
+            self.slug = slug
+            self.save()
 
     @staticmethod
     def parse_project_name(url):
