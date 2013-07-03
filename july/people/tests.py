@@ -1,4 +1,4 @@
-
+# coding: utf-8
 import datetime
 import json
 from pytz import UTC
@@ -10,6 +10,7 @@ from django.template.defaultfilters import slugify
 from july.models import User
 from july.people.models import Location, Commit, Team, Project
 from july.game.models import Game, Board, Player, LanguageBoard
+from july.utils import check_location
 
 import requests
 
@@ -148,6 +149,10 @@ class SCMTestMixin(object):
     def test_malformed_payload(self):
         resp = self.client.post(self.API_URL, {"payload": "Bad Data"})
         self.assertEqual(resp.status_code, 400)
+
+    def test_location_check(self):
+        location = check_location(u'wrocław')
+        self.assertEqual(location, 'Wroclaw, Poland')
 
 
 class GithubTest(SCMTestMixin, TestCase):

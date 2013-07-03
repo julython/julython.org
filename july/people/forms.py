@@ -3,6 +3,7 @@ from django.utils.translation import ugettext_lazy
 from django.template.defaultfilters import slugify
 from models import Location, Team
 
+from july.utils import check_location
 
 class EditAddressForm(forms.Form):
 
@@ -123,6 +124,12 @@ class EditUserForm(forms.Form):
 
     def clean_location(self):
         location = self.data.get('location', '')
+        location = check_location(location)
+        if not location:
+            error_msg = ugettext_lazy(
+                "Specified location is invalid"
+            )
+            raise forms.ValidationError(error_msg)
         return Location.create(slug=slugify(location), name=location)
 
     def clean_team(self):
