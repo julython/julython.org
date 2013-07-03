@@ -8,10 +8,10 @@ def check_location(location):
 
     data = resp.json()
     if data['status'] == 'ZERO_RESULTS':
-        return False
+        return None
     try:
         return data['results'][0]['formatted_address']
     except (KeyError, IndexError):
-        return False
+        return None
 
 
