@@ -100,6 +100,13 @@ class SCMTestMixin(object):
         self.assertEqual(len(locations), 0)
         self.assertEqual(self.requests.post.call_count, 6)
 
+    def test_post_adds_points_to_project_model(self):
+        resp = self.client.post(self.API_URL, self.post)
+        resp_body = json.loads(resp.content)
+        c_hash = resp_body['commits'][0]
+        commit = Commit.objects.get(hash=c_hash)
+        self.assertEqual(commit.project.total, 12)
+
     def test_post_adds_points_to_team(self):
         team = self.make_team('Rackers')
         self.user.team = team
@@ -244,8 +251,8 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
     USER = 'marcus'
     AUTH_ID = 'email:marcus@somedomain.com'
     API_URL = '/api/v1/bitbucket'
-    PROJECT_URL = 'https://bitbucket.org/marcus/project-x/'
-    PROJECT_SLUG = 'bb-marcus-project-x'
+    PROJECT_URL = 'https://bitbucket.org/rmyers/cannula/'
+    PROJECT_SLUG = 'bb-rmyers-cannula'
     payload = {
         "canon_url": "https://bitbucket.org",
         "commits": [
@@ -305,7 +312,7 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
             }
         ],
         "repository": {
-            "absolute_url": "/marcus/project-x/",
+            "absolute_url": "/rmyers/cannula/",
             "fork": False,
             "is_private": True,
             "name": "Project X",
@@ -326,3 +333,36 @@ class BitbucketHandlerTests(SCMTestMixin, TestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(len(resp_body['commits']), 2)
         self.assertEqual(self.requests.post.call_count, 6)
+
+
+class ProjectModelTests(TestCase):
+
+    def test_parse_project_url(self):
+        url = 'http://example.com/user/repo.git'
+        self.assertEqual(
+            Project.parse_project_name(url),
+            'example-com-user-repo_git')
+
+    def test_parse_none(self):
+        self.assertEqual(None, Project.parse_project_name(None))
+
+    def test_disabled_project(self):
+        kwargs = {
+            'name': 'foo',
+            'url': 'http://example.com/user/repo',
+            'repo_id': 1,
+            'service': 'github',
+        }
+        Project.objects.create(active=False, **kwargs)
+        project = Project.create(**kwargs)
+        self.assertEqual(project, None)
+
+    def test_total_points(self):
+        p = Project.objects.create(url='http://example.com/user/repo')
+        self.assertEqual(p.total, 0)
+        self.assertEqual(p.points, 0)
+        self.assertEqual(unicode(p), 'example-com-user-repo')
+
+    def test_absolute_url(self):
+        p = Project.objects.create(url='http://github.com/user/repo')
+        self.assertEqual(p.get_absolute_url(), '/projects/gh-user-repo/')

@@ -216,15 +216,22 @@ class Project(models.Model):
 
         # Catch renaming of the repo.
         else:
-            kwargs['slug'] = slug
+            defaults = kwargs.copy()
+            defaults['slug'] = slug
             project, created = cls.objects.get_or_create(
                 service=service, repo_id=repo_id,
-                defaults=kwargs)
+                defaults=defaults)
+            if created and cls.objects.filter(slug=slug).count() > 1:
+                # This is an old project that was created without a repo_id.
+                project.delete()  # Delete the duplicate project
+                project = cls.objects.get(slug=slug)
 
         if not project.active:
+            # Don't bother updating this project and don't add commits.
             return None
+
         # Update stale project information.
-        project.update(slug, **kwargs)
+        project.update(slug, created, **kwargs)
         return project
 
     @classmethod
@@ -244,18 +251,18 @@ class Project(models.Model):
                 kwargs['watchers'] = data.get('followers_count') or 0
             except:
                 logging.exception("Unable to parse: %s", url)
-        return kwargs
+        return kwargs.iteritems()
 
-    def update(self, slug, **kwargs):
-        last = now() - self.updated_on
-        if last.seconds >= (3600 * 6):
+    def update(self, slug, created, **kwargs):
+        old = (now() - self.updated_on).seconds >= 21600
+        if created or old or slug != self.slug:
             for key, value in self._get_bitbucket_data(**kwargs):
                 setattr(self, key, value)
             self.slug = slug
             self.save()
 
-    @staticmethod
-    def parse_project_name(url):
+    @classmethod
+    def parse_project_name(cls, url):
         """
         Parse a project url and return a name for it.
 
