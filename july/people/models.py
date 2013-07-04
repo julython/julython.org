@@ -216,12 +216,10 @@ class Project(models.Model):
 
         # Catch renaming of the repo.
         else:
-            try:
-                project = cls.objects.get(service=service, repo_id=repo_id)
-                created = False
-            except cls.DoesNotExist:
-                project, created = cls.objects.get_or_create(
-                    slug=slug, defaults=kwargs)
+            kwargs['slug'] = slug
+            project, created = cls.objects.get_or_create(
+                service=service, repo_id=repo_id,
+                defaults=kwargs)
 
         if not project.active:
             return None
