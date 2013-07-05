@@ -8,7 +8,9 @@ from django.shortcuts import render_to_response, render, redirect
 from django.template import Context
 from django.conf import settings
 from django.core.mail import mail_admins
-from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponse
+from django.http import HttpResponseRedirect
+from django.http import HttpResponseNotFound
+from django.http import HttpResponse
 
 from july.game.models import Game
 from july.forms import RegistrationForm

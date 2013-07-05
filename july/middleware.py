@@ -5,6 +5,7 @@ from django.conf import settings
 oneday = datetime.timedelta(days=1)
 ABUSE_DELTA = datetime.timedelta(days=settings.ABUSE_LIMIT)
 
+
 class AbuseMiddleware(object):
     def _can_report_abuse(self, request):
         def can_report_abuse():

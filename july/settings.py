@@ -135,14 +135,10 @@ TEMPLATE_CONTEXT_PROCESSORS = TCP + (
     'django.core.context_processors.request',
 )
 
-def custom_show_toolbar(request):
-    return True  # Always show toolbar, for example purposes only.
-
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': True,
     'HIDE_DJANGO_SQL': True,
     'ENABLE_STACKTRACES': True,
-    #'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
 }
 
 ROOT_URLCONF = 'july.urls'
