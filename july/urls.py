@@ -45,10 +45,12 @@ urlpatterns = patterns(
         name='password_reset_confirm'),
     url(r'^password_reset_complete/$', auth_views.password_reset_complete,
         name='password_reset_complete'),
+    url(r'^abuse$', 'july.views.send_abuse', name='abuse'),
 
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),
     url(r'^', include('july.people.urls')),
+
 
 )
