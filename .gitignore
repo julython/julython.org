@@ -16,3 +16,4 @@ julython.db
 npm-debug.log
 .coverage
 htmlcov/*
+/venv

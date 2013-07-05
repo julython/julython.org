@@ -8,3 +8,4 @@ requests
 South
 jsonfield
 pytz
+mock

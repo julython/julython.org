@@ -7,7 +7,8 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import render_to_response, render, redirect
 from django.template import Context
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.core.mail import mail_admins
+from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponse
 
 from july.game.models import Game
 from july.forms import RegistrationForm
@@ -101,3 +102,27 @@ def email_verify(request, uidb36, token):
         valid.save()
     return render(
         request, 'registration/email_verified.html', {'valid': valid})
+
+
+def send_abuse(request):
+    from forms import AbuseForm
+    response = HttpResponse(
+        json.dumps({}),
+        content_type="application/json"
+    )
+
+    form = AbuseForm(request.POST)
+    desc = form.data['desc']
+    url = form.data['url']
+
+    subject = 'Abuse report for %s' % url
+    text = """\
+User %s has reported abuse for %s:
+
+%s
+    """ % (request.user.username, url, desc)
+
+    request.abuse_reported()
+    mail_admins(subject, text)
+
+    return response

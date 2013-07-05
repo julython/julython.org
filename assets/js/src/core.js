@@ -74,3 +74,24 @@ JULY.applyBindings = function(e,t) {
     console.log('Binding error:  no elements found for "'+t+'"');
   }
 };
+
+$(document).ready(function(){
+    var $send_abuse = $('#send-abuse');
+    var $form = $('#abuse-form');
+    var $modal = $('#abuse-modal');
+    var $abuseli = $('#abuseli');
+    $send_abuse.click(function(){
+        var desc = $form.find('textarea').val();
+        if(!desc) return false;
+        $.ajax({
+            type: $form.attr('method'),
+            url: $form.attr('action'),
+            data: $form.serialize()
+        });
+        $modal.find('.modal-footer').html('');
+        $modal.find('.modal-body').html('<h4>Thank you !</h4>');
+        $send_abuse.remove();
+        $abuseli.remove();
+        return false;
+    })
+});
