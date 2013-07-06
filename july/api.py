@@ -48,11 +48,13 @@ class ProjectResource(ModelResource):
 
     def get_users(self, request, **kwargs):
         try:
-            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+            obj = self.cached_obj_get(
+                request=request,
+                **self.remove_api_resource_names(kwargs))
         except Project.ObjectDoesNotExist:
-            return HttpGone()
+            return http.HttpGone()
         except Project.MultipleObjectsReturned:
-            return HttpMultipleChoices("More than one resource is found at this URI.")
+            return http.HttpMultipleChoices("Multiple resources found.")
 
         child = UserResource()
         sorted_objects = child.apply_sorting(
@@ -74,7 +76,8 @@ class ProjectResource(ModelResource):
             bundles.append(child.full_dehydrate(bundle))
 
         to_be_serialized[child._meta.collection_name] = bundles
-        to_be_serialized = child.alter_list_data_to_serialize(request, to_be_serialized)
+        to_be_serialized = child.alter_list_data_to_serialize(
+            request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
     def prepend_urls(self):
