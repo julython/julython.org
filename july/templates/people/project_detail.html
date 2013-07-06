@@ -6,50 +6,78 @@
 
 {% block content %}
 
-<div class="container section-container no-border">
-    <div class="row locations">
-        <div class="span10 offset1"><br />
-            <div class="row project">
-            <div class="span6">
-              <a href="{% url 'projects' %}">{% trans "All projects" %}</a> 
-              <h3>{{ project }}</h3>
-              <p><a href="{{ project.url }}">{{ project.url }}</a></p>
-            </div>
-            <div class="points pull-right">
-                <p>{% firstof project.total '0' %}</p>
-                <p class="small">{% trans "points" %}</p>
-            </div>
+<div class="container profile-container">
+  <div class="row">
+    <div class="span10 offset1">
+      <div class="media">
+        <a class="thumbnail pull-left avatar" href=".">
+          <img class="media-object" src="{{ STATIC_URL }}/images/participating_button.png" alt="{{project}}" />
+        </a>
+        <div class="media-body">
+          <h2 class="media-heading">{{ project }}
+            <small class="stats">
+              {% trans "Watchers" %}: {{ project.watchers }}
+              {% trans "Forks" %}: {{ project.forks }}
+            </small>
+            <small class="points pull-right">
+              {% firstof project.total '0' %} {% trans "points" %}
+            </small>
+          </h2>
+          {# <svg id="commit-calendar"></svg> #}
+          <p class="about-me">{{ project.description }}</p>
+          <ul class="nav nav-pills">
+            <li><a href="{{ project.url }}"><i class="icon-globe"></i> {{ project.url }}</a></li>
+          </ul>
+        </div>
+        <div class="tabbable"> <!-- Only required for left/right tabs -->
+          <ul class="nav nav-tabs">
+            <li class="active"><a href="#players" data-toggle="tab">{% trans "Players" %}</a></li>
+            <li><a href="#commits" data-toggle="tab">{% trans "Commits" %}</a></li>
+            {% if request.can_report_abuse %}
+            <li id="abuseli" style="float: right">
+              <a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a>
+            </li>
+            {% endif %}
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane active" id="players">
+              <div class="row">
+                <div class="span6">   
+                <h4>{% trans "Players" %}</h4>
+                <ul>
+                  {% for user in project.user_set.all|slice:":100" %}
+                    <li>
+                      <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
+                        {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
+                        {% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
+                    </li>
+                  {% endfor %}  
+                </ul>
+                </div>
           </div>
-          <div class="row">
-            <div class="span6">   
-            <h4>{% trans "Players" %}</h4>
-            <ul>
-              {% for user in project.user_set.all|slice:":100" %}
-                <li>
-                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
-                    {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
-                    {% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}
-                </li>
-              {% endfor %}  
-            </ul>
             </div>
-          </div>
-          <div class="row">
-            <div class="span10">   
-            <h2 class="spread-the-word">{% trans "Commits" %}</h2>
-              <div id="commits" data-bind="pageBottom: fetch">
-              	<div data-bind="foreach: commits">
-              		{% include "includes/commit.html" %}
-              	</div>
-              	<a class="btn btn-primary" data-bind="visible: hasMore, click: fetch">Load More</a>
+            <div class="tab-pane" id="commits">
+              <div class="row">
+                <div class="span10">   
+                <h2>{% trans "Commits" %}</h2>
+                  <div id="commits" data-bind="pageBottom: fetch">
+                    <div data-bind="foreach: commits">
+                      {% include "includes/commit.html" %}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
+{% include "includes/abuse.html" %}
 {% endblock %}
+
 {% block extra_javascript %}
 <script type="text/javascript">
 	var view = new JULY.CommitsView({projectId: {{ project.id }}});
