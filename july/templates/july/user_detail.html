@@ -61,8 +61,15 @@
 					{% if profile.username == user.username %}
 					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
 					{% endif %}
-					{% if request.can_report_abuse %}
-					<li id="abuseli" style="float: right"><a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a></li>
+					{% if request.can_report_abuse and not user.is_superuser %}
+					<li id="abuseli" class="pull-right">
+						<a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a>
+					</li>
+					{% endif %}
+					{% if user.is_superuser %}
+					<li class="pull-right">
+						<a href="/_admin/july/user/{{ profile.pk }}/">{% trans "Disable User" %}</a>
+					</li>
 					{% endif %}
 				</ul>
 			</div>
