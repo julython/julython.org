@@ -7,7 +7,8 @@ admin.site.register(
     Commit,
     list_display=['hash', 'email', 'timestamp', 'project', 'user'],
     search_fields=['hash', 'email', 'project__name', 'user__username'],
-    ordering=['-timestamp'])
+    ordering=['-timestamp'],
+    raw_id_fields=['user', 'project'])
 
 admin.site.register(
     Language,

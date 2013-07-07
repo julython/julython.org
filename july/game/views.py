@@ -57,6 +57,9 @@ class LanguageBoardList(list.ListView, GameMixin):
 class ProjectView(detail.DetailView):
     model = Project
 
+    def get_queryset(self):
+        return self.model.objects.filter(active=True)
+
 
 class LanguageView(detail.DetailView):
     model = Language
