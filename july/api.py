@@ -46,6 +46,47 @@ class ProjectResource(ModelResource):
             'teams': ALL
         }
 
+    def get_users(self, request, **kwargs):
+        try:
+            obj = self.cached_obj_get(
+                request=request,
+                **self.remove_api_resource_names(kwargs))
+        except Project.ObjectDoesNotExist:
+            return http.HttpGone()
+        except Project.MultipleObjectsReturned:
+            return http.HttpMultipleChoices("Multiple resources found.")
+
+        child = UserResource()
+        sorted_objects = child.apply_sorting(
+            obj.user_set.all(),
+            options=request.GET)
+
+        paginator = child._meta.paginator_class(
+            request.GET, sorted_objects, resource_uri=request.path,
+            limit=child._meta.limit, max_limit=child._meta.max_limit,
+            collection_name=child._meta.collection_name)
+        to_be_serialized = paginator.page()
+
+        # Dehydrate the bundles in preparation for serialization.
+        bundles = []
+
+        for obj in to_be_serialized[child._meta.collection_name]:
+            bundle = child.build_bundle(obj=obj, request=request)
+            bundle.data['points'] = obj.points
+            bundles.append(child.full_dehydrate(bundle))
+
+        to_be_serialized[child._meta.collection_name] = bundles
+        to_be_serialized = child.alter_list_data_to_serialize(
+            request, to_be_serialized)
+        return self.create_response(request, to_be_serialized)
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/users%s$" % (
+                self._meta.resource_name, trailing_slash()),
+                self.wrap_view('get_users'), name="api_project_users"),
+        ]
+
 
 class LocationResource(ModelResource):
 

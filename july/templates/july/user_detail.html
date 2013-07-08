@@ -61,11 +61,23 @@
 					{% if profile.username == user.username %}
 					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
 					{% endif %}
+					{% if request.can_report_abuse and not user.is_superuser %}
+					<li id="abuseli" class="pull-right">
+						<a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a>
+					</li>
+					{% endif %}
+					{% if user.is_superuser %}
+					<li class="pull-right">
+						<a href="/_admin/july/user/{{ profile.pk }}/">{% trans "Disable User" %}</a>
+					</li>
+					{% endif %}
 				</ul>
 			</div>
 		</div>
 	</div>
 </div>
+
+{% include "includes/abuse.html" %}
 {% endblock %}
 
 {% block content %}
@@ -82,20 +94,7 @@
 					<h2 class="spread-the-word">{{ profile }}'s Commits</h2>
 					<div id="commits" data-bind="pageBottom: fetch">
 						<div data-bind="foreach: commits">
-							<div class="media">
-								<a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">
-									<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
-								</a>
-								<div class="media-body">
-									<h4 class="media-heading"><span data-bind="timeago: timestamp"></span> &mdash; <a data-bind="text: project_name, attr: {href: project_url}"></a></h4>
-									<strong data-bind="text: message"></strong>
-									<p class="hash">
-										<a data-bind="visible: username, text: username, attr: {href: '/' + username() + '/' }"></a> <span data-bind="visible: username, text: '&mdash;'"></span>
-										<a data-bind="visible: url, attr:{href:url }"><span data-bind="text: hash().substring(0, 8)"></span></a>
-										<span data-bind="visible: !url(), text: hash().substring(0, 8)"></span>
-									</p>
-								</div>
-							</div>
+							{% include "includes/commit.html" %}
 						</div>
 						<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
 					</div>

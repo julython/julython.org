@@ -8,10 +8,11 @@ from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
 from jsonfield import JSONField
 from django.db.models.aggregates import Sum, Count
-from django.utils.timezone import utc
+from django.utils.timezone import utc, now
 from django.utils.html import strip_tags
 from django.core.mail import mail_admins
 from django.template import loader
+import requests
 
 
 class Commit(models.Model):
@@ -165,6 +166,7 @@ class Project(models.Model):
     watchers = models.IntegerField(default=0)
     parent_url = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
     slug = models.SlugField()
     service = models.CharField(max_length=30, blank=True, default='')
     repo_id = models.IntegerField(blank=True, null=True)
@@ -214,23 +216,53 @@ class Project(models.Model):
 
         # Catch renaming of the repo.
         else:
-            try:
-                project = cls.objects.get(service=service, repo_id=repo_id)
-                created = False
-            except cls.DoesNotExist:
-                project, created = cls.objects.get_or_create(
-                    slug=slug, defaults=kwargs)
+            defaults = kwargs.copy()
+            defaults['slug'] = slug
+            project, created = cls.objects.get_or_create(
+                service=service, repo_id=repo_id,
+                defaults=defaults)
+            if created and cls.objects.filter(slug=slug).count() > 1:
+                # This is an old project that was created without a repo_id.
+                project.delete()  # Delete the duplicate project
+                project = cls.objects.get(slug=slug)
 
         if not project.active:
+            # Don't bother updating this project and don't add commits.
             return None
-        # Update stale project information.
-        if not created:
-            cls.objects.filter(pk=project.pk).update(slug=slug, **kwargs)
 
+        # Update stale project information.
+        project.update(slug, created, **kwargs)
         return project
 
-    @staticmethod
-    def parse_project_name(url):
+    @classmethod
+    def _get_bitbucket_data(cls, **kwargs):
+        """Update info from bitbucket if needed."""
+        url = kwargs.get('url', '')
+        parsed = urlparse(url)
+        if parsed.netloc == 'bitbucket.org':
+            # grab data from the bitbucket api
+            # TODO: (rmyers) authenticate with oauth?
+            api = 'https://bitbucket.org/api/1.0/repositories%s'
+            try:
+                r = requests.get(api % parsed.path)
+                data = r.json()
+                kwargs['description'] = data.get('description') or ''
+                kwargs['forks'] = data.get('forks_count') or 0
+                kwargs['watchers'] = data.get('followers_count') or 0
+            except:
+                logging.exception("Unable to parse: %s", url)
+        return kwargs.iteritems()
+
+    def update(self, slug, created, **kwargs):
+        old = (now() - self.updated_on).seconds >= 21600
+        if created or old or slug != self.slug:
+            for key, value in self._get_bitbucket_data(**kwargs):
+                setattr(self, key, value)
+            self.slug = slug
+            self.save()
+
+    @classmethod
+    def parse_project_name(cls, url):
         """
         Parse a project url and return a name for it.
 

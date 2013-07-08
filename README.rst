@@ -84,9 +84,25 @@ so you'll need to have a recent version of
 Once the modules have been installed you can either `compile` or `watch` the
 css/javascript files::
 
-	$ fab compile
-	or
-	$ fab watch 
+    $ fab compile
+    or
+    $ fab watch 
+
+Testing
++++++++
+
+Run the test suite before submitting any pull requests. You can run
+them all like::
+
+    $ fab test
+
+To output coverage report run::
+
+    $ fab test:cover
+
+To run pep8 tests::
+
+    $ fab pep8
 
 Authentication
 ++++++++++++++

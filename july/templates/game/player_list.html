@@ -12,7 +12,7 @@
             <h3>{% trans "High Scores" %}</h3><hr/>
               {% for player in object_list %}
                 <div class="row"> 
-                    <div class="span5">
+                    <div class="span4">
                       <h3>
                         <img src="{{ player.user.picture_url }}" alt="{{ player.user.first_name}} {{ player.user.last_name }}" width="50"/>
                         <a href="{% url 'member-profile' player.user.username %}">{{ player }}</a>

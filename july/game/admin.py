@@ -11,11 +11,13 @@ class GameAdmin(admin.ModelAdmin):
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ['user', 'game', 'points']
     list_filter = ['game']
+    raw_id_fields = ['user', 'boards']
 
 
 class BoardAdmin(admin.ModelAdmin):
     list_display = ['project', 'game', 'points']
     list_filter = ['game']
+    raw_id_fields = ['project']
 
 
 class LanguageBoardAdmin(admin.ModelAdmin):

@@ -12,6 +12,8 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ['username', 'email', 'location', 'team']
     search_fields = ['username', 'email']
     inlines = [AuthInline]
+    raw_id_fields = ['projects', 'location', 'team']
+    list_filter = ['is_active', 'is_superuser']
 
 
 admin.site.register(User, UserAdmin)
