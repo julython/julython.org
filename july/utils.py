@@ -1,8 +1,10 @@
 # coding: utf-8
 import requests
 
+
 def check_location(location):
-    resp = requests.get('http://maps.googleapis.com/maps/api/geocode/json',
+    resp = requests.get(
+        'http://maps.googleapis.com/maps/api/geocode/json',
         params={'address': location, 'sensor': 'false'})
     resp.raise_for_status()
 
@@ -13,5 +15,3 @@ def check_location(location):
         return data['results'][0]['formatted_address']
     except (KeyError, IndexError):
         return None
-
-
