@@ -325,6 +325,8 @@ class Group(models.Model):
     name = models.CharField(max_length=64, blank=False)
     total = models.IntegerField(default=0)
     approved = models.BooleanField(default=False)
+    rel_lookup = None
+    lookup = None
 
     class Meta:
         abstract = True
@@ -336,21 +338,38 @@ class Group(models.Model):
         return self.name
 
     def members_by_points(self):
-        raise NotImplementedError("members_by_points must be implemented "
-                                  "by the subclass!")
+        from july.game.models import Game
+        latest = Game.active_or_latest()
+        kwargs = {
+            self.lookup: self
+        }
+        return latest.players.filter(**kwargs).order_by('-player__points')
 
     def total_points(self):
-        raise NotImplementedError("total_points must be implemented "
-                                  "by the subclass!")
+        from july.game.models import Game, Player
+        latest = Game.active_or_latest()
+        kwargs = {
+            self.rel_lookup: self,
+            'game': latest
+        }
+        query = Player.objects.filter(**kwargs)
+        total = query.aggregate(Sum('points'))
+        points = total.get('points__sum')
+        return points or 0
 
     @classmethod
-    def create(cls, slug, name):
+    def create(cls, name):
         slug = slugify(name)
         if not slug:
             return None
-        obj, created = cls.objects.get_or_create(slug=slug,
-                                                 defaults={'name': name})
-        if created:
+
+        defaults = {
+            'name': name,
+            'approved': cls.auto_verify,
+        }
+        obj, created = cls.objects.get_or_create(slug=slug, defaults=defaults)
+
+        if created and not cls.auto_verify:
             html = loader.render_to_string(cls.template, {'slug': slug})
             text = strip_tags(html)
             subject = "[group] %s awaiting approval." % slug
@@ -361,19 +380,9 @@ class Group(models.Model):
 class Location(Group):
     """Simple model for holding point totals and projects for a location"""
     template = 'registration/location.html'
-
-    def members_by_points(self):
-        from july.game.models import Game
-        latest = Game.active_or_latest()
-        return latest.players.filter(location=self).order_by('-player__points')
-
-    def total_points(self):
-        from july.game.models import Game, Player
-        latest = Game.active_or_latest()
-        query = Player.objects.filter(user__location=self, game=latest)
-        total = query.aggregate(Sum('points'))
-        points = total.get('points__sum')
-        return points or 0
+    rel_lookup = 'user__location'
+    lookup = 'location'
+    auto_verify = True
 
     def get_absolute_url(self):
         from django.core.urlresolvers import reverse
@@ -383,19 +392,13 @@ class Location(Group):
 class Team(Group):
     """Simple model for holding point totals and projects for a Team"""
     template = 'registration/team.html'
+    rel_lookup = 'user__team'
+    lookup = 'team'
+    auto_verify = False
 
-    def members_by_points(self):
-        from july.game.models import Game
-        latest = Game.active_or_latest()
-        return latest.players.filter(team=self).order_by('-player__points')
-
-    def total_points(self):
-        from july.game.models import Game, Player
-        latest = Game.active_or_latest()
-        query = Player.objects.filter(user__team=self, game=latest)
-        total = query.aggregate(Sum('points'))
-        points = total.get('points__sum')
-        return points or 0
+    def get_absolute_url(self):
+        from django.core.urlresolvers import reverse
+        return reverse('team-detail', kwargs={'slug': self.slug})
 
 
 class Language(models.Model):
