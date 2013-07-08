@@ -3,6 +3,12 @@ from models import Team, Commit, Location, AchievedBadge, Project
 from models import Badge, Language
 
 
+def purge_commits(modeladmin, request, queryset):
+    for obj in queryset:
+        obj.commit_set.all().delete()
+purge_commits.short_description = "Purge Commits"
+
+
 admin.site.register(
     Commit,
     list_display=['hash', 'email', 'timestamp', 'project', 'user'],
@@ -25,6 +31,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ['name', 'url', 'forked', 'active']
     list_filter = ['active']
     search_fields = ['name', 'url']
+    actions = [purge_commits]
 
 
 class GroupAdmin(admin.ModelAdmin):
