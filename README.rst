@@ -1,7 +1,7 @@
 Julython
 ========
 
-..image:: https://api.travis-ci.org/julython/julython.org.png?branch=master
+.. image:: https://api.travis-ci.org/julython/julython.org.png?branch=master
     :target: https://travis-ci.org/julython/julython.org
 
 July is for Python
