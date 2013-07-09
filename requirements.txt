@@ -6,10 +6,11 @@ iso8601==0.1.4
 django-debug-toolbar
 requests
 South
+mock
+jsonfield
+pytz
+pep8
 # You can comment these out if running locally with sqlite
 distribute>=0.6.28
 MySQL-python
 gunicorn
-mock
-jsonfield
-pytz
