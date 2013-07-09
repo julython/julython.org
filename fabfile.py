@@ -16,7 +16,7 @@ def pep8():
 
 
 @task
-def test(coverage='False'):
+def test(coverage='False', skip_js='False'):
     """Run the test suite"""
     if coverage != 'False':
         local("rm -rf htmlcov")
@@ -24,8 +24,9 @@ def test(coverage='False'):
         local("coverage html")
     else:
         local("python manage.py test")
-    with lcd('assets'):
-        local('node_modules/grunt-cli/bin/grunt jasmine')
+    if skip_js == 'False':
+        with lcd('assets'):
+            local('node_modules/grunt-cli/bin/grunt jasmine')
     pep8()
 
 
