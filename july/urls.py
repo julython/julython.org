@@ -12,6 +12,10 @@ v1_api.register(api.ProjectResource())
 v1_api.register(api.UserResource())
 v1_api.register(api.LocationResource())
 v1_api.register(api.TeamResource())
+v1_api.register(api.LargeBoardResource())
+v1_api.register(api.MediumBoardResource())
+v1_api.register(api.SmallBoardResource())
+
 
 admin.autodiscover()
 

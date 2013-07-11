@@ -89,11 +89,38 @@ class ProjectResource(ModelResource):
         ]
 
 
-class BoardResource(ModelResource):
+class LargeBoardResource(ModelResource):
+    project = fields.ForeignKey(ProjectResource, 'project',
+                                blank=True, null=True, full=True)
 
     class Meta:
         game = Game.active_or_latest()
-        queryset = Board.objects.filter(game=game)
+        # TODO: make this configurable!
+        queryset = Board.objects.filter(
+            game=game, project__watchers__gte=100).select_related('project')
+
+
+class MediumBoardResource(ModelResource):
+    project = fields.ForeignKey(ProjectResource, 'project',
+                                blank=True, null=True, full=True)
+
+    class Meta:
+        game = Game.active_or_latest()
+        # TODO: make this configurable!
+        queryset = Board.objects.filter(
+            game=game, project__watchers__gte=10,
+            project__watchers__lt=100).select_related('project')
+
+
+class SmallBoardResource(ModelResource):
+    project = fields.ForeignKey(ProjectResource, 'project',
+                                blank=True, null=True, full=True)
+
+    class Meta:
+        game = Game.active_or_latest()
+        # TODO: make this configurable!
+        queryset = Board.objects.filter(
+            game=game, project__watchers__lt=10).select_related('project')
 
 
 class LocationResource(ModelResource):
