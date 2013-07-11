@@ -22,6 +22,7 @@ from tastypie.utils import trailing_slash
 from tastypie import fields
 
 from july.people.models import Commit, Project, Location, Team, Language
+from july.game.models import Game, Board
 from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
@@ -92,6 +93,7 @@ class BoardResource(ModelResource):
 
     class Meta:
         game = Game.active_or_latest()
+        queryset = Board.objects.filter(game=game)
 
 
 class LocationResource(ModelResource):
