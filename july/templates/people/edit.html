@@ -36,6 +36,17 @@
                     </div>
                 </div>
                 {% endif %}
+                <div class="control-group">
+                    <label>{% trans "OAuth Accounts" %}</label>
+                    <div class="controls">
+                    <ul>
+                        <li>{% trans "Twitter: " %}{% if form.twitter %}
+                            {% firstof form.twitter.extra_data.screen_name form.twitter.uid %}{% else %}
+                            <a class="signin btn btn-info" href="/accounts/login/twitter/"><i class="icon-user icon-white"></i> Link Twitter Account</a>{% endif %}</li>
+                        <li>{% trans "Github: " %}{% if form.github %}{{ form.github.uid }}{% else %}
+                            <a class="signin btn btn-info" href="/accounts/login/github/"><i class="icon-user icon-white"></i> Link Github Accoutn</a>{% endif %}</li>
+                    </ul>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <input type="submit" class="btn btn-primary" value="{% trans "Save" %}" />

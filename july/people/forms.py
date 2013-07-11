@@ -106,6 +106,8 @@ class EditUserForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self._gittip = None
+        self.twitter = None
+        self.github = None
         super(EditUserForm, self).__init__(*args, **kwargs)
         if self.user:
             self.fields['first_name'].initial = self.user.first_name
@@ -119,6 +121,8 @@ class EditUserForm(forms.Form):
             # initialize the emails
             self.emails = set(self.user.social_auth.filter(provider="email"))
             self._gittip = self.user.get_provider("gittip")
+            self.twitter = self.user.get_provider("twitter")
+            self.github = self.user.get_provider("github")
             if self._gittip:
                 self.fields['gittip'].initial = self._gittip.uid
 
