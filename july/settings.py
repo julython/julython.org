@@ -203,6 +203,7 @@ SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'socialauth_associate_complete'
 # Just so we can use the same names for variables - why different social_auth??
 GITHUB_APP_ID = GITHUB_CONSUMER_KEY
 GITHUB_API_SECRET = GITHUB_CONSUMER_SECRET
+GITHUB_EXTENDED_PERMISSIONS = ['user', 'public_repo']
 
 ABUSE_LIMIT = 3
 
