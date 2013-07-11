@@ -88,6 +88,12 @@ class ProjectResource(ModelResource):
         ]
 
 
+class BoardResource(ModelResource):
+
+    class Meta:
+        game = Game.active_or_latest()
+
+
 class LocationResource(ModelResource):
 
     class Meta:
