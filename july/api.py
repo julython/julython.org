@@ -97,7 +97,8 @@ class LargeBoardResource(ModelResource):
         game = Game.active_or_latest()
         # TODO: make this configurable!
         queryset = Board.objects.filter(
-            game=game, project__watchers__gte=100).select_related('project')
+            game=game, project__watchers__gte=100,
+            project__active=True).select_related('project')
 
 
 class MediumBoardResource(ModelResource):
@@ -109,7 +110,8 @@ class MediumBoardResource(ModelResource):
         # TODO: make this configurable!
         queryset = Board.objects.filter(
             game=game, project__watchers__gte=10,
-            project__watchers__lt=100).select_related('project')
+            project__watchers__lt=100,
+            project__active=True).select_related('project')
 
 
 class SmallBoardResource(ModelResource):
@@ -120,7 +122,8 @@ class SmallBoardResource(ModelResource):
         game = Game.active_or_latest()
         # TODO: make this configurable!
         queryset = Board.objects.filter(
-            game=game, project__watchers__lt=10).select_related('project')
+            game=game, project__watchers__lt=10,
+            project__active=True).select_related('project')
 
 
 class LocationResource(ModelResource):
