@@ -1,0 +1,16 @@
+<div class="well well-small">
+  <h4>
+    <a data-bind="text: project.name, attr: {href: url}"></a>
+    <span data-bind="text: points" class="pull-right small" />
+  </h4>
+  <p data-bind="text: project.description"></p>
+  <a class="btn btn-mini" data-bind="attr: {href: project.url}" target="_blank">
+    <i class="icon-globe"></i> Repository</a>
+  
+  <a class="btn btn-mini" href="#">
+    <i class="icon-star"></i> 
+    <span data-bind="text: project.watchers" /></a>
+  <a class="btn btn-mini" href="#">
+    <i class="icon-random"></i> 
+    <span data-bind="text: project.forks" /></a>
+</div>

@@ -3,24 +3,33 @@
 {% load i18n %}
 
 {% block content %}
-<div class="container section-container no-border">
-  <div class="row locations">
-    <div class="span6 offset3">
-        <h2 class="teaming-up">{% trans "Projects" %}</h2>
-        {% for board in object_list %}
-          <div class="row location">
-            <div class="span4">
-              <h3><a href="{% url 'project-details' board.project.slug %}">{{ board.project }}</a></h3>
-              <p><a href="{{ board.project.url }}" target="_blank">{{ board.project.url }}</a></p>
-            </div>
-            <div class="points pull-right">
-                <p>{{ board.points }}</p>
-                <p class="small">{% trans "points" %}</p>
-            </div>
-          </div>
-        {% endfor %}
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span4">
+      <h3>Large Projects</h3>
+      <div data-bind="foreach: largeBoards" class="projects">
+        {% include "includes/project.html" %}
+      </div>
+    </div>
+    <div class="span4">
+      <h3>Medium Projects</h3>
+      <div data-bind="foreach: mediumBoards" class="projects">
+        {% include "includes/project.html" %}
+      </div>
+    </div>
+    <div class="span4">
+      <h3>Small Projects</h3>
+      <div data-bind="foreach: smallBoards" class="projects">
+        {% include "includes/project.html" %}
+      </div>
     </div>
   </div>
 </div>
 
+{% endblock %}
+{% block extra_javascript %}
+<script type="text/javascript">
+  var view = new JULY.BoardsView();
+  ko.applyBindings(view);
+</script>
 {% endblock %}
