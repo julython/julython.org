@@ -33,11 +33,7 @@
 						<li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
 						{% endif %}
 						{% if profile.location %}
-						{% if profile.location.approved %}
 						<li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
-						{% else %}
-						<li><a href="/help/#location"><i class="icon-map-marker"></i> {% trans "location waiting approval" %}</a></li>
-						{% endif %}
 						{% endif %}
 						{% if profile.team %}
 						{% if profile.team.approved %}

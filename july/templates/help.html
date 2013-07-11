@@ -133,10 +133,8 @@ username = Julython Joe &lt;me@example.com&gt;</pre>
               </p>
               {% endif %}
               <p class="lead">
-                {% trans "The location is a free form field, so it is really up to you to enter it properly*. But we <a href='https://docs.djangoproject.com/en/1.4/ref/templates/builtins/#slugify'>slugify</a> the contents of this field so 'Austin, TX' and 'austin TX' are turned into 'austin-tx'" %}
+                {% trans "The location must be a valid 'city, state, country' location in the world." %}
               </p>
-              <p>
-                {% trans "* New locations must be approved first before they appear on the site." %}</p>
             </div>
           </div>
     </div>
