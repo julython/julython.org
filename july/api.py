@@ -14,6 +14,8 @@ from django.template.defaultfilters import date
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls.defaults import url
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from iso8601 import parse_date
 from tastypie.resources import ModelResource
 from tastypie.resources import ALL
@@ -28,12 +30,55 @@ from july.models import User
 EMAIL_MATCH = re.compile('<(.+?)>')
 
 
+def sub_resource(request, obj, resource, queryset):
+    """Return a serializable list of child resources."""
+    child = resource()
+    sorted_objects = child.apply_sorting(
+        queryset,
+        options=request.GET)
+
+    paginator = child._meta.paginator_class(
+        request.GET, sorted_objects, resource_uri=request.path,
+        limit=child._meta.limit, max_limit=child._meta.max_limit,
+        collection_name=child._meta.collection_name)
+    to_be_serialized = paginator.page()
+
+    # Dehydrate the bundles in preparation for serialization.
+    bundles = []
+
+    for ob in to_be_serialized[child._meta.collection_name]:
+        bundle = child.build_bundle(obj=ob, request=request)
+        bundle.data['points'] = ob.points
+        bundles.append(child.full_dehydrate(bundle))
+
+    to_be_serialized[child._meta.collection_name] = bundles
+    to_be_serialized = child.alter_list_data_to_serialize(
+        request, to_be_serialized)
+    return to_be_serialized
+
+
 class UserResource(ModelResource):
 
     class Meta:
         queryset = User.objects.filter(is_active=True)
         excludes = ['password', 'email', 'is_superuser', 'is_staff',
                     'is_active']
+
+    def get_projects(self, request, **kwargs):
+        obj = self.cached_obj_get(
+            request=request,
+            **self.remove_api_resource_names(kwargs))
+
+        to_be_serialized = sub_resource(
+            request, obj, ProjectResource, obj.projects.all())
+        return self.create_response(request, to_be_serialized)
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/projects%s$" % (
+                self._meta.resource_name, trailing_slash()),
+                self.wrap_view('get_projects'), name="api_user_projects"),
+        ]
 
 
 class ProjectResource(ModelResource):
@@ -48,37 +93,12 @@ class ProjectResource(ModelResource):
         }
 
     def get_users(self, request, **kwargs):
-        try:
-            obj = self.cached_obj_get(
-                request=request,
-                **self.remove_api_resource_names(kwargs))
-        except Project.ObjectDoesNotExist:
-            return http.HttpGone()
-        except Project.MultipleObjectsReturned:
-            return http.HttpMultipleChoices("Multiple resources found.")
+        obj = self.cached_obj_get(
+            request=request,
+            **self.remove_api_resource_names(kwargs))
 
-        child = UserResource()
-        sorted_objects = child.apply_sorting(
-            obj.user_set.all(),
-            options=request.GET)
-
-        paginator = child._meta.paginator_class(
-            request.GET, sorted_objects, resource_uri=request.path,
-            limit=child._meta.limit, max_limit=child._meta.max_limit,
-            collection_name=child._meta.collection_name)
-        to_be_serialized = paginator.page()
-
-        # Dehydrate the bundles in preparation for serialization.
-        bundles = []
-
-        for obj in to_be_serialized[child._meta.collection_name]:
-            bundle = child.build_bundle(obj=obj, request=request)
-            bundle.data['points'] = obj.points
-            bundles.append(child.full_dehydrate(bundle))
-
-        to_be_serialized[child._meta.collection_name] = bundles
-        to_be_serialized = child.alter_list_data_to_serialize(
-            request, to_be_serialized)
+        to_be_serialized = sub_resource(
+            request, obj, UserResource, obj.user_set.all())
         return self.create_response(request, to_be_serialized)
 
     def prepend_urls(self):
@@ -215,6 +235,14 @@ class CommitResource(ModelResource):
         return bundle
 
 
+class LoginRequiredMixin(object):
+
+    @method_decorator(login_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super(LoginRequiredMixin, self).dispatch(
+            request, *args, **kwargs)
+
+
 class JSONMixin(object):
 
     def respond_json(self, data, **kwargs):
@@ -226,10 +254,13 @@ class JSONMixin(object):
         return resp
 
 
-class PlayerCommitsCollection(View, JSONMixin):
+class GithubAPIHandler(LoginRequiredMixin, View):
 
-    def get(self):
-        pass
+    def get(self, request, path):
+        print path
+        resp = http.HttpResponse(path, content_type='application/json')
+        resp['Access-Control-Allow-Origin'] = '*'
+        return resp
 
 
 def add_language(file_dict):
