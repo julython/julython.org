@@ -257,10 +257,15 @@ class JSONMixin(object):
 class GithubAPIHandler(LoginRequiredMixin, View):
 
     def get(self, request, path):
-        print path
-        resp = http.HttpResponse(path, content_type='application/json')
-        resp['Access-Control-Allow-Origin'] = '*'
-        return resp
+        github = request.user.github
+        if github is None:
+            return http.HttpResponseForbidden()
+        token = github.extra_data.get('access_token', '')
+        headers = {'Authorization': 'token %s' % token}
+        url = 'https://api.github.com/%s' % path
+        resp = requests.get(url, params=request.GET, headers=headers)
+        resp.raise_for_status()
+        return http.HttpResponse(resp.text, content_type='application/json')
 
 
 def add_language(file_dict):
