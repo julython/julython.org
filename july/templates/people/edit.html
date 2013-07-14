@@ -1,4 +1,4 @@
-{% extends "july/user_detail.html" %}
+{% extends "base.html" %}
 
 {% load i18n %}
 
@@ -6,7 +6,7 @@
 <div class="container" id="contents">
     <div class="row">
         <div class="span8 offset2">
-            <h1 class="user">{% block formtitle %}{%  endblock %}</h1>
+            <h1 class="user">{% block formtitle %}{% trans "Edit Profile" %}{%  endblock %}</h1>
             <form method="post" action="." enctype="multipart/form-data">{% csrf_token %}
                 <div class="well">
                 {% for field in form %}
