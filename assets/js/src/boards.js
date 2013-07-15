@@ -54,11 +54,11 @@ JULY.SmallBoardCollection = JULY.BoardCollection.extend({
 
 });
 
-JULY.ProjectView = function(model){
+JULY.BoardView = function(model){
   this.points = kb.observable(model, 'points');
   this.project = model.get('project');
   this.url = "/projects/" + this.project.slug + "/";
- };
+};
 
 JULY.BoardsView = JULY.ViewModel.extend({
 
@@ -69,9 +69,9 @@ JULY.BoardsView = JULY.ViewModel.extend({
     this.l.fetch({add: true});
     this.m.fetch({add: true});
     this.s.fetch({add: true});
-    this.largeBoards = kb.collectionObservable(this.l, {view_model: JULY.ProjectView});
-    this.mediumBoards = kb.collectionObservable(this.m, {view_model: JULY.ProjectView});
-    this.smallBoards = kb.collectionObservable(this.s, {view_model: JULY.ProjectView});
+    this.largeBoards = kb.collectionObservable(this.l, {view_model: JULY.BoardView});
+    this.mediumBoards = kb.collectionObservable(this.m, {view_model: JULY.BoardView});
+    this.smallBoards = kb.collectionObservable(this.s, {view_model: JULY.BoardView});
   },
 
   largeHasMore: function() {
