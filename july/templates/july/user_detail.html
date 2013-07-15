@@ -4,128 +4,129 @@
 
 {% block bodyclass %}profile{% endblock %}
 
-{% block contentheader %}
+{% block content %}
 
-<div class="container profile-container">
-	<div class="row">
-		<div class="span10 offset1">
-			<div class="media">
-				<a class="thumbnail pull-left avatar" href=".">
-					<img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
-				</a>
-				<div class="media-body">
-					<h2 class="media-heading">{{ profile }}
-					{% if profile.twitter %}
-					<a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
-					<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
-					{% endif %}
-					<small class="points pull-right">
-						{% firstof profile.total '0' %} {% trans "points" %}
-					</small>
-					</h2>
-					<svg id="commit-calendar"></svg>
-					<p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
-					<ul class="nav nav-pills">
-						{% if profile.github %}
-						<li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
-						{% endif %}
-						{% if profile.url %}
-						<li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
-						{% endif %}
-						{% if profile.location %}
-						<li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
-						{% endif %}
-						{% if profile.team %}
-						{% if profile.team.approved %}
-						<li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
-						{% else %}
-						<li><a href="/help/#team"><i class="icon-th"></i> {% trans "team waiting approval" %}</a>
-						</li>
-						{% endif %}
-						{% endif %}
-						{% if profile.gittip %}
-						<iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
-						{% endif %}
-					</ul>
-				</div>
-				<ul class="nav nav-tabs">
-					<li {% if active == "commits" %}class="active"{% endif %}><a href="{% url 'member-profile' username=profile.username %}">{% trans "Commits" %}</a></li>
-					<li {% if active == "projects" %}class="active"{% endif %}><a href="{% url 'user-projects' username=profile.username %}">{% trans "Projects" %}</a></li>
-					{% comment %}
-					<li {% if active == "badges" %}class="active"{% endif %}><a href="{% url 'user-badges' username=profile.username %}">{% trans "Badges" %}</a></li>
-					{% endcomment %}
-					{% if profile.username == user.username %}
-					<li {% if active == "edit" %}class="active"{% endif %}><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
-					{% endif %}
-					{% if request.can_report_abuse and not user.is_superuser %}
-					<li id="abuseli" class="pull-right">
-						<a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a>
-					</li>
-					{% endif %}
-					{% if user.is_superuser %}
-					<li class="pull-right">
-						<a href="/_admin/july/user/{{ profile.pk }}/">{% trans "Disable User" %}</a>
-					</li>
-					{% endif %}
-				</ul>
-			</div>
-		</div>
-	</div>
+<div class="container profile-container section-container no-border">
+  <div class="row">
+    <div class="span10 offset1">
+      <div class="media">
+        <a class="thumbnail pull-left avatar" href=".">
+          <img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
+        </a>
+        <div class="media-body">
+          <h3 class="media-heading">{{ profile }}
+          {% if profile.twitter %}
+          <a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
+          <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+          {% endif %}
+          <small class="points pull-right">
+            {% firstof profile.total '0' %} {% trans "points" %}
+          </small>
+          </h3>
+          <svg id="commit-calendar"></svg>
+          <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
+          <ul class="nav nav-pills">
+            {% if profile.github %}
+            <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
+            {% endif %}
+            {% if profile.url %}
+            <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
+            {% endif %}
+            {% if profile.location %}
+            <li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+            {% endif %}
+            {% if profile.team %}
+            {% if profile.team.approved %}
+            <li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
+            {% else %}
+            <li><a href="/help/#team"><i class="icon-th"></i> {% trans "team waiting approval" %}</a>
+            </li>
+            {% endif %}
+            {% endif %}
+            {% if profile.gittip %}
+            <iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
+            {% endif %}
+          </ul>
+        </div>
+        <div class="tabbable">
+          <ul class="nav nav-tabs">
+            <li class="active">
+              <a href="#projects" data-toggle="tab">{% trans "Projects" %}</a></li>
+                  <li><a href="#commits" data-toggle="tab">{% trans "Commits" %}</a></li>
+            {% if profile.username == user.username %}
+            <li class="pull-right"><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
+            {% elif request.can_report_abuse and not user.is_superuser %}
+            <li id="abuseli" class="pull-right">
+              <a href="#abuse-modal" data-toggle="modal">{% trans "Report abuse" %}</a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser %}
+            <li class="pull-right">
+              <a href="/_admin/july/user/{{ profile.pk }}/">{% trans "Disable User" %}</a>
+            </li>
+            {% endif %}
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane active" id="projects">
+              {% include "people/people_projects.html" %}
+            </div>
+            <div class="tab-pane" id="commits">
+              {% url 'edit-profile' username=user.username as edit_profile_url %}
+              <div class="row">
+                <div class="span10">
+                  {% if profile.commit_set.count %}
+                  <div class="row">
+                    <div class="span10">
+                      <h2 class="spread-the-word">{{ profile }}'s Commits</h2>
+                      <div id="commits" data-bind="pageBottom: fetch">
+                        <div data-bind="foreach: commits">
+                          {% include "includes/commit.html" %}
+                        </div>
+                        <a class="btn btn-primary" data-bind="click: fetch">Load More</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                  {% if profile.username != user.username %}
+                  <div class="row">
+                    <div class="span10">
+                      <h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>
+                      <p class="lead">{% trans "This user has not committed to any project yet." %}</p>
+                    </div>
+                  </div>
+                  {% else %}
+                  <div class="row">
+                    <div class="span10">
+                      <h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
+                      <p class="lead">
+                      {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
+                      </p>
+                    </div>
+                  </div>
+                  {% include "includes/hook-instructions.html" %}
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% include "includes/abuse.html" %}
 {% endblock %}
 
-{% block content %}
-
 {# Used within blocktrans #}
-{% url 'edit-profile' username=user.username as edit_profile_url %}
-
-<div class="container section-container no-border">
-	<div class="row">
-		<div class="span10 offset1">
-			{% if profile.commit_set.count %}
-			<div class="row">
-				<div class="span10">
-					<h2 class="spread-the-word">{{ profile }}'s Commits</h2>
-					<div id="commits" data-bind="pageBottom: fetch">
-						<div data-bind="foreach: commits">
-							{% include "includes/commit.html" %}
-						</div>
-						<a class="btn btn-primary" data-bind="click: fetch">Load More</a>
-					</div>
-				</div>
-			</div>
-		</div>
-		{% else %}
-			{% if profile.username != user.username %}
-			<div class="row">
-				<div class="span10">
-					<h2 class="spread-the-word">{% trans "Still preparing for lift off!" %}</h2>
-					<p class="lead">{% trans "This user has not committed to any project yet." %}</p>
-				</div>
-			</div>
-			{% else %}
-			<div class="row">
-				<div class="span10">
-					<h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
-					<p class="lead">
-					{% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
-					</p>
-				</div>
-			</div>
-			{% include "includes/hook-instructions.html" %}
-			{% endif %}
-		{% endif %}
-	</div>
- </div>
-{% endblock %}
 
 {% block extra_javascript %}
 
 <script type="text/javascript">
-	var view = new JULY.CommitsView({userId: {{ profile.id }}});
-	ko.applyBindings(view);
-	JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
+  var view = new JULY.CommitsView({userId: {{ profile.id }}});
+  JULY.applyBindings(view, '#commits');
+  var projects = new JULY.ProjectsView({userId: {{ profile.id }}});
+  JULY.applyBindings(projects, '#projects');
+  JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
 </script>
 {% endblock %}
