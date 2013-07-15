@@ -65,8 +65,9 @@ class UserResource(ModelResource):
                     'is_active']
 
     def get_projects(self, request, **kwargs):
+        basic_bundle = self.build_bundle(request=request)
         obj = self.cached_obj_get(
-            request=request,
+            bundle=basic_bundle,
             **self.remove_api_resource_names(kwargs))
 
         to_be_serialized = sub_resource(
@@ -93,8 +94,9 @@ class ProjectResource(ModelResource):
         }
 
     def get_users(self, request, **kwargs):
+        basic_bundle = self.build_bundle(request=request)
         obj = self.cached_obj_get(
-            request=request,
+            bundle=basic_bundle,
             **self.remove_api_resource_names(kwargs))
 
         to_be_serialized = sub_resource(
