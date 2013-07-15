@@ -38,15 +38,7 @@ class UserProfile(detail.DetailView):
 
 
 def people_projects(request, username):
-    user = get_object_or_404(User, username=username)
-
-    return render_to_response(
-        'people/people_projects.html', {
-            'projects': user.projects.all(),
-            'profile': user,
-            'active': 'projects',
-        },
-        context_instance=RequestContext(request))
+    return HttpResponseRedirect(reverse('member-profile', args=[username]))
 
 
 def people_badges(request, username):
