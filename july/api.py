@@ -28,6 +28,7 @@ from july.game.models import Game, Board
 from july.models import User
 
 EMAIL_MATCH = re.compile('<(.+?)>')
+HOOKS_MATCH = re.compile('repos/[^/]+/[^/]+/hooks.*')
 
 
 def sub_resource(request, obj, resource, queryset):
@@ -266,6 +267,23 @@ class GithubAPIHandler(LoginRequiredMixin, View):
         headers = {'Authorization': 'token %s' % token}
         url = 'https://api.github.com/%s' % path
         resp = requests.get(url, params=request.GET, headers=headers)
+        resp.raise_for_status()
+        return http.HttpResponse(resp.text, content_type='application/json')
+
+    def post(self, request, path):
+        github = request.user.github
+        if github is None:
+            logging.error("User does not have a github account")
+            return http.HttpResponseForbidden()
+        # only allow actions on hooks
+        if not HOOKS_MATCH.match(path):
+            logging.error("Bad path: %s", path)
+            return http.HttpResponseForbidden()
+        data = self.request.POST
+        token = github.extra_data.get('access_token', '')
+        headers = {'Authorization': 'token %s' % token}
+        url = 'https://api.github.com/%s' % path
+        resp = requests.post(url, data=data, params=request.GET, headers=headers)
         resp.raise_for_status()
         return http.HttpResponse(resp.text, content_type='application/json')
 

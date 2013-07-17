@@ -2,6 +2,7 @@ var JULY = JULY || {};
 
 
 JULY.parse_url = function(url){
+  if (!url) return '/api/v1/github';
   return url.replace('https://api.github.com/', '/api/v1/github/');
 };
 
@@ -34,7 +35,7 @@ JULY.RepositoryCollection = Backbone.Collection.extend({
     this.page = options.page || 1;
     this.type = options.type || "public";
     this.total = 0;
-    this.hasMore = false;
+    this.hasMore = true;
   },
 
   params: function() {
@@ -59,8 +60,12 @@ JULY.RepositoryCollection = Backbone.Collection.extend({
 JULY.HookCollection = Backbone.Collection.extend({
   model: JULY.Hook,
 
+  url: function() {
+    return this._url;
+  },
+
   initialize: function(data, options) {
-    this.url = options.url;
+    this._url = options.url;
     this.per_page = options.per_page || 100;
     this.page = options.page || 1;
     this.total = 0;
@@ -92,15 +97,52 @@ JULY.HookCollection = Backbone.Collection.extend({
 
 });
 
+JULY.HookView = function(model){
+  console.log(model);
+  var self = this;
+  this.last_response = model.get('last_response');
+  this.test_url = JULY.parse_url(model.get('test_url'));
+  this.updated_at = ko.observable(model.get('updated_at'));
+  // Test the hook!
+  this.test = function(csrftoken) {
+    JULY.setCSRFToken(csrftoken);
+    jQuery.post(self.test_url, "",
+      function(data){
+        var d=new Date();
+        self.updated_at(d.toISOString());
+    });
+  };
+};
 
 JULY.RepoView = function(model){
-  // TODO: fill me in
+  console.log(model);
+  var self = this;
+  this.working = ko.observable(false);
+  this.name = kb.observable(model, 'name');
+  this.html_url = kb.observable(model, 'html_url');
+  this.hooks = kb.collectionObservable(model.hooks, {view_model: JULY.HookView});
+  // add the hook!
+  this.add = function(csrftoken) {
+    JULY.setCSRFToken(csrftoken);
+    var POST = {
+      "name": "web",
+      "active": true,
+      "events": ["push"],
+      "config": {
+        "url": "http://www.julython.org/api/v1/github",
+        "content_type": "form",
+        "insecure_ssl": "1"
+      }
+    };
+    self.hooks.collection().create(POST, {wait: true});
+  };
 };
 
 JULY.RepositoryView = JULY.ViewModel.extend({
 
   initialize: function(options) {
-    //TODO: fill me in
+    this.r = new JULY.RepositoryCollection(null, options);
+    this.repos = kb.collectionObservable(this.r, {view_model: JULY.RepoView});
   },
 
   hasMore: function() {

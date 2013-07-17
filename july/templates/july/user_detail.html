@@ -126,7 +126,9 @@
   var view = new JULY.CommitsView({userId: {{ profile.id }}});
   JULY.applyBindings(view, '#commits');
   var projects = new JULY.ProjectsView({userId: {{ profile.id }}});
-  JULY.applyBindings(projects, '#projects');
+  JULY.applyBindings(projects, '#project-list');
+  var repos = new JULY.RepositoryView({csrf_token: '{{ csrf_token }}'});
+  JULY.applyBindings(repos, '#github')
   JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
 </script>
 {% endblock %}
