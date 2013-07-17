@@ -32,6 +32,12 @@ ko.bindingHandlers.timeago = {
 
         // apply timeago to change the text of the element
         $(element).timeago();
+    },
+    update: function(element, valueAccessor, allBindingsAccessor) {
+        var value = valueAccessor();
+        allBindingsAccessor();
+        var valueUnwrapped = ko.utils.unwrapObservable(value);
+        $(element).timeago('update', valueUnwrapped);
     }
 };
 
@@ -73,6 +79,22 @@ JULY.applyBindings = function(e,t) {
   } else {
     console.log('Binding error:  no elements found for "'+t+'"');
   }
+};
+
+JULY.csrfSafeMethod = function(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+};
+
+JULY.setCSRFToken = function(csrftoken) {
+  jQuery.ajaxSetup({
+    crossDomain: false, // obviates need for sameOrigin test
+    beforeSend: function(xhr, settings) {
+      if (!JULY.csrfSafeMethod(settings.type)) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+      }
+    }
+  });
 };
 
 $(document).ready(function(){
