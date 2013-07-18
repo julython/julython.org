@@ -2,7 +2,6 @@ var JULY = JULY || {};
 
 
 JULY.parse_url = function(url){
-  if (!url) return '/api/v1/github';
   return url.replace('https://api.github.com/', '/api/v1/github/');
 };
 
@@ -66,6 +65,7 @@ JULY.HookCollection = Backbone.Collection.extend({
 
   initialize: function(data, options) {
     this._url = options.url;
+    console.log(this._url);
     this.per_page = options.per_page || 100;
     this.page = options.page || 1;
     this.total = 0;
@@ -125,6 +125,7 @@ JULY.RepoView = function(model){
   this.add = function(csrftoken) {
     JULY.setCSRFToken(csrftoken);
     var POST = {
+      "url": self.hooks.collection().url,
       "name": "web",
       "active": true,
       "events": ["push"],
@@ -134,6 +135,7 @@ JULY.RepoView = function(model){
         "insecure_ssl": "1"
       }
     };
+    console.log(self.hooks.collection().url);
     self.hooks.collection().create(POST, {wait: true});
   };
 };

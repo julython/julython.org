@@ -23,7 +23,7 @@
               <h4>
                 <a data-bind="text: name, attr: {href: html_url}" target="_blank"></a>
               </h4>
-              <a data-bind="click: add, visible: hooks().length == 0" class="btn btn-info">
+              <a data-bind="click: add.bind($data, '{{ csrf_token }}'), visible: hooks().length == 0" class="btn btn-info">
                 {% trans "Add Hook" %}
               </a>
               <div data-bind="foreach: hooks">
