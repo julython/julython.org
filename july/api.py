@@ -279,11 +279,24 @@ class GithubAPIHandler(LoginRequiredMixin, View):
         if not HOOKS_MATCH.match(path):
             logging.error("Bad path: %s", path)
             return http.HttpResponseForbidden()
-        data = self.request.POST
+        action = self.request.POST.get('action')
+        if action == "add":
+            data = {
+                "name": "web",
+                "active": True,
+                "events": ["push"],
+                "config": {
+                    "url": "http://www.julython.org/api/v1/github",
+                    "content_type": "form",
+                    "insecure_ssl": "1"
+                }
+            }
+        elif action == "test":
+            data = ""
         token = github.extra_data.get('access_token', '')
         headers = {'Authorization': 'token %s' % token}
         url = 'https://api.github.com/%s' % path
-        resp = requests.post(url, data=data, params=request.GET, headers=headers)
+        resp = requests.post(url, data=json.dumps(data), params=request.GET, headers=headers)
         resp.raise_for_status()
         return http.HttpResponse(resp.text, content_type='application/json')
 

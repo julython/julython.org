@@ -65,7 +65,6 @@ JULY.HookCollection = Backbone.Collection.extend({
 
   initialize: function(data, options) {
     this._url = options.url;
-    console.log(this._url);
     this.per_page = options.per_page || 100;
     this.page = options.page || 1;
     this.total = 0;
@@ -98,7 +97,6 @@ JULY.HookCollection = Backbone.Collection.extend({
 });
 
 JULY.HookView = function(model){
-  console.log(model);
   var self = this;
   this.last_response = model.get('last_response');
   this.test_url = JULY.parse_url(model.get('test_url'));
@@ -106,7 +104,7 @@ JULY.HookView = function(model){
   // Test the hook!
   this.test = function(csrftoken) {
     JULY.setCSRFToken(csrftoken);
-    jQuery.post(self.test_url, "",
+    jQuery.post(self.test_url, {action: "test"},
       function(data){
         var d=new Date();
         self.updated_at(d.toISOString());
@@ -115,28 +113,23 @@ JULY.HookView = function(model){
 };
 
 JULY.RepoView = function(model){
-  console.log(model);
   var self = this;
   this.working = ko.observable(false);
   this.name = kb.observable(model, 'name');
   this.html_url = kb.observable(model, 'html_url');
+  this.description = kb.observable(model, 'description');
   this.hooks = kb.collectionObservable(model.hooks, {view_model: JULY.HookView});
   // add the hook!
   this.add = function(csrftoken) {
+    self.working(true);
     JULY.setCSRFToken(csrftoken);
-    var POST = {
-      "url": self.hooks.collection().url,
-      "name": "web",
-      "active": true,
-      "events": ["push"],
-      "config": {
-        "url": "http://www.julython.org/api/v1/github",
-        "content_type": "form",
-        "insecure_ssl": "1"
-      }
-    };
-    console.log(self.hooks.collection().url);
-    self.hooks.collection().create(POST, {wait: true});
+    var url = self.hooks.collection().url;
+    jQuery.post(url, {action: "add"},
+      function(data){
+        self.hooks.collection().reset([]);
+        self.hooks.collection().fetch();
+        self.working(false);
+    });
   };
 };
 
