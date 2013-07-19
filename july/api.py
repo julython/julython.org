@@ -297,6 +297,8 @@ class GithubAPIHandler(LoginRequiredMixin, View):
         headers = {'Authorization': 'token %s' % token}
         url = 'https://api.github.com/%s' % path
         resp = requests.post(url, data=json.dumps(data), params=request.GET, headers=headers)
+        if resp.status_code == 404:
+            return http.HttpResponseNotFound()
         resp.raise_for_status()
         return http.HttpResponse(resp.text, content_type='application/json')
 
