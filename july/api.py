@@ -762,8 +762,8 @@ class GithubHandler(PostCallbackHandler):
             'url': data['url'],
             'description': data.get('description', ''),
             'name': data.get('name'),
-            'forks': data.get('forks'),
-            'watchers': data.get('watchers'),
+            'forks': data.get('forks', 0),
+            'watchers': data.get('watchers', 0),
             'service': 'github',
             'repo_id': data.get('id')
         }
