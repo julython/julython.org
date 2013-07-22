@@ -219,7 +219,10 @@ class CommitResource(ModelResource):
         url = 'http://www.gravatar.com/avatar/%s?s=48'
         from hashlib import md5
         email = email.strip().lower()
-        hashed = md5(email).hexdigest()
+        try:
+            hashed = md5(email).hexdigest()
+        except:
+            hashed = 'unicode_error'
         return url % hashed
 
     def dehydrate(self, bundle):
