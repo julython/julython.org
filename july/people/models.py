@@ -107,7 +107,7 @@ class Commit(models.Model):
             user.projects.add(project)
             user.save()
 
-        # TODO: (Rober Myers) add a call to the defer a task to calculate
+        # TODO: (Robert Myers) add a call to the defer a task to calculate
         # game stats in a queue?
         return created_commits
 
@@ -118,6 +118,7 @@ class Commit(models.Model):
         for c in commits:
             c['project'] = project
             commit_hash = c.get('hash')
+
             if commit_hash is None:
                 logging.info("Commit hash missing in create.")
                 continue

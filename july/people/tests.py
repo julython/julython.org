@@ -162,6 +162,61 @@ class SCMTestMixin(object):
         self.assertEqual(location, 'Wroclaw, Poland')
 
 
+class ReposTest(SCMTestMixin, TestCase):
+    USER = 'bart'
+    AUTH_ID = 'email:foo@example.com'
+    API_URL = '/api/v1/github'
+    PROJECT_URL = 'http://repo.or.cz/w/guppy.git'
+    PROJECT_SLUG = 'repo-or-cz-w-guppy_git'
+    payload = {
+        "repository": {
+            "owner": {
+                "email": "foo@example.com",
+                "name": ""
+            },
+            "pull_url": "git://repo.or.cz/guppy.git",
+            "url": "http://repo.or.cz/w/guppy.git",
+            "name": "guppy",
+            "full_name": "guppy.git"
+        },
+        "after": "724618323963990f612a281f89738ad23bde862e",
+        "commits": [
+            {
+                "author": {
+                    "email": "foo@example.com",
+                    "name": "bart"
+                },
+                "message": "Make karma more aggressive",
+                "timestamp": "2012-12-15 23:01:18+0930",
+                "url": "http://repo.or.cz/w/guppy.git/commit/72423bde862e",
+                "id": "72461832396399",
+                "added": ["filepath.rb"],
+                "modified": ["test.py", "README"],
+                "removed": ["frank.scheme"]
+            },
+            {
+                "author": {
+                    "email": "foo@example.com",
+                    "name": "bart"
+                },
+                "message": "More Change",
+                "timestamp": "2012-12-15 23:01:18+0930",
+                "url": "http://repo.or.cz/w/guppy.git/commit/ad23bde862e",
+                "id": "abde18323963990f612a2",
+                "added": [],
+                "modified": ["somefile.py"],
+                "removed": []
+            }
+        ],
+        "pusher": {
+            "email": "foo@example.com",
+            "name": "bart"
+        },
+        "ref": "refs/heads/master",
+        "before":
+        "f2e71a405da4cf86ff3e709547156be7be073082"}
+
+
 class GithubTest(SCMTestMixin, TestCase):
 
     USER = 'defunkt'
