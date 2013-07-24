@@ -5,20 +5,21 @@
 {% block bodyclass %}profile{% endblock %}
 
 {% block content %} 
-<div class="container" id="contents">
-    <div class="row">
-        <div class="span8 offset2">
-            <form method="post" action="{% url 'delete-email' user.username email %}" enctype="multipart/form-data">{% csrf_token %}
-                <div class="well">
-                   <h2>{% trans "Are you sure you want to delete this email:" %}</h2>
-                   <p>{{ email }}</p>
-                </div>
-                <div class="form-actions">
-                    <input type="submit" class="btn btn-primary" value="{% trans "Yes Delete" %}" />
-                    <a href="{% url 'edit-profile' user.username %}" class="btn">{% trans "Cancel" %}</a>
-                </div>            
-            </form>
+<div class="container section-container no-border" id="contents">
+  <div class="row">
+  <div class="span8 offset2">
+    <h2 class="what-is-this">{% trans "Remove Email?" %}</h2>
+      <form method="post" action="{% url 'delete-email' user.username email %}" enctype="multipart/form-data">{% csrf_token %}
+        <div class="well">
+           <p class="lead">{% trans "Are you sure you want to delete this email:" %}</p>
+           <p>{{ email }}</p>
         </div>
+        <div class="form-actions">
+          <input type="submit" class="btn btn-primary" value="{% trans "Yes Delete" %}" />
+          <a href="{% url 'edit-profile' user.username %}" class="btn">{% trans "Cancel" %}</a>
+        </div>   
+      </form>
     </div>
+  </div>
 </div>
 {% endblock %}

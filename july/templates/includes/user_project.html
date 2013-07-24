@@ -15,4 +15,8 @@
   <a class="btn btn-mini" href="#">
     <i class="icon-random"></i> 
     <span data-bind="text: forks" /></a>
+  {% if profile == user %}
+  <a class="btn btn-mini btn-danger pull-right"
+     data-bind="attr: {href: 'project/' + slug() }">{% trans "Remove" %}</a>
+  {% endif %}
 </div>
