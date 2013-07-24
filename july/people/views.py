@@ -173,3 +173,27 @@ def delete_email(request, username, email):
         {'email': email},
         context_instance=RequestContext(request)
     )
+
+
+@login_required
+def delete_project(request, username, slug):
+
+    try:
+        project = request.user.projects.get(slug=slug)
+    except:
+        raise Http404("Project Not Found")
+
+    if request.method == "POST":
+        # delete the project from the user
+        request.user.projects.remove(project)
+        request.user.save()
+        return HttpResponseRedirect(
+            reverse('member-profile',
+                    kwargs={'username': request.user.username})
+        )
+
+    return render_to_response(
+        'people/delete_project.html',
+        {'project': project},
+        context_instance=RequestContext(request)
+    )

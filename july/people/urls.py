@@ -14,6 +14,8 @@ urlpatterns = patterns(
         'edit_address', name='edit-address'),
     url(r'^(?P<username>[a-zA-Z0-9_-]+)/email/(?P<email>.*)$',
         'delete_email', name='delete-email'),
+    url(r'^(?P<username>[a-zA-Z0-9_-]+)/project/(?P<slug>.*)$',
+        'delete_project', name='delete-project'),
     url(r'^(?P<username>[a-zA-Z0-9_-]+)/projects/$',
         'people_projects', name='user-projects'),
     url(r'^(?P<username>[a-zA-Z0-9_-]+)/badges/$',
