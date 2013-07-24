@@ -1,15 +1,8 @@
-import json
-import logging
-import requests
-from time import sleep
 
 from django.core.management.base import BaseCommand, CommandError
-from django.template.defaultfilters import slugify
 
 from july.models import User
-from july.people.models import Location, Team, Commit
-from july.game.models import Board, Player
-from social_auth.models import UserSocialAuth
+from july.auth.social import merge_users
 from optparse import make_option
 
 
@@ -35,20 +28,4 @@ class Command(BaseCommand):
         except:
             raise CommandError("unable to find those users.")
 
-        logging.info("Merging %s (%s) into: %s (%s)", old_user, old_user.id,
-                     new_user, new_user.id)
-
-        if not commit:
-            for o in UserSocialAuth.objects.filter(user=old_user):
-                logging.info("Old Auth: %s", o)
-            logging.info("Found %s commits",
-                         Commit.objects.filter(user=old_user).count())
-            for p in Player.objects.filter(user=old_user):
-                logging.info("Player: %s, %s points: %s", p, p.game, p.points)
-            logging.info("Merge player by adding --commit")
-        else:
-            UserSocialAuth.objects.filter(user=old_user).update(user=new_user)
-            for commit in Commit.objects.filter(user=old_user):
-                commit.user = new_user
-                commit.save()
-            logging.info("Merged")
+        merge_users(new_user, old_user, commit)
