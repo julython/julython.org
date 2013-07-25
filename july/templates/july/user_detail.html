@@ -11,7 +11,11 @@
     <div class="span10 offset1">
       <div class="media">
         <a class="thumbnail pull-left avatar" href=".">
+          {% if profile.picture_url %}
           <img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
+          {% else %}
+          <img class="media-object" src="{{ STATIC_URL }}images/spread_the_word_button.png" alt="{{profile}}" />
+          {% endif %}
         </a>
         <div class="media-body">
           <h3 class="media-heading">{{ profile }}
