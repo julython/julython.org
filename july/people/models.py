@@ -132,20 +132,20 @@ class Commit(models.Model):
         return created_commits
 
     @classmethod
-    def calendar(cls, end_date=None, days=35, **kwargs):
+    def calendar(cls, game, **kwargs):
         """
         Returns number of commits per day for a date range.
         """
-        if end_date and not end_date.tzinfo:
-            end_date = end_date.replace(tzinfo=utc)
-        else:
-            end_date = end_date or datetime.utcnow().replace(tzinfo=utc)
-        start_date = end_date - timedelta(days=days)
         count = cls.objects.filter(
-            timestamp__range=(start_date, end_date), **kwargs) \
+            timestamp__range=(game.start, game.end), **kwargs) \
             .extra(select={'timestamp': 'date(timestamp)'}) \
             .values('timestamp').annotate(commit_count=Count('id'))
-        return count
+        resp = {
+            'start': game.start.date(),
+            'end': game.end.date(),
+            'objects': list(count)
+        }
+        return resp
 
 
 class Project(models.Model):

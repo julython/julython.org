@@ -203,16 +203,14 @@ class CommitResource(ModelResource):
         self.throttle_check(request)
         filters = {}
 
-        days = int(request.GET.get('days', 35))
-        end_date = request.GET.get('end_date', None)
-        end_date = end_date and datetime(end_date)
-        username = request.GET.get('username', None)
+        game = Game.active_or_latest()
+        username = request.GET.get('username')
         if username:
             filters['user__username'] = username
 
         # user = kwargs.get('user', None)
-        calendar = Commit.calendar(days=days, end_date=end_date, **filters)
-        return self.create_response(request, list(calendar))
+        calendar = Commit.calendar(game=game, **filters)
+        return self.create_response(request, calendar)
 
     def gravatar(self, email):
         """Return a link to gravatar image."""
