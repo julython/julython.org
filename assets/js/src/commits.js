@@ -18,20 +18,34 @@ JULY.CommitCalendar = Backbone.Collection.extend({
 
   initialize: function(data, options){
     this.username = options.username || null;
-    this.days = options.days || null;
-    this.end_date = options.date || null;
+    this.start = null;
+    this.end = null;
+  },
+
+  parse: function(resp) {
+    this.start = new Date(resp.start);
+    this.end = new Date(resp.end);
+    var start = d3.time.day(this.start);
+    var end = d3.time.day(this.end);
+    var allDays = d3.time.days(start, end);
+    var formatter = d3.time.format('%Y-%m-%d');
+
+    // Use it to create an empty commit calendar.
+    var data = _(allDays).map(function(day){
+      var calendarDay = {
+        'timestamp': formatter(day),
+        'commit_count': 0
+      };
+      return calendarDay;
+    });
+    this.reset(data);
+    return resp.objects;
   },
 
   params: function(){
     var p = {};
     if (this.username){
       p.username = this.username;
-    }
-    if(this.days) {
-      p.days = this.days;
-    }
-    if(this.end_date && this.end_date instanceof Date){
-      p.end_date = this.end_date.toISOString();
     }
     return jQuery.param(p);
   }
@@ -135,51 +149,34 @@ JULY.makeCalendar = function(elmentId, username) {
   // Calendar example: http://bl.ocks.org/mbostock/4063318
   // d3.chart quickstart: https://github.com/misoproject/d3.chart/wiki/quickstart
 
-  // Create an array of dates, 35 days back.
-  var now = new Date();
-  var today = d3.time.day(now);
-  var then = d3.time.day.offset(now, -36);
-  var allDays = d3.time.days(then, today);
-  var formatter = d3.time.format('%Y-%m-%d');
-
-  // Use it to create an empty commit calendar.
-  var data = _(allDays).map(function(day){
-    var calendarDay = {
-      'timestamp': formatter(day),
-      'commit_count': 0
-    };
-    return calendarDay;
-  });
-
   // Fetch the user's actual commit calendar and use it to fill in correct
   // commit counts.
-  var calendar = new JULY.CommitCalendar(data, {username: username});
+  var calendar = new JULY.CommitCalendar(null, {username: username});
   calendar.fetch({async:false, remove:false});
 
   // An array containing only the commit counts, to build the graphic of the calendar.
-  data = calendar.map(function(day){return day.get('commit_count');});
+  counts = calendar.map(function(day){return day.get('commit_count');});
 
   // Calendar dimensions.
-  var cellSize = 10,
-    border = 1,
+  var cellSize = 12,
+    border = 0,
     weekLength = 7,
     height = (cellSize + border * 2) * weekLength,
     width = (cellSize + border * 2) * 5;
 
   // The color scale.
   var color = d3.scale.linear()
-    .domain([0, Math.max.apply(null, data)])
-    .range(['white', 'green']);
+    .domain([0, Math.max.apply(null, counts)])
+    .range(['white', 'darkgreen']);
 
   // The svg element.
   var svg = d3.select(elmentId)
     .attr('width', width)
-    .attr('height', height)
-    .style('background-color', '#BEC9AF');
+    .attr('height', height);
 
   // Building the actual cells of the calendar.
   var cells = svg.selectAll('rect')
-    .data(data)
+    .data(calendar.models)
     .enter().append('rect')
       .attr('width', cellSize).attr('height', cellSize)
       .attr('x', function(d,i) {
@@ -190,5 +187,11 @@ JULY.makeCalendar = function(elmentId, username) {
         var weekday = i % weekLength;
         return (cellSize + 2 * border) * weekday + border;
       })
-      .style('fill', color);
+      .style('stroke', '#BEC9AF')
+      .style('fill', function(d){
+        return color(d.get('commit_count'));
+      });
+  cells.append("title")
+    .text(function(d) {
+      return d.get('commit_count') + ' commits on ' + d.get('timestamp'); });
 };
