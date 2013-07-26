@@ -4,17 +4,17 @@ Julython
 .. image:: https://api.travis-ci.org/julython/julython.org.png?branch=master
     :target: https://travis-ci.org/julython/julython.org
 
-July is for Python
-------------------
+July is for Programming
+-----------------------
 
-July 1st to July 31st, 31 days and nights of writing Python code. 
+July 1st to July 31st, 31 days and nights of writing code. 
 
 Julython is a month to try something new, something you have had
 rolling around in your brain for a while. This could be something
 simple like 'build the next Google' or 'replace email'. Or you 
 could try something hard like 'build a Django website'. All that
-matters is that you write it in Python and during the month of
-July. 
+matters is that you open source it and write it during the month of
+July or January. 
 
 Why only 31 days? Why not all year? Well, for one we all have lives
 and jobs which get in the way. Having a month set aside where we 
@@ -38,12 +38,17 @@ For those on the leader board though you will have to push your
 commits to a public repository which everyone will clearly be able
 to see if you're padding your stats.
 
-Site
+Help
 ----
 
-The site is a work in progress right now and volunteers are welcome.
-We could use some nice free hosting (**hint hint**). In the meantime
-follow us on twitter at `@julython <https://twitter.com/#!/julython>`_.
+This site is constaintly be tweaked and occasionally problems arise.
+If you run into errors or just have general questions hit us up:
+
+Follow us on twitter at `@julython <https://twitter.com/#!/julython>`_.
+
+Email us `help@julython.org <mailto:help@julython.org>`_.
+
+Or join us on freenode `#julython <https://botbot.me/freenode/julython/>`_.
 
 
 Hacking
