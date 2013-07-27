@@ -6,7 +6,11 @@ JULY.Commit = Backbone.Model.extend({
 });
 
 JULY.CommitCalendarDay = Backbone.Model.extend({
-  idAttribute: 'timestamp'
+  idAttribute: 'timestamp',
+  date: function() {
+    var d = new Date(this.get('timestamp'));
+    return d3.time.day(d);
+  }
 });
 
 JULY.CommitCalendar = Backbone.Collection.extend({
@@ -22,7 +26,12 @@ JULY.CommitCalendar = Backbone.Collection.extend({
     this.end = null;
   },
 
+  start_date: function() {
+    return d3.time.day(this.start);
+  },
+
   parse: function(resp) {
+    // start and end are off by one
     this.start = new Date(resp.start);
     this.end = new Date(resp.end);
     var start = d3.time.day(this.start);
@@ -155,14 +164,14 @@ JULY.makeCalendar = function(elmentId, username) {
   calendar.fetch({async:false, remove:false});
 
   // An array containing only the commit counts, to build the graphic of the calendar.
-  counts = calendar.map(function(day){return day.get('commit_count');});
+  var counts = calendar.map(function(day){return day.get('commit_count');});
 
   // Calendar dimensions.
   var cellSize = 12,
-    border = 0,
-    weekLength = 7,
-    height = (cellSize + border * 2) * weekLength,
-    width = (cellSize + border * 2) * 5;
+    day = d3.time.format("%w"),
+    week = d3.time.format("%U"),
+    width = cellSize * 7,
+    height = cellSize * 6;
 
   // The color scale.
   var color = d3.scale.linear()
@@ -179,14 +188,10 @@ JULY.makeCalendar = function(elmentId, username) {
     .data(calendar.models)
     .enter().append('rect')
       .attr('width', cellSize).attr('height', cellSize)
-      .attr('x', function(d,i) {
-        var week = Math.floor(i / weekLength);
-        return (cellSize + 2 * border) * week + border;
+      .attr('y', function(d) {
+        return cellSize * ( week(d.date()) - week(calendar.start_date()));
       })
-      .attr('y', function(d,i) {
-        var weekday = i % weekLength;
-        return (cellSize + 2 * border) * weekday + border;
-      })
+      .attr('x', function(d) {return cellSize * day(d.date());})
       .style('stroke', '#BEC9AF')
       .style('fill', function(d){
         return color(d.get('commit_count'));
