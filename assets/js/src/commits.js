@@ -31,11 +31,13 @@ JULY.CommitCalendar = Backbone.Collection.extend({
   },
 
   parse: function(resp) {
-    // start and end are off by one
     this.start = new Date(resp.start);
     this.end = new Date(resp.end);
-    var start = d3.time.day(this.start);
-    var end = d3.time.day(this.end);
+    var s = d3.time.day(this.start);
+    var e = d3.time.day(this.end);
+    // start and end are off by one
+    var start = d3.time.day.offset(s, 1);
+    var end = d3.time.day.offset(e, 1);
     var allDays = d3.time.days(start, end);
     var formatter = d3.time.format('%Y-%m-%d');
 
