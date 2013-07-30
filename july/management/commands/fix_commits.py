@@ -39,6 +39,7 @@ class Command(BaseCommand):
                 continue
             commit.user = user
             commit.save()
+            user.projects.add(commit.project)
             fixed += 1
             if (fixed % 100) == 0:
                 logging.info("Fixed %s commits", fixed)
