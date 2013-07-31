@@ -34,8 +34,12 @@
             <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
             {% endif %}
             {% if profile.url %}
-            <li><a href="{{ profile.url }}"><i class="icon-globe"></i> {{profile.url}}</a></li>
-            {% endif %}
+				{% if 'http://' in profile.url %}
+            	<li><a href="{{ profile.url }} "><i class="icon-globe"></i> {{profile.url}}</a></li>
+				{% else %}
+				<li><a href="http://{{ profile.url }} "><i class="icon-globe"></i> {{profile.url}}</a></li>
+				{% endif %}
+			{% endif %}
             {% if profile.location %}
             <li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
             {% endif %}
