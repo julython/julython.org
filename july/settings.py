@@ -242,8 +242,9 @@ LOGGING = {
     },
     'filters': {
         'skip_suspicious_ops': {
-        '()': 'django.utils.log.CallbackFilter',
-        'callback': skip_suspicious_ops,
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': skip_suspicious_ops,
+        },
     },
     'handlers': {
         'null': {
