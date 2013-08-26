@@ -1,6 +1,6 @@
 import os
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
-from djanog.core.exceptions import SuspiciousOperation
+from django.core.exceptions import SuspiciousOperation
 
 # Default settings that can be overwritten in secrets
 DEBUG = True
@@ -217,6 +217,7 @@ TWITTER_EXTRA_DATA = [('screen_name', 'screen_name')]
 
 ABUSE_LIMIT = 3
 
+
 def skip_suspicious_ops(record):
     """Skip any errors with spoofed headers.
 
@@ -244,6 +245,12 @@ LOGGING = {
         'skip_suspicious_ops': {
             '()': 'django.utils.log.CallbackFilter',
             'callback': skip_suspicious_ops,
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
         },
     },
     'handlers': {
