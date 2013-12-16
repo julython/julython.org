@@ -23,7 +23,7 @@ def test(coverage='False', skip_js='False'):
         local("coverage run --include='july*' --omit='*migration*' manage.py test")
         local("coverage html")
     else:
-        local("python manage.py test")
+        local("python manage.py test july people game")
     if skip_js == 'False':
         with lcd('assets'):
             local('node_modules/grunt-cli/bin/grunt jasmine')

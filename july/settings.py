@@ -286,3 +286,6 @@ LOGGING = {
         },
     }
 }
+
+# TODO(rmyers): fix tests to work with Django 1.6.1
+TEST_RUNNER = 'django.test.simple.DjangoTestSuiteRunner'

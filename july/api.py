@@ -6,14 +6,13 @@ import re
 import urlparse
 import requests
 from os.path import splitext
-from datetime import datetime
 
 from django.core.urlresolvers import reverse
 from django import http
 from django.template.defaultfilters import date
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
-from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from iso8601 import parse_date
