@@ -110,6 +110,11 @@ server {
         }
     }
 
+    # Deny illegal Host headers
+    if ($host !~* ^(julython.org|www.julython.org)$ ) {
+        return 444;
+    }
+
     # Proxy all other requests to Django application
     location / {
             proxy_pass http://127.0.0.1:8000;
