@@ -43,7 +43,8 @@ urlpatterns = patterns(
     # Password reset urls
     url(r'^password_reset/$', auth_views.password_reset,
         name="password_reset"),
-    url(r'^password_reset_sent/$', auth_views.password_reset_done),
+    url(r'^password_reset_sent/$', auth_views.password_reset_done,
+        name="password_reset_done"),
     url(r'^password_reset_confirm/(?P<uidb36>[\d\w]+)-(?P<token>[\d\w-]+)$',
         auth_views.password_reset_confirm,
         {'post_reset_redirect': '/password_reset_complete/'},
