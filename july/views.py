@@ -114,17 +114,15 @@ def send_abuse(request):
     )
 
     form = AbuseForm(request.POST)
-    desc = form.data['desc']
-    url = form.data['url']
+    if form.is_valid():
+        desc = form.data['desc']
+        url = form.data['url']
 
-    subject = 'Abuse report for %s' % url
-    text = """\
-User %s has reported abuse for %s:
+        subject = 'Abuse report for %s' % url
+        text = """\nUser %s has reported abuse for %s:\n\n%s""" % (
+            request.user.username, url, desc)
 
-%s
-    """ % (request.user.username, url, desc)
-
-    request.abuse_reported()
-    mail_admins(subject, text)
+        request.abuse_reported()
+        mail_admins(subject, text)
 
     return response
