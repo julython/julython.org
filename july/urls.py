@@ -5,6 +5,7 @@ from django.contrib import admin
 from tastypie.api import Api
 
 from july import api
+from july.forms import PasswordResetForm
 
 v1_api = Api(api_name='v1')
 v1_api.register(api.CommitResource())
@@ -42,10 +43,12 @@ urlpatterns = patterns(
     url(r'^signout/$', auth_views.logout, {'next_page': '/'}, name="signout"),
     # Password reset urls
     url(r'^password_reset/$', auth_views.password_reset,
+        {'password_reset_form': PasswordResetForm},
         name="password_reset"),
     url(r'^password_reset_sent/$', auth_views.password_reset_done,
         name="password_reset_done"),
-    url(r'^password_reset_confirm/(?P<uidb36>[\d\w]+)-(?P<token>[\d\w-]+)$',
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/'
+        r'(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
         auth_views.password_reset_confirm,
         {'post_reset_redirect': '/password_reset_complete/'},
         name='password_reset_confirm'),
