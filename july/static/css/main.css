@@ -914,3 +914,14 @@ button{background:none}
 #commit-calendar{float:right}
 #abuse-form textarea{width:515px;height:170px}
 .files{list-style:none;font-size:12px}
+body.registration{padding-top:40px;padding-bottom:40px;background-color:#eee}
+.registration h2{background-image:url("../images/spread_the_word_button.png");font-size:30px;font-weight:normal;color:#6f94b6;line-height:50px;padding-left:60px;background-repeat:no-repeat;background-position:top left;margin-bottom:20px;font-family:"Doppio One",sans-serif}
+.registration h3{color:#6f94b6;margin-top:20px}
+.registration .btn{width:300px;padding-right:0;padding-left:0}
+.registration form{max-width:330px;padding:15px;margin:0 auto}
+.registration input [type="checkbox"]{margin-bottom:10px;font-weight:normal}
+.registration input{position:relative;font-size:16px;height:auto;width:300px;padding:10px;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}
+.registration input.first{margin-bottom:-1px;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.registration input.middle{margin-bottom:-1px;border-radius:0}
+.registration input.last{margin-bottom:20px;border-top-left-radius:0;border-top-right-radius:0}
+.registration .errorlist{margin:0 0 10px 6px;width:300px}.registration .errorlist li{list-style:none;color:red}
