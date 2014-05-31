@@ -24,7 +24,7 @@ admin.autodiscover()
 urlpatterns = patterns(
     '',
     # This line should only be active during maintenance!
-    #url(r'^.*', 'july.views.maintenance'),
+    # url(r'^.*', 'july.views.maintenance'),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^_admin/', admin.site.urls),
     # bitbucket and github are special apis
