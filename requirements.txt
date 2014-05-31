@@ -1,16 +1,8 @@
-Django==1.6.1
-django-tastypie==0.9.15
-Fabric==1.5.1
-django-social-auth==0.7.28
-iso8601==0.1.4
-django-debug-toolbar
-requests
-South
-mock
-jsonfield>=0.9.20
-pytz
-pep8
-# You can comment these out if running locally with sqlite
+# This is for production if you are just working locally
+# you can use requirements-dev.txt to avoid installing mysql
+
+-r requirements-dev.txt
+
 distribute>=0.6.28
 MySQL-python
 gunicorn

@@ -1,12 +1,12 @@
-Django==1.5.1
+Django==1.6.1
 django-tastypie==0.9.15
 Fabric==1.5.1
-django-social-auth==0.7.12
+django-social-auth==0.7.28
 iso8601==0.1.4
 django-debug-toolbar
 requests
 South
-jsonfield
-pytz
 mock
+jsonfield>=0.9.20
+pytz
 pep8
