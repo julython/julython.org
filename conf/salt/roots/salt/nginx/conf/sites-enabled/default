@@ -78,11 +78,11 @@ server {
 
     # Publish interface for messaging system
     location ~ /events/pub/(.*) {
-	# only allow on the local server -- may need to be changed
-	# to specific server(s) if this is scaled out to multiple
-	# nginx instances
-	allow 127.0.0.1;
-	deny all;
+    	# only allow on the local server -- may need to be changed
+    	# to specific server(s) if this is scaled out to multiple
+    	# nginx instances
+    	allow 127.0.0.1;
+    	deny all;
         push_stream_publisher admin;
         set $push_stream_channel_id $1;
     }
@@ -117,6 +117,6 @@ server {
 
     # Proxy all other requests to Django application
     location / {
-            proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8000;
     }
 }
