@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
+from django.db.utils import OperationalError
 
 from july.people.models import Project, Location, Team, Commit, Language
 
@@ -130,14 +131,19 @@ class Game(models.Model):
     @classmethod
     def active_or_latest(cls, now=None):
         """Return the an active game or the latest one."""
-        if now is None:
-            now = timezone.now()
-        game = cls.active(now)
-        if game is None:
-            query = cls.objects.filter(end__lte=now)
-            if len(query):
-                game = query[0]
-        return game
+        try:
+            if now is None:
+                now = timezone.now()
+            game = cls.active(now)
+            if game is None:
+                query = cls.objects.filter(end__lte=now)
+                if len(query):
+                    game = query[0]
+            return game
+        except OperationalError:
+            # FIXME (rmyers): When running syncdb there is an error since the
+            #                 game_game table does not exist yet.
+            return None
 
     def add_points_to_board(self, commit, from_orphan=False):
         board, created = Board.objects.select_for_update().get_or_create(
