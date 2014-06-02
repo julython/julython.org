@@ -41,18 +41,6 @@ def people_projects(request, username):
     return HttpResponseRedirect(reverse('member-profile', args=[username]))
 
 
-def people_badges(request, username):
-    user = get_object_or_404(User, username=username)
-
-    return render_to_response(
-        'people/people_badges.html', {
-            'badges': user.badges,
-            'profile': user,
-            'active': 'badges',
-        },
-        context_instance=RequestContext(request))
-
-
 def send_verify_email(email, user_id, domain):
     token = salted_hmac(SECRET, email).hexdigest()
     c = {

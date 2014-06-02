@@ -297,30 +297,6 @@ class Project(models.Model):
         return '%s-%s' % (host_abbr, name)
 
 
-class AchievedBadge(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
-    badge = models.ForeignKey("Badge", blank=True, null=True)
-    achieved_on = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return u'%s: %s' % (self.user, self.badge)
-
-
-class Badge(models.Model):
-    name = models.CharField(max_length=255, blank=True)
-    text = models.CharField(max_length=255, blank=True)
-    description = models.CharField(max_length=2024, blank=True)
-
-    def __str__(self):
-        return self.name
-
-    def __unicode__(self):
-        return self.name
-
-
 class Group(models.Model):
     slug = models.SlugField(primary_key=True)
     name = models.CharField(max_length=64, blank=False)

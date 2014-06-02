@@ -1,6 +1,6 @@
 from django.contrib import admin
-from models import Team, Commit, Location, AchievedBadge, Project
-from models import Badge, Language
+from models import Team, Commit, Location, Project
+from models import Language
 
 
 def purge_commits(modeladmin, request, queryset):
@@ -19,12 +19,6 @@ admin.site.register(
 admin.site.register(
     Language,
     list_display=["__unicode__"])
-
-admin.site.register(
-    Badge,
-    list_display=["__unicode__"])
-
-admin.site.register(AchievedBadge)
 
 
 class ProjectAdmin(admin.ModelAdmin):
