@@ -73,7 +73,7 @@ class Commit(models.Model):
         return cls.create_orphan(commits, project=project)
 
     @classmethod
-    @transaction.commit_on_success
+    @transaction.atomic
     def create_by_user(cls, user, commits, project=None):
         """Create a commit with parent user, updating users points."""
         created_commits = []
