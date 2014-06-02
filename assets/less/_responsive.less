@@ -1,0 +1,11 @@
+// from http://tylertate.com/blog/2013/06/11/retina-images-using-media-queries-and-LESS-CSS.html
+.background-image(@image, @width, @height){
+  @filename:  ~`/(.*)\.(jpg|jpeg|png|gif)/.exec(@{image})[1]`;
+  @extension: ~`/(.*)\.(jpg|jpeg|png|gif)/.exec(@{image})[2]`;
+  background-image: ~`"url(@{filename}.@{extension})"`;
+  background-size: @width @height;
+
+  @media (-webkit-min-device-pixel-ratio: 2) {
+    background-image: ~`"url(@{filename}_2x.@{extension})"`;
+  }
+}

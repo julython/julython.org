@@ -1,14 +1,11 @@
-@julyblue: #6f94b6;
-@linkColor: @julyblue;
-@titleFont: "Doppio One", sans-serif;
-@mainFont: "Open Sans", sans-serif;
-@pressStart: "Press Start 2P", sans-serif;
-@navbarColor: #ACACAC;
-
-
 body {
-  font-family: @mainFont;
+  .main-text;
   margin-top: 50px;
+}
+
+h2 {
+  background-repeat: no-repeat;
+  padding-left: 50px;
 }
 
 /* Responsive overrides */
@@ -33,27 +30,15 @@ body {
 }
 
 p, button, input, textarea {
-  font-family: @mainFont;
+  .main-text;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: @titleFont;
-  color: #555;
+  .header-text;
 }
 
 .press-start {
     font-family: @pressStart;
-}
-
-a.video {
-  display: inline-block;
-  font-family: @titleFont;
-  padding-left: 32px;
-  min-height: 20px;
-  line-height: 30px;
-  background: url("../images/video_icon.png") 0 6px no-repeat;
-  color: #777;
-  font-size: 15px;
 }
 
 .fixed {
@@ -73,7 +58,7 @@ a.video {
 .navbar-inner {
   background: @navbarColor;
   box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2), 0 0 3px rgba(0, 0, 0, 0.3);
-  color: #FFF;
+  color: @lightTextColor;
 }
 
   .navbar, .nav-collapse {
@@ -83,7 +68,7 @@ a.video {
           line-height: 30px;
           font-size: 16px;
           margin-left: 10px;
-          color: #fff;
+          color: @lightTextColor;
           text-shadow: none;
         }
       }
@@ -95,7 +80,7 @@ a.video {
     clear: both;
     font-weight: normal;
     line-height: 20px;
-    color: #333;
+    color: @textColor;
     white-space: nowrap;
   }
 
@@ -103,7 +88,7 @@ a.video {
   .navbar .nav li.dropdown.active > .dropdown-toggle,
   .navbar .nav li.dropdown.open.active > .dropdown-toggle {
     background-color: darken(@navbarColor, 10%);
-    color: #fff;
+    color: @lightTextColor;
   }
 
 img.icon {
@@ -117,10 +102,12 @@ img.icon {
   display: block;
   width: 0;
   height: 0;
-  margin: 70px auto 10px;
-  padding: 150px 0 0 429px;
+  margin: 40px auto 40px;
+  padding: 96px 0 0 430px;
   overflow: hidden;
-  background: url("../images/julython_logo_large.png") top left no-repeat;
+  .background-image("../images/julython_logo_large.png", 430px, 96px);
+  background-repeat: no-repeat;
+  background-position: center center;
 }
 
 .large-notice {
@@ -144,7 +131,7 @@ img.icon {
     padding: 0;
     padding-top: 58px;
     line-height: 18px;
-    color: #555;
+    color: @textColor;
     text-align: center;
     width: 110px;
     font-size: 13px;
@@ -156,28 +143,28 @@ img.icon {
   }
 
     .what-is-this {
-      background-image: url("../images/whats_this_button.png");
+      .background-image("../images/whats_this_button.png", 40px, 40px);
     }
 
     .participating {
-      background-image: url("../images/participating_button.png");
+      .background-image("../images/participating_button.png", 40px, 40px);
     }
 
     .the-rules {
-      background-image: url("../images/rules_button.png");
+      .background-image("../images/rules_button.png", 40px, 40px);
     }
 
     .teaming-up {
-      background-image: url("../images/teaming_up_button.png");
+      .background-image("../images/teaming_up_button.png", 40px, 40px);
     }
 
     .spread-the-word {
-      background-image: url("../images/spread_the_word_button.png");
+      .background-image("../images/spread_the_word_button.png", 40px, 40px);
     }
 
 
     #sticky-bar button:hover {
-      color: #000;
+      color: @textColor;
       text-decoration: underline;
       background-color: clear;
     }
@@ -185,36 +172,11 @@ img.icon {
 .section-container {
   border-top: 1px solid #AAA;
   padding: 40px 0;
-  color: #777;
+  color: @textColor;
 }
 
   .section-container.no-border {
     border-top: none;
-  }
-
-.section-container h2 {
-  font-size: 26px;
-  font-weight: normal;
-  color: #555;
-  line-height: 50px;
-  padding-left: 64px;
-  background-repeat: no-repeat;
-  background-position: top left;
-  margin-bottom: 30px;
-  font-family: @titleFont;
-}
-
-  .section-blurb h3 {
-    color: #555;
-    font-family: @titleFont;
-    font-weight: normal;
-    font-size: 20px;
-    margin: 0 0 8px;
-  }
-
-  .section-blurb p {
-    font-size: 16px;
-    line-height: 23px
   }
 
 /* Custom container */
@@ -231,7 +193,7 @@ img.icon {
   padding-top: 40px;
   font-family: @titleFont;
   h2 {
-    color: #555;
+    color: @textColor;
     font-weight: normal;
   }
 }
@@ -252,7 +214,7 @@ img.icon {
 .locations {
   .points {
       border: 3px solid #ddd;
-      background-color: #f9f9f9;
+      background-color: @lightTextColor;
       padding: 10px;
 
       p {
@@ -279,9 +241,9 @@ img.icon {
   background: #d456c8;
   border: 1px solid #000;
   border-radius: 4px;
-  color: #FFF;
+  color: @lightTextColor;
   font-size: 18px;
-  font-family: "Doppio One", sans-serif;
+  font-family: @mainFont;
   padding: 6px;
   text-align: center;
   text-shadow: 0 -1px #000;
@@ -310,7 +272,7 @@ img.icon {
 .commit-chart svg text {
   font-family: "Arial", sans-serif;
   font-size: 12px;
-  color: #777;
+  color: @gray;
 }
 
 .commit-chart svg text.xLabel {
@@ -324,9 +286,9 @@ img.icon {
 }
 
 .commit-chart svg line.rule {
-  stroke: #777;
+  stroke: @gray;
   stroke-width: 1px;
-  color: #333;
+  color: @textColor;
 }
 
 #user-barchart {
@@ -380,15 +342,15 @@ img.icon {
 body.registration {
   padding-top: 40px;
   padding-bottom: 40px;
-  background-color: #eee;
+  background-color: @lightTextColor;
 }
 
 .registration {
   h2 {
-    background-image: url("../images/spread_the_word_button.png");
+    .background-image("../images/spread_the_word_button.png", 50px, 50px);
     font-size: 30px;
     font-weight: normal;
-    color: @julyblue;
+    color: @mainColor;
     line-height: 50px;
     padding-left: 60px;
     background-repeat: no-repeat;
@@ -397,7 +359,7 @@ body.registration {
     font-family: @titleFont;
   }
   h3 {
-    color: @julyblue;
+    color: @mainColor;
     margin-top: 20px;
   }
   .btn {
@@ -443,7 +405,46 @@ body.registration {
     width: 300px;
     li {
       list-style: none;
-      color: red;
+      color: @altColor;
     }
   }
+}
+
+
+.section-icon {
+  display: inline-block;
+  margin-right: 6px;
+  width: 20px;
+  height: 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  &.rocket-icon {
+    .background-image("../images/spread_the_word_button.png", 20px, 20px);
+  }
+  &.rules-icon {
+    .background-image("../images/rules_button.png", 20px, 20px);
+  }
+  &.plus-one-icon {
+    .background-image("../images/teaming_up_button.png", 20px, 20px);
+  }
+}
+
+h2.section-header {
+  font-size: 24px;
+  line-height: 24px;
+  padding-left: 0;
+  &.rocket-header {
+    color: @rocketColor;
+  }
+  &.rules-header {
+    color: @rulesColor;
+  }
+  &.plus-one-header {
+    color: @plusOneColor;
+  }
+}
+
+.offset-container {
+  padding: 10px 0;
+  background-color: @offsetBackground;
 }

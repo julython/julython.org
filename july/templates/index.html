@@ -21,136 +21,37 @@
       </div>
     </div>
 
-    <div class="gray-container hidden-phone" id="navigation">
+    <div class="offset-container">
       <div class="container">
         <div class="row">
-          <div class="span12 sticky" id="sticky-bar">
-            <a href="#what-is-this"><button class="what-is-this">
-              {% trans "What is This?" %}</button></a>
-            <a href="#participating"><button class="participating">
-              {% trans "Participating" %}</button></a>
-            <a href="#the-rules"><button class="the-rules">
-              {% trans "The Rules" %}</button></a>
-            <a href="#teaming-up"><button class="teaming-up">
-              {% trans "Teaming Up" %}</button></a>
-            <a href="#spread-the-word"><button class="spread-the-word">
-              {% trans "Spread The Word" %}</button></a>
+          <div class="span4">
+            <h2 class="section-header rocket-header"><span class="section-icon rocket-icon"></span>What is Julython?</h2>
+            <p>
+            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+            </p>
+          </div>
+          <div class="span4">
+            <h2 class="section-header rules-header">
+              <span class="section-icon rules-icon"></span>
+              Are There Rules?
+            </h2>
+            <p>
+            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+            </p>
+          </div>
+          <div class="span4">
+            <h2 class="section-header plus-one-header">
+              <span class="section-icon plus-one-icon"></span>
+              How Do I Join In?
+            </h2>
+            <p>
+            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+            </p>
           </div>
         </div>
       </div>
     </div>
-    
-    <div id="what-is-this" class="container section-container no-border">
-      <div class="row">
-        <div class="span12">
-          <div class="row">
-            <div class="span12">
-              <h2 class="what-is-this">{% trans "Why are you people making up words?" %}</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "We all have those projects..." %}</h3>
-              <p>{% trans "You know, the ones that have been sitting on our hard drives collecting dust, with perhaps a few __init__.py files and maybe a TODO. But being busy people, we're content to just promise at some point we'll make time to work on it..." %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "So make the time." %}</h3>
-              <p>{% trans "This year, during the <a href='/help/#times'>months of January and July</a>, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!" %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <img src="{{ STATIC_URL }}images/welcome_to_julython.png"/>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="participating" class="container section-container no-border">
-      <div class="row">
-        <div class="span4">
-          <div class="row">
-            <div class="span4 section-blurb">
-              <img src="{{ STATIC_URL }}images/spinning_snake.png"/>
-            </div>
-          </div>
-        </div>
-        
-        <div class="span8">
-          <div class="row">
-            <div class="span8">
-              <h2 class="participating">{% trans "I'm interested. How do I make this happen?" %}</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "It's totally up to you." %}</h3>
-              <p>{% trans "What you do during Julython is ultimately up to you. Been hankerin' to play with Golang, Node or Lisp? Now's your chance. Have a Django or Tornado web app you've always wanted to build? <a href='/help/#get-started'>Go hog wild</a>." %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "However, it's good to share." %}</h3>
-              <p>{% trans "We recommend you work on something open, perhaps on GitHub or Bitbucket, so that others can see your progress. Then <a href='/help/#webhook'>add a webhook</a> for your repository, and we'll track your progress next to everyone else!" %}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    
-    
-    <div id="the-rules" class="container section-container no-border">
-      <div class="row">
-        <div class="span12">
-          <div class="row">
-            <div class="span12">
-              <h2 class="the-rules">{% trans "What are the rules?" %}</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "There are no rules!" %}</h3>
-              <p>{% trans "Okay, just one rule." %}</p>
-              <p><strong>{% trans "The project(s) must be open source." %}</strong></p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Whats in it for me?" %}</h3>
-              <p>{% trans "Fame and fortune! The goal is that you either learn something new or meet someone who is also interested in similar tools. If you share your repository or your commits with us, we will <a href='/help/#points'>tally up points</a> for each commit or new project you work on." %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Can I work on an existing project?" %}</h3>
-              <p>{% trans "Yes! But you will only get 'credit' for commits <a href='/help/#times'>within the months of January or July</a>. You should consider forking an existing project if you are not the owner and register that fork." %}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    
-    
-    <div id="teaming-up" class="container section-container no-border">
-      <div class="row">
-        <div class="span12">
-          <div class="row">
-            <div class="span12">
-              <h2 class="teaming-up">{% trans "Joining Forces" %}</h2>
-            </div>
-          </div>
-          <div class="row">
-            <div class="span4 section-blurb">
-              <h3>{% trans "Local is in" %}</h3>
-              <p>{% trans "We encourage everyone to team up, our goal is to have meetups organically created in cites across the country. There should be participants meeting in a coffee shop or bar near you. We'll have a way to post a meeting and location and you can search for something close by." %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Cities against cities" %}</h3>
-              <p>{% trans "So you think your city has the most committed programmers? Be sure to sign up to have your commits go toward your home town. We will see <a href='/location/'>which cities are the most committed</a>." %}</p>
-            </div>
-            <div class="span4 section-blurb">
-              <h3>{% trans "Frameworks against Frameworks" %}</h3>
-              <p>{% trans "Already work on some fancy web framework? Be sure to fork the project and <a href='/help/#webhook'>add a webhook</a>. At the end we will add up all the points and award them to the parent project, then we'll see how well each project ranks against others. A dance-off will decide the winners in the event of a tie." %}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
+
     <div class="container section-container no-border hidden-phone">
       <div class="row">
         <div class="span12">
