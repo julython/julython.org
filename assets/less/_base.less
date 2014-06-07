@@ -266,7 +266,7 @@ img.icon {
 }
 
 .commit-chart svg rect {
-  fill: steelblue;
+  fill: @julyblue;
 }
 
 .commit-chart svg text {
@@ -276,19 +276,19 @@ img.icon {
 }
 
 .commit-chart svg text.xLabel {
-  fill: #333;
+  fill: @textColor;
 }
 
 .commit-chart svg text.yLabel {
   font-size: 10px;
   font-weight: bold;
-  fill: #777;
+  fill: @julyblue;
 }
 
 .commit-chart svg line.rule {
   stroke: @gray;
   stroke-width: 1px;
-  color: @textColor;
+  color: @mainColor;
 }
 
 #user-barchart {
@@ -304,7 +304,7 @@ img.icon {
 
 .message-list {
   list-style: none;
-  margin: -14px 0 0;
+  margin: 14px 0 0;
   padding: 0;
 }
 
@@ -447,4 +447,8 @@ h2.section-header {
 .offset-container {
   padding: 10px 0;
   background-color: @offsetBackground;
+}
+
+.leaderboard {
+  padding-top: 20px;
 }

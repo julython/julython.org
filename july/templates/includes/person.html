@@ -1,0 +1,23 @@
+{% load i18n %}
+
+<div class="well well-small">
+  <h4>
+    <img src="{{ player.user.picture_url }}" 
+         alt="{{ player.user.first_name}} {{ player.user.last_name }}"
+         width="30"/>
+    <a href="{% url 'member-profile' player.user.username %}">
+    {{ forloop.counter }}. 
+    {{ player }}</a>
+    <span class="badge badge-info pull-right">{{ player.points|default:"0" }} {% trans "points"%}</span>
+  </h4>
+  <p>{{ player.user.description }}</p>
+
+  {% if player.user.location %}
+  <a class="btn btn-mini" href="{% url 'location-detail' player.user.location.slug %}">
+    <i class="icon-map-marker"></i> {{ player.user.location }}</a>
+  {% endif %}
+  {% if player.user.team %}
+  <a class="btn btn-mini" href="{% url 'team-details' player.user.team.slug %}">
+    <i class="icon-th"></i> {{ player.user.team }}</a>
+  {% endif %}
+</div>

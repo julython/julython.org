@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid leaderboard">
+  <div class="row-fluid">
+    <div class="span4">
+      <h2 class="spread-the-word">{% trans "People" %}</h3>
+        {% for player in people %}
+          {% include "includes/person.html" %}
+        {% endfor %}
+    </div>
+    <div class="span4">
+      <h2 class="teaming-up">{% trans "Locations" %}</h2>
+        {% for location in locations %}
+          <h4>
+            <a href="{% url 'location-detail' location.slug %}">{{ forloop.counter }}. {{ location }}</a>
+            <span class="badge badge-info pull-right">{{ location.total|default:"0" }} {% trans "points"%}</span>
+          </h4>
+        {% endfor %}
+    </div>
+    <div class="span4">
+      <h2 class="participating">{% trans "Teams" %}</h2>
+        {% for team in teams %}
+          <h4>
+            <a href="{% url 'team-details' team.slug %}">{{ forloop.counter }}. {{ team }}</a>
+            <span class="badge badge-info pull-right">{{ team.total|default:"0" }} {% trans "points"%}</span>
+          </h4>
+        {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

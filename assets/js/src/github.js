@@ -137,6 +137,7 @@ JULY.RepositoryView = JULY.ViewModel.extend({
 
   initialize: function(options) {
     this.r = new JULY.RepositoryCollection(null, options);
+    this.r.fetch();
     this.repos = kb.collectionObservable(this.r, {view_model: JULY.RepoView});
   },
 

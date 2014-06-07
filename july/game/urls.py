@@ -5,6 +5,12 @@ from july.game import views
 
 urlpatterns = patterns(
     'july.game.views',
+    url(r'^leaders/$',
+        views.GameBoard.as_view(),
+        name='leaders'),
+    url(r'^leaders/(?P<year>\d{4})/(?P<month>\d{1,2})/((?P<day>\d{1,2})/)?$',
+        views.GameBoard.as_view(),
+        name='leaders'),
     url(r'^people/$',
         views.PlayerList.as_view(),
         name='leaderboard'),

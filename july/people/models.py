@@ -318,9 +318,17 @@ class Group(models.Model):
         from july.game.models import Game
         latest = Game.active_or_latest()
         kwargs = {
-            self.lookup: self
+            self.rel_lookup: self
         }
-        return latest.players.filter(**kwargs).order_by('-player__points')
+        return latest.player_set.filter(**kwargs).order_by('-points')
+
+    def game_boards(self):
+        from july.game.models import Game
+        latest = Game.active_or_latest()
+        kwargs = {
+            'player__user__in': self.members_by_points()
+        }
+        return latest.board_set.filter(**kwargs).order_by('-points')
 
     def total_points(self):
         from july.game.models import Game, Player

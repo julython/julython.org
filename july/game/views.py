@@ -7,6 +7,8 @@ from django.http.response import HttpResponse
 from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.list import ListView
+from django.views.generic import View
+from django.shortcuts import render
 
 from july.game.models import Player, Game, Board, LanguageBoard
 from july.people.models import Project, Location, Team, Language
@@ -29,6 +31,21 @@ class GameMixin(object):
         return Game.active_or_latest(now=now)
 
 
+class GameBoard(View, GameMixin):
+    template_name = 'game/game_list.html'
+
+    def get(self, request, *args, **kwargs):
+        game = self.get_game()
+        people = Player.objects.filter(
+            game=game, user__is_active=True).select_related()
+        ctx = {
+            'people': people,
+            'teams': game.teams,
+            'locations': game.locations
+        }
+        return render(request, self.template_name, ctx)
+
+
 class PlayerList(ListView, GameMixin):
     model = Player
     paginate_by = 100
@@ -39,14 +56,27 @@ class PlayerList(ListView, GameMixin):
             game=game, user__is_active=True).select_related()
 
 
-class BoardList(ListView, GameMixin):
-    model = Board
-    paginate_by = 100
+class BoardList(View, GameMixin):
+    template_name = 'game/board_list.html'
 
-    def get_queryset(self):
+    def get(self, request, *args, **kwargs):
         game = self.get_game()
-        return Board.objects.filter(
-            game=game, project__active=True).select_related()
+        small_boards = Board.objects.filter(
+            game=game, project__watchers__lt=10,
+            project__active=True).select_related('project')
+        medium_boards = Board.objects.filter(
+            game=game, project__watchers__gte=10,
+            project__watchers__lt=100,
+            project__active=True).select_related('project')
+        large_boards = Board.objects.filter(
+            game=game, project__watchers__gte=100,
+            project__active=True).select_related('project')
+        ctx = {
+            'small_boards': small_boards,
+            'medium_boards': medium_boards,
+            'large_boards': large_boards,
+        }
+        return render(request, self.template_name, ctx)
 
 
 class LanguageBoardList(list.ListView, GameMixin):

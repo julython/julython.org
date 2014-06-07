@@ -2,37 +2,28 @@
 
 {% load i18n %}
 
-{% block bodyclass %}profile{% endblock %}
-
 {% block content %}
 
-<div class="container section-container no-border">
-    <div class="row locations">
-        <div class="span6 offset3"><br />
-            <div class="row location">
-            <div class="span5">
-              <a href="{% url 'locations' %}">{% trans "All locations" %}</a>
-              {% if location %} 
-              <h3>{{ location }}</h3>
-              {% else %}
-              <h3>{{ slug }}</h3>
-              {% endif %}
-            </div>
-            <div class="points pull-right">
-                <p>{{  location.total_points }}</p>
-                <p class="small">{% trans "points" %}</p>
-            </div>
-          </div>
-            <h4>Players</h4>
-            <ul>
-              {% for user in location.members_by_points %}
-                <li>
-                  <a href="{% url 'member-profile' user.username %}">{{ user }}</a> &mdash;
-                    {% blocktrans count number_of_points=user.points %}{{ number_of_points }} point in {% plural %}{{ number_of_points }} points in {% endblocktrans %}
-                    <a href="{% url 'user-projects' user.username %}">{% blocktrans count number_of_projects=user.projects.count %}{{ number_of_projects }} project{% plural %}{{ number_of_projects }} projects{% endblocktrans %}</a>
-                </li>
-              {% endfor %}  
-            </ul>
+<div class="container-fluid leaderboard">
+    <div class="row-fluid">
+      <div class="span10 offset1">
+        <h2 class="teaming-up">Location &mdash; {{ location }} 
+          <span class="pull-right">{{ location.total_points }} {% trans "points" %}</h2>
+      </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span5 offset1">
+          <h4>{% trans "People" %}</h4>
+            {% for player in location.members_by_points|slice:":100" %}
+              {% include "includes/person.html" %}
+            {% endfor %}
+        </div> 
+        <div class="span5">
+          <h4>{% trans "Projects" %}</h4>
+            {% for board in location.game_boards|slice:":100" %}
+              {% include "includes/board.html" %}
+            {% endfor %}  
+        </div>
         </div>
     </div>
 </div>

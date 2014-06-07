@@ -7,29 +7,23 @@
   <div class="row-fluid">
     <div class="span4">
       <h3>Large Projects</h3>
-      <div data-bind="foreach: largeBoards" class="projects">
-        {% include "includes/project.html" %}
-      </div>
+      {% for board in large_boards %}
+        {% include "includes/board.html" %}
+      {% endfor %}
     </div>
     <div class="span4">
       <h3>Medium Projects</h3>
-      <div data-bind="foreach: mediumBoards" class="projects">
-        {% include "includes/project.html" %}
-      </div>
+      {% for board in medium_boards %}
+        {% include "includes/board.html" %}
+      {% endfor %}
     </div>
     <div class="span4">
       <h3>Small Projects</h3>
-      <div data-bind="foreach: smallBoards" class="projects">
-        {% include "includes/project.html" %}
-      </div>
+      {% for board in small_boards %}
+        {% include "includes/board.html" %}
+      {% endfor %}
     </div>
   </div>
 </div>
 
-{% endblock %}
-{% block extra_javascript %}
-<script type="text/javascript">
-  var view = new JULY.BoardsView();
-  ko.applyBindings(view);
-</script>
 {% endblock %}

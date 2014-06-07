@@ -1,0 +1,18 @@
+{% load i18n %}
+
+{% with project=board.project %}
+<div class="well well-small">
+  <h4>
+    <a href="{% url 'project-details' project.slug %}" target="_blank">{{ project.name }}</a>
+    <span class="badge badge-info pull-right">{{ board.points }} {% trans "points" %}</span>
+  </h4>
+  <p>{{ project.description }}</p>
+  <a class="btn btn-mini" href="{{ project.url }}" target="_blank">
+    <i class="icon-globe"></i> {% trans "Repository" %}</a>
+  
+  <a class="btn btn-mini"  href="{{ project.url }}" target="_blank">
+    <i class="icon-star"></i> {{ project.watchers}}</a>
+  <a class="btn btn-mini"  href="{{ project.url }}" target="_blank">
+    <i class="icon-random"></i> {{ project.forks }}</a>
+</div>
+{% endwith %}
