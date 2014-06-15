@@ -121,8 +121,7 @@ class Game(models.Model):
     @classmethod
     def active(cls, now=None):
         """Returns the active game or None."""
-        if now is None:
-            now = timezone.now()
+        now = now or timezone.now()
         try:
             return cls.objects.get(start__lte=now, end__gte=now)
         except cls.DoesNotExist:
@@ -131,19 +130,13 @@ class Game(models.Model):
     @classmethod
     def active_or_latest(cls, now=None):
         """Return the an active game or the latest one."""
-        try:
-            if now is None:
-                now = timezone.now()
-            game = cls.active(now)
-            if game is None:
-                query = cls.objects.filter(end__lte=now)
-                if len(query):
-                    game = query[0]
-            return game
-        except OperationalError:
-            # FIXME (rmyers): When running syncdb there is an error since the
-            #                 game_game table does not exist yet.
-            return None
+        now = now or timezone.now()
+        game = cls.active(now)
+        if game is None:
+            query = cls.objects.filter(end__lte=now)
+            if len(query):
+                game = query[0]
+        return game
 
     def add_points_to_board(self, commit, from_orphan=False):
         board, created = Board.objects.select_for_update().get_or_create(

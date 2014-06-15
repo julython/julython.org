@@ -13,9 +13,6 @@ v1_api.register(api.ProjectResource())
 v1_api.register(api.UserResource())
 v1_api.register(api.LocationResource())
 v1_api.register(api.TeamResource())
-v1_api.register(api.LargeBoardResource())
-v1_api.register(api.MediumBoardResource())
-v1_api.register(api.SmallBoardResource())
 
 
 admin.autodiscover()
@@ -60,6 +57,5 @@ urlpatterns = patterns(
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),
     url(r'^', include('july.people.urls')),
-
 
 )
