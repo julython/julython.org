@@ -6,8 +6,9 @@ import os
 from string import Template
 from urllib import urlencode
 
-from fabric.api import lcd, task, local, put, env
-
+from fabric.api import *
+from fabric.colors import *
+import requests
 
 @task
 def pep8():
@@ -46,24 +47,39 @@ def load(email=None):
             bitbucket.append(os.path.join('data', json_file))
 
     for json_file in github:
-        with open(json_file) as post:
-            p = Template(post.read()).substitute({'__EMAIL__': email})
-            payload = urlencode({'payload': p})
-            local('curl http://localhost:8000/api/v1/github -s -d %s' % payload)
+        with open(json_file) as post_file:
+            post = Template(post_file.read()).substitute({'__EMAIL__': email})
+            payload = {'payload': post}
+            url = 'http://localhost:8000/api/v1/github'
+            response = requests.post(url, data=payload)
+            print(cyan("%s %s" % (response.status_code, response.reason)))
+            response.raise_for_status()
 
     for json_file in bitbucket:
-        with open(json_file) as post:
-            p = Template(post.read()).substitute({'__EMAIL__': email})
-            payload = urlencode({'payload': p})
-            local('curl http://localhost:8000/api/v1/bitbucket -s -d %s' % payload)
+        with open(json_file) as post_file:
+            post = Template(post_file.read()).substitute({'__EMAIL__': email})
+            payload = {'payload': post}
+            url = 'http://localhost:8000/api/v1/bitbucket'
+            response = requests.post(url, data=payload)
+            print(cyan("%s %s" % (response.status_code, response.reason)))
+            response.raise_for_status()
 
 
 @task
 def install():
     """Install the node_modules dependencies"""
     local('git submodule update --init')
-    with lcd('assets'):
-        local('npm install')
+    if not os.path.isfile('july/secrets.py'):
+        local('cp july/secrets.py.template july/secrets.py')
+
+    local('python manage.py syncdb')
+    local('python manage.py migrate')
+    local('python manage.py loaddata july/fixtures/development.json')
+
+    with lcd('assets'), settings(warn_only=True):
+        out = local('npm install')
+        if out.failed:
+            print(red("Problem running npm, did you install node?"))
 
 
 @task

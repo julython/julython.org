@@ -7,17 +7,17 @@ Julython
 July is for Programming
 -----------------------
 
-July 1st to July 31st, 31 days and nights of writing code. 
+July 1st to July 31st, 31 days and nights of writing code.
 
 Julython is a month to try something new, something you have had
 rolling around in your brain for a while. This could be something
-simple like 'build the next Google' or 'replace email'. Or you 
+simple like 'build the next Google' or 'replace email'. Or you
 could try something hard like 'build a Django website'. All that
 matters is that you open source it and write it during the month of
-July or January. 
+July or January.
 
 Why only 31 days? Why not all year? Well, for one we all have lives
-and jobs which get in the way. Having a month set aside where we 
+and jobs which get in the way. Having a month set aside where we
 all get together and write code will allow us to rely on each other
 to keep us on track towards our goals. There will also be a little
 bit of healthy competition and public flogging to encourage everyone
@@ -26,9 +26,9 @@ to finish.
 Goals
 ------
 
-Since it is very hard to quantify code we have come up with a 
+Since it is very hard to quantify code we have come up with a
 simple metric to decide the 'winners' of the competition. The goal
-is to commit at least once a day for the entire month. If you are 
+is to commit at least once a day for the entire month. If you are
 working on the next twitter or Instagram you don't have to give your
 code away. Your commits could be just to a local git or mercurial
 repository on your machine. Since there are no real prizes you will
@@ -65,10 +65,7 @@ Database
 
 Create an initial database with some dummy data::
 
-	$ cp july/secrets.py.template july/secrets.py
-	$ python manage.py syncdb
-	$ python manage.py migrate
-	$ python manage.py loaddata july/fixtures/development.json
+	$ fab install
 
 Run the server and verify you can login with the admin user ``username=admin``
 ``password=password``::
@@ -83,18 +80,18 @@ with the command::
 Media
 ++++++
 
-We are using `grunt <http://gruntjs.com/>`_ to manage all the assets 
-so you'll need to have a recent version of 
+We are using `grunt <http://gruntjs.com/>`_ to manage all the assets
+so you'll need to have a recent version of
 `node and npm installed <http://nodejs.org/>`_ then run::
 
     $ fab install
-    
+
 Once the modules have been installed you can either `compile` or `watch` the
 css/javascript files::
 
     $ fab compile
     or
-    $ fab watch 
+    $ fab watch
 
 Testing
 +++++++
@@ -143,5 +140,3 @@ if you'd like to have new strings translated:
 
 - ``locale/ja``: `modocache <https://github.com/modocache>`_
 - ``locale/ro``: @florinm
-
-
