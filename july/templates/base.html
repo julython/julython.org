@@ -4,13 +4,14 @@
 
 <html lang="en">
   <head>
-    <title>{% trans "Julython" %}</title>
+    <title>{% block title %}{% trans "Julython" %}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="31 days and nights of Python">
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet" type="text/css"/>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'/>
     <link href='http://fonts.googleapis.com/css?family=Doppio+One' rel='stylesheet' type='text/css'/>
     <link href='http://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
     {% block extra_stylesheets %}{% endblock %}
     <script type="text/javascript">
           var _gaq = _gaq || [];
@@ -37,7 +38,7 @@
 	              {% block navbar-links %}
                 <li><a href="{% url 'leaders' %}">{% trans "Leaders" %}</a></li>
 	              <li><a href="{% url 'projects' %}">{% trans "Projects" %}</a></li>
-	              <li><a href="http://blog.julython.org">{% trans "Blog" %}</a></li>
+	              <li><a href="{% url 'blog' %}">{% trans "Blog" %}</a></li>
 	              <li><a href="{% url 'help' %}">{% trans "Help" %}</a></li>
 	              {% if user.is_authenticated %}
 	              <li><a href="{% url 'member-profile' username=user.username %}">
@@ -59,68 +60,7 @@
     </div>
     {% endblock %}
     {% block contentheader %}{% endblock %}
-    {% block content %}
-    <div class="container">
-      <div class="row">
-        <div class="span12">
-          <h1 id="logo">{% trans "Julython" %} {% now "Y" %}</h1>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="span6 offset3 large-notice">
-          <a href="" class="video">{% trans "Watch the Video" %}</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="gray-container" id="navigation">
-      <div class="container">
-        <div class="row">
-          <div class="span6 offset3" id="sticky-bar">
-            <button class="what-is-this">{% trans "What is This?" %}</button>
-            <button class="participating">{% trans "Participating" %}</button>
-            <button class="the-rules">{% trans "The Rules" %}</button>
-            <button class="teaming-up">{% trans "Teaming Up" %}</button>
-            <button class="spread-the-word">{% trans "Spread the Word" %}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {% for section in sections %}
-    {% if section.blurbs|length %}
-    <div class="container section-container no-border">
-      <div class="row">
-        {% for block in section.blocks %}
-        <div class="span{{ block.bootstrap_width }}">
-          {% if block.title %}
-          <div class="row">
-            <div class="span{{ block.bootstrap_width}}">
-              <h2 class="{{ block.slug }}">{{ block.title }}</h2>
-            </div>
-          </div>
-          {% endif %}
-          <div class="row">
-            {% for blurb in block.blurbs %}
-            <div class="span4 section-blurb">
-              {% if blurb.title %}
-              <h3>{{ blurb.title }}</h3>
-              <p>{{ blurb.content }}</p>
-              {% endif %}
-              {% if blurb.image_url %}
-              <img src="{{ blurb.image_url }}"/>
-              {% endif %}
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-    {% endfor %}
-    {% endblock %}
+    {% block content %}{% endblock %}
 
     {% block javascript %}
     <script src="{{ STATIC_URL }}js/vendor.js" type="text/javascript"></script>

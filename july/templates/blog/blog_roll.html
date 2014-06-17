@@ -1,0 +1,15 @@
+<div class="blog">
+    <ul>
+    {% for entry in posts %}
+        {% if entry != blog %}
+        <li><a href="{{ entry.get_absolute_url }}">{{ entry.title }}</a></li>
+        {% else %}
+        <li>{{ entry.title }}</li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+    <p>Follow Us</p>
+    <a class="social" href="https://twitter.com/julython"><i class="fa fa-twitter-square fa-2x"></i></a>
+    <a class="social" href='http://www.facebook.com/julython'><i class="fa fa-facebook-square fa-2x"></i></a>
+    <a class="social" href='http://github.com/julython'><i class="fa fa-github-square fa-2x"></i></a>
+</div>

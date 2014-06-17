@@ -13,6 +13,7 @@ from django.http import HttpResponseNotFound
 from django.http import HttpResponse
 
 from july.game.models import Game
+from july.blog.models import Blog
 from july.forms import RegistrationForm
 
 User = get_user_model()
@@ -22,12 +23,18 @@ def index(request):
     """Render the home page"""
     game = Game.active_or_latest()
     stats = game.histogram if game else []
+    posts = Blog.objects.filter(active=True).order_by('-posted')
+    try:
+        blog = posts[0]
+    except:
+        blog = None
 
     ctx = Context({
         'stats': json.dumps(stats),
         'game': game,
         'total': sum(stats),
         'user': request.user,
+        'blog': blog,
         'MEDIA_URL': settings.MEDIA_URL,
         'STATIC_URL': settings.STATIC_URL})
 

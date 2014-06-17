@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load i18n markup %}
 
 {% block content %}
+{# used in blocktrans below #}
+{% url 'help' as help_url %}
     <div class="container hidden-phone">
       <div class="row">
         <div class="span12">
-          <h1 class="hidden-phone" id="logo">{% trans "Julython" %} {% now "Y" %}</h1>
+          <h1 class="hidden-phone" id="logo">{% trans "Julython" %}</h1>
         </div>
       </div>
-      
+
+     {% comment %}
       <div class="row">
         <div class="span6 offset3 large-notice">
           <a href="http://julython.spreadshirt.com" class="tshirt">
@@ -19,33 +22,56 @@
 			        width="48pt" height="22pt"></iframe>
         </div>
       </div>
+      {% endcomment %}
     </div>
 
     <div class="offset-container">
       <div class="container">
         <div class="row">
           <div class="span4">
-            <h2 class="section-header rocket-header"><span class="section-icon rocket-icon"></span>What is Julython?</h2>
+            <h2 class="section-header rocket-header">
+              <span class="section-icon rocket-icon"></span>
+              {% trans "What is Julython?" %}
+            </h2>
             <p>
-            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+                {% blocktrans %}
+                During the month of July, we're encouraging developers of all
+                skill levels to try and work on your pet project(s) just a
+                little each day. It's a great excuse to contribute to the
+                communities you follow, or even dive into a language for the
+                first time.
+                {% endblocktrans %}
             </p>
           </div>
           <div class="span4">
             <h2 class="section-header rules-header">
               <span class="section-icon rules-icon"></span>
-              Are There Rules?
+              {% trans "Are There Rules?" %}
             </h2>
             <p>
-            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+                {% blocktrans %}
+                There is only one rule, to have fun! The goal is that you
+                either learn something new or to help finish a project you
+                started. If you share your repository or your commits with us,
+                we will <a href="{{ help_url }}#points">tally up points</a>
+                for each commit or new project you work on
+                <a href="{{ help_url }}#times">during the month of July</a>.
+                {% endblocktrans %}
             </p>
           </div>
           <div class="span4">
             <h2 class="section-header plus-one-header">
               <span class="section-icon plus-one-icon"></span>
-              How Do I Join In?
+              {% trans "How Do I Join In?" %}
             </h2>
             <p>
-            During the month of July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into the language for the first time!
+                {% blocktrans %}
+                All you need is a project to work on that isn't your regular
+                day job. We recommend you choose something open, perhaps on
+                GitHub or Bitbucket, so that others can see your progress.
+                Then <a href="{{ help_url }}#webhook">add a webhook</a> for
+                your repository, and we'll track your progress next to everyone
+                else.{% endblocktrans %}
             </p>
           </div>
         </div>
@@ -69,7 +95,7 @@
               <ul class="message-list" id="live-messages" data-bind="foreach: commits, event: {scroll: scrolled}">
               	<li class="message">
               		<div class="media">
-              		  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">        			
+              		  <a class="thumbnail pull-left" data-bind="visible: picture_url, attr: {href: '/' + username() +'/'}">
 		            	<img class="media-object" data-bind="attr: {src: picture_url, alt: username}" />
 	            	  </a>
 	            	  <div class="media-body">
@@ -90,6 +116,23 @@
       </div>
     </div>
 
+    <div class="container section-container no-border ">
+      <div class="row">
+        <div class="span8">
+          <h2 class="spread-the-word">{{ blog.title }}</h2>
+          <p><em>{% trans "Posted on" %} {{ blog.posted|date }} {% trans 'by' %} {{ blog.user }}</em></p>
+          <div class="post">
+            {{ blog.body|markup }}
+          </div>
+        </div>
+        <div class="span4">
+          <h3>{% trans "Other Posts" %}</h3>
+            {% blog_roll %}
+        </div>
+      </div>
+    </div>
+
+    {% comment %}
     <div id="spread-the-word" class="container section-container no-border">
       <div class="row">
         <div class="span12">
@@ -112,21 +155,20 @@
               <blockquote class="twitter-tweet"><p>. <a href="https://twitter.com/julython">@Julython</a> - work on pet Python projects during July, earn points, collaborate, and compete against other cities: <a href="http://t.co/kQ20gn1R">http://t.co/kQ20gn1R</a></p>&mdash; Get Python (@getpy) <a href="https://twitter.com/getpy/statuses/218743289061449728">June 29, 2012</a></blockquote>
             </div>
             <div class="span2 section-blurb">
-                {% comment %}
                 <h3>{% trans "Sponsors" %}</h3>
                 <p><a href="http://www.stxnext.com/"><img src="{{ STATIC_URL }}images/stx_logo.png" alt="STX Next"></a></p>
                 <p><a href="http://www.rackspace.com"><img src="{{ STATIC_URL }}images/rackspace_logo.png" alt="Rackspace Hosting"></a></p>
                 <p><script data-gittip-username="julython" src="https://www.gittip.com/assets/widgets/0002.js"></script></p>
-                {% endcomment %}
                 <h3>{% trans "Follow Us" %}</h3>
                   <p><a href="https://twitter.com/julython" class="twitter-follow-button" data-show-count="false">{% trans "Follow @julython" %}</a></p>
                   <p>{% trans "Like us on <a href='http://www.facebook.com/julython'>Facebook</a>" %}</p>
                   <p>{% trans "We love sharing code, visit our <a href='http://github.com/julython'>github</a> organization." %}</p>
             </div>
-          <div>
+        </div>
         </div>
       </div>
     </div>
+    {% endcomment %}
 {% endblock %}
 
 {% block javascript %}
@@ -145,9 +187,8 @@
       .set("xLabel", function(d, i) { return i+1; })
       .set("yLabel", function(d, i) { if (d) { return d; } else { return ""; } })
       .render();
-    
+
     var view = new JULY.CommitsView();
 	JULY.applyBindings(view, '#live-messages');
 </script>
 {% endblock %}
-

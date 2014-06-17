@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% load i18n markup %}
+
+{% block content %}
+<div class="container-fluid leaderboard">
+  <div class="row-fluid">
+    <div class="span8">
+      <h2 class="spread-the-word">{% trans "Julython Blog" %}</h2>
+        {% for blog in object_list %}
+        <h3><a href="{{ blog.get_absolute_url }}">{{ blog.title }}</a></h3>
+        <em>{% trans "Posted on" %} {{ blog.posted|date }} {% trans 'by' %} {{ blog.user }}</em>
+        {% endfor %}
+    </div>
+    {% if request.user.is_superuser %}
+    <div class="span4">
+      <h3>
+        <a href="/_admin/blog/blog/add/?user={{ request.user.pk }}"><i class="fa fa-plus-circle"></i> Add Post</a>
+      </h3>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

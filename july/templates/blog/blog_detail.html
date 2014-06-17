@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% load i18n markup %}
+
+{% block title %}{{ blog.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid leaderboard">
+  <div class="row-fluid">
+    <div class="span8">
+      <h2 class="spread-the-word">
+        {{ blog.title }}{% if request.user.is_superuser %} <a href="/_admin/blog/blog/{{ blog.id }}"><i class="fa fa-edit"></i> edit</a>{% endif %}
+        <span class="pull-right">
+          <a href="https://twitter.com/share" class="twitter-share-button" data-via="julython">Tweet</a>
+        </span>
+      </h2>
+      <p><em>{% trans "Posted on" %} {{ blog.posted|date }} {% trans 'by' %} {{ blog.user }}</em></p>
+      <div class="post">
+        {{ blog.body|markup }}
+      </div>
+    </div>
+    <div class="span4">
+      <h3>{% trans "Other Posts" %}</h3>
+        {% blog_roll %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+{% endblock %}

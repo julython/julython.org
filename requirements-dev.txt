@@ -10,3 +10,5 @@ mock
 jsonfield>=0.9.20
 pytz
 pep8
+markdown
+

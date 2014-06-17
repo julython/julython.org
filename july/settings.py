@@ -159,6 +159,7 @@ INSTALLED_APPS = (
     'july',
     'july.game',
     'july.people',
+    'july.blog',
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.staticfiles',

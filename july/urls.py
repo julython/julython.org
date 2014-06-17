@@ -56,6 +56,7 @@ urlpatterns = patterns(
     url(r'^accounts/profile', 'july.views.login_redirect'),
     url(r'^accounts/', include('social_auth.urls')),
     url(r'^', include('july.game.urls')),
+    url(r'^', include('july.blog.urls')),
+    # People urls are greedy, add them last
     url(r'^', include('july.people.urls')),
-
 )
