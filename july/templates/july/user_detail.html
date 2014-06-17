@@ -135,8 +135,10 @@
   JULY.applyBindings(view, '#commits');
   var projects = new JULY.ProjectsView({userId: {{ profile.id }}});
   JULY.applyBindings(projects, '#project-list');
+  {% if profile.github %}
   var repos = new JULY.RepositoryView({csrf_token: '{{ csrf_token }}'});
   JULY.applyBindings(repos, '#github')
+  {% endif %}
   JULY.makeCalendar('#commit-calendar', '{{ profile.username }}');
 </script>
 {% endblock %}
