@@ -399,3 +399,6 @@ class UserBadge(models.Model):
     """Stores all badge info for a single user."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     badges = JSONField(blank=True, null=True)
+
+    def __unicode__(self):
+      return 'Badges for %s' % self.user
