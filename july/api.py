@@ -16,6 +16,7 @@ from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from iso8601 import parse_date
+from tastypie.cache import SimpleCache
 from tastypie.resources import ModelResource
 from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
@@ -61,6 +62,7 @@ class UserResource(ModelResource):
 
     class Meta:
         queryset = User.objects.filter(is_active=True)
+        cache = SimpleCache(timeout=300)
         excludes = ['password', 'email', 'is_superuser', 'is_staff',
                     'is_active']
 
@@ -74,11 +76,26 @@ class UserResource(ModelResource):
             request, obj, ProjectResource, obj.projects.all())
         return self.create_response(request, to_be_serialized)
 
+    def get_badges(self, request, **kwargs):
+        self.method_check(request, allowed=['get'])
+        self.throttle_check(request)
+        basic_bundle = self.build_bundle(request=request)
+        obj = self.cached_obj_get(
+            bundle=basic_bundle,
+            **self.remove_api_resource_names(kwargs))
+        from july.people.badges import update_user
+        badges = update_user(obj)
+
+        return self.create_response(request, badges)
+
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/projects%s$" % (
                 self._meta.resource_name, trailing_slash()),
                 self.wrap_view('get_projects'), name="api_user_projects"),
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/badges%s$" % (
+                self._meta.resource_name, trailing_slash()),
+                self.wrap_view('get_badges'), name="api_user_badgess"),
         ]
 
 
@@ -86,6 +103,7 @@ class ProjectResource(ModelResource):
 
     class Meta:
         queryset = Project.objects.all()
+        cache = SimpleCache(timeout=300)
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,
@@ -103,11 +121,13 @@ class ProjectResource(ModelResource):
             request, obj, UserResource, obj.user_set.all())
         return self.create_response(request, to_be_serialized)
 
+
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/users%s$" % (
                 self._meta.resource_name, trailing_slash()),
                 self.wrap_view('get_users'), name="api_project_users"),
+
         ]
 
 
@@ -115,6 +135,7 @@ class LocationResource(ModelResource):
 
     class Meta:
         queryset = Location.objects.filter(approved=True)
+        cache = SimpleCache(timeout=300)
         allowed_methods = ['get']
         filtering = {
             'name': ['istartswith', 'exact', 'icontains'],
@@ -125,6 +146,7 @@ class TeamResource(ModelResource):
 
     class Meta:
         queryset = Team.objects.filter(approved=True)
+        cache = SimpleCache(timeout=300)
         allowed_methods = ['get']
         filtering = {
             'name': ['istartswith', 'exact', 'icontains'],
@@ -135,6 +157,7 @@ class LanguageResource(ModelResource):
 
     class Meta:
         queryset = Language.objects.all()
+        cache = SimpleCache(timeout=300)
 
 
 class CommitResource(ModelResource):
@@ -145,6 +168,7 @@ class CommitResource(ModelResource):
     class Meta:
         queryset = Commit.objects.all().select_related(
             'user', 'project')
+        cache = SimpleCache(timeout=30)
         allowed_methods = ['get']
         filtering = {
             'user': ALL_WITH_RELATIONS,

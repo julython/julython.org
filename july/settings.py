@@ -182,13 +182,6 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 SESSION_SAVE_EVERY_REQUEST = True
 
-HCACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'TIMEOUT': 600,
-    }
-}
-
 # Django 1.5 Custom User Model !! ftw
 AUTH_USER_MODEL = 'july.User'
 SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
