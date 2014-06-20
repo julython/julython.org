@@ -18,3 +18,4 @@ npm-debug.log
 htmlcov/*
 /venv
 .vagrant
+.DS_Store

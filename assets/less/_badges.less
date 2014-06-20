@@ -1,0 +1,151 @@
+@novice: lighten(@green, .1);
+@journeyman: lighten(@blue, .1);
+@expert: lighten(@orange, .1);
+@rockstar: lighten(@yellow, .1);
+
+@largeBadgeSize: 48px;
+@largeBadgeRadius: @largeBadgeSize / 4;
+@largeBadgeFontSize: @largeBadgeSize * 0.65;
+@largeBadgeBorderWidth: @largeBadgeSize * 0.08;
+@largeBadgeMargin: 10px;
+
+.badge-level(@badge-color) {
+  background-color: @badge-color;
+  text-shadow: 0 -1px 0 darken(@badge-color, 20%);
+  &:hover {
+    background-color: darken(@badge-color, 5%);
+    text-shadow: 0 -1px 0 darken(@badge-color, 25%);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.badge-overlay-level(@badge-color) {
+  border: 1px solid @badge-color;
+  h4 {
+    color: @badge-color;
+  }
+  &:before {
+    border-color: transparent transparent @badge-color transparent;
+  }
+  .progress .bar {
+    background: @badge-color;
+    overflow: hidden;
+  }
+}
+
+.user-badges {
+  margin: 0 0 @largeBadgeMargin 0;
+  padding: 0;
+  min-height: @largeBadgeSize + @largeBadgeMargin;
+  line-height: @largeBadgeSize;
+}
+
+.user-badge {
+  display: inline-block;
+  padding: 0;
+  margin: 0 @largeBadgeMargin @largeBadgeMargin 0;
+  width: @largeBadgeSize;
+  height: @largeBadgeSize;
+  border-radius: @largeBadgeRadius;
+  background: @gray;
+  text-align: center;
+  color: @white;
+
+  span.fa {
+    padding: 0;
+    margin: 0;
+    font-size: @largeBadgeFontSize;
+    line-height: @largeBadgeSize;
+  }
+
+  &.unawarded {
+    opacity: 0.3;
+
+    &:hover {
+      opacity: 1;
+    }
+
+  }
+
+  &.novice {
+    .badge-level(@novice);
+  }
+  &.journeyman {
+    .badge-level(@journeyman);
+  }
+  &.expert {
+    .badge-level(@expert);
+  }
+  &.rockstar {
+    .badge-level(@rockstar);
+  }
+
+}
+
+
+.badge-overlay {
+  background: @white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  padding: @largeBadgeMargin;
+  width: 200px;
+  border-radius: 6px;
+  position: absolute;
+
+  h4 {
+    margin: 0;
+    padding: 0;
+  }
+
+  p {
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+  }
+
+  &:before {
+    content: ' ';
+    position: absolute;
+    top: -24px;
+    left: 12px;
+    border-color: transparent transparent black transparent;
+    border-style: solid;
+    border-width: 12px;
+    width: 0;
+    height: 0;
+  }
+
+  &:after {
+    content: ' ';
+    position: absolute;
+    top: -20px;
+    left: 14px;
+    border-color: transparent transparent white transparent;
+    border-style: solid;
+    border-width: 10px;
+    width: 0;
+    height: 0;
+  }
+
+  &.novice {
+    .badge-overlay-level(@novice);
+  }
+  &.journeyman {
+    .badge-overlay-level(@journeyman);
+  }
+  &.expert {
+    .badge-overlay-level(@expert);
+  }
+  &.rockstar {
+    .badge-overlay-level(@rockstar);
+  }
+
+}
+
+
+[data-template] {
+  display: none;
+}
+
+.progress {
+  margin-bottom: 0;
+}

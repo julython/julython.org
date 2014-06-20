@@ -876,6 +876,7 @@ h1,h2,h3,h4,h5,h6{font-family:"Exo 2",sans-serif;color:#9e62b6;font-weight:400}
 .navbar-inner{background:#9e62b6;box-shadow:inset 0 3px 6px rgba(0,0,0,0.2),0 0 3px rgba(0,0,0,0.3);color:#fff}
 .navbar .nav li a,.nav-collapse .nav li a{line-height:30px;font-size:16px;margin-left:10px;color:#fff;text-shadow:none}
 .navbar .dropdown-menu li>a{display:block;padding:3px 20px;clear:both;font-weight:normal;line-height:20px;color:#000;white-space:nowrap}
+.navbar .logo{display:block;padding:27px 0 0 127px;width:0;height:0;background-image:url(../images/julython_nav_logo.png);background-size:127px 27px}@media (-webkit-min-device-pixel-ratio:2){.navbar .logo{background-image:url(../images/julython_nav_logo_2x.png)}}
 .navbar .nav li.dropdown.open>.dropdown-toggle,.navbar .nav li.dropdown.active>.dropdown-toggle,.navbar .nav li.dropdown.open.active>.dropdown-toggle{background-color:#84499c;color:#fff}
 img.icon{width:20px;height:20px;border:1px solid #fff;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px}
 #logo{display:block;width:0;height:0;margin:40px auto 40px;padding:96px 0 0 430px;overflow:hidden;background-image:url(../images/julython_logo_large.png);background-size:430px 96px;background-repeat:no-repeat;background-position:center center}@media (-webkit-min-device-pixel-ratio:2){#logo{background-image:url(../images/julython_logo_large_2x.png)}}
@@ -883,17 +884,17 @@ img.icon{width:20px;height:20px;border:1px solid #fff;-webkit-border-radius:2px;
 button{background:none}
 .sticky{text-align:center}
 #sticky-bar button{display:inline-block;border:none;padding:0;padding-top:58px;line-height:18px;color:#000;width:110px;font-size:13px;background-repeat:no-repeat;background-position:center top;text-align:center;text-shadow:1px 1px #FFF;font-family:"Exo 2",sans-serif}
-.what-is-this{background-image:url(../images/whats_this_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.what-is-this{background-image:url(../images/whats_this_button_2x.png)}}
-.participating{background-image:url(../images/participating_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.participating{background-image:url(../images/participating_button_2x.png)}}
-.the-rules{background-image:url(../images/rules_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.the-rules{background-image:url(../images/rules_button_2x.png)}}
-.teaming-up{background-image:url(../images/teaming_up_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.teaming-up{background-image:url(../images/teaming_up_button_2x.png)}}
-.spread-the-word{background-image:url(../images/spread_the_word_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.spread-the-word{background-image:url(../images/spread_the_word_button_2x.png)}}
+.what-is-this{color:#508fd8;background-image:url(../images/whats_this_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.what-is-this{background-image:url(../images/whats_this_button_2x.png)}}
+.participating{color:#499138;background-image:url(../images/participating_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.participating{background-image:url(../images/participating_button_2x.png)}}
+.the-rules{color:#ef621c;background-image:url(../images/rules_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.the-rules{background-image:url(../images/rules_button_2x.png)}}
+.teaming-up{color:#eaac49;background-image:url(../images/teaming_up_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.teaming-up{background-image:url(../images/teaming_up_button_2x.png)}}
+.spread-the-word{color:#9e62b6;background-image:url(../images/spread_the_word_button.png);background-size:40px 40px}@media (-webkit-min-device-pixel-ratio:2){.spread-the-word{background-image:url(../images/spread_the_word_button_2x.png)}}
 #sticky-bar button:hover{color:#000;text-decoration:underline;background-color:clear}
 .section-container{border-top:1px solid #AAA;padding:40px 0;color:#000}
 .section-container.no-border{border-top:none}
 .container-narrow{margin:0 auto;max-width:700px}
 .container-narrow>hr{margin:30px 0}
-.profile-container{padding-top:40px;font-family:"Exo 2",sans-serif}.profile-container h2{color:#000;font-weight:normal}
+.profile-container{padding-top:40px;font-family:"Exo 2",sans-serif}.profile-container h2{font-weight:normal}
 .avatar img{width:100px;height:100px}
 .locations h3,.people h2{font-family:"Exo 2",sans-serif,Helvetica sans-serif;font-weight:normal;font-size:18px}
 .locations .points{border:3px solid #ddd;background-color:#fff;padding:10px}.locations .points p{font-family:"Exo 2",sans-serif,Helvetica sans-serif;font-size:20px;text-align:center}.locations .points p.small{font-size:8px;margin:0}
@@ -932,5 +933,30 @@ h2.section-header{font-size:24px;line-height:24px;padding-left:0}h2.section-head
 h2.section-header.rules-header{color:#ef621c}
 h2.section-header.plus-one-header{color:#eaac49}
 .offset-container{padding:10px 0;background-color:#f1f1f1}
-.leaderboard{padding-top:20px}
+@media (max-width:768px){.offset-container{margin:0 -20px;padding:10px 30px 20px;background-color:#fff;border-bottom:3px solid #9e62b6}}.leaderboard{padding-top:20px}
 .social{color:#9e62b6}
+.user-badges{margin:0 0 10px 0;padding:0;min-height:58px;line-height:48px}
+.user-badge{display:inline-block;padding:0;margin:0 10px 10px 0;width:48px;height:48px;border-radius:12px;background:#aaa9a9;text-align:center;color:#fff}.user-badge span.fa{padding:0;margin:0;font-size:31.200000000000003px;line-height:48px}
+.user-badge.unawarded{opacity:0.3}.user-badge.unawarded:hover{opacity:1}
+.user-badge.novice{background-color:#499138;text-shadow:0 -1px 0 #24481c}.user-badge.novice:hover{background-color:#407f31;text-shadow:0 -1px 0 #1b3515;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
+.user-badge.journeyman{background-color:#508fd8;text-shadow:0 -1px 0 #235d9f}.user-badge.journeyman:hover{background-color:#3c82d3;text-shadow:0 -1px 0 #1f518a;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
+.user-badge.expert{background-color:#ef621c;text-shadow:0 -1px 0 #9b3b0b}.user-badge.expert:hover{background-color:#e25610;text-shadow:0 -1px 0 #833209;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
+.user-badge.rockstar{background-color:#eaac49;text-shadow:0 -1px 0 #b87915}.user-badge.rockstar:hover{background-color:#e7a233;text-shadow:0 -1px 0 #a16a13;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
+.badge-overlay{background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:10px;width:200px;border-radius:6px;position:absolute}.badge-overlay h4{margin:0;padding:0}
+.badge-overlay p{font-size:12px;margin:0;padding:0}
+.badge-overlay:before{content:' ';position:absolute;top:-24px;left:12px;border-color:transparent transparent black transparent;border-style:solid;border-width:12px;width:0;height:0}
+.badge-overlay:after{content:' ';position:absolute;top:-20px;left:14px;border-color:transparent transparent white transparent;border-style:solid;border-width:10px;width:0;height:0}
+.badge-overlay.novice{border:1px solid #499138}.badge-overlay.novice h4{color:#499138}
+.badge-overlay.novice:before{border-color:transparent transparent #499138 transparent}
+.badge-overlay.novice .progress .bar{background:#499138;overflow:hidden}
+.badge-overlay.journeyman{border:1px solid #508fd8}.badge-overlay.journeyman h4{color:#508fd8}
+.badge-overlay.journeyman:before{border-color:transparent transparent #508fd8 transparent}
+.badge-overlay.journeyman .progress .bar{background:#508fd8;overflow:hidden}
+.badge-overlay.expert{border:1px solid #ef621c}.badge-overlay.expert h4{color:#ef621c}
+.badge-overlay.expert:before{border-color:transparent transparent #ef621c transparent}
+.badge-overlay.expert .progress .bar{background:#ef621c;overflow:hidden}
+.badge-overlay.rockstar{border:1px solid #eaac49}.badge-overlay.rockstar h4{color:#eaac49}
+.badge-overlay.rockstar:before{border-color:transparent transparent #eaac49 transparent}
+.badge-overlay.rockstar .progress .bar{background:#eaac49;overflow:hidden}
+[data-template]{display:none}
+.progress{margin-bottom:0}

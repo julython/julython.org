@@ -84,6 +84,16 @@ h1, h2, h3, h4, h5, h6 {
     white-space: nowrap;
   }
 
+  @navbar_width: 127px;
+  @navbar_height: 27px;
+  .navbar .logo {
+    display: block;
+    padding: @navbar_height 0 0 @navbar_width;
+    width: 0;
+    height: 0;
+    .background-image("../images/julython_nav_logo.png", @navbar_width, @navbar_height);
+  }
+
   .navbar .nav li.dropdown.open > .dropdown-toggle,
   .navbar .nav li.dropdown.active > .dropdown-toggle,
   .navbar .nav li.dropdown.open.active > .dropdown-toggle {
@@ -143,22 +153,27 @@ img.icon {
   }
 
     .what-is-this {
+      color: @questionColor;
       .background-image("../images/whats_this_button.png", 40px, 40px);
     }
 
     .participating {
+      color: @defColor;
       .background-image("../images/participating_button.png", 40px, 40px);
     }
 
     .the-rules {
+      color: @rulesColor;
       .background-image("../images/rules_button.png", 40px, 40px);
     }
 
     .teaming-up {
+      color: @plusOneColor;
       .background-image("../images/teaming_up_button.png", 40px, 40px);
     }
 
     .spread-the-word {
+      color: @rocketColor;
       .background-image("../images/spread_the_word_button.png", 40px, 40px);
     }
 
@@ -193,7 +208,6 @@ img.icon {
   padding-top: 40px;
   font-family: @titleFont;
   h2 {
-    color: @textColor;
     font-weight: normal;
   }
 }
@@ -447,6 +461,15 @@ h2.section-header {
 .offset-container {
   padding: 10px 0;
   background-color: @offsetBackground;
+}
+
+@media (max-width: 768px) {
+  .offset-container {
+    margin: 0 -20px;
+    padding: 10px 30px 20px;
+    background-color: @white;
+    border-bottom: 3px solid @mainColor;
+  }
 }
 
 .leaderboard {
