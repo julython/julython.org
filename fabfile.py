@@ -8,6 +8,7 @@ from urllib import urlencode
 
 from fabric.api import *
 from fabric.colors import *
+from fabric.contrib.project import rsync_project
 import requests
 
 @task
@@ -106,12 +107,5 @@ def staging(user='rmyers'):
 def deploy():
     """Deploy to production"""
     compile()
-    local("tar -czvf july.tar.gz"
-          " --exclude '\.*'"
-          " --exclude '*.pyc'"
-          " --exclude 'assets*'"
-          " --exclude 'htmlcov*'"
-          " --exclude '*.db'"
-          " --exclude '*.tar.gz'"
-          " *")
-    put('july.tar.gz', '/tmp/')
+    exclude = ['*.pyc', '*.db', 'htmlcov*', '.git', 'assets/node_modules']
+    rsync_project('/tmp', exclude=exclude)
