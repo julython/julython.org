@@ -20,4 +20,9 @@ Vagrant.configure("2") do |config|
     salt.run_highstate = true
 
   end
+
+  VAGRANT_POOL_NAME = ENV['VAGRANT_LIBVIRT_POOL'] || "default"
+  config.vm.provider :libvirt do |libvirt, override|
+    libvirt.storage_pool_name = VAGRANT_POOL_NAME
+  end
 end
