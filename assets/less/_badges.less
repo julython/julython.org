@@ -37,7 +37,6 @@
   margin: 0 0 @largeBadgeMargin 0;
   padding: 0;
   min-height: @largeBadgeSize + @largeBadgeMargin;
-  line-height: @largeBadgeSize;
 }
 
 .user-badge {
@@ -84,6 +83,7 @@
 
 
 .badge-overlay {
+  display: none;
   background: @white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   padding: @largeBadgeMargin;
@@ -98,6 +98,7 @@
 
   p {
     font-size: 12px;
+    line-height: 26px;
     margin: 0;
     padding: 0;
   }

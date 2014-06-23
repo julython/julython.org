@@ -935,15 +935,15 @@ h2.section-header.plus-one-header{color:#eaac49}
 .offset-container{padding:10px 0;background-color:#f1f1f1}
 @media (max-width:768px){.offset-container{margin:0 -20px;padding:10px 30px 20px;background-color:#fff;border-bottom:3px solid #9e62b6}}.leaderboard{padding-top:20px}
 .social{color:#9e62b6}
-.user-badges{margin:0 0 10px 0;padding:0;min-height:58px;line-height:48px}
+.user-badges{margin:0 0 10px 0;padding:0;min-height:58px}
 .user-badge{display:inline-block;padding:0;margin:0 10px 10px 0;width:48px;height:48px;border-radius:12px;background:#aaa9a9;text-align:center;color:#fff}.user-badge span.fa{padding:0;margin:0;font-size:31.200000000000003px;line-height:48px}
 .user-badge.unawarded{opacity:0.3}.user-badge.unawarded:hover{opacity:1}
 .user-badge.novice{background-color:#499138;text-shadow:0 -1px 0 #24481c}.user-badge.novice:hover{background-color:#407f31;text-shadow:0 -1px 0 #1b3515;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
 .user-badge.journeyman{background-color:#508fd8;text-shadow:0 -1px 0 #235d9f}.user-badge.journeyman:hover{background-color:#3c82d3;text-shadow:0 -1px 0 #1f518a;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
 .user-badge.expert{background-color:#ef621c;text-shadow:0 -1px 0 #9b3b0b}.user-badge.expert:hover{background-color:#e25610;text-shadow:0 -1px 0 #833209;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
 .user-badge.rockstar{background-color:#eaac49;text-shadow:0 -1px 0 #b87915}.user-badge.rockstar:hover{background-color:#e7a233;text-shadow:0 -1px 0 #a16a13;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
-.badge-overlay{background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:10px;width:200px;border-radius:6px;position:absolute}.badge-overlay h4{margin:0;padding:0}
-.badge-overlay p{font-size:12px;margin:0;padding:0}
+.badge-overlay{display:none;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:10px;width:200px;border-radius:6px;position:absolute}.badge-overlay h4{margin:0;padding:0}
+.badge-overlay p{font-size:12px;line-height:26px;margin:0;padding:0}
 .badge-overlay:before{content:' ';position:absolute;top:-24px;left:12px;border-color:transparent transparent black transparent;border-style:solid;border-width:12px;width:0;height:0}
 .badge-overlay:after{content:' ';position:absolute;top:-20px;left:14px;border-color:transparent transparent white transparent;border-style:solid;border-width:10px;width:0;height:0}
 .badge-overlay.novice{border:1px solid #499138}.badge-overlay.novice h4{color:#499138}
