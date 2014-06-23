@@ -401,4 +401,4 @@ class UserBadge(models.Model):
     badges = JSONField(blank=True, null=True)
 
     def __unicode__(self):
-      return 'Badges for %s' % self.user
+        return 'Badges for %s' % self.user
