@@ -121,7 +121,6 @@ class ProjectResource(ModelResource):
             request, obj, UserResource, obj.user_set.all())
         return self.create_response(request, to_be_serialized)
 
-
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/users%s$" % (
