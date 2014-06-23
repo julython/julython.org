@@ -33,7 +33,7 @@ def test(coverage='False', skip_js='False'):
 
 
 @task
-def load(email=None):
+def load(email=None, port=8000):
     """Manually send a POST to api endpoints."""
     if not email:
         print "You must provide an email address 'fab load:me@foo.com'"
@@ -51,7 +51,7 @@ def load(email=None):
         with open(json_file) as post_file:
             post = Template(post_file.read()).substitute({'__EMAIL__': email})
             payload = {'payload': post}
-            url = 'http://localhost:8000/api/v1/github'
+            url = 'http://localhost:%s/api/v1/github' % port
             response = requests.post(url, data=payload)
             print(cyan("%s %s" % (response.status_code, response.reason)))
             response.raise_for_status()
@@ -60,7 +60,7 @@ def load(email=None):
         with open(json_file) as post_file:
             post = Template(post_file.read()).substitute({'__EMAIL__': email})
             payload = {'payload': post}
-            url = 'http://localhost:8000/api/v1/bitbucket'
+            url = 'http://localhost:%s/api/v1/bitbucket' % port
             response = requests.post(url, data=payload)
             print(cyan("%s %s" % (response.status_code, response.reason)))
             response.raise_for_status()
