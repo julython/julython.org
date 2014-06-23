@@ -69,7 +69,6 @@ Example badge json blob::
         ]
     }
 """
-import json
 import re
 
 from django.core.cache import cache
@@ -187,7 +186,7 @@ class FirstCommit(Badge):
     title = 'Welcome'
     subtitle = 'Successfully Committed'
     total = 1
-    icon = "fa-trophy"
+    icon = "fa-plus-circle"
     level = "novice"
 
 
@@ -196,7 +195,7 @@ class FiftyCommits(Badge):
     title = 'Way to GO'
     subtitle = '50+ Commits'
     total = 50
-    icon = "fa-trophy"
+    icon = "fa-plus-circle"
     level = "journeyman"
 
 
@@ -205,8 +204,8 @@ class HundredCommits(Badge):
     title = 'Committed'
     subtitle = '100+ Commits'
     total = 100
-    icon = "fa-trophy"
-    level = "journeyman"
+    icon = "fa-plus-circle"
+    level = "expert"
 
 BADGES = [
     FirstCommit,
