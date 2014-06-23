@@ -17,7 +17,7 @@
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
 ##
 
-# TOP LEVEL MESSAGING CONFIGURATION		
+# TOP LEVEL MESSAGING CONFIGURATION
 push_stream_ping_message_text '""';
 
 ## SERVER CONFIGURATION ##
@@ -27,7 +27,7 @@ server {
     #listen   80; ## listen for ipv4; this line is default and implied
     #listen   [::]:80 default_server ipv6only=on; ## listen for ipv6
 
-    root /var/www;
+    root /usr/local/julython.org;
     index index.html index.htm;
 
     # Make site accessible from http://localhost/
@@ -57,7 +57,7 @@ server {
 		push_stream_eventsource_support on;
 		set $push_stream_channels_path $1;
 	}
-        
+
 	# Subscription for messaging system with nginx-push-stream-module
     location ~ /events/lp/(.*) {
         push_stream_subscriber long-polling;
@@ -98,7 +98,7 @@ server {
 
 	# Favicon
 	location /favicon.ico {
-		alias /var/www/static/favicon.ico;
+		alias /usr/local/julython.org/static/favicon.ico;
 	}
 
     # Static file configuration

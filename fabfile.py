@@ -9,6 +9,7 @@ from urllib import urlencode
 from fabric.api import *
 from fabric.colors import *
 from fabric.contrib.project import rsync_project
+from fabric.contrib.files import exists
 import requests
 
 @task
@@ -98,8 +99,14 @@ def compile():
 
 
 @task
-def staging(user='rmyers'):
+def staging(user='julython'):
     env.hosts = ['january.julython.org']
+    env.user = user
+
+
+@task
+def prod(user='julython'):
+    env.hosts = ['july.julython.org']
     env.user = user
 
 
@@ -107,5 +114,13 @@ def staging(user='rmyers'):
 def deploy():
     """Deploy to production"""
     compile()
-    exclude = ['*.pyc', '*.db', 'htmlcov*', '.git', 'assets/node_modules']
-    rsync_project('/tmp', exclude=exclude)
+    local('python manage.py collectstatic')
+    exclude = ['*.pyc', '*.db', 'htmlcov*', '.git', 'assets/*', 'data']
+    rsync_project('/usr/local', exclude=exclude)
+
+    VENV = '/usr/local/venvs/julython'
+    with cd('/usr/local/julython.org'):
+        if not exists(VENV):
+            run('virtualenv %s' % VENV)
+        run('%s/bin/pip install -q -U -r requirements.txt' % VENV)
+        sudo('/usr/sbin/service julython restart')

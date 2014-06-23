@@ -19,3 +19,4 @@ htmlcov/*
 /venv
 .vagrant
 .DS_Store
+static/*
