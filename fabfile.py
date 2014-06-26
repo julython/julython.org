@@ -12,6 +12,9 @@ from fabric.contrib.project import rsync_project
 from fabric.contrib.files import exists
 import requests
 
+env.use_ssh_config = True
+
+
 @task
 def pep8():
     """Run Pep8"""
