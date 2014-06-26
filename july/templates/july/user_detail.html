@@ -10,7 +10,7 @@
   <div class="row">
     <div class="span10 offset1">
       <div class="media">
-        <a class="thumbnail pull-left avatar" href=".">
+        <a class="thumbnail hidden-phone pull-left avatar" href=".">
           {% if profile.picture_url %}
           <img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
           {% else %}
@@ -23,13 +23,13 @@
           <a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
           <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
           {% endif %}
-          <small class="points pull-right">
+          <small class="points hidden-phone pull-right">
             {% firstof profile.total '0' %} {% trans "points" %}
           </small>
           </h3>
-          <svg id="commit-calendar"></svg>
+          <svg class="hidden-phone" id="commit-calendar"></svg>
           <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
-          <ul class="nav nav-pills">
+          <ul class="nav nav-pills hidden-phone">
             {% if profile.github %}
             <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
             {% endif %}
@@ -41,13 +41,24 @@
 				{% endif %}
 			{% endif %}
             {% if profile.location %}
-            <li><a href="{% url 'location-detail' profile.location.slug %}"><i class="icon-map-marker"></i> {{ profile.location}}</a></li>
+            <li>
+              <a href="{% url 'location-detail' profile.location.slug %}" class="fa fa-map-marker">
+                {{ profile.location}}
+              </a>
+            </li>
             {% endif %}
             {% if profile.team %}
             {% if profile.team.approved %}
-            <li><a href="{% url 'team-details' profile.team.slug %}"><i class="icon-th"></i> {{ profile.team.name }}</a></li>
+            <li>
+              <a href="{% url 'team-details' profile.team.slug %}" class="fa fa-group">
+                {{ profile.team.name }}
+              </a>
+            </li>
             {% else %}
-            <li><a href="/help/#team"><i class="icon-th"></i> {% trans "team waiting approval" %}</a>
+            <li>
+              <a href="/help/#team" class="fa fa-group">
+                {% trans "team waiting approval" %}
+              </a>
             </li>
             {% endif %}
             {% endif %}
@@ -60,10 +71,16 @@
         {% include "includes/badges.html" %}
 
         <div class="tabbable">
-          <ul class="nav nav-tabs">
+          <ul class="nav nav-tabs hidden-phone">
             <li class="active">
-              <a href="#projects" data-toggle="tab">{% trans "Projects" %}</a></li>
-                  <li><a href="#commits" data-toggle="tab">{% trans "Commits" %}</a></li>
+              <a href="#projects" data-toggle="tab">{% trans "Projects" %}</a>
+            </li>
+            <li>
+              <a href="#github-projects" data-toggle="tab">{% trans "Github Projects" %}</a>
+            </li>
+            <li>
+              <a href="#commits" data-toggle="tab">{% trans "Commits" %}</a>
+            </li>
             {% if profile.username == user.username %}
             <li class="pull-right"><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
             {% elif request.can_report_abuse and not user.is_superuser %}
@@ -81,7 +98,10 @@
             <div class="tab-pane active" id="projects">
               {% include "people/people_projects.html" %}
             </div>
-            <div class="tab-pane" id="commits">
+            <div class="tab-pane hidden-phone" id="github-projects">
+              {% include "people/github_projects.html" %}
+            </div>
+            <div class="tab-pane hidden-phone" id="commits">
               {% url 'edit-profile' username=user.username as edit_profile_url %}
               <div class="row">
                 <div class="span10">

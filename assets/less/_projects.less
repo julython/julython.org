@@ -1,0 +1,24 @@
+.project-widget {
+  padding: 10px 0 20px;
+  margin: 0;
+}
+
+
+.nav-pills li a {
+  background-color: fade(@linkColor, 20%);
+  color: @linkColor;
+
+  &:hover {
+    background-color: @linkColor;
+    color: @white;
+  }
+
+  &.warning {
+    background-color: fade(@red, 20%);
+    color: @red;
+    &:hover {
+      background-color: @red;
+      color: @white;
+    }
+  }
+}

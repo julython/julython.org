@@ -9,3 +9,10 @@
     background-image: ~`"url(@{filename}_2x.@{extension})"`;
   }
 }
+
+.responsive-background-image(@image, @width, @height) {
+  .background-image(@image, @width, @height);
+  @media (max-width: 480px) {
+    .background-image(@image, @width * 0.75, @height * 0.75);
+  }
+}

@@ -9,6 +9,12 @@
 @largeBadgeBorderWidth: @largeBadgeSize * 0.08;
 @largeBadgeMargin: 10px;
 
+@mobileBadgeSize: @largeBadgeSize * 0.75;
+@mobileBadgeRadius: @mobileBadgeSize / 4;
+@mobileBadgeFontSize: @mobileBadgeSize * 0.65;
+@mobileBadgeBorderWidth: @mobileBadgeSize * 0.08;
+@mobileBadgeMargin: @largeBadgeMargin * 0.75;
+
 .badge-level(@badge-color) {
   background-color: @badge-color;
   text-shadow: 0 -1px 0 darken(@badge-color, 20%);
@@ -37,6 +43,11 @@
   margin: 0 0 @largeBadgeMargin 0;
   padding: 0;
   min-height: @largeBadgeSize + @largeBadgeMargin;
+
+  @media (max-width: 480px) {
+    margin-bottom: @mobileBadgeMargin;
+    min-height: @mobileBadgeSize + @mobileBadgeMargin;
+  }
 }
 
 .user-badge {
@@ -79,6 +90,18 @@
     .badge-level(@rockstar);
   }
 
+  @media (max-width: 480px) {
+    margin: 0 @mobileBadgeMargin @mobileBadgeMargin 0;
+    width: @mobileBadgeSize;
+    height: @mobileBadgeSize;
+    border-radius: @mobileBadgeRadius;
+
+    span.fa {
+      font-size: @mobileBadgeFontSize;
+      line-height: @mobileBadgeSize;
+    }
+
+  }
 }
 
 

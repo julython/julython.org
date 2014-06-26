@@ -6,6 +6,13 @@ body {
 h2 {
   background-repeat: no-repeat;
   padding-left: 50px;
+  font-size: 24px;
+
+  @media (max-width: 480px) {
+    font-size: 24px * 0.75;
+    padding-left: 50px * 0.75;
+    line-height: 40px * 0.75;
+  }
 }
 
 /* Responsive overrides */
@@ -154,27 +161,27 @@ img.icon {
 
     .what-is-this {
       color: @questionColor;
-      .background-image("../images/whats_this_button.png", 40px, 40px);
+      .responsive-background-image("../images/whats_this_button.png", 40px, 40px);
     }
 
     .participating {
       color: @defColor;
-      .background-image("../images/participating_button.png", 40px, 40px);
+      .responsive-background-image("../images/participating_button.png", 40px, 40px);
     }
 
     .the-rules {
       color: @rulesColor;
-      .background-image("../images/rules_button.png", 40px, 40px);
+      .responsive-background-image("../images/rules_button.png", 40px, 40px);
     }
 
     .teaming-up {
       color: @plusOneColor;
-      .background-image("../images/teaming_up_button.png", 40px, 40px);
+      .responsive-background-image("../images/teaming_up_button.png", 40px, 40px);
     }
 
     .spread-the-word {
       color: @rocketColor;
-      .background-image("../images/spread_the_word_button.png", 40px, 40px);
+      .responsive-background-image("../images/spread_the_word_button.png", 40px, 40px);
     }
 
 
@@ -447,6 +454,7 @@ h2.section-header {
   font-size: 24px;
   line-height: 24px;
   padding-left: 0;
+
   &.rocket-header {
     color: @rocketColor;
   }

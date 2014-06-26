@@ -1,0 +1,33 @@
+{% load i18n %}
+<div id="project-list">
+  {% if profile.username == user.username %}
+  <div class="span6" id="github">
+    <h2 class="teaming-up">{% trans "Github Projects" %}</h2>
+    {% if not profile.github %}
+    <a class="signin btn btn-info" href="/accounts/login/github/">
+      <i class="icon-user icon-white"></i> Link Github Account</a>
+    {% else %}
+    <p data-bind="visible: repos().length == 0">{% blocktrans %}BETA: Add hooks to your projects on github! Click 'Fetch Projects' to load your projects.{% endblocktrans %}</p>
+    <div data-bind="foreach: repos">
+      <div class="well well-small">
+        <img src="{{ STATIC_URL }}images/loader.gif" data-bind="visible: working" style="display: none;" />
+        <div data-bind="if: !working()">
+          <h4>
+            <a data-bind="text: name, attr: {href: html_url}" target="_blank"></a>
+          </h4>
+          <p data-bind="text: description"></p>
+          <a data-bind="click: add.bind($data, '{{ csrf_token }}'), visible: hooks().length == 0" class="btn btn-info">
+            {% trans "Add Hook" %}
+          </a>
+          <div data-bind="foreach: hooks">
+            <span class="label" data-bind="text: last_response.status, css: {'label-success': last_response.code == 200}"></span> <span data-bind="timeago: updated_at"></span>
+            <a data-bind="click: test.bind($data, '{{ csrf_token }}')">{% trans "Test" %}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a  data-bind="click: fetch" class="btn btn-info">Fetch Projects</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
