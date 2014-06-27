@@ -1,22 +1,33 @@
 {% load i18n %}
 
-<div class="well well-small">
+<div class="project-widget project-widget-small">
   <h4>
     <a data-bind="text: name, attr: {href: '/projects/' + slug() }"></a>
-    <span data-bind="text: points" class="badge badge-info pull-right"></span>
+    <span data-bind="text: points" class="badge badge-info"></span>
   </h4>
   <p data-bind="text: description"></p>
-  <a class="btn btn-mini" data-bind="attr: {href: url}" target="_blank">
-    <i class="icon-globe"></i> {% trans "Repository" %}</a>
-  
-  <a class="btn btn-mini" href="#">
-    <i class="icon-star"></i> 
-    <span data-bind="text: watchers" /></a>
-  <a class="btn btn-mini" href="#">
-    <i class="icon-random"></i> 
-    <span data-bind="text: forks" /></a>
-  {% if profile == user %}
-  <a class="btn btn-mini btn-danger pull-right"
-     data-bind="attr: {href: 'project/' + slug() }">{% trans "Remove" %}</a>
-  {% endif %}
+  <ul class="project-links nav nav-pills">
+    <li>
+      <a data-bind="attr: {href: url}" target="_blank" class="fa fa-globe">
+        {% trans "Repository" %}
+      </a>
+    </li>
+    <li>
+      <a class="hidden-phone" href="#">
+        <span data-bind="text: watchers" class="fa fa-eye"> </span>
+      </a>
+    </li>
+    <li>
+      <a class="hidden-phone" href="#">
+        <span data-bind="text: forks" class="fa fa-code-fork"> </span>
+      </a>
+    </li>
+    {% if profile == user %}
+    <li>
+      <a class="warning hidden-phone"
+         data-bind="attr: {href: 'project/' + slug() }">{% trans "Remove" %}</a>
+    </li>
+    {% endif %}
+  </ul>
+
 </div>
