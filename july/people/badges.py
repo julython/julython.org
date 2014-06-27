@@ -232,7 +232,6 @@ class FiveHundredCommits(Badge):
     level = "expert"
 
 
-
 class ThousandCommits(Badge):
     counter = 'total_commits'
     title = 'Do You Sleep at All?'
@@ -267,7 +266,6 @@ class FiftyProjects(Badge):
     total = 50
     icon = "fa-folder-o"
     level = "expert"
-
 
 
 class HundredProjects(Badge):

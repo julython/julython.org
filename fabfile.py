@@ -114,7 +114,7 @@ def prod(user='julython'):
 
 
 @task
-def deploy():
+def deploy(migrate='no'):
     """Deploy to production"""
     compile()
     local('python manage.py collectstatic')
@@ -126,4 +126,6 @@ def deploy():
         if not exists(VENV):
             run('virtualenv %s' % VENV)
         run('%s/bin/pip install -q -U -r requirements.txt' % VENV)
+        if migrate != 'no':
+            run('%s/bin/python manage.py migrate' % VENV)
         sudo('/usr/sbin/service julython restart')
