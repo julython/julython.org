@@ -946,7 +946,7 @@ h2.section-header.plus-one-header{color:#eaac49}
 .user-badge.expert{background-color:#ef621c;text-shadow:0 -1px 0 #9b3b0b}.user-badge.expert:hover{background-color:#e25610;text-shadow:0 -1px 0 #833209;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
 .user-badge.rockstar{background-color:#eaac49;text-shadow:0 -1px 0 #b87915}.user-badge.rockstar:hover{background-color:#e7a233;text-shadow:0 -1px 0 #a16a13;box-shadow:0 2px 5px rgba(0,0,0,0.25)}
 @media (max-width:480px){.user-badge{margin:0 7.5px 7.5px 0;width:36px;height:36px;border-radius:9px}.user-badge span.fa{font-size:23.400000000000002px;line-height:36px}}
-.badge-overlay{display:none;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:10px;width:200px;border-radius:6px;position:absolute}.badge-overlay h4{margin:0;padding:0}
+.badge-overlay{background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:10px;width:200px;border-radius:6px;position:absolute}.badge-overlay h4{margin:0;padding:0}
 .badge-overlay p{font-size:12px;line-height:26px;margin:0;padding:0}
 .badge-overlay:before{content:' ';position:absolute;top:-24px;left:12px;border-color:transparent transparent black transparent;border-style:solid;border-width:12px;width:0;height:0}
 .badge-overlay:after{content:' ';position:absolute;top:-20px;left:14px;border-color:transparent transparent white transparent;border-style:solid;border-width:10px;width:0;height:0}
