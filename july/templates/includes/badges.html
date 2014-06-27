@@ -1,3 +1,17 @@
 <ul id="badges-list" class="user-badges" data-bind="foreach: badges">
-  {% include "includes/badge.html" %}
+  <li class="user-badge"
+    data-bind="event: {mouseover: toggleVisible.bind($data, $element), mouseout: toggleVisible.bind($data, $element)}, css: badge_classes">
+    <span class="fa" data-bind="css: icon"></span>
+  </li>
+
+  <div class="badge-overlay"
+    data-bind="css: badge_classes, style: {top: topPosition, left: leftPosition}, visible: isVisible">
+    <h4 class="title" data-bind="text: title"></h4>
+    <p class="subtitle" data-bind="text: subtitle"></p>
+    <div class="progress">
+      <div class="bar" data-bind="style: { width: progress }">
+         <span data-bind="text: status"></span>
+      </div>
+    </div>
+  </div>
 </ul>

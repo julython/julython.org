@@ -29,7 +29,7 @@ class Commit(models.Model):
     message = models.CharField(max_length=2024, blank=True)
     url = models.CharField(max_length=512, blank=True)
     project = models.ForeignKey("Project", blank=True, null=True)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(db_index=True)
     created_on = models.DateTimeField(auto_now_add=True)
     files = JSONField(blank=True, null=True)
 

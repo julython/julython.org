@@ -68,6 +68,17 @@ Example badge json blob::
             }
         ]
     }
+
+Badge Levels
+------------
+
+There are currently 5 levels which are differnent colored icons.
+
+* novice
+* journeyman
+* expert
+* rockstar
+
 """
 import re
 
@@ -98,6 +109,10 @@ class Badge(object):
         self.user_data = user_data
         self.count = self.user_data.get(self.counter)
 
+    @property
+    def awarded(self):
+        return self.count >= self.total
+
     def to_dict(self):
         return {
             'title': self.title,
@@ -106,7 +121,7 @@ class Badge(object):
             'total': self.total,
             'count': self.count,
             'level': self.level,
-            'awarded': self.count >= self.total,
+            'awarded': self.awarded,
         }
 
 
@@ -183,34 +198,97 @@ class TotalProjects(Counter):
 
 class FirstCommit(Badge):
     counter = 'total_commits'
-    title = 'Welcome'
-    subtitle = 'Successfully Committed'
+    title = 'Welcome Aboard'
+    subtitle = 'Thanks for Joining'
     total = 1
+    icon = "fa-send"
+    level = "novice"
+
+
+class ThirtyCommits(Badge):
+    counter = 'total_commits'
+    title = 'A Healthy Start'
+    subtitle = '30+ Commits'
+    total = 30
     icon = "fa-plus-circle"
     level = "novice"
 
 
-class FiftyCommits(Badge):
+class HundredCommits(Badge):
     counter = 'total_commits'
-    title = 'Way to GO'
-    subtitle = '50+ Commits'
-    total = 50
+    title = 'Highly Committed'
+    subtitle = '100+ Commits'
+    total = 100
     icon = "fa-plus-circle"
     level = "journeyman"
 
 
-class HundredCommits(Badge):
+class FiveHundredCommits(Badge):
     counter = 'total_commits'
-    title = 'Committed'
-    subtitle = '100+ Commits'
-    total = 100
+    title = 'Outstanding Commitment'
+    subtitle = '500+ Commits'
+    total = 500
     icon = "fa-plus-circle"
     level = "expert"
 
+
+
+class ThousandCommits(Badge):
+    counter = 'total_commits'
+    title = 'Do You Sleep at All?'
+    subtitle = '1000+ Commits'
+    total = 1000
+    icon = "fa-plus-circle"
+    level = "rockstar"
+
+
+class FiveProjects(Badge):
+    counter = 'total_projects'
+    title = 'Thanks for Sharing'
+    subtitle = '5+ Projects'
+    total = 5
+    icon = "fa-folder-o"
+    level = "novice"
+
+
+class TenProjects(Badge):
+    counter = 'total_projects'
+    title = 'Nice Project List'
+    subtitle = '10+ Projects'
+    total = 10
+    icon = "fa-folder-o"
+    level = "journeyman"
+
+
+class FiftyProjects(Badge):
+    counter = 'total_projects'
+    title = 'Wow just wow'
+    subtitle = '50+ Projects'
+    total = 50
+    icon = "fa-folder-o"
+    level = "expert"
+
+
+
+class HundredProjects(Badge):
+    counter = 'total_projects'
+    title = 'You Love Sharing'
+    subtitle = '100+ Projects'
+    total = 100
+    icon = "fa-folder-o"
+    level = "rockstar"
+
+
 BADGES = [
     FirstCommit,
-    FiftyCommits,
+    ThirtyCommits,
     HundredCommits,
+    FiveHundredCommits,
+    ThousandCommits,
+    FiveProjects,
+    TenProjects,
+    FiftyProjects,
+    HundredProjects,
 ]
 
 COUNTERS = [
