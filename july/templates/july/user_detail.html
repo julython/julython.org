@@ -10,7 +10,7 @@
   <div class="row">
     <div class="span10 offset1">
       <div class="media">
-        <a class="thumbnail hidden-phone pull-left avatar" href=".">
+        <a class="thumbnail hidden-phone pull-left avatar" href="{% if 'http' in profile.url %}{{ profile.url }}{% else %}http://{{ profile.url}}{% endif %}" target="_blank">
           {% if profile.picture_url %}
           <img class="media-object" src="{{ profile.picture_url }}" alt="{{profile}}" />
           {% else %}
@@ -19,51 +19,31 @@
         </a>
         <div class="media-body">
           <h3 class="media-heading">{{ profile }}
-          {% if profile.twitter %}
-          <a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true">{% trans "Follow" %}</a>
-          <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
-          {% endif %}
-          <small class="points hidden-phone pull-right">
+            <span class="points pull-right">
             {% firstof profile.total '0' %} {% trans "points" %}
-          </small>
+            </span>
           </h3>
           <svg class="hidden-phone" id="commit-calendar"></svg>
-          <p class="about-me">{% if profile.description %}{{ profile.description }}{% else %}{% trans "Python Hacker" %}{% endif %}</p>
-          <ul class="nav nav-pills hidden-phone">
+          <p class="about-me">{{ profile.description }}</p>
+          <ul class="nav nav-pills">
+            {% if profile.twitter %}
+            <li><a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="fa fa-twitter" title='{% trans "Twitter" %}'> </a></li>
+            {% endif %}
             {% if profile.github %}
-            <li><a href="http://github.com/{{ profile.github.uid }}"><i class="icon-globe"></i> {% trans "Follow on Github" %}</a></li>
-            {% endif %}
-            {% if profile.url %}
-				{% if 'http://' in profile.url %}
-            	<li><a href="{{ profile.url }} "><i class="icon-globe"></i> {{profile.url}}</a></li>
-				{% else %}
-				<li><a href="http://{{ profile.url }} "><i class="icon-globe"></i> {{profile.url}}</a></li>
-				{% endif %}
-			{% endif %}
-            {% if profile.location %}
-            <li>
-              <a href="{% url 'location-detail' profile.location.slug %}" class="fa fa-map-marker">
-                {{ profile.location}}
-              </a>
-            </li>
-            {% endif %}
-            {% if profile.team %}
-            {% if profile.team.approved %}
-            <li>
-              <a href="{% url 'team-details' profile.team.slug %}" class="fa fa-group">
-                {{ profile.team.name }}
-              </a>
-            </li>
-            {% else %}
-            <li>
-              <a href="/help/#team" class="fa fa-group">
-                {% trans "team waiting approval" %}
-              </a>
-            </li>
-            {% endif %}
+            <li><a href="http://github.com/{{ profile.github.uid }}" class="fa fa-github" title='{% trans "Github" %}'> </a></li>
             {% endif %}
             {% if profile.gittip %}
-            <iframe style="position: relative; top: 9px; left: 5px; border: 0; margin: 0; padding: 0;" src="https://www.gittip.com/{{ profile.gittip.uid }}/widget.html" width="48pt" height="22pt"></iframe>
+            <li><a href="https://www.gittip.com/{{ profile.gittip.uid }}/" class="fa fa-gittip" title='{% trans "Gittip" %}'> </a></li>
+            {% endif %}
+            {% if profile.location %}
+            <li><a href="{% url 'location-detail' profile.location.slug %}" class="fa fa-map-marker"> {{ profile.location}}</a></li>
+            {% endif %}
+            {% if profile.team %}
+              {% if profile.team.approved %}
+              <li><a href="{% url 'team-details' profile.team.slug %}" class="fa fa-group"> {{ profile.team.name }}</a></li>
+              {% else %}
+              <li><a href="/help/#team" class="fa fa-group"> {% trans "team waiting approval" %}</a></li>
+              {% endif %}
             {% endif %}
           </ul>
         </div>
@@ -76,12 +56,12 @@
               <a href="#projects" data-toggle="tab">{% trans "Projects" %}</a>
             </li>
             <li>
-              <a href="#github-projects" data-toggle="tab">{% trans "Github Projects" %}</a>
-            </li>
-            <li>
               <a href="#commits" data-toggle="tab">{% trans "Commits" %}</a>
             </li>
-            {% if profile.username == user.username %}
+            {% if profile.username == user.username and profile.github %}
+            <li>
+              <a href="#github-projects" data-toggle="tab">{% trans "Github Projects" %}</a>
+            </li>
             <li class="pull-right"><a href="{% url 'edit-profile' username=profile.username %}">{% trans "Edit Profile" %}</a></li>
             {% elif request.can_report_abuse and not user.is_superuser %}
             <li id="abuseli" class="pull-right">

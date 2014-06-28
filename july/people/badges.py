@@ -201,7 +201,7 @@ class FirstCommit(Badge):
     title = 'Welcome Aboard'
     subtitle = 'Thanks for Joining'
     total = 1
-    icon = "fa-send"
+    icon = "fa-heart"
     level = "novice"
 
 
