@@ -507,6 +507,8 @@ class PostCallbackHandler(View, JSONMixin):
         payload = self.parse_payload(request)
         if not payload:
             return http.HttpResponseBadRequest()
+        elif isinstance(payload, http.HttpResponse):
+            return payload
         try:
             data = json.loads(payload)
         except:
