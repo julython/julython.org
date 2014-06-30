@@ -1,8 +1,13 @@
 {% load i18n %}
 <div id="project-list">
-  <h2 data-bind="visible: projects().length > 0" class="spread-the-word">{% trans "Projects" %}</h2>
-  <div data-bind="foreach: projects" class="projects">
-    {% include "includes/user_project.html" %}
+  <div data-bind="visible: projects().length > 0">
+      <h2 class="spread-the-word">{% trans "Projects" %}</h2>
+      {% if profile.username == user.username %}
+        <p class="lead">{% blocktrans %}Link more projects under the 'Github Projects' tabs or add the <a href="/help/#webhook">hook manually</a>{% endblocktrans %}</p>
+      {% endif %}
+      <div data-bind="foreach: projects" class="projects">
+        {% include "includes/user_project.html" %}
+      </div>
   </div>
   <div data-bind="visible: projects().length == 0">
     <h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
