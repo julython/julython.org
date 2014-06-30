@@ -737,6 +737,17 @@ class GithubHandler(PostCallbackHandler):
         }"
     """
 
+    def parse_payload(self, request):
+        """
+        Github parse payload
+        """
+        # first check if this is a ping request and return 'pong'
+        event_type = request.META.get('HTTP_X_GITHUB_EVENT', 'push')
+        if event_type == 'ping':
+            return http.HttpResponse('pong')
+        payload = request.POST.get('payload')
+        return payload
+
     def _parse_repo(self, data):
         """Returns a dict suitable for creating a project."""
         if not isinstance(data, dict):
