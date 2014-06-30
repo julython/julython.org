@@ -18,4 +18,6 @@ urlpatterns = patterns(
         'delete_project', name='delete-project'),
     url(r'^(?P<username>[\w.@+-]+)/projects/$',
         'people_projects', name='user-projects'),
+    url(r'^(?P<username>[\w.@+-]+)/delete/$',
+        'delete_profile', name='delete-profile'),
 )

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="container section-container no-border" id="contents">
+  <div class="row">
+    <div class="span8 offset2">
+      <h2 class="what-is-this">{% trans "Delete Profile?" %}</h2>
+      <form method="post"
+        action="{% url 'delete-profile' user.username %}"
+        enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="well">
+           <p class="lead">{% trans "Are you sure you want to remove this profile?" %}</p>
+           <p>{{ profile }}</p>
+        </div>
+        <div class="form-actions">
+          <input type="submit" class="btn btn-primary" value="{% trans "Yes Delete" %}" />
+          <a href="{% url 'member-profile' user.username %}" class="btn">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

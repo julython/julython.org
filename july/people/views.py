@@ -185,3 +185,21 @@ def delete_project(request, username, slug):
         {'project': project},
         context_instance=RequestContext(request)
     )
+
+
+@login_required
+def delete_profile(request, username):
+
+    if request.method == "POST":
+        # delete the the user and sign them out
+        logging.debug("******** request.user: %s" % request.user.__dict__)
+        request.user.delete()
+        # request.user.save()
+        return HttpResponseRedirect(
+            reverse('signout')
+        )
+
+    return render_to_response(
+        'people/delete_profile.html',
+        {'profile': username},
+        context_instance=RequestContext(request))

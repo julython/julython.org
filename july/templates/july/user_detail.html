@@ -58,6 +58,7 @@
             <li>
               <a href="#commits" data-toggle="tab">{% trans "Commits" %}</a>
             </li>
+            <li class="pull-right"><a href="{% url 'delete-profile' username=profile.username %}">{% trans "Delete Profile" %}</a></li>
             {% if profile.username == user.username and profile.github %}
             <li>
               <a href="#github-projects" data-toggle="tab">{% trans "Github Projects" %}</a>
