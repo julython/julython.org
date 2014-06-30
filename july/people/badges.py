@@ -205,35 +205,35 @@ class FirstCommit(Badge):
     level = "novice"
 
 
-class ThirtyCommits(Badge):
-    counter = 'total_commits'
+class TenCommits(Badge):
+    counter = 'game_commits'
     title = 'A Healthy Start'
-    subtitle = '30+ Commits'
-    total = 30
+    subtitle = '10+ Commits'
+    total = 10
     icon = "fa-plus-circle"
     level = "novice"
 
 
-class HundredCommits(Badge):
-    counter = 'total_commits'
-    title = 'Highly Committed'
-    subtitle = '100+ Commits'
-    total = 100
+class ThirtyCommits(Badge):
+    counter = 'game_commits'
+    title = '1-a-Day Average'
+    subtitle = '31+ Commits'
+    total = 31
     icon = "fa-plus-circle"
     level = "journeyman"
 
 
-class FiveHundredCommits(Badge):
-    counter = 'total_commits'
+class HundredCommits(Badge):
+    counter = 'game_commits'
     title = 'Outstanding Commitment'
-    subtitle = '500+ Commits'
-    total = 500
+    subtitle = '100+ Commits'
+    total = 100
     icon = "fa-plus-circle"
     level = "expert"
 
 
 class ThousandCommits(Badge):
-    counter = 'total_commits'
+    counter = 'game_commits'
     title = 'Do You Sleep at All?'
     subtitle = '1000+ Commits'
     total = 1000
@@ -261,7 +261,7 @@ class TenProjects(Badge):
 
 class FiftyProjects(Badge):
     counter = 'total_projects'
-    title = 'Wow just wow'
+    title = 'You Love Sharing'
     subtitle = '50+ Projects'
     total = 50
     icon = "fa-folder-o"
@@ -270,23 +270,63 @@ class FiftyProjects(Badge):
 
 class HundredProjects(Badge):
     counter = 'total_projects'
-    title = 'You Love Sharing'
+    title = 'Wow just wow'
     subtitle = '100+ Projects'
     total = 100
     icon = "fa-folder-o"
     level = "rockstar"
 
 
+class PlayedTheGame(Badge):
+    counter = 'game_commits'
+    title = 'Played in 2014'
+    subtitle = 'Everyone deserves a trophy!'
+    total = 1
+    icon = "fa-trophy"
+    level = "novice"
+
+
+class OneWeekStreak(Badge):
+    counter = 'game_days'
+    title = 'Good Start'
+    subtitle = '7+ days'
+    total = 7
+    icon = 'fa-trophy'
+    level = "journeyman"
+
+
+class TwoWeekStreak(Badge):
+    counter = 'game_days'
+    title = 'Keep it going'
+    subtitle = '14+ days'
+    total = 14
+    icon = 'fa-trophy'
+    level = "expert"
+
+
+class EveryDay(Badge):
+    counter = 'game_days'
+    title = 'Excellent Commitment'
+    subtitle = 'Committing Everyday'
+    total = 31
+    icon = 'fa-trophy'
+    level = "rockstar"
+
+
 BADGES = [
     FirstCommit,
+    TenCommits,
     ThirtyCommits,
     HundredCommits,
-    FiveHundredCommits,
     ThousandCommits,
     FiveProjects,
     TenProjects,
     FiftyProjects,
     HundredProjects,
+    PlayedTheGame,
+    OneWeekStreak,
+    TwoWeekStreak,
+    EveryDay,
 ]
 
 COUNTERS = [
