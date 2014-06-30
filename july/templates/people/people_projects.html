@@ -1,10 +1,14 @@
 {% load i18n %}
 <div id="project-list">
-  <h2 class="spread-the-word">{% trans "Projects" %}</h2>
+  <h2 data-bind="visible: projects().length > 0" class="spread-the-word">{% trans "Projects" %}</h2>
   <div data-bind="foreach: projects" class="projects">
     {% include "includes/user_project.html" %}
   </div>
   <div data-bind="visible: projects().length == 0">
-    <p class="lead">{% trans "No projects yet!" %}</p>
+    <h2 class="spread-the-word">{% trans "Let's get started!" %}</h2>
+    <p class="lead">
+    {% blocktrans %}First <a href="{{ edit_profile_url }}">edit your profile</a> and add all the email addresses you use to commit with.  This is how we'll identify you, we will not display or share this information.{% endblocktrans %}
+    </p>
+    {% include "includes/hook-instructions.html" %}
   </div>
 </div>
