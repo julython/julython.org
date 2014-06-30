@@ -15,14 +15,16 @@
     </p>
     <ol>
       <li>{% trans "Go to your project on <a href='http://github.com'>github</a>." %}</li>
-      <li>{% trans "Select the 'Settings' button at the top of the project dashboard." %}</li>
-      <li>{% trans "Select 'Service Hooks' on the left menu." %}</li>
-      <li>{% trans "In 'Available service hooks' select 'Webhook URLs'." %}</li>
-      <li>{% trans "Enter the URL: <pre>http://www.julython.org/api/v1/github</pre>" %}</li>
-      <li>{% trans "Select 'Update Settings'" %}</li>
+      <li>{% trans "Select the 'Settings' link on the project dashboard." %}</li>
+      <li>{% trans "Select 'Webhooks and Services' on the left menu." %}</li>
+      <li>{% trans "Select 'Add webhook'." %}</li>
+      <li>{% trans "Enter the Payload URL: <pre>http://www.julython.org/api/v1/github</pre>" %}</li>
+      <li>{% trans "Choose Content type: <pre>application/x-www-form-urlencoded</pre>" %}</li>
+      <li>{% trans "There is no secret, and we just want the 'push' event sent" %}</li>
+      <li>{% trans "Make sure it is active and select 'Add Webhook'" %}</li>
     </ol>
     <p>
-      {% trans "You can test it out by selecting 'WebHook URLs' again and choosing 'Test Hook'. Or you can try pushing a commit to your repository." %}
+      {% trans "You can validate and re-test the hook by selecting it expanding the 'Recent Deliveries' and select 'Redeliver'" %}
     </p>
   </div>
   <div class="span5 section-blurb">
