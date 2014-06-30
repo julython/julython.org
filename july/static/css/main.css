@@ -935,6 +935,7 @@ h2.section-header.plus-one-header{color:#eaac49}
 .offset-container{padding:10px 0;background-color:#f1f1f1}
 @media (max-width:768px){.offset-container{margin:0 -20px;padding:10px 30px 20px;background-color:#fff;border-bottom:3px solid #9e62b6}}.leaderboard{padding-top:20px}
 .social{color:#9e62b6}
+.larger{font-size:150%}
 .project-widget{padding:10px 0 20px;margin:0}
 .nav-pills li a{background-color:rgba(80,143,216,0.2);color:#508fd8}.nav-pills li a:hover{background-color:#508fd8;color:#fff}
 .nav-pills li a.warning{background-color:rgba(221,81,53,0.2);color:#dd5135}.nav-pills li a.warning:hover{background-color:#dd5135;color:#fff}

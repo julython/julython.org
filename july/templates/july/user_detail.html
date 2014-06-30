@@ -27,13 +27,13 @@
           <p class="about-me">{{ profile.description }}</p>
           <ul class="nav nav-pills">
             {% if profile.twitter %}
-            <li><a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="fa fa-twitter" title='{% trans "Twitter" %}'> </a></li>
+            <li><a href="https://twitter.com/{% firstof profile.twitter.extra_data.screen_name profile.username %}" class="fa fa-twitter larger" title='{% trans "Twitter" %}'> </a></li>
             {% endif %}
             {% if profile.github %}
-            <li><a href="http://github.com/{{ profile.github.uid }}" class="fa fa-github" title='{% trans "Github" %}'> </a></li>
+            <li><a href="http://github.com/{{ profile.github.uid }}" class="fa fa-github larger" title='{% trans "Github" %}'> </a></li>
             {% endif %}
             {% if profile.gittip %}
-            <li><a href="https://www.gittip.com/{{ profile.gittip.uid }}/" class="fa fa-gittip" title='{% trans "Gittip" %}'> </a></li>
+            <li><a href="https://www.gittip.com/{{ profile.gittip.uid }}/" class="fa fa-gittip larger" title='{% trans "Gittip" %}'> </a></li>
             {% endif %}
             {% if profile.location %}
             <li><a href="{% url 'location-detail' profile.location.slug %}" class="fa fa-map-marker"> {{ profile.location}}</a></li>
