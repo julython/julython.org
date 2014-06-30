@@ -140,3 +140,4 @@ if you'd like to have new strings translated:
 
 - ``locale/ja``: `modocache <https://github.com/modocache>`_
 - ``locale/ro``: @florinm
+
