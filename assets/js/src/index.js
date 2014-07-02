@@ -1,6 +1,5 @@
 /* VARIOUS HELPERS for HOMEPAGE */
 if (!$) { var $ = null; }
-if (!console) { var console = null; }
 
 var Nav = function(selector, offset) {
   this._selector = selector;
