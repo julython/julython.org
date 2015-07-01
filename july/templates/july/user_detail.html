@@ -74,6 +74,7 @@
             </li>
             {% endif %}
           </ul>
+          {% url 'edit-profile' username=user.username as edit_profile_url %}
           <div class="tab-content">
             <div class="tab-pane active" id="projects">
               {% include "people/people_projects.html" %}
@@ -82,7 +83,6 @@
               {% include "people/github_projects.html" %}
             </div>
             <div class="tab-pane hidden-phone" id="commits">
-              {% url 'edit-profile' username=user.username as edit_profile_url %}
               <div class="row">
                 <div class="span10">
                   {% if profile.commit_set.count %}
