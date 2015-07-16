@@ -13,9 +13,9 @@ register = template.Library()
 @register.filter(is_safe=True)
 @stringfilter
 def markup(value):
-    extensions = ["nl2br"]
+    extensions = ["markdown.extensions.nl2br"]
     val = force_unicode(value)
-    html = markdown(val, extensions, safe_mode=True, enable_attributes=False)
+    html = markdown(val, extensions=extensions, enable_attributes=False)
     return mark_safe(html)
 
 
