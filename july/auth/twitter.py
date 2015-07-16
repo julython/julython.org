@@ -1,5 +1,3 @@
-__author__ = 'Kevin'
-
 import logging
 
 from social_auth.backends import twitter
