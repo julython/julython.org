@@ -159,7 +159,7 @@ class SCMTestMixin(object):
 
     def test_location_check(self):
         location = check_location(u'wrocław')
-        self.assertEqual(location, 'Wroclaw, Poland')
+        self.assertEqual(location, u'Wrocław, Poland')
 
 
 class ReposTest(SCMTestMixin, TestCase):
