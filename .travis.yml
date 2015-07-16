@@ -6,7 +6,7 @@ services:
   - rabbitmq
 install:
   # Build/test dependencies
-  - pip install -r requirements-dev.txt --use-mirrors
+  - pip install -r requirements-dev.txt
   # Install Julython
   - pip install -e .
 script:
