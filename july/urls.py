@@ -28,6 +28,7 @@ urlpatterns = patterns(
     url(r'^api/v1/bitbucket$', api.BitbucketHandler.as_view()),
     url(r'^api/v1/github$', api.GithubHandler.as_view()),
     url(r'^api/v1/github/(?P<path>.*)$', api.GithubAPIHandler.as_view()),
+    url(r'^api/v1/vegas/$', api.VegasHandler.as_view()),
     # Tasty Pie apis
     url(r'^api/', include(v1_api.urls)),
     url(r'^$', 'july.views.index', name='index'),

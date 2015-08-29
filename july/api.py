@@ -543,6 +543,17 @@ class PostCallbackHandler(View, JSONMixin):
             status=status)
 
 
+class VegasHandler(View, JSONMixin):
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super(VegasHandler, self).dispatch(*args, **kwargs)
+
+    def post(self, request):
+        logging.info(request.POST)
+        return self.respond_json({'message': 'fool'})
+
+
 class BitbucketHandler(PostCallbackHandler):
     """
     Take a POST from bitbucket in the format::
