@@ -551,7 +551,7 @@ class VegasHandler(View, JSONMixin):
 
     def post(self, request):
         logging.info(request.POST)
-        return self.respond_json({'message': 'fool'})
+        return self.respond_json({'text': 'fool you *know* it'})
 
 
 class BitbucketHandler(PostCallbackHandler):
