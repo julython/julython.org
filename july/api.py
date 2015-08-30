@@ -542,12 +542,20 @@ class PostCallbackHandler(View, JSONMixin):
             {'commits': [c.hash for c in total_commits]},
             status=status)
 
+HELP = """
+_help_: Show Help
+_fear_: Show a fear and loathing quote
+"""
+
 
 class VegasHandler(View, JSONMixin):
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(VegasHandler, self).dispatch(*args, **kwargs)
+
+    def help(self, terms):
+        return self.respond_json({'text': HELP})
 
     def fear(self, terms):
         """Return a fear and loathing quote."""
@@ -587,7 +595,7 @@ class VegasHandler(View, JSONMixin):
         if action_term in ['post', 'dispatch']:
             return self.respond_json({'message': 'none'})
 
-        action = getattr(self, action_term)
+        action = getattr(self, action_term, None)
         if action is not None:
             return action(terms)
 
