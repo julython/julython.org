@@ -13,6 +13,7 @@ from django.template.defaultfilters import date
 from django.views.generic.base import View
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import url
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from iso8601 import parse_date
@@ -542,67 +543,6 @@ class PostCallbackHandler(View, JSONMixin):
             {'commits': [c.hash for c in total_commits]},
             status=status)
 
-HELP = """
-_help_: Show Help
-_fear_: Show a fear and loathing quote
-"""
-
-
-class VegasHandler(View, JSONMixin):
-
-    @csrf_exempt
-    def dispatch(self, *args, **kwargs):
-        return super(VegasHandler, self).dispatch(*args, **kwargs)
-
-    def help(self, terms):
-        return self.respond_json({'text': HELP})
-
-    def fear(self, terms):
-        """Return a fear and loathing quote."""
-        from random import choice
-        quotes = [
-            "There he goes. One of God's own prototypes. A high-powered mutant of some kind never even considered for mass production. Too weird to live, and too rare to die.",  # noqa
-            "Let's give the boy a lift. What? No. We can't stop here. This is bat country.",  # noqa
-            "A drug person can learn to cope with things like seeing their dead grandmother crawling up their leg with a knife in her teeth. But no one should be asked to handle this trip.",  # noqa
-            "Don't fuck with me now, man, I am Ahab.",  # noqa
-            "There was madness in any direction, at any hour. You could strike sparks anywhere. There was a fantastic universal sense that whatever we were doing was right, that we were winning.",  # noqa
-            "With a bit of luck, his life was ruined forever. Always thinking that just behind some narrow door in all of his favorite bars, men in red woolen shirts are getting incredible kicks from things he'll never know.",  # noqa
-            "As your attorney, I advise you to take a hit out of the little brown bottle in my shaving kit. You won't need much, just a tiny taste.",  # noqa
-            "Oh god... did you eat all this acid?",  # noqa
-            "The possibility of physical and mental collapse is now very real. No sympathy for the Devil, keep that in mind. Buy the ticket, take the ride.",  # noqa
-            "Let's get down to brass tacks. How much for the ape?",  # noqa
-            " What kind of rat bastard psychotic would play that song right now, at this moment?",  # noqa
-            "Finish the fucking story man! What happened? What about the glands?",  # noqa
-            "Order us some golf shoes, otherwise we'll never get out of this place alive. Impossible to walk in this muck. No footing at all.",  # noqa
-            "You scurvy shiester bastard. I'm a doctor of journalism man! Get in there and clean your shorts! Clean your shorts goddammit like a big boy!",  # noqa
-            "Weeeellll, all this white stuff on my sleeeeve, iiiis LSD...",  # noqa
-            "Don't fuck around, man. This is serious. One more hour in this town and I'll kill somebody!",  # noqa
-            "I was right in the middle of a fucking reptile zoo, and somebody was giving booze to these goddamn things. Won't be long now before they tear us to shreds.",  # noqa
-        ]
-        return self.respond_json({'text': choice(quotes)})
-
-    def post(self, request):
-        message = request.POST.get('text')
-        logging.info("Got a vegas request: %s", message)
-        if not message:
-            return self.respond_json({'message': 'none'})
-
-        terms = message.split()[1:]
-        if not len(terms):
-            return self.respond_json({'message': 'none'})
-
-        action_term = terms.pop(0)
-        if action_term in ['post', 'dispatch']:
-            return self.respond_json({'message': 'none'})
-
-        action = getattr(self, action_term, None)
-        if action is not None:
-            return action(terms)
-
-        return self.respond_json({
-            'text': 'The only thing you have to _fear_ is *fear* itself'
-        })
-
 
 class BitbucketHandler(PostCallbackHandler):
     """
@@ -873,3 +813,73 @@ class GithubHandler(PostCallbackHandler):
             'files': files,
         }
         return email, commit_data
+
+
+HELP = """
+_help_: Show Help
+_fear_: Show a fear and loathing quote
+_weather_: Show the current weather in Vegas
+"""
+
+
+class VegasHandler(View, JSONMixin):
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super(VegasHandler, self).dispatch(*args, **kwargs)
+
+    def weather(self, terms):
+        report = requests.get(settings.WEATHER_URL).json()
+        cond = report.get('current_observation', {})
+        text = ("Currently: {weather} and {temp_f}"
+                " feels like {feelslike_f}".format(**cond))
+        return self.respond_json({'text': text})
+
+    def help(self, terms):
+        return self.respond_json({'text': HELP})
+
+    def fear(self, terms):
+        """Return a fear and loathing quote."""
+        from random import choice
+        quotes = [
+            "There he goes. One of God's own prototypes. A high-powered mutant of some kind never even considered for mass production. Too weird to live, and too rare to die.",  # noqa
+            "Let's give the boy a lift. What? No. We can't stop here. This is bat country.",  # noqa
+            "A drug person can learn to cope with things like seeing their dead grandmother crawling up their leg with a knife in her teeth. But no one should be asked to handle this trip.",  # noqa
+            "Don't fuck with me now, man, I am Ahab.",  # noqa
+            "There was madness in any direction, at any hour. You could strike sparks anywhere. There was a fantastic universal sense that whatever we were doing was right, that we were winning.",  # noqa
+            "With a bit of luck, his life was ruined forever. Always thinking that just behind some narrow door in all of his favorite bars, men in red woolen shirts are getting incredible kicks from things he'll never know.",  # noqa
+            "As your attorney, I advise you to take a hit out of the little brown bottle in my shaving kit. You won't need much, just a tiny taste.",  # noqa
+            "Oh god... did you eat all this acid?",  # noqa
+            "The possibility of physical and mental collapse is now very real. No sympathy for the Devil, keep that in mind. Buy the ticket, take the ride.",  # noqa
+            "Let's get down to brass tacks. How much for the ape?",  # noqa
+            " What kind of rat bastard psychotic would play that song right now, at this moment?",  # noqa
+            "Finish the fucking story man! What happened? What about the glands?",  # noqa
+            "Order us some golf shoes, otherwise we'll never get out of this place alive. Impossible to walk in this muck. No footing at all.",  # noqa
+            "You scurvy shiester bastard. I'm a doctor of journalism man! Get in there and clean your shorts! Clean your shorts goddammit like a big boy!",  # noqa
+            "Weeeellll, all this white stuff on my sleeeeve, iiiis LSD...",  # noqa
+            "Don't fuck around, man. This is serious. One more hour in this town and I'll kill somebody!",  # noqa
+            "I was right in the middle of a fucking reptile zoo, and somebody was giving booze to these goddamn things. Won't be long now before they tear us to shreds.",  # noqa
+        ]
+        return self.respond_json({'text': choice(quotes)})
+
+    def post(self, request):
+        message = request.POST.get('text')
+        logging.info("Got a vegas request: %s", message)
+        if not message:
+            return self.respond_json({'message': 'none'})
+
+        terms = message.split()[1:]
+        if not len(terms):
+            return self.respond_json({'message': 'none'})
+
+        action_term = terms.pop(0)
+        if action_term in ['post', 'dispatch']:
+            return self.respond_json({'message': 'none'})
+
+        action = getattr(self, action_term, None)
+        if action is not None:
+            return action(terms)
+
+        return self.respond_json({
+            'text': 'The only thing you have to _fear_ is *fear* itself'
+        })
