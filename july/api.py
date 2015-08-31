@@ -2,9 +2,10 @@
 from collections import defaultdict
 import json
 import logging
+from random import choice
 import re
-import urlparse
 import requests
+import urlparse
 from os.path import splitext
 
 from django.core.urlresolvers import reverse
@@ -817,9 +818,17 @@ class GithubHandler(PostCallbackHandler):
 
 HELP = """
 _help_: Show Help
+_craps_: Play craps
 _fear_: Show a fear and loathing quote
 _weather_: Show the current weather in Vegas
 """
+
+
+def roll_dice():
+    dice = range(1, 7)
+    d1 = choice(dice)
+    d2 = choice(dice)
+    return d1 + d2
 
 
 class VegasHandler(View, JSONMixin):
@@ -835,12 +844,39 @@ class VegasHandler(View, JSONMixin):
                 " feels like {feelslike_f}".format(**cond))
         return self.respond_json({'text': text})
 
+    def craps(self, terms):
+        """Play craps"""
+        text = 'Playing craps, come out roll: '
+        rolling = False
+        win = False
+        come_out = roll_dice()
+        text = 'Playing craps, come out roll: %s ' % come_out
+        if come_out in [7, 11]:
+            win = True
+        elif come_out in [4, 5, 6, 8, 9, 10]:
+            text += 'game on\n'
+            rolling = True
+        attempts = []
+        while rolling:
+            attempt = roll_dice()
+            attempts.append(attempt)
+            if attempt == come_out:
+                win = True
+                rolling = False
+            elif attempt == 7:
+                rolling = False
+        text += ', '.join(map(str, attempts))
+        if win:
+            text += ' you *WIN*!!'
+        else:
+            text += ' you *LOSE*!! pay me some money!'
+        return self.respond_json({'text': text})
+
     def help(self, terms):
         return self.respond_json({'text': HELP})
 
     def fear(self, terms):
         """Return a fear and loathing quote."""
-        from random import choice
         quotes = [
             "There he goes. One of God's own prototypes. A high-powered mutant of some kind never even considered for mass production. Too weird to live, and too rare to die.",  # noqa
             "Let's give the boy a lift. What? No. We can't stop here. This is bat country.",  # noqa
