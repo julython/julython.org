@@ -113,11 +113,13 @@ def email_verify(request, uidb36, token):
         request, 'registration/email_verified.html', {'valid': valid})
 
 
+# @login_required
 def send_abuse(request):
     from forms import AbuseForm
-    response = HttpResponse(
-        json.dumps({}),
-        content_type="application/json"
+    err_response = HttpResponse(
+        json.dumps({'message': 'BadRequest'}),
+        content_type="application/json",
+        status=400
     )
 
     form = AbuseForm(request.POST)
@@ -129,7 +131,18 @@ def send_abuse(request):
         text = """\nUser %s has reported abuse for %s:\n\n%s""" % (
             request.user.username, url, desc)
 
-        request.abuse_reported()
+        if not request.abuse_reported():
+            return err_response
         mail_admins(subject, text)
-
-    return response
+        return HttpResponse(
+            json.dumps({'message': 'success'}),
+            content_type="application/json",
+            status=200
+        )
+    else:
+        return HttpResponse(
+            json.dumps({'message': str(form.errors)}),
+            content_type="application/json",
+            status=400
+        )
+    return err_response

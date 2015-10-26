@@ -1,5 +1,6 @@
 import datetime
 import mock
+import json
 
 from django.test import TestCase
 
@@ -39,11 +40,43 @@ class JulyViews(TestCase):
 
 class AbuseTests(TestCase):
 
+    def test_view(self):
+        resp = self.client.post(
+            '/abuse', {'url': 'http://localhost/some/url/', 'desc': 'def'})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post(
+            '/abuse', {'url': 'http://localhost/some/url/', 'desc': 'def'})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post(
+            '/abuse', {'url': 'http://localhost/some/url/', 'desc': 'def'})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post(
+            '/abuse', {'url': 'http://localhost/some/url/', 'desc': 'def'})
+        self.assertEqual(resp.status_code, 400)
+
+    def test_bad_post(self):
+        resp = self.client.post(
+            '/abuse', {'url': 'http://localhost/some/url/', 'desc': ''})
+        self.assertEqual(resp.status_code, 400)
+        self.assertContains(resp, 'This field is required.', status_code=400)
+        resp = self.client.post(
+            '/abuse', {'url': '/some/url/', 'desc': 'here'})
+        self.assertEqual(resp.status_code, 400)
+        self.assertContains(resp, 'Enter a valid URL.', status_code=400)
+
+    def test_spam(self):
+        resp = self.client.post(
+            '/abuse', {
+                'url': 'http://localhost/some/url/',
+                'desc': 'http://foo.bar.spam'})
+        self.assertContains(resp, 'bad juju', status_code=400)
+
     def test_set_abuse(self):
         from django.conf import settings
         settings.ABUSE_LIMIT = 3  # 3 times !
 
         from middleware import AbuseMiddleware
+        from middleware import to_string
         today = datetime.date.today()
         request = mock.MagicMock()
         request.session = {}
@@ -55,21 +88,21 @@ class AbuseTests(TestCase):
         abuse_reported()  # one
         self.assertEqual(
             request.session['abuse_date'],
-            today - datetime.timedelta(days=2),
+            to_string(today - datetime.timedelta(days=2)),
         )
         self.assertTrue(can_report_abuse())
 
         abuse_reported()  # two
         self.assertEqual(
             request.session['abuse_date'],
-            today - datetime.timedelta(days=1),
+            to_string(today - datetime.timedelta(days=1)),
         )
         self.assertTrue(can_report_abuse())
 
         abuse_reported()  # tree
         self.assertEqual(
             request.session['abuse_date'],
-            today,
+            to_string(today),
         )
         self.assertFalse(can_report_abuse())  # game is over !
 
@@ -78,9 +111,11 @@ class AbuseTests(TestCase):
         settings.ABUSE_LIMIT = 3
 
         from middleware import AbuseMiddleware
+        from middleware import to_string
         today = datetime.date.today()
         request = mock.MagicMock()
-        request.session = {'abuse_date': today-datetime.timedelta(days=10)}
+        request.session = {
+            'abuse_date': to_string(today-datetime.timedelta(days=10))}
         mid = AbuseMiddleware()
 
         abuse_reported = mid._abuse_reported(request)
@@ -89,31 +124,33 @@ class AbuseTests(TestCase):
         abuse_reported()  # if abuse_date is old enugh it should be reseted
         self.assertEqual(
             request.session['abuse_date'],
-            today - datetime.timedelta(days=2),
+            to_string(today - datetime.timedelta(days=2)),
         )
         self.assertTrue(can_report_abuse())
 
-        request.session = {'abuse_date': today-datetime.timedelta(days=3)}
+        request.session = {
+            'abuse_date': to_string(today-datetime.timedelta(days=3))}
 
         abuse_reported()
         self.assertEqual(
             request.session['abuse_date'],
-            today - datetime.timedelta(days=2),
+            to_string(today - datetime.timedelta(days=2)),
         )
         self.assertTrue(can_report_abuse())
 
-        request.session = {'abuse_date': today-datetime.timedelta(days=2)}
+        request.session = {
+            'abuse_date': to_string(today-datetime.timedelta(days=2))}
 
         abuse_reported()
         self.assertEqual(
             request.session['abuse_date'],
-            today - datetime.timedelta(days=1),
+            to_string(today - datetime.timedelta(days=1)),
         )
         self.assertTrue(can_report_abuse())
 
         abuse_reported()
         self.assertEqual(
             request.session['abuse_date'],
-            today,
+            to_string(today),
         )
         self.assertFalse(can_report_abuse())

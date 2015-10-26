@@ -6,20 +6,34 @@ oneday = datetime.timedelta(days=1)
 ABUSE_DELTA = datetime.timedelta(days=settings.ABUSE_LIMIT)
 
 
+def to_date(raw):
+    return datetime.datetime.strptime(raw, '%x')
+
+
+def to_string(date_time):
+    return date_time.strftime('%x')
+
+
 class AbuseMiddleware(object):
+
     def _can_report_abuse(self, request):
         def can_report_abuse():
-            abuse_date = request.session.get('abuse_date')
-            return not abuse_date or abuse_date < date.today()
+            reset_date = to_string(date.today() - ABUSE_DELTA)
+            abuse_date = request.session.get('abuse_date', reset_date)
+            return to_date(abuse_date).date() < date.today()
         return can_report_abuse
 
     def _abuse_reported(self, request):
         def abuse_reported():
-            abuse_date = request.session.get('abuse_date')
-            if not abuse_date or abuse_date + ABUSE_DELTA < date.today():
-                request.session['abuse_date'] = date.today() - ABUSE_DELTA
-
-            request.session['abuse_date'] += oneday
+            if not request.can_report_abuse():
+                return False
+            reset_date = to_string(date.today() - ABUSE_DELTA)
+            abuse_date = to_date(request.session.get('abuse_date', reset_date))
+            if abuse_date.date() + ABUSE_DELTA < date.today():
+                abuse_date = date.today() - ABUSE_DELTA
+            abuse_date += oneday
+            request.session['abuse_date'] = to_string(abuse_date)
+            return True
         return abuse_reported
 
     def process_request(self, request):

@@ -31,6 +31,12 @@ class AbuseForm(forms.Form):
     desc = forms.CharField(widget=forms.Textarea, required=True)
     url = forms.URLField(required=True)
 
+    def clean_desc(self):
+        desc = self.cleaned_data['desc']
+        if 'http:' in desc:
+            raise forms.ValidationError('bad juju')
+        return desc
+
 
 class PasswordResetForm(forms.Form):
     email = forms.EmailField(max_length=254)
