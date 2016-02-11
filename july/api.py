@@ -24,6 +24,8 @@ from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie.utils import trailing_slash
 from tastypie import fields
+from tastypie.exceptions import ImmediateHttpResponse
+from tastypie import http as tasty_http
 
 from july.people.models import Commit, Project, Location, Team, Language
 from july.game.models import Game, Board
@@ -60,7 +62,39 @@ def sub_resource(request, obj, resource, queryset):
     return to_be_serialized
 
 
-class UserResource(ModelResource):
+class CORSResource(ModelResource):
+    """
+    Adds CORS headers to resources that subclass this.
+    """
+    def create_response(self, *args, **kwargs):
+        response = super(CORSResource, self).create_response(*args, **kwargs)
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    def method_check(self, request, allowed=None):
+        if allowed is None:
+            allowed = []
+
+        request_method = request.method.lower()
+        allows = ','.join(map(str.upper, allowed))
+
+        if request_method == 'options':
+            response = http.HttpResponse(allows)
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Headers'] = 'Content-Type'
+            response['Allow'] = allows
+            raise ImmediateHttpResponse(response=response)
+
+        if request_method not in allowed:
+            response = tasty_http.HttpMethodNotAllowed(allows)
+            response['Allow'] = allows
+            raise ImmediateHttpResponse(response=response)
+
+        return request_method
+
+
+class UserResource(CORSResource):
 
     class Meta:
         queryset = User.objects.filter(is_active=True)
@@ -101,7 +135,7 @@ class UserResource(ModelResource):
         ]
 
 
-class ProjectResource(ModelResource):
+class ProjectResource(CORSResource):
 
     class Meta:
         queryset = Project.objects.all()
@@ -132,7 +166,7 @@ class ProjectResource(ModelResource):
         ]
 
 
-class LocationResource(ModelResource):
+class LocationResource(CORSResource):
 
     class Meta:
         queryset = Location.objects.filter(approved=True)
@@ -143,7 +177,7 @@ class LocationResource(ModelResource):
         }
 
 
-class TeamResource(ModelResource):
+class TeamResource(CORSResource):
 
     class Meta:
         queryset = Team.objects.filter(approved=True)
@@ -154,14 +188,14 @@ class TeamResource(ModelResource):
         }
 
 
-class LanguageResource(ModelResource):
+class LanguageResource(CORSResource):
 
     class Meta:
         queryset = Language.objects.all()
         cache = SimpleCache(timeout=300)
 
 
-class CommitResource(ModelResource):
+class CommitResource(CORSResource):
     user = fields.ForeignKey(UserResource, 'user', blank=True, null=True)
     project = fields.ForeignKey(ProjectResource, 'project',
                                 blank=True, null=True)
