@@ -113,7 +113,7 @@ def email_verify(request, uidb36, token):
         request, 'registration/email_verified.html', {'valid': valid})
 
 
-# @login_required
+@login_required
 def send_abuse(request):
     from forms import AbuseForm
     err_response = HttpResponse(

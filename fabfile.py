@@ -125,7 +125,7 @@ def deploy(migrate='no'):
     with cd('/usr/local/julython.org'):
         if not exists(VENV):
             run('virtualenv %s' % VENV)
-        run('%s/bin/pip install -q -U -r requirements.txt' % VENV)
+        # run('%s/bin/pip install -q -U -r requirements.txt' % VENV)
         if migrate != 'no':
             run('%s/bin/python manage.py migrate' % VENV)
         sudo('/usr/sbin/service julython restart')
