@@ -32,6 +32,12 @@ server {
 
     # Make site accessible from http://localhost/
     server_name localhost;
+    server_name julython.org;
+    server_name www.julython.org;
+    server_name local.julython.org;
+    server_name july.julython.org;
+    server_name httpd-server;
+    server_name 127.0.0.1;
 
     # Default proxy configuration
     proxy_set_header X-Real-IP $remote_addr;
@@ -40,51 +46,45 @@ server {
 
     # MESSAGING CONFIGURATION
     # =======================
-	push_stream_ping_message_interval 10s;
-	push_stream_message_template "{\"id\":~id~,\"channel\":\"~channel~\",\"text\":~text~,\"tag\":~tag~,\"time\":\"~time~\"}";
-	push_stream_content_type "application/json; charset=utf-8";
+    push_stream_ping_message_interval 10s;
+    push_stream_message_template "{\"id\":~id~,\"channel\":\"~channel~\",\"text\":~text~,\"tag\":~tag~,\"time\":\"~time~\"}";
+    # push_stream_content_type "application/json; charset=utf-8";
 
-	# Subscription for Websockets via nginx-push-stream-module
-	location ~ /events/ws/(.*) {
-		push_stream_websocket;
-		push_stream_websocket_allow_publish off;
-		set $push_stream_channels_path $1;
-	}
+    # Subscription for Websockets via nginx-push-stream-module
+    location ~ /events/ws/(.*) {
+        push_stream_subscriber websocket;
+        push_stream_websocket_allow_publish off;
+        push_stream_channels_path $1;
+    }
 
-	# Subscription for EventSource with nginx-push-stream-module
-	location ~ /events/ev/(.*) {
-		push_stream_subscriber;
-		push_stream_eventsource_support on;
-		set $push_stream_channels_path $1;
-	}
-
-	# Subscription for messaging system with nginx-push-stream-module
+    # Subscription for messaging system with nginx-push-stream-module
     location ~ /events/lp/(.*) {
         push_stream_subscriber long-polling;
-        set $push_stream_channels_path $1;
+        push_stream_channels_path $1;
     }
 
     # iFrame streaming for messaging system with nginx-push-stream-module
     location ~ /events/sub/(.*) {
         push_stream_subscriber;
-        set $push_stream_channels_path $1;
+        push_stream_channels_path $1;
     }
 
     # Messaging Channel Stats
     location ~ /events/stats/(.*) {
         push_stream_channels_statistics;
-        set $push_stream_channel_id $1;
+        push_stream_channels_path $1;
     }
 
     # Publish interface for messaging system
     location ~ /events/pub/(.*) {
-	# only allow on the local server -- may need to be changed
-	# to specific server(s) if this is scaled out to multiple
-	# nginx instances
-	allow 127.0.0.1;
-	deny all;
+        # only allow on the local server -- may need to be changed
+        # to specific server(s) if this is scaled out to multiple
+        # nginx instances
+        allow 172.16.0.0/12;
+        allow 127.0.0.1;
+        deny all;
         push_stream_publisher admin;
-        set $push_stream_channel_id $1;
+        push_stream_channels_path $1;
     }
 
     # Catch-all to let people know this namespace is reserved
@@ -96,10 +96,10 @@ server {
     # GENERAL CONFIGURATION
     # =====================
 
-	# Favicon
-	location /favicon.ico {
-		alias /usr/local/julython.org/static/favicon.ico;
-	}
+    # Favicon
+    location /favicon.ico {
+        alias /usr/local/julython.org/static/favicon.ico;
+    }
 
     # Static file configuration
     location /static/ {
@@ -110,13 +110,15 @@ server {
         }
     }
 
-    # Deny illegal Host headers
-    if ($host !~* ^(julython.org|www.julython.org)$ ) {
-        return 444;
-    }
-
     # Proxy all other requests to Django application
     location / {
-            proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://django:8036;
     }
+}
+
+# Deny illegal Host headers
+server {
+    listen 80 default_server;
+    # access_log off;
+    return 444;
 }

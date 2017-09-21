@@ -516,7 +516,8 @@ class PostCallbackHandler(View, JSONMixin):
 
     def _publish_commits(self, commits):
         """Publish the commits to the real time channel."""
-        host = self.request.META.get('HTTP_HOST', 'localhost:8000')
+        # host = self.request.META.get('HTTP_HOST', 'localhost:8000')
+        host = 'httpd-server'
         url = 'http://%s/events/pub/' % host
         for commit in commits[:3]:
             try:

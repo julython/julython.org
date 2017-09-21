@@ -3,7 +3,6 @@
 
 -r requirements-dev.txt
 
-distribute>=0.6.28
 MySQL-python
 gunicorn
 python-memcached

@@ -37,7 +37,7 @@ def test(coverage='False', skip_js='False'):
 
 
 @task
-def load(email=None, port=8000):
+def load(email=None, port=80):
     """Manually send a POST to api endpoints."""
     if not email:
         print "You must provide an email address 'fab load:me@foo.com'"
@@ -55,7 +55,7 @@ def load(email=None, port=8000):
         with open(json_file) as post_file:
             post = Template(post_file.read()).substitute({'__EMAIL__': email})
             payload = {'payload': post}
-            url = 'http://localhost:%s/api/v1/github' % port
+            url = 'http://127.0.0.1:%s/api/v1/github' % port
             response = requests.post(url, data=payload)
             print(cyan("%s %s" % (response.status_code, response.reason)))
             response.raise_for_status()
@@ -64,7 +64,7 @@ def load(email=None, port=8000):
         with open(json_file) as post_file:
             post = Template(post_file.read()).substitute({'__EMAIL__': email})
             payload = {'payload': post}
-            url = 'http://localhost:%s/api/v1/bitbucket' % port
+            url = 'http://127.0.0.1:%s/api/v1/bitbucket' % port
             response = requests.post(url, data=payload)
             print(cyan("%s %s" % (response.status_code, response.reason)))
             response.raise_for_status()
@@ -114,18 +114,36 @@ def prod(user='julython'):
 
 
 @task
+def bootstrap(user='julython'):
+    """Install packages and docker on a new host."""
+    sudo('apt-get install -y python-pip python-dev software-properties-common')
+    sudo('apt-get install -y apt-transport-https ca-certificates curl')
+    run('curl -fsSL https://download.docker.com/linux/ubuntu/gpg |'
+        ' sudo apt-key add -')
+    sudo('add-apt-repository "deb [arch=amd64]'
+         ' https://download.docker.com/linux/ubuntu'
+         ' $(lsb_release -cs) stable"')
+    sudo('apt-get update')
+    sudo('apt-get install -y docker-ce')
+    sudo('groupadd docker')
+    sudo('usermod -aG docker {user}'.format(user=user))
+    sudo('pip install docker-compose')
+
+
+@task
 def deploy(migrate='no'):
     """Deploy to production"""
     compile()
     local('python manage.py collectstatic')
     exclude = ['*.pyc', '*.db', 'htmlcov*', '.git', 'assets/*', 'data']
+    sudo('mkdir -p /usr/local/julython.org')
+    sudo('chown julython:julython /usr/local/julython.org')
     rsync_project('/usr/local', exclude=exclude)
 
-    VENV = '/usr/local/venvs/julython'
     with cd('/usr/local/julython.org'):
-        if not exists(VENV):
-            run('virtualenv %s' % VENV)
-        # run('%s/bin/pip install -q -U -r requirements.txt' % VENV)
-        if migrate != 'no':
-            run('%s/bin/python manage.py migrate' % VENV)
-        sudo('/usr/sbin/service julython restart')
+        run('make clean')
+        run('make build')
+        run('make prod')
+
+    if migrate is not 'no':
+        print(red("Please migrate by hand!"))
