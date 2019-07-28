@@ -23,6 +23,7 @@ to keep us on track towards our goals. There will also be a little
 bit of healthy competition and public flogging to encourage everyone
 to finish.
 
+
 Goals
 ------
 
