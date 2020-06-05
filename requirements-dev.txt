@@ -1,4 +1,4 @@
-Django==1.6.1
+Django==1.11.29
 django-tastypie==0.9.15
 Fabric==1.5.1
 django-social-auth==0.7.28
