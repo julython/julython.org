@@ -41,7 +41,7 @@ to see if you're padding your stats.
 Help
 ----
 
-This site is constaintly be tweaked and occasionally problems arise.
+This site is constantly be tweaked and occasionally problems arise.
 If you run into errors or just have general questions hit us up:
 
 Follow us on twitter at `@julython <https://twitter.com/#!/julython>`_.
