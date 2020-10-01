@@ -1,4 +1,4 @@
-Julython
+Julython its amazing project
 ========
 
 .. image:: https://api.travis-ci.org/julython/julython.org.png?branch=master
