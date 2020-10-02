@@ -4,7 +4,7 @@ Julython
 .. image:: https://api.travis-ci.org/julython/julython.org.png?branch=master
     :target: https://travis-ci.org/julython/julython.org
 
-July is for Programming
+July is for Programming python 
 -----------------------
 
 July 1st to July 31st, 31 days and nights of writing code.
