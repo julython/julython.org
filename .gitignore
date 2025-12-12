@@ -1,22 +1,17 @@
-*.py[co]
-*.sw[po]
-.project
-.pydevproject
-.settings
-secrets.py
-settings_local.py
+# Python-generated files
+__pycache__/
+*.py[oc]
 build/
-.venv
-assets/node_modules
-july/static_root/css
-july/static_root/js
-assets/_specrunner.html
-julython.db
-.idea/
-npm-debug.log
+dist/
+wheels/
+*.egg-info
 .coverage
-htmlcov/*
-/venv
-.vagrant
-.DS_Store
-static/*
+
+# Virtual environments
+.venv
+
+# Settings
+.env
+
+# Node
+node_modules

@@ -1,0 +1,297 @@
+import uuid
+from datetime import datetime
+from typing import Any, Optional
+from enum import Enum
+
+from sqlalchemy import String
+from sqlmodel import SQLModel, Field
+
+from july.db.types import (
+    CreatedAt,
+    FK,
+    ID,
+    Email,
+    Identifier,
+    JsonbData,
+    PrimaryKey,
+    ShortString,
+    StringArray,
+    Timestamp,
+    UpdatedAt,
+)
+
+
+# Enums
+class UserRole(str, Enum):
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
+
+
+class ReportStatus(str, Enum):
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+    RESOLVED = "resolved"
+    REJECTED = "rejected"
+
+
+class ReportType(str, Enum):
+    FAKE_DATA = "fake_data"
+    SPAM = "spam"
+    INAPPROPRIATE = "inappropriate"
+    CHEATING = "cheating"
+    OTHER = "other"
+
+
+class AnalysisStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FLAGGED = "flagged"
+
+
+# Base Model
+class Base(SQLModel, table=False):
+    id: uuid.UUID = PrimaryKey
+    created_at: datetime = CreatedAt
+    updated_at: datetime = UpdatedAt
+
+
+class UserCreate(SQLModel):
+    name: str
+    username: str
+
+
+class User(UserCreate, table=True):
+    id: uuid.UUID = PrimaryKey
+    created_at: datetime = CreatedAt
+    updated_at: datetime = UpdatedAt
+    avatar_url: Optional[str] = None
+    role: UserRole = Field(sa_type=String(20), default=UserRole.USER)
+    is_banned: bool = Field(default=False)
+    banned_reason: Optional[str] = None
+    banned_at: Optional[datetime] = Timestamp(nullable=True)
+    last_seen: Optional[datetime] = Timestamp(nullable=True)
+
+
+class Game(Base, table=True):
+    """Competition period (e.g., Julython 2024)"""
+
+    name: str = ShortString(nullable=False)
+    start: datetime = Timestamp(nullable=False, description="Start of the Game UTC-12")
+    end: datetime = Timestamp(nullable=False, description="End of the Game UTC+12")
+    commit_points: int = Field(default=1, description="points per commit")
+    project_points: int = Field(default=10, description="points per project")
+    is_active: bool = Field(default=False)
+
+    def __str__(self):
+        if self.end.month == 8:
+            return f"Julython {self.end.year}"
+        elif self.end.month == 2:
+            return f"J(an)ulython {self.end.year}"
+        else:
+            return f"Testathon {self.end.year}"
+
+
+class Project(Base, table=True):
+    """A GitHub repository being tracked"""
+
+    url: str = Field(unique=True, index=True)
+    name: str = ShortString(nullable=False)
+    slug: str = Field(unique=True, index=True)
+    description: Optional[str] = None
+    repo_id: Optional[int] = Field(default=None, index=True)
+    service: str = Field(default="github")
+    forked: bool = Field(default=False)
+    forks: int = Field(default=0)
+    watchers: int = Field(default=0)
+    parent_url: Optional[str] = None
+    is_active: bool = Field(default=True)
+
+
+class Commit(Base, table=True):
+    """Individual commit from webhook"""
+
+    user_id: uuid.UUID | None = FK("user.id", index=True, nullable=True)
+    project_id: uuid.UUID | None = FK("project.id", index=True, nullable=True)
+    game_id: uuid.UUID | None = FK("game.id", index=True, nullable=True)
+
+    hash: str = Identifier(unique=True, index=True)
+    author: str = ShortString()
+    email: str = Email()
+    message: str
+    url: str
+    timestamp: datetime = Timestamp(nullable=False)
+    languages: list[str] = StringArray(description="programming languages")
+    files: dict[str, Any] = JsonbData()
+
+    # AI verification status
+    is_verified: bool = Field(default=False)
+    is_flagged: bool = Field(default=False)
+    flag_reason: Optional[str] = None
+
+
+class Player(Base, table=True):
+    """User's participation in a specific game"""
+
+    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+
+    points: int = Field(default=0)
+    potential_points: int = Field(default=0)
+    verified_points: int = Field(default=0)
+
+    commit_count: int = Field(default=0)
+    project_count: int = Field(default=0)
+
+    analysis_status: AnalysisStatus = Field(
+        sa_type=String(20), default=AnalysisStatus.PENDING
+    )
+    last_analyzed_at: Optional[datetime] = Timestamp(nullable=True)
+
+
+class Board(Base, table=True):
+    """Project leaderboard per game"""
+
+    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+    project_id: uuid.UUID | None = Field(
+        foreign_key="project.id", index=True, nullable=True
+    )
+
+    points: int = Field(default=0)
+    potential_points: int = Field(default=0)
+    verified_points: int = Field(default=0)
+
+    commit_count: int = Field(default=0)
+    contributor_count: int = Field(default=0)
+
+
+class PlayerBoard(Base, table=True):
+    """Many-to-many: which projects a player has contributed to"""
+
+    player_id: uuid.UUID = Field(foreign_key="player.id", index=True)
+    board_id: uuid.UUID = Field(foreign_key="board.id", index=True)
+    commit_count: int = Field(default=0)
+
+
+class Language(Base, table=True):
+    """Programming languages"""
+
+    name: str = Field(unique=True, index=True)
+
+
+class LanguageBoard(Base, table=True):
+    """Language leaderboard per game"""
+
+    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+    language_id: uuid.UUID = Field(foreign_key="language.id", index=True)
+    points: int = Field(default=0)
+    commit_count: int = Field(default=0)
+
+
+class RepoAnalysis(Base, table=True):
+    """AI analysis results for a user's repo during a game"""
+
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    project_id: uuid.UUID = Field(foreign_key="project.id", index=True)
+    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+
+    analyzed_at: datetime
+    ai_model: str = Field(default="gpt-4")
+    status: AnalysisStatus = Field(sa_type=String(20), default=AnalysisStatus.PENDING)
+
+    # Score impacts
+    quality_score: float
+    authenticity_score: float = Field(default=100.0)
+    points_adjustment: int = Field(default=0)
+
+    # AI insights
+    quality_reasoning: Optional[str] = None
+    authenticity_reasoning: Optional[str] = None
+    dev_style: Optional[str] = None
+    style_reasoning: Optional[str] = None
+    ai_insights: Optional[str] = None
+    red_flags: Optional[str] = None
+    key_strengths: Optional[str] = None
+    recommendations: Optional[str] = None
+
+    # Statistics
+    commit_count: int
+    date_range_start: datetime
+    date_range_end: datetime
+    streak_days: Optional[int] = None
+    avg_commits_per_day: Optional[float] = None
+    ghost_commit_ratio: Optional[float] = None
+
+    # Patterns
+    commit_patterns: Optional[str] = None
+    language_breakdown: Optional[str] = None
+    peak_activity_hours: Optional[str] = None
+    consistency_score: Optional[float] = None
+
+    # Visibility and moderation
+    is_public: bool = Field(default=True)
+    is_flagged: bool = Field(default=False)
+    is_removed: bool = Field(default=False)
+    removed_reason: Optional[str] = None
+    removed_at: Optional[datetime] = Timestamp(nullable=True)
+
+    # Social
+    likes_count: int = Field(default=0)
+    reports_count: int = Field(default=0)
+
+
+# Teams
+class Team(Base, table=True):
+    name: str = Field(unique=True, index=True)
+    slug: str = Field(unique=True, index=True)
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    is_public: bool = Field(default=True)
+    member_count: int = Field(default=0)
+
+
+class TeamMember(Base, table=True):
+    team_id: uuid.UUID = Field(foreign_key="team.id", index=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    role: str = Field(default="member")
+
+
+class TeamBoard(Base, table=True):
+    """Team leaderboard per game"""
+
+    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+    team_id: uuid.UUID = Field(foreign_key="team.id", index=True)
+    points: int = Field(default=0)
+    member_count: int = Field(default=0)
+
+
+# Social features
+class AnalysisLike(Base, table=True):
+    user_id: uuid.UUID = Field(foreign_key="user.id")
+    analysis_id: uuid.UUID = Field(foreign_key="repoanalysis.id")
+
+
+class Report(Base, table=True):
+    reporter_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    analysis_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="repoanalysis.id", index=True
+    )
+    reported_user_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="user.id", index=True
+    )
+    report_type: ReportType = Field(sa_type=String(20), default=ReportType.SPAM)
+    reason: str = ShortString(description="Short reason for reporting 'other' type")
+    status: ReportStatus = Field(sa_type=String(20), default=ReportStatus.PENDING)
+    reviewed_by: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    reviewed_at: Optional[datetime] = Timestamp(nullable=True)
+    moderator_notes: Optional[str] = None
+
+
+class AuditLog(Base, table=True):
+    moderator_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    action: str
+    target_type: str
+    target_id: str
+    reason: Optional[str] = None

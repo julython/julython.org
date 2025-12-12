@@ -1,0 +1,14 @@
+{
+  "name": "webhooks",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "webhooks": "smee -u https://smee.io/lgJ1cdlJ1RUmiSp -t http://localhost:8000/api/github"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "smee-client": "5.0.0"
+  }
+}

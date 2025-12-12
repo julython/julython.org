@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: ./
+    command: dev
+    env_file:
+    - docker-compose.env
+    - .env
+    ports:
+    - 8000:8000
+    depends_on:
+      db_migrate:
+        condition: service_completed_successfully
+    volumes:
+    # We map the local package onto the in-container directory (trailing slash matters) so
+    # the application is restarted when files change.
+    - ./july:/app/july/
+
+  db_create:
+    container_name: "july-db-create"
+    build:
+      context: ./
+    command: ['db', 'create']
+    env_file:
+    - docker-compose.env
+    - .env
+
+  db_migrate:
+    container_name: "july-db-migrate"
+    build:
+      context: ./
+    command: ['db', 'upgrade']
+    env_file:
+    - docker-compose.env
+    - .env
+    depends_on:
+      db_create:
+        condition: service_completed_successfully
+
+  postgres:
+    container_name: postgres
+    image: postgres:16.6@sha256:557fea37a744d5f4c8faab304b0a90858b53ab119735a88c131fd19dab802f36
+    environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    - POSTGRES_DB=postgres
+    ports:
+    - 5432:5432
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    container_name: adminer
+    image: adminer:5.3.0@sha256:730215fe535daca9a2f378c48321bc615c8f0d88668721e0eff530fa35b6e8f6
+    environment:
+    - ADMINER_DESIGN='nette'
+    ports:
+    - 8080:8080
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,25 +1,11 @@
-SHELL := /bin/bash
-COMPOSE_FLAGS := --project-name julython -f ./docker-compose.yml
-PROD_FLAGS := --project-name julython -f ./docker-compose-prod.yml
-COMPOSE_BUILD_SERVICES := python
-COMPOSE_SERVICES := httpd-server django
-
-
-
-#%
-#% Usage:
-#%   make <command>
-#%
-#% Getting Started:
-#%   make setup
-#%   make run
-#%
-#% Available Commands:
-
 REQUIREMENTS		:= pyproject.toml
 SHELL				:= /bin/bash
-VIRTUAL_ENV			:= venv
+VIRTUAL_ENV			:= .venv
 PYTHON				:= $(shell command -v python3 || command -v python)
+app_name 			:= july
+
+# Setup the env
+export PYTHONPATH = ./
 
 # PHONY just means this target does not make any files
 .PHONY: setup clean test help
@@ -28,63 +14,49 @@ default: help
 
 # Make sure the virtualenv exists, create it if not.
 $(VIRTUAL_ENV):
-	$(PYTHON) -m venv $(VIRTUAL_ENV)
+	uv sync
 
 # Check for the existence/timestamp of .reqs-installed if the
 # file is missing or older than the pyproject.toml this will run pip
 $(VIRTUAL_ENV)/.reqs-installed: $(REQUIREMENTS)
-	$(VIRTUAL_ENV)/bin/pip install -e .
+	uv sync
 	touch $(VIRTUAL_ENV)/.reqs-installed
+
+.env:
+	cp dotenv .env
 
 setup: $(VIRTUAL_ENV) $(VIRTUAL_ENV)/.reqs-installed ## Setup local environment
 
-clean: ## Clean your local workspace
-	rm -rf $(VIRTUAL_ENV)
-	rm -rf htmlcov
-	rm -rf .coverage
-	rm -rf *.egg-info
-	rm -f db.sqlite
-	find . -name '*.py[co]' -delete
+deps: ## Make sure the docker deps are running
+	docker compose up -d postgres adminer
 
-test: setup  ## Test the code
+up: dev
+dev: ## Run the service in docker
+	docker compose up api
+
+test: deps ## Run pytests
 	$(VIRTUAL_ENV)/bin/pytest
 
-format:  ## Format the code with ruff
-	$(VIRTUAL_ENV)/bin/ruff format {{cookiecutter.project_slug}} tests
+test-failed: deps ## Run pytests
+	$(VIRTUAL_ENV)/bin/pytest --lf
 
-mypy: setup ## Run mypy on code
-	$(VIRTUAL_ENV)/bin/mypy ./{{cookiecutter.project_slug}}
+db_create: deps ## Create the initial database
+	$(VIRTUAL_ENV)/bin/python -m $(app_name) db create
 
-run: setup  ## Run the application
-	$(VIRTUAL_ENV)/bin/python -m {{cookiecutter.project_slug}} run
+migrate: deps  ## Upgrade the database by applying migrations
+	$(VIRTUAL_ENV)/bin/python -m $(app_name) db upgrade
 
-generate: setup  ## Run cannula codegen on the project. Pass args like (make generate args='--force')
-	$(VIRTUAL_ENV)/bin/cannula codegen $(args)
+upgrade: migrate  ## Alias: Upgrade the database by applying migrations
 
-initdb: setup  ## Create database tables
-	$(VIRTUAL_ENV)/bin/python -m {{cookiecutter.project_slug}} initdb
+downgrade: deps ## Downgrade the database to the previous revision
+	$(VIRTUAL_ENV)/bin/python -m $(app_name) db downgrade
 
-addusers: setup  ## Add test users
-	$(VIRTUAL_ENV)/bin/python -m {{cookiecutter.project_slug}} addusers
+revision: deps ## Generate a new database migration script  (`make revision message="Message"`)
+	$(VIRTUAL_ENV)/bin/python -m $(app_name) db revision -m "$(message)"
 
-build:
-	@docker compose $(COMPOSE_FLAGS) build --force-rm --pull $(COMPOSE_BUILD_SERVICES)
 
-up:
-	@docker compose $(COMPOSE_FLAGS) up --abort-on-container-exit $(COMPOSE_SERVICES)
+help:
+	@@grep -h '^[a-zA-Z]' $(MAKEFILE_LIST) | awk -F ':.*?## ' 'NF==2 {printf "   %-20s%s\n", $$1, $$2}' | sort
 
-prod:
-	@docker compose $(PROD_FLAGS) up -d $(COMPOSE_SERVICES)
 
-stop:
-	@docker compose $(COMPOSE_FLAGS) stop --timeout 0
-
-clean:
-	@docker compose $(COMPOSE_FLAGS) down --volumes
-
-clean-all:
-	@docker compose $(COMPOSE_FLAGS) down --volumes --rmi all
-
-help: ## Show the available commands
-	@grep '^#%' $(MAKEFILE_LIST) | sed -e 's/#%//'
-	@grep '^[a-zA-Z]' $(MAKEFILE_LIST) | awk -F ':.*?## ' 'NF==2 {printf "   %-20s%s\n", $$1, $$2}' | sort
+.PHONY: help up dev test
