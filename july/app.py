@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from july.routes import github
+from july.routes import config, webhooks
 from july.globals import context, settings
 from july.utils.logger import setup_logging
 
@@ -46,7 +46,8 @@ def create_app() -> FastAPI:
     app = init_middlewares(app)
 
     # URL routes
-    app.include_router(github.router)
+    app.include_router(config.router)
+    app.include_router(webhooks.router)
     return app
 
 

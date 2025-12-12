@@ -1,9 +1,9 @@
 """
-init
+initial tables
 
-Revision ID: 0847a0c6706c
+Revision ID: f3f9d4920fca
 Revises: 
-Create Date: 2025-12-09 23:00:44.152410
+Create Date: 2025-12-11 21:52:23.605171
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0847a0c6706c'
+revision = 'f3f9d4920fca'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -59,7 +59,9 @@ def upgrade():
     sa.Column('watchers', sa.Integer(), nullable=False),
     sa.Column('parent_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('service', 'repo_id', name='uq_project_service_repo'),
+    sa.UniqueConstraint('slug', name='uq_project_slug')
     )
     op.create_index(op.f('ix_project_created_at'), 'project', ['created_at'], unique=False)
     op.create_index(op.f('ix_project_repo_id'), 'project', ['repo_id'], unique=False)
@@ -74,6 +76,7 @@ def upgrade():
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('avatar_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('is_banned', sa.Boolean(), nullable=False),
     sa.Column('banned_reason', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('banned_at', postgresql.TIMESTAMP(timezone=True), nullable=True),

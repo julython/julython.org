@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Optional
 from enum import Enum
 
-from sqlalchemy import String
+from sqlalchemy import String, UniqueConstraint
 from sqlmodel import SQLModel, Field
 
 from july.db.types import (
@@ -68,6 +68,7 @@ class User(UserCreate, table=True):
     updated_at: datetime = UpdatedAt
     avatar_url: Optional[str] = None
     role: UserRole = Field(sa_type=String(20), default=UserRole.USER)
+    is_active: bool = Field(default=True)
     is_banned: bool = Field(default=False)
     banned_reason: Optional[str] = None
     banned_at: Optional[datetime] = Timestamp(nullable=True)
@@ -107,6 +108,10 @@ class Project(Base, table=True):
     watchers: int = Field(default=0)
     parent_url: Optional[str] = None
     is_active: bool = Field(default=True)
+
+    __table_args__ = (
+        UniqueConstraint("service", "repo_id", name="uq_project_service_repo"),
+    )
 
 
 class Commit(Base, table=True):

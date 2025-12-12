@@ -17,3 +17,8 @@ def from_now(**kwargs) -> datetime:
     """
     currently = now()
     return currently + timedelta(**kwargs)
+
+
+def parse_timestamp(ts: str) -> datetime:
+    ts = ts.replace("Z", "+00:00")
+    return datetime.fromisoformat(ts)

@@ -94,7 +94,7 @@ def alembic_config(database_uri: str) -> Config:
 
 
 @pytest.fixture()
-async def client() -> httpx.AsyncClient:
+async def client(db) -> httpx.AsyncClient:
     """The test client for the main user, who belongs to an organization."""
     transport = httpx.ASGITransport(
         app=create_app(),
@@ -175,3 +175,93 @@ async def player_factory(
         return player
 
     return _create
+
+
+@pytest.fixture
+def bitbucket_payload() -> dict:
+    return {
+        "canon_url": "https://bitbucket.org",
+        "repository": {
+            "absolute_url": "/team/bb-repo/",
+            "name": "bb-repo",
+            "owner": "team",
+            "fork": False,
+            "website": "https://example.com",
+        },
+        "commits": [
+            {
+                "raw_node": "fedcba987654",
+                "node": "fedcba9",
+                "message": "Update docs",
+                "utctimestamp": "2024-07-15 12:00:00+00:00",
+                "author": "bbuser",
+                "raw_author": "BB User <bb@example.com>",
+                "files": [
+                    {"file": "README.md", "type": "modified"},
+                    {"file": "app.go", "type": "added"},
+                ],
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def gitlab_payload() -> dict:
+    return {
+        "object_kind": "push",
+        "ref": "refs/heads/main",
+        "user_username": "gitlabuser",
+        "project": {
+            "id": 98765,
+            "name": "gitlab-project",
+            "path_with_namespace": "team/gitlab-project",
+            "web_url": "https://gitlab.com/team/gitlab-project",
+            "namespace": "team",
+            "description": "A GitLab project",
+        },
+        "commits": [
+            {
+                "id": "def789abc",
+                "message": "Add feature",
+                "timestamp": "2024-07-15T15:00:00Z",
+                "url": "https://gitlab.com/team/gitlab-project/-/commit/def789",
+                "author": {"name": "GL User", "email": "gl@example.com"},
+                "added": ["feature.rs"],
+                "modified": [],
+                "removed": [],
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def github_payload() -> dict:
+    return {
+        "ref": "refs/heads/master",
+        "repository": {
+            "id": 12345,
+            "name": "test-repo",
+            "full_name": "user/test-repo",
+            "html_url": "https://github.com/user/test-repo",
+            "description": "A test repository",
+            "owner": {"login": "user"},
+            "forks": 5,
+            "watchers": 10,
+        },
+        "commits": [
+            {
+                "id": "abc123def456",
+                "message": "Fix bug",
+                "timestamp": "2024-07-15T10:30:00-05:00",
+                "url": "https://github.com/user/test-repo/commit/abc123",
+                "author": {
+                    "name": "Test User",
+                    "email": "test@example.com",
+                    "username": "testuser",
+                },
+                "added": ["new.py"],
+                "modified": ["main.py"],
+                "removed": ["old.py"],
+            }
+        ],
+    }

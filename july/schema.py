@@ -1,36 +1,85 @@
+import re
 from datetime import datetime
+from os.path import splitext
 from typing import Optional
+from urllib.parse import urlparse
 
-from pydantic import BaseModel
+import structlog
+from pydantic import BaseModel, Field, computed_field
+
 from july.db.models import ReportType, ReportStatus
 
+logger = structlog.stdlib.get_logger(__name__)
 
-class AnalysisSubmission(BaseModel):
-    repo_full_name: str
-    repo_url: str
-    team_id: Optional[int] = None
-    commit_count: int
-    date_range_start: datetime
-    date_range_end: datetime
-    ai_model: str = "rule_based"
-    quality_score: float
-    quality_reasoning: Optional[str] = None
-    dev_style: str
-    style_reasoning: Optional[str] = None
-    authenticity_score: float = 100.0
-    authenticity_reasoning: Optional[str] = None
-    ai_insights: Optional[str] = None
-    red_flags: Optional[list] = None
-    key_strengths: Optional[list] = None
-    recommendations: Optional[list] = None
-    streak_days: Optional[int] = None
-    avg_commits_per_day: Optional[float] = None
-    commit_patterns: Optional[dict] = None
-    language_breakdown: Optional[dict] = None
-    peak_activity_hours: Optional[dict] = None
-    consistency_score: Optional[float] = None
-    ghost_commit_ratio: Optional[float] = None
-    is_public: bool = True
+
+HOST_ABBR = {
+    "github.com": "gh",
+    "gitlab.com": "gl",
+    "bitbucket.org": "bb",
+}
+
+
+def parse_project_slug(url: str) -> str:
+    """Parse a project url and return a slug.
+
+    Example: http://github.com/julython/julython.org -> gh-julython-julython_org
+    """
+    if not url:
+        return ""
+    parsed = urlparse(url)
+    path = parsed.path.strip("/")
+    host_abbr = HOST_ABBR.get(parsed.netloc, parsed.netloc.replace(".", "-"))
+    name = path.replace("/", "-").replace(".", "_")
+    return f"{host_abbr}-{name}"
+
+
+class FileChange(BaseModel):
+    file: str
+    type: str  # added, modified, removed
+    language: str | None = None
+
+
+class CommitData(BaseModel):
+    hash: str
+    message: str = ""
+    timestamp: datetime
+    url: str = ""
+    author_name: str = ""
+    author_email: str = ""
+    author_username: str | None = None
+    files: list[FileChange] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def languages(self) -> list[str]:
+        return list({f.language for f in self.files if f.language})
+
+
+class RepoData(BaseModel):
+    url: str
+    name: str
+    description: str = ""
+    service: str
+    repo_id: int | None = None
+    owner: str = ""
+    forked: bool = False
+    forks: int = 0
+    watchers: int = 0
+
+    @computed_field
+    @property
+    def slug(self) -> str:
+        return parse_project_slug(self.url)
+
+
+class WebhookPayload(BaseModel):
+    provider: str
+    before: str
+    after: str
+    ref: str = ""
+    repo: RepoData
+    commits: list[CommitData] = Field(default_factory=list)
+    forced: bool = False
 
 
 class TeamCreate(BaseModel):

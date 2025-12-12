@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-import logging
+import tomllib
+from functools import cached_property
 from pathlib import Path
 from typing import Optional
-
+from structlog.stdlib import get_logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_PATH = Path(__file__).resolve().parents[1]
 ENV_VAR_PREFIX = "JULY_"
 
-log = logging.getLogger(__name__)
+
+log = get_logger(__name__)
 
 
 class Settings(BaseSettings):
@@ -55,13 +57,20 @@ class Settings(BaseSettings):
     auth_oauth_client_id: str = "local-dev-host"
     auth_oauth_client_secret: str = ""
 
-    openapi_url: Optional[str] = None
+    openapi_url: str = "/api/openapi.json"
     openapi_servers: list[dict[str, str]] = []
-    docs_url: Optional[str] = None
-    redoc_url: Optional[str] = None
+    docs_url: str = "/api/docs"
+    redoc_url: Optional[str] = "/api"
     root_path: str = ""
 
-    @property
+    @cached_property
     def database_uri(self) -> str:
         """Return the database URI construct from individual components."""
         return f"{self.database_scheme}{self.database_username}:{self.database_password}@{self.database_hostname}/{self.database_name}"
+
+    @cached_property
+    def pyproject(self) -> dict:
+        log.info("looking for pyproject")
+        pyproject_path = self.base_path / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            return tomllib.load(f).get("project", {})
