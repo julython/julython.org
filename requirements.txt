@@ -1,9 +1,0 @@
-# This is for production if you are just working locally
-# you can use requirements-dev.txt to avoid installing mysql
-
--r requirements-dev.txt
-
-MySQL-python
-gunicorn
-python-memcached
-newrelic
