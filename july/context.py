@@ -16,14 +16,16 @@ class Context:
 
     async def initialize(self, settings: Settings) -> None:
         """Initialize the global context with connections to other services."""
-        self.db = await init_database(settings.database_uri)
-        self.db_session = async_sessionmaker(
-            self.db,
-            # This allows us to access models that are detached from the session
-            # https://docs.sqlalchemy.org/en/20/errors.html#error-bhk3
-            expire_on_commit=False,
-        )
+        if settings.database_available:
+            self.db = await init_database(settings.database_uri)
+            self.db_session = async_sessionmaker(
+                self.db,
+                # This allows us to access models that are detached from the session
+                # https://docs.sqlalchemy.org/en/20/errors.html#error-bhk3
+                expire_on_commit=False,
+            )
 
     async def shutdown(self) -> None:
         """Teardown all open clients or connection that need cleanup."""
-        await teardown_database(self.db)
+        if self.db:
+            await teardown_database(self.db)

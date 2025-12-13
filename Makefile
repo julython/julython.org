@@ -33,7 +33,7 @@ deps: ## Make sure the docker deps are running
 
 up: dev
 dev: ## Run the service in docker
-	docker compose up api
+	docker compose up api --build
 
 test: deps ## Run pytests
 	$(VIRTUAL_ENV)/bin/pytest
