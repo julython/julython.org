@@ -3,6 +3,7 @@ SHELL				:= /bin/bash
 VIRTUAL_ENV			:= .venv
 PYTHON				:= $(shell command -v python3 || command -v python)
 app_name 			:= july
+git_sha				:= $(shell git rev-parse --short=8 HEAD)
 
 # Setup the env
 export PYTHONPATH = ./
@@ -39,6 +40,9 @@ test: deps ## Run pytests
 
 test-failed: deps ## Run pytests
 	$(VIRTUAL_ENV)/bin/pytest --lf
+
+build:  ## Build the docker image
+	docker build . -t july:$(git_sha)
 
 db_create: deps ## Create the initial database
 	$(VIRTUAL_ENV)/bin/python -m $(app_name) db create
