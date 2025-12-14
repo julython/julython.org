@@ -8,7 +8,6 @@ from structlog.stdlib import get_logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_PATH = Path(__file__).resolve().parents[1]
-ENV_VAR_PREFIX = "JULY_"
 
 
 log = get_logger(__name__)
@@ -18,7 +17,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix=ENV_VAR_PREFIX,
         extra="ignore",
     )
 
