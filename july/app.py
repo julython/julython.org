@@ -3,35 +3,31 @@ from typing import AsyncGenerator
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-from july.routes import config, webhooks
-from july.globals import context, settings
+from july.routes import config, ui, webhooks
+from july.globals import context, settings, Settings
+from july.middleware import CacheHeadersMiddleware
 from july.utils.logger import setup_logging
-
-setup_logging("july", debug=True, disable_access_log=False)
-
-
-def init_middlewares(app: FastAPI) -> FastAPI:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    return app
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     await context.initialize(settings)
     yield
-    await context.shutdown()
+    await context.shutdown(settings)
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings) -> FastAPI:
     """Factory pattern to generate an app instance."""
+    setup_logging(
+        "july",
+        debug=settings.debug,
+        json_logging=settings.json_logging,
+        disable_access_log=settings.disable_access_log,
+    )
+
     app = FastAPI(
         title=settings.api_title,
         description=settings.api_description,
@@ -43,32 +39,27 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app = init_middlewares(app)
-
-    # URL routes
-    app.include_router(config.router)
-    app.include_router(webhooks.router)
-    return app
-
-
-# The main instance of the app, which is run by uvicorn
-app = create_app()
-
-# The string reference to the app object.
-# We need to use a string if we want to use reload=True during development.
-app_import_path_string = "july.app:app"
-
-
-def start_server(dev: bool = False) -> None:  # pragma: no cover
-    uvicorn.run(
-        app_import_path_string,
-        host=settings.host,
-        port=settings.port,
-        log_config=None,
-        reload=dev,
-        access_log=False,
+    # CORS Settings
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
+    # Cache Settings
+    app.add_middleware(
+        CacheHeadersMiddleware,
+        asset_prefix=settings.asset_prefix,
+        api_prefix=settings.api_prefix,
+    )
 
-if __name__ == "__main__":
-    start_server()
+    # Add API routes
+    app.include_router(config.router)
+    app.include_router(webhooks.router)
+
+    # Add UI routes last as they are greedy
+    app.include_router(ui.router)
+
+    return app

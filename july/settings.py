@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     # The base path of the service
     base_path: Path = BASE_PATH
+    static_dir: Path = BASE_PATH / "static"
+    asset_prefix: str = "/assets"
+    api_prefix: str = "/api"
 
     # App settings, used to tell uvicorn how to run
     debug: bool = False
@@ -47,7 +50,6 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
 
     # The parameters used by FastAPI when generating API docs
-    api_prefix: str = ""
     api_title: str = "Julython API"
     api_description: str = ""
 

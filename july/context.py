@@ -25,7 +25,7 @@ class Context:
                 expire_on_commit=False,
             )
 
-    async def shutdown(self) -> None:
+    async def shutdown(self, settings: Settings) -> None:
         """Teardown all open clients or connection that need cleanup."""
-        if self.db:
+        if settings.database_available and self.db:
             await teardown_database(self.db)

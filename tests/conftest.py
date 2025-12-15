@@ -1,6 +1,7 @@
+import pathlib
+import uuid
 from datetime import datetime
 from typing import Any, AsyncGenerator, TypeVar
-import uuid
 
 import httpx
 import pytest
@@ -15,11 +16,15 @@ from sqlmodel import SQLModel
 
 from july.app import create_app
 from july.db import ensure_database_exists, init_database, models, teardown_database
-from july.globals import context, settings
+from july.globals import context
 from july.services import game_service
+from july.settings import Settings
 from july.utils.logger import setup_logging
 
 from tests.fixtures import INAGURAL_GAME
+
+# Fake static
+TEST_STATIC = pathlib.Path(__file__).parent / "static"
 
 # For typing output of generators with yield statements
 T = TypeVar("T")
@@ -33,20 +38,23 @@ def database_name() -> str:
     return "july_test"
 
 
-@pytest.fixture(scope="function", autouse=True)
-def init_settings_and_mocks(monkeypatch: Any, database_name: str) -> None:
+@pytest.fixture(scope="session")
+def settings(database_name: str) -> Settings:
     """Resets the settings to the defaults before each test."""
-    monkeypatch.setattr(settings, "database_name", database_name)
+    from july.globals import settings
+
+    settings.database_name = database_name
+    settings.database_available = True
+    settings.static_dir = TEST_STATIC
+    return settings
 
 
 @pytest.fixture(scope="session")
-async def database_uri(database_name: str) -> str:
+async def database_uri(settings: Settings) -> str:
     """Construct a database connection string."""
-    database_uri_root, _, _ = settings.database_uri.rpartition("/")
-    database_uri = f"{database_uri_root}/{database_name}"
-    await ensure_database_exists(database_uri)
+    await ensure_database_exists(settings.database_uri)
 
-    return database_uri
+    return settings.database_uri
 
 
 @pytest.fixture(scope="session")
@@ -67,7 +75,9 @@ async def clean_database(database_uri: str) -> YieldFixture[AsyncEngine]:
 
 @pytest.fixture(scope="function")
 async def db(
-    clean_database: AsyncEngine, database_uri: str
+    clean_database: AsyncEngine,
+    database_uri: str,
+    settings: Settings,
 ) -> YieldFixture[async_sessionmaker]:
     """Test database, clears all database tables before every test."""
     await context.initialize(settings)
@@ -79,25 +89,25 @@ async def db(
         for table in reversed(SQLModel.metadata.sorted_tables):
             await conn.execute(text(f'DELETE FROM "{table.name}"'))
 
-    await context.shutdown()
+    await context.shutdown(settings)
 
 
 @pytest.fixture()
-def alembic_config(database_uri: str) -> Config:
+def alembic_config(settings: Settings) -> Config:
     """This Fixture overrides the alembic config for `pytest-alembic` to point at the test database."""
     alembic_config = Config(str(settings.base_path / "alembic.ini"))
     alembic_config.set_main_option(
         "script_location", str(settings.base_path / "migrations")
     )
-    alembic_config.set_main_option("sqlalchemy.url", database_uri)
+    alembic_config.set_main_option("sqlalchemy.url", settings.database_uri)
     return alembic_config
 
 
 @pytest.fixture()
-async def client(db) -> httpx.AsyncClient:
+async def client(db: async_sessionmaker, settings: Settings) -> httpx.AsyncClient:
     """The test client for the main user, who belongs to an organization."""
     transport = httpx.ASGITransport(
-        app=create_app(),
+        app=create_app(settings),
     )
     client = httpx.AsyncClient(transport=transport, base_url="http://test")
     return client

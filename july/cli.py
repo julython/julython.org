@@ -4,11 +4,19 @@ from pathlib import Path
 
 import click
 import yaml
+import uvicorn
 from alembic import command
 from alembic.config import Config
 
-from july.app import app, start_server
+from july.app import create_app
 from july.globals import settings
+
+# The main instance of the app, which is run by uvicorn
+app = create_app(settings)
+
+# The string reference to the app object.
+# We need to use a string if we want to use reload=True during development.
+app_import_path_string = "july.cli:app"
 
 
 @click.group()
@@ -19,13 +27,26 @@ def cli() -> None:
 @cli.command()
 def dev() -> None:
     """Start the server in development mode."""
-    start_server(dev=True)
+    uvicorn.run(
+        app_import_path_string,
+        host=settings.host,
+        port=settings.port,
+        log_config=None,
+        reload=True,
+        access_log=False,
+    )
 
 
 @cli.command()
 def prod() -> None:
     """Start the server in production mode."""
-    start_server()
+    uvicorn.run(
+        app_import_path_string,
+        host=settings.host,
+        port=settings.port,
+        log_config=None,
+        access_log=False,
+    )
 
 
 @cli.command()
