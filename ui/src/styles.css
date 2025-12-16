@@ -1,40 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@200;400;700&display=swap');
-
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-  @layer base {
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-      border-color: var(--color-gray-200, currentcolor);
-    }
-  }
-*/
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap');
 
 :root {
   --purple: #9E62B6;
+  --purple-dark: #2D1F3D;
+  --purple-deeper: #1A1225;
   --orange: #EF621C;
   --blue: #508FD8;
   --green: #499138;
   --yellow: #EAAC49;
   --gray: #AAA;
   --light-gray: #F1F1F1;
+  --white: #FFF;
+  --black: #1a1a2e;
+
+  /* Theme tokens */
+  --bg-primary: var(--white);
+  --bg-secondary: var(--light-gray);
+  --bg-navbar: var(--purple);
+  --text-primary: var(--black);
+  --text-secondary: #555;
+  --border-color: var(--gray);
+}
+
+[data-theme="dark"] {
+  --bg-primary: var(--purple-deeper);
+  --bg-secondary: var(--purple-dark);
+  --bg-navbar: var(--purple-dark);
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --border-color: #4A3A5A;
+  --light-gray: #3D2D4D;
 }
 
 * { box-sizing: border-box; }
 
 body {
   font-family: "Exo 2", sans-serif;
-  font-weight: 200;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.6;
   margin: 0;
   padding-top: 50px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -43,39 +52,108 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
 }
 
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  color: #C9A0DC;
+}
+
 /* Layout */
-.container { max-width: 1170px; margin: 0 auto; padding: 0 15px;}
+.container { max-width: 1170px; margin: 0 auto; padding: 0 15px; }
 .row { display: flex; flex-wrap: wrap; margin: 0 -15px; }
 .span4 { flex: 0 0 33.333%; padding: 0 15px; }
+.span5 { flex: 0 0 41.666%; padding: 0 15px; }
 .span8 { flex: 0 0 66.666%; padding: 0 15px; }
+.span10 { flex: 0 0 83.333%; padding: 0 15px; }
 .span12 { flex: 0 0 100%; padding: 0 15px; }
+.offset1 { margin-left: 8.333%; }
 
 @media (max-width: 768px) {
-  .span4, .span8 { flex: 0 0 100%; }
+  .span4, .span5, .span8, .span10 { flex: 0 0 100%; }
+  .offset1 { margin-left: 0; }
 }
 
 /* Navbar */
-.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; }
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-navbar);
+  transition: background 0.3s;
+}
+
 .navbar-inner {
-  background: var(--purple);
-  padding: 10px 20px;
+  max-width: 1170px;
+  margin: 0 auto;
+  padding: 0 15px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  height: 50px;
 }
+
+.navbar .brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  margin-right: 30px;
+}
+
 .navbar .logo {
   width: 127px;
   height: 27px;
   background: url('/images/julython_nav_logo.png') no-repeat center;
   background-size: contain;
 }
-.nav { display: flex; gap: 10px; list-style: none; margin: 0; padding: 0; }
-.nav a { color: white; text-decoration: none; padding: 8px 12px; }
-.nav a:hover { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.nav li { display: flex; align-items: center; }
+
+.nav a {
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.nav a:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  margin-left: auto;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.2);
+}
 
 /* Logo */
 #logo {
-  width: 430px;
+  max-width: 430px;
+  width: 100%;
   height: 96px;
   margin: 40px auto;
   background: url('/images/julython_logo_large.png') no-repeat center;
@@ -84,47 +162,91 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Sections */
-.offset-container { background: var(--light-gray); padding: 24px 0; }
-.section-container { border-top: 1px solid var(--gray); padding: 40px 0; }
+.offset-container {
+  background: var(--bg-secondary);
+  padding: 24px 0;
+  border-top: 3px solid var(--purple);
+  transition: background 0.3s;
+}
+
+.section-container {
+  border-top: 1px solid var(--border-color);
+  padding: 40px 0;
+}
+
 .section-container.no-border { border-top: none; }
 
-.section-header { display: flex; align-items: center; gap: 8px; font-size: 24px; }
-.section-icon { width: 24px; height: 24px; background-size: contain; background-repeat: no-repeat; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+.section-icon {
+  width: 28px;
+  height: 28px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+}
+
 .rocket-icon { background-image: url('/images/spread_the_word_button.png'); }
 .rules-icon { background-image: url('/images/rules_button.png'); }
 .plus-one-icon { background-image: url('/images/teaming_up_button.png'); }
+
 .rocket-header { color: var(--purple); }
 .rules-header { color: var(--orange); }
 .plus-one-header { color: var(--yellow); }
 
+[data-theme="dark"] .rocket-header { color: #C9A0DC; }
+[data-theme="dark"] .rules-header { color: #F4A460; }
+[data-theme="dark"] .plus-one-header { color: #F0C674; }
+
 /* Messages */
-#live-messages { max-height: 240px; overflow-y: auto; border-bottom: 1px solid var(--gray); }
+#live-messages {
+  max-height: 240px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .message-list { list-style: none; margin: 0; padding: 0; }
+
 .message {
   display: flex;
   gap: 10px;
   padding: 10px;
-  background: #eee;
+  background: var(--bg-secondary);
   border-radius: 8px;
   margin-bottom: 10px;
+  transition: background 0.3s;
 }
+
 .message img { width: 48px; height: 48px; border-radius: 4px; }
-.message h4 { margin: 0; font-size: 14px; }
+.message h4 { margin: 0; font-size: 14px; color: var(--text-primary); }
 
 /* Chart */
-.commit-chart { height: 260px; background: #f9f9f9; border-radius: 4px; }
+.commit-chart {
+  height: 260px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
 
 /* Links */
 a { color: var(--purple); }
-a:hover { font-weight: bold; }
+a:hover { color: #7B4B91; }
 
-/* Help page */
-.span10 { flex: 0 0 83.333%; padding: 0 15px; }
-.span5 { flex: 0 0 41.666%; padding: 0 15px; }
-.offset1 { margin-left: 8.333%; }
+[data-theme="dark"] a { color: #C9A0DC; }
+[data-theme="dark"] a:hover { color: #DFC3EB; }
 
-.what-is-this { color: var(--blue); }
-.lead { font-size: 1.2em; font-weight: 300; }
+/* Help page styles */
+.what-is-this { color: var(--purple); }
+[data-theme="dark"] .what-is-this { color: #C9A0DC; }
+
+.lead { font-size: 1.2em; font-weight: 300; color: var(--text-secondary); }
+[data-theme="dark"] .lead { color: var(--text-secondary); }
 
 pre {
   background: #2d2d2d;
@@ -140,12 +262,14 @@ pre {
   border-collapse: collapse;
   margin: 20px 0;
 }
+
 .table th, .table td {
   padding: 12px;
   text-align: left;
-  border: 1px solid var(--gray);
+  border: 1px solid var(--border-color);
 }
-.table thead { background: var(--light-gray); }
+
+.table thead { background: var(--bg-secondary); }
 
 .btn {
   display: inline-block;
@@ -154,5 +278,12 @@ pre {
   color: white;
   text-decoration: none;
   border-radius: 4px;
+  transition: background 0.2s;
 }
-.btn:hover { background: var(--purple); color: white; }
+
+.btn:hover { background: #7B4B91; color: white; }
+[data-theme="dark"] .btn { background: #8B5CA0; }
+[data-theme="dark"] .btn:hover { background: #A070B8; }
+
+/* Paragraph text */
+p { color: var(--text-primary); }

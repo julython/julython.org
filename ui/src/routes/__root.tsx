@@ -1,50 +1,60 @@
-import { Link, Outlet, createRootRoute } from "@tanstack/solid-router";
-import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
+import { createRootRoute, Link, Outlet } from "@tanstack/solid-router";
+import { createSignal, onMount } from "solid-js";
 
-export const Route = createRootRoute({
-  component: RootComponent,
-  notFoundComponent: () => {
-    return (
-      <div>
-        <p>This is the notFoundComponent configured on root route</p>
-        <Link to="/">Start Over</Link>
-      </div>
-    );
-  },
-});
+function RootLayout() {
+  const [theme, setTheme] = createSignal<"light" | "dark">("light");
 
-function RootComponent() {
+  onMount(() => {
+    const saved = localStorage.getItem("theme") as "light" | "dark" | null;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const initial = saved || (prefersDark ? "dark" : "light");
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+  });
+
+  const toggleTheme = () => {
+    const next = theme() === "light" ? "dark" : "light";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  };
+
   return (
     <>
-      <nav class="navbar navbar-fixed-top" id="topnav">
+      <nav class="navbar" id="topnav">
         <div class="navbar-inner">
-          <div class="container-fluid">
-            <Link to="/" class="brand">
-              <div class="logo" />
-            </Link>
-            <ul class="nav">
-              <li>
-                <Link to="/">Leaders</Link>
-              </li>
-              <li>
-                <Link to="/">Projects</Link>
-              </li>
-              <li>
-                <Link to="/">Blog</Link>
-              </li>
-              <li>
-                <Link to="/help">Help</Link>
-              </li>
-              <li>
-                <Link to="/">Sign In</Link>
-              </li>
-            </ul>
-          </div>
+          <Link to="/" class="brand">
+            <div class="logo" />
+          </Link>
+          <ul class="nav">
+            <li>
+              <Link to="/">Leaders</Link>
+            </li>
+            <li>
+              <Link to="/">Projects</Link>
+            </li>
+            <li>
+              <Link to="/">Blog</Link>
+            </li>
+            <li>
+              <Link to="/help">Help</Link>
+            </li>
+            <li>
+              <Link to="/">Sign In</Link>
+            </li>
+          </ul>
+          <button class="theme-toggle" onClick={toggleTheme}>
+            {theme() === "light" ? "🌙" : "☀️"}
+          </button>
         </div>
       </nav>
       <Outlet />
-      {/* Start rendering router matches */}
-      <TanStackRouterDevtools position="bottom-right" />
     </>
   );
 }
+
+export const Route = createRootRoute({
+  component: RootLayout,
+});
