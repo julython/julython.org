@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, responses
+from fastapi import APIRouter, Request, responses
 from structlog.stdlib import get_logger
 from july.globals import settings
 
@@ -9,15 +9,10 @@ log = get_logger(__name__)
 
 @router.get("/{path:path}")
 @router.head("/{path:path}")
-async def spa_fallback(request: Request, path: str):
+async def spa_fallback(request: Request, path: str) -> responses.Response:
     file_path = settings.static_dir / path
-    is_asset = path.startswith(settings.asset_prefix[1:])
-    is_file = file_path.is_file()
 
-    if is_asset and not is_file:
-        raise HTTPException(status_code=404, detail=f"{path} not found")
-
-    elif not is_file:
+    if not file_path.is_file():
         file_path = settings.static_dir / "index.html"
 
     response = responses.FileResponse(file_path)

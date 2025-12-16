@@ -27,6 +27,12 @@ class TestSpaFallback:
         assert response.headers["cache-control"] == "no-cache"
         assert response.text == ""
 
+    async def test_hacking(self, client: httpx.AsyncClient):
+        # make sure you cannot traverse the file system
+        response = await client.get("/../../july/app.py")
+        assert response.status_code == 200, response.text
+        assert "Welcome Julython Testers!" in response.text
+
 
 class TestStaticAssets:
 
@@ -35,7 +41,7 @@ class TestStaticAssets:
         assert response.status_code == 404, response.text
         assert "etag" not in response.headers
         assert "last-modified" not in response.headers
-        assert "cache-control" not in response.headers
+        assert response.headers["cache-control"] == "no-store"
 
     async def test_200(self, client: httpx.AsyncClient):
         response = await client.get("/assets/fake.js")

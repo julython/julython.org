@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
@@ -60,6 +59,11 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(webhooks.router)
 
     # Add UI routes last as they are greedy
+    app.mount(
+        "/assets",
+        StaticFiles(directory=settings.static_dir / "assets"),
+        name="assets",
+    )
     app.include_router(ui.router)
 
     return app
