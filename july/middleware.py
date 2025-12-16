@@ -6,7 +6,7 @@ log = get_logger(__name__)
 
 
 class CacheHeadersMiddleware:
-    def __init__(self, app: ASGIApp, asset_prefix: str, api_prefix: str):
+    def __init__(self, app: ASGIApp, asset_prefix: str):
         self.app = app
         self.asset_prefix = asset_prefix
         log.info(

@@ -47,11 +47,10 @@ def create_app(settings: Settings) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Cache Settings
+    # Cache Headers Settings
     app.add_middleware(
         CacheHeadersMiddleware,
         asset_prefix=settings.asset_prefix,
-        api_prefix=settings.api_prefix,
     )
 
     # Add API routes
