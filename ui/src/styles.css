@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@200;400;700&display=swap');
 
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
@@ -7,23 +7,152 @@
 
   If we ever want to remove these styles, we need to add an explicit border
   color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+  @layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+      border-color: var(--color-gray-200, currentcolor);
+    }
   }
+*/
+
+:root {
+  --purple: #9E62B6;
+  --orange: #EF621C;
+  --blue: #508FD8;
+  --green: #499138;
+  --yellow: #EAAC49;
+  --gray: #AAA;
+  --light-gray: #F1F1F1;
 }
 
-html {
-  color-scheme: light dark;
-}
-* {
-  @apply border-gray-200 dark:border-gray-800;
-}
+* { box-sizing: border-box; }
+
 body {
-  @apply bg-gray-50 text-gray-950 dark:bg-gray-900 dark:text-gray-200;
+  font-family: "Exo 2", sans-serif;
+  font-weight: 200;
+  margin: 0;
+  padding-top: 50px;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Exo 2", sans-serif;
+  color: var(--purple);
+  font-weight: 400;
+}
+
+/* Layout */
+.container { max-width: 1170px; margin: 0 auto; padding: 0 15px;}
+.row { display: flex; flex-wrap: wrap; margin: 0 -15px; }
+.span4 { flex: 0 0 33.333%; padding: 0 15px; }
+.span8 { flex: 0 0 66.666%; padding: 0 15px; }
+.span12 { flex: 0 0 100%; padding: 0 15px; }
+
+@media (max-width: 768px) {
+  .span4, .span8 { flex: 0 0 100%; }
+}
+
+/* Navbar */
+.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; }
+.navbar-inner {
+  background: var(--purple);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.navbar .logo {
+  width: 127px;
+  height: 27px;
+  background: url('/images/julython_nav_logo.png') no-repeat center;
+  background-size: contain;
+}
+.nav { display: flex; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.nav a { color: white; text-decoration: none; padding: 8px 12px; }
+.nav a:hover { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* Logo */
+#logo {
+  width: 430px;
+  height: 96px;
+  margin: 40px auto;
+  background: url('/images/julython_logo_large.png') no-repeat center;
+  background-size: contain;
+  text-indent: -9999px;
+}
+
+/* Sections */
+.offset-container { background: var(--light-gray); padding: 24px 0; }
+.section-container { border-top: 1px solid var(--gray); padding: 40px 0; }
+.section-container.no-border { border-top: none; }
+
+.section-header { display: flex; align-items: center; gap: 8px; font-size: 24px; }
+.section-icon { width: 24px; height: 24px; background-size: contain; background-repeat: no-repeat; }
+.rocket-icon { background-image: url('/images/spread_the_word_button.png'); }
+.rules-icon { background-image: url('/images/rules_button.png'); }
+.plus-one-icon { background-image: url('/images/teaming_up_button.png'); }
+.rocket-header { color: var(--purple); }
+.rules-header { color: var(--orange); }
+.plus-one-header { color: var(--yellow); }
+
+/* Messages */
+#live-messages { max-height: 240px; overflow-y: auto; border-bottom: 1px solid var(--gray); }
+.message-list { list-style: none; margin: 0; padding: 0; }
+.message {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #eee;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.message img { width: 48px; height: 48px; border-radius: 4px; }
+.message h4 { margin: 0; font-size: 14px; }
+
+/* Chart */
+.commit-chart { height: 260px; background: #f9f9f9; border-radius: 4px; }
+
+/* Links */
+a { color: var(--purple); }
+a:hover { font-weight: bold; }
+
+/* Help page */
+.span10 { flex: 0 0 83.333%; padding: 0 15px; }
+.span5 { flex: 0 0 41.666%; padding: 0 15px; }
+.offset1 { margin-left: 8.333%; }
+
+.what-is-this { color: var(--blue); }
+.lead { font-size: 1.2em; font-weight: 300; }
+
+pre {
+  background: #2d2d2d;
+  color: #f8f8f2;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+.table th, .table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--gray);
+}
+.table thead { background: var(--light-gray); }
+
+.btn {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--purple);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.btn:hover { background: var(--purple); color: white; }
