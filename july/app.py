@@ -4,8 +4,9 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
-from july.routes import config, ui, webhooks
+from july.routes import auth, config, ui, webhooks
 from july.globals import context, settings, Settings
 from july.middleware import CacheHeadersMiddleware
 from july.utils.logger import setup_logging
@@ -47,6 +48,14 @@ def create_app(settings: Settings) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Auth Sessions
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.session_secret,
+        session_cookie=settings.session_cookie,
+        https_only=True,
+    )
+
     # Cache Headers Settings
     app.add_middleware(
         CacheHeadersMiddleware,
@@ -54,6 +63,7 @@ def create_app(settings: Settings) -> FastAPI:
     )
 
     # Add API routes
+    app.include_router(auth.router)
     app.include_router(config.router)
     app.include_router(webhooks.router)
 

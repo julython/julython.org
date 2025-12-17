@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     debug: bool = False
     host: str = "0.0.0.0"
     port: int = 8000
+    https: bool = False
+    session_secret: str = "some-secret-value"
+    session_cookie: str = "authz"
 
     # Logging settings
     service_id: str = "july"
@@ -53,10 +56,12 @@ class Settings(BaseSettings):
     api_title: str = "Julython API"
     api_description: str = ""
 
-    auth_providers: set[str] = {"JWTAuthProvider", "DirectPassportProvider"}
-    auth_api_url: str = "https://auth.stage.anaconda.com/api/auth"
-    auth_oauth_client_id: str = "local-dev-host"
-    auth_oauth_client_secret: str = ""
+    auth_providers: set[str] = {"github", "gitlab"}
+    auth_base_url: str = "http://localhost:8000"
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    gitlab_client_id: str = ""
+    gitlab_client_secret: str = ""
 
     openapi_url: str = "/api/openapi.json"
     openapi_servers: list[dict[str, str]] = []
@@ -68,6 +73,10 @@ class Settings(BaseSettings):
     def database_uri(self) -> str:
         """Return the database URI construct from individual components."""
         return f"{self.database_scheme}{self.database_username}:{self.database_password}@{self.database_hostname}/{self.database_name}"
+
+    @cached_property
+    def auth_callback(self) -> str:
+        return f"{self.auth_base_url}/auth/callback"
 
     @cached_property
     def pyproject(self) -> dict:

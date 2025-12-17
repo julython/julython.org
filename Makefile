@@ -36,6 +36,9 @@ up: dev
 dev: ## Run the service in docker
 	docker compose up api --build
 
+dev-ui: ## Run the ui in dev mode
+	pushd ui && npm i && npm run dev
+
 test: deps ## Run pytests
 	$(VIRTUAL_ENV)/bin/pytest
 

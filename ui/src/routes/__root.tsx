@@ -42,7 +42,7 @@ function RootLayout() {
               <Link to="/help">Help</Link>
             </li>
             <li>
-              <Link to="/">Sign In</Link>
+              <a href="/auth/login/github">Sign In</a>
             </li>
           </ul>
           <button class="theme-toggle" onClick={toggleTheme}>
