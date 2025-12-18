@@ -1,11 +1,12 @@
 import re
 from datetime import datetime
 from os.path import splitext
-from typing import Optional
+from typing import Annotated, Optional
 from urllib.parse import urlparse
 
 import structlog
 from pydantic import BaseModel, Field, computed_field
+from pydantic.types import StringConstraints
 
 from july.db.models import ReportType, ReportStatus
 
@@ -102,3 +103,13 @@ class ReportAction(BaseModel):
     ban_user: bool = False
     remove_analysis: bool = False
     ban_reason: Optional[str] = None
+
+
+class EmailAddress(BaseModel):
+    email: Annotated[str, StringConstraints(to_lower=True)]
+    primary: bool = False
+    verified: bool = False
+
+    @property
+    def key(self) -> str:
+        return f"email:{self.email}"

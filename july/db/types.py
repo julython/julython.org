@@ -51,7 +51,7 @@ from july.utils import times
 
 
 PrimaryKey = Field(
-    default_factory=uuid.uuid4,
+    default_factory=uuid.uuid7,
     sa_type=SqlUUID,
     primary_key=True,
     description="Primary key identifier",
@@ -102,10 +102,11 @@ Identifier = (
     )
 )
 
-ShortString = lambda nullable=True, description="Short text field": Field(
-    max_length=100,
-    sa_type=String(100),
+ShortString = lambda length=100, nullable=True, index=False, description="Short text field": Field(
+    max_length=length,
+    sa_type=String(length),
     nullable=nullable,
+    index=index,
     description=description,
 )
 

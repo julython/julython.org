@@ -6,7 +6,7 @@ COPY ui/ ./
 RUN npm run build
 
 # Use a Python image with uv pre-installed
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.14-trixie
 
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \

@@ -4,7 +4,7 @@ from typing import Any, Optional
 from enum import Enum
 
 from sqlalchemy import String, UniqueConstraint
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Relationship, Field
 
 from july.db.types import (
     CreatedAt,
@@ -26,6 +26,12 @@ class UserRole(str, Enum):
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
+
+
+class IdentifierType(str, Enum):
+    EMAIL = "email"
+    GITHUB = "github"
+    GITLAB = "gitlab"
 
 
 class ReportStatus(str, Enum):
@@ -57,15 +63,9 @@ class Base(SQLModel, table=False):
     updated_at: datetime = UpdatedAt
 
 
-class UserCreate(SQLModel):
-    name: str
-    username: str
-
-
-class User(UserCreate, table=True):
-    id: uuid.UUID = PrimaryKey
-    created_at: datetime = CreatedAt
-    updated_at: datetime = UpdatedAt
+class User(Base, table=True):
+    name: str = ShortString(nullable=False)
+    username: str = ShortString(length=25, nullable=True)
     avatar_url: Optional[str] = None
     role: UserRole = Field(sa_type=String(20), default=UserRole.USER)
     is_active: bool = Field(default=True)
@@ -74,11 +74,28 @@ class User(UserCreate, table=True):
     banned_at: Optional[datetime] = Timestamp(nullable=True)
     last_seen: Optional[datetime] = Timestamp(nullable=True)
 
+    identifiers: list["UserIdentifier"] = Relationship(
+        back_populates="user", cascade_delete=True
+    )
+
+
+class UserIdentifier(SQLModel, table=True):
+    value: str = Field(primary_key=True)
+    type: IdentifierType = ShortString(length=10, nullable=False, index=True)
+    created_at: datetime = CreatedAt
+    updated_at: datetime = UpdatedAt
+    user_id: uuid.UUID = FK("user.id")
+    verified: bool = Field(default=False)
+    primary: bool = Field(default=False)
+    value_metadata: Optional[dict[str, Any]] = JsonbData()
+
+    user: User = Relationship(back_populates="identifiers")
+
 
 class Game(Base, table=True):
     """Competition period (e.g., Julython 2024)"""
 
-    name: str = ShortString(nullable=False)
+    name: str = ShortString(length=25, nullable=False)
     start: datetime = Timestamp(nullable=False, description="Start of the Game UTC-12")
     end: datetime = Timestamp(nullable=False, description="End of the Game UTC+12")
     commit_points: int = Field(default=1, description="points per commit")

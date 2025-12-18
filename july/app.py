@@ -70,7 +70,10 @@ def create_app(settings: Settings) -> FastAPI:
     # Add UI routes last as they are greedy
     app.mount(
         "/assets",
-        StaticFiles(directory=settings.static_dir / "assets"),
+        StaticFiles(
+            directory=settings.static_dir / "assets",
+            check_dir=False,
+        ),
         name="assets",
     )
     app.include_router(ui.router)

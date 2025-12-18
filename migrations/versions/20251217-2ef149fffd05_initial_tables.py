@@ -1,9 +1,9 @@
 """
 initial tables
 
-Revision ID: f3f9d4920fca
+Revision ID: 2ef149fffd05
 Revises: 
-Create Date: 2025-12-11 21:52:23.605171
+Create Date: 2025-12-17 22:08:14.079430
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'f3f9d4920fca'
+revision = '2ef149fffd05'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -24,7 +24,7 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('name', sa.String(length=25), nullable=False),
     sa.Column('start', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('end', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('commit_points', sa.Integer(), nullable=False),
@@ -60,8 +60,7 @@ def upgrade():
     sa.Column('parent_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('service', 'repo_id', name='uq_project_service_repo'),
-    sa.UniqueConstraint('slug', name='uq_project_slug')
+    sa.UniqueConstraint('service', 'repo_id', name='uq_project_service_repo')
     )
     op.create_index(op.f('ix_project_created_at'), 'project', ['created_at'], unique=False)
     op.create_index(op.f('ix_project_repo_id'), 'project', ['repo_id'], unique=False)
@@ -69,11 +68,11 @@ def upgrade():
     op.create_index(op.f('ix_project_updated_at'), 'project', ['updated_at'], unique=False)
     op.create_index(op.f('ix_project_url'), 'project', ['url'], unique=True)
     op.create_table('user',
-    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('username', sa.String(length=25), nullable=True),
     sa.Column('avatar_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('role', sa.String(length=20), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
@@ -251,6 +250,22 @@ def upgrade():
     op.create_index(op.f('ix_team_name'), 'team', ['name'], unique=True)
     op.create_index(op.f('ix_team_slug'), 'team', ['slug'], unique=True)
     op.create_index(op.f('ix_team_updated_at'), 'team', ['updated_at'], unique=False)
+    op.create_table('useridentifier',
+    sa.Column('value', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('type', sa.String(length=10), nullable=False),
+    sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('verified', sa.Boolean(), nullable=False),
+    sa.Column('primary', sa.Boolean(), nullable=False),
+    sa.Column('value_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('value')
+    )
+    op.create_index(op.f('ix_useridentifier_created_at'), 'useridentifier', ['created_at'], unique=False)
+    op.create_index(op.f('ix_useridentifier_type'), 'useridentifier', ['type'], unique=False)
+    op.create_index(op.f('ix_useridentifier_updated_at'), 'useridentifier', ['updated_at'], unique=False)
+    op.create_index(op.f('ix_useridentifier_user_id'), 'useridentifier', ['user_id'], unique=False)
     op.create_table('analysislike',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
@@ -362,6 +377,11 @@ def downgrade():
     op.drop_index(op.f('ix_analysislike_updated_at'), table_name='analysislike')
     op.drop_index(op.f('ix_analysislike_created_at'), table_name='analysislike')
     op.drop_table('analysislike')
+    op.drop_index(op.f('ix_useridentifier_user_id'), table_name='useridentifier')
+    op.drop_index(op.f('ix_useridentifier_updated_at'), table_name='useridentifier')
+    op.drop_index(op.f('ix_useridentifier_type'), table_name='useridentifier')
+    op.drop_index(op.f('ix_useridentifier_created_at'), table_name='useridentifier')
+    op.drop_table('useridentifier')
     op.drop_index(op.f('ix_team_updated_at'), table_name='team')
     op.drop_index(op.f('ix_team_slug'), table_name='team')
     op.drop_index(op.f('ix_team_name'), table_name='team')

@@ -27,7 +27,7 @@ def game_service(db_session) -> GameService:
 
 
 async def _create_user(db_session, username: str):
-    user = User(id=uuid.uuid4(), name=username, username=username)
+    user = User(id=uuid.uuid7(), name=username, username=username)
     db_session.add(user)
     await db_session.flush()
     return user

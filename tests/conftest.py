@@ -130,6 +130,7 @@ async def user(db_session: AsyncSession) -> models.User:
     user = models.User(id=uuid.uuid4(), name="test user", username="test")
     db_session.add(user)
     await db_session.commit()
+    await db_session.refresh(user)
     return user
 
 
