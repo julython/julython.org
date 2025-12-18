@@ -1,9 +1,9 @@
 """
-initial tables
+initial_tables.py
 
-Revision ID: 2ef149fffd05
+Revision ID: b16bebb61291
 Revises: 
-Create Date: 2025-12-17 22:08:14.079430
+Create Date: 2025-12-18 19:41:59.200243
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '2ef149fffd05'
+revision = 'b16bebb61291'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -258,7 +258,7 @@ def upgrade():
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.Column('verified', sa.Boolean(), nullable=False),
     sa.Column('primary', sa.Boolean(), nullable=False),
-    sa.Column('value_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('value')
     )

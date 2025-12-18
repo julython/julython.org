@@ -1,11 +1,13 @@
-from typing import Any, Optional
+from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import col
 from structlog.stdlib import get_logger
 
 from july.db.models import User, UserIdentifier, IdentifierType
 from july.schema import EmailAddress
+from july.utils import times
 
 logger = get_logger(__name__)
 
@@ -30,26 +32,62 @@ class UserService:
     async def find_by_oauth(self, provider: str, provider_user_id: str) -> User | None:
         return await self.find_by_identifier(IdentifierType(provider), provider_user_id)
 
-    def add_identifier(
+    async def upsert_identifier(
         self,
         user: User,
         type: IdentifierType,
         value: str,
+        data: dict[str, Any],
         verified: bool = False,
         primary: bool = False,
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> UserIdentifier:
+    ) -> tuple[UserIdentifier, bool]:
+        """
+        Insert or update an identifier.
+
+        Raises ValueError if the identifier exists but belongs to a different user.
+
+        Returns: tuple of the identifier and bool created
+        """
         key = f"{type.value}:{value}"
-        identifier = UserIdentifier(
-            user_id=user.id,
-            value=key,
-            type=type,
-            verified=verified,
-            primary=primary,
-            value_metadata=metadata,
+        now = times.now()
+
+        values = {
+            "value": key,
+            "type": type,
+            "user_id": user.id,
+            "verified": verified,
+            "primary": primary,
+            "created_at": now,
+            "updated_at": now,
+            "data": data,
+        }
+
+        update_set = {
+            "verified": verified,
+            "primary": primary,
+            "updated_at": now,
+            "data": data,
+        }
+
+        stmt = (
+            insert(UserIdentifier)
+            .values(**values)
+            .on_conflict_do_update(
+                index_elements=["value"],
+                set_=update_set,
+                where=col(UserIdentifier.user_id) == user.id,
+            )
+            .returning(UserIdentifier)
         )
-        self.session.add(identifier)
-        return identifier
+
+        result = await self.session.execute(stmt)
+        identifier = result.scalar_one_or_none()
+
+        if identifier is None:
+            raise ValueError(f"This {type.value} identifier is linked to another user")
+
+        created = identifier.created_at == identifier.updated_at
+        return identifier, created
 
     async def oauth_login_or_register(
         self,
@@ -58,99 +96,93 @@ class UserService:
         name: str,
         emails: list[EmailAddress],
         avatar_url: str | None,
+        data: dict[str, Any],
     ) -> tuple[User, bool]:
         """
         Returns (user, is_new_user).
 
-        1. Find by OAuth provider ID -> login
+        1. Find by OAuth provider ID -> login, update data
         2. Find by email -> link account
         3. Create new user
         """
-
+        identifier_type = IdentifierType(provider)
         verified_emails = [e for e in emails if e.verified]
 
-        # Whether a user or email was created
-        created: bool = False
+        # whether the user or an identity was created
+        created = False
 
-        # Existing OAuth User, make sure all emails linked
+        # 1. Existing OAuth User
         if user := await self.find_by_oauth(provider, provider_user_id):
-            logger.info(f"Updating existing user: {user.name}", emails=verified_emails)
             user.name = name or user.name
             user.avatar_url = avatar_url or user.avatar_url
             self.session.add(user)
-            created = await self.link_emails(user, verified_emails)
+
+            await self.upsert_identifier(
+                user,
+                identifier_type,
+                provider_user_id,
+                verified=True,
+                data=data,
+            )
+            created = await self._upsert_emails(user, verified_emails)
             await self.session.commit()
             return user, created
 
-        exisiting_user: Optional[User] = None
+        # 2. Check if any emails match existing users
+        existing_user = await self._find_user_by_emails(verified_emails)
 
-        # Check if any emails already are owned by a user
-        for email in verified_emails:
-            if exisiting := await self.find_by_email(email):
-                if exisiting_user is None:
-                    exisiting_user = exisiting
-                elif exisiting_user.id != exisiting.id:
-                    # oh boy we got a problem here bail!
-                    logger.error(f"oh joy emails be conflict: {verified_emails}")
-                    raise ValueError(
-                        "Found multiple exisiting users with the same emails as this new user!"
-                    )
-
-        if exisiting_user is not None:
-            await self.link_provider(exisiting_user, provider, provider_user_id)
-            created = await self.link_emails(exisiting_user, verified_emails)
+        if existing_user is not None:
+            await self.upsert_identifier(
+                existing_user,
+                identifier_type,
+                provider_user_id,
+                verified=True,
+                data=data,
+            )
+            created = await self._upsert_emails(existing_user, verified_emails)
             await self.session.commit()
-            return exisiting_user, created
+            return existing_user, created
 
-        # New user
+        # 3. New user
         new_user = User(name=name, avatar_url=avatar_url)
-        logger.info(f"Yay new user: {new_user.name}", emails=verified_emails)
         self.session.add(new_user)
-        await self.link_provider(new_user, provider, provider_user_id)
-        await self.link_emails(new_user, verified_emails)
+        await self.session.flush()
+
+        await self.upsert_identifier(
+            new_user,
+            identifier_type,
+            provider_user_id,
+            verified=True,
+            data=data,
+        )
+        await self._upsert_emails(new_user, verified_emails)
         await self.session.commit()
         return new_user, True
 
-    async def link_emails(self, user: User, emails: list[EmailAddress]) -> bool:
-        """Link emails to user.
+    async def _find_user_by_emails(self, emails: list[EmailAddress]) -> User | None:
+        existing_user: User | None = None
 
-        Returns:
-            Boolean whether any email was added
-        """
-        linked = [await self._link_email(user, email) for email in emails]
-        return any(linked)
+        for email in emails:
+            if found := await self.find_by_email(email):
+                if existing_user is None:
+                    existing_user = found
+                elif existing_user.id != found.id:
+                    raise ValueError(
+                        "Found multiple existing users with the same emails as this new user!"
+                    )
 
-    async def _link_email(self, user: User, email: EmailAddress) -> bool:
-        """Link email to user.
+        return existing_user
 
-        Returns:
-            Boolean whether email was added or not
-        """
-        if existing := await self.find_by_email(email):
-            if existing.id != user.id:
-                raise ValueError(f"This email is linked to another user")
-            return False  # Already linked
-        self.add_identifier(
-            user,
-            IdentifierType.EMAIL,
-            value=email.email,
-            primary=email.primary,
-            verified=email.verified,
-        )
-        return True
-
-    async def link_provider(
-        self,
-        user: User,
-        provider: str,
-        provider_user_id: str,
-    ) -> None:
-        """Link an OAuth provider to existing user."""
-        identifier_type = IdentifierType(provider)
-
-        if existing := await self.find_by_oauth(provider, provider_user_id):
-            if existing.id != user.id:
-                raise ValueError(f"This {provider} account is linked to another user")
-            return  # Already linked
-
-        self.add_identifier(user, identifier_type, provider_user_id, verified=True)
+    async def _upsert_emails(self, user: User, emails: list[EmailAddress]) -> bool:
+        emails_added = False
+        for email in emails:
+            _, created = await self.upsert_identifier(
+                user,
+                IdentifierType.EMAIL,
+                value=email.email,
+                primary=email.primary,
+                verified=email.verified,
+                data={},
+            )
+            emails_added = emails_added or created
+        return emails_added

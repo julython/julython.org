@@ -87,7 +87,7 @@ class UserIdentifier(SQLModel, table=True):
     user_id: uuid.UUID = FK("user.id")
     verified: bool = Field(default=False)
     primary: bool = Field(default=False)
-    value_metadata: Optional[dict[str, Any]] = JsonbData()
+    data: Optional[dict[str, Any]] = JsonbData()
 
     user: User = Relationship(back_populates="identifiers")
 
