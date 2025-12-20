@@ -8,8 +8,8 @@ from sqlmodel import col
 from structlog.stdlib import get_logger
 
 from july.db.models import Project, User, Commit
-from july.services.game_service import GameService
-from july.schema import CommitData, FileChange, RepoData, WebhookPayload
+from july.services import game_service, user_service
+from july.schema import CommitData, EmailAddress, FileChange, RepoData, WebhookPayload
 from july.utils.languages import detect_language, parse_files
 from july.utils.times import parse_timestamp
 
@@ -175,7 +175,8 @@ class WebhookService:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.game_service = GameService(session)
+        self.game_service = game_service.GameService(session)
+        self.user_service = user_service.UserService(session)
 
     async def process_webhook(self, payload: WebhookPayload) -> list[Commit]:
         """Process a webhook payload, creating project and commits."""
@@ -294,20 +295,4 @@ class WebhookService:
         if not email:
             return None
 
-        stmt = select(User).where(col(User.name) == email)
-        result = await self.session.execute(stmt)
-        user = result.scalar_one_or_none()
-
-        if user:
-            return user
-
-        # Check linked email identities if you have that table
-        # stmt = (
-        #     select(User)
-        #     .join(EmailIdentity)
-        #     .where(col(EmailIdentity.email) == email)
-        # )
-        # result = await self.session.execute(stmt)
-        # return result.scalar_one_or_none()
-
-        return None
+        return await self.user_service.find_by_email(EmailAddress(email=email))
