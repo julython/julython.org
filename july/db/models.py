@@ -19,42 +19,13 @@ from july.db.fields import (
     Timestamp,
     UpdatedAt,
 )
-
-
-# Enums
-class UserRole(str, Enum):
-    USER = "user"
-    MODERATOR = "moderator"
-    ADMIN = "admin"
-
-
-class IdentifierType(str, Enum):
-    EMAIL = "email"
-    GITHUB = "github"
-    GITLAB = "gitlab"
-    BITBUCKET = "bitbucket"
-
-
-class ReportStatus(str, Enum):
-    PENDING = "pending"
-    REVIEWED = "reviewed"
-    RESOLVED = "resolved"
-    REJECTED = "rejected"
-
-
-class ReportType(str, Enum):
-    FAKE_DATA = "fake_data"
-    SPAM = "spam"
-    INAPPROPRIATE = "inappropriate"
-    CHEATING = "cheating"
-    OTHER = "other"
-
-
-class AnalysisStatus(str, Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    FLAGGED = "flagged"
+from july.schema import (
+    UserRole,
+    IdentifierType,
+    ReportStatus,
+    ReportType,
+    AnalysisStatus,
+)
 
 
 # Base Model
@@ -102,14 +73,6 @@ class Game(Base, table=True):
     commit_points: int = Field(default=1, description="points per commit")
     project_points: int = Field(default=10, description="points per project")
     is_active: bool = Field(default=False)
-
-    def __str__(self):
-        if self.end.month == 8:
-            return f"Julython {self.end.year}"
-        elif self.end.month == 2:
-            return f"J(an)ulython {self.end.year}"
-        else:
-            return f"Testathon {self.end.year}"
 
 
 class Project(Base, table=True):

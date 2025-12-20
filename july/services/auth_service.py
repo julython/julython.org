@@ -6,27 +6,9 @@ import base64
 import secrets
 
 import httpx
-from pydantic import BaseModel
 
 
-class OAuthProvider(str, Enum):
-    GITHUB = "github"
-    GITLAB = "gitlab"
-
-
-@dataclass
-class OAuthTokens:
-    access_token: str
-    refresh_token: str | None = None
-    expires_in: int | None = None  # seconds
-
-
-class OAuthUser(BaseModel):
-    id: str
-    username: str
-    email: str | None
-    name: str | None
-    avatar_url: str | None
+from july.schema import OAuthProvider, OAuthTokens, OAuthUser
 
 
 class OAuthProviderBase(ABC):
@@ -142,6 +124,7 @@ class GitHubOAuth(OAuthProviderBase):
             data = resp.json()
             return OAuthUser(
                 id=str(data["id"]),
+                provider=self.provider,
                 username=data["login"],
                 email=data.get("email"),
                 name=data.get("name"),
@@ -194,6 +177,7 @@ class GitLabOAuth(OAuthProviderBase):
             data = resp.json()
             return OAuthUser(
                 id=str(data["id"]),
+                provider=self.provider,
                 username=data["username"],
                 email=data.get("email"),
                 name=data.get("name"),

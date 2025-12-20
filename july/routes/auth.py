@@ -1,10 +1,12 @@
 import secrets
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Request, responses
+from fastapi import APIRouter, Depends, HTTPException, Request, responses
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from july.dependencies import get_session
 from july.globals import settings
-from july.services import auth_service
+from july.services import auth_service, user_service
 
 router = APIRouter(tags=["Auth"])
 
@@ -37,7 +39,12 @@ async def login(request: Request, provider: Literal["github", "gitlab"]):
 
 
 @router.get("/auth/callback")
-async def callback(request: Request, code: str, state: str):
+async def callback(
+    request: Request,
+    code: str,
+    state: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
     verifier = request.session.pop("oauth_verifier", None)
     expected_state = request.session.pop("oauth_state", None)
     if not expected_state or state != expected_state:
@@ -55,13 +62,13 @@ async def callback(request: Request, code: str, state: str):
     user_info = await auth_provider.get_user(tokens.access_token)
 
     # Store in session
-    request.session["user"] = user_info.model_dump()
+    request.session["user_id"] = user_info.id
 
     return responses.RedirectResponse("/", status_code=302)
 
 
 @router.get("/auth/session")
-async def get_session(request: Request) -> dict:
+async def get_user_session(request: Request) -> dict:
     return request.session
 
 

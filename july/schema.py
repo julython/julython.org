@@ -1,14 +1,11 @@
-import re
 from datetime import datetime
-from os.path import splitext
+from enum import Enum
 from typing import Annotated, Optional
 from urllib.parse import urlparse
 
 import structlog
 from pydantic import BaseModel, Field, computed_field
 from pydantic.types import StringConstraints
-
-from july.db.models import ReportType, ReportStatus
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -32,6 +29,47 @@ def parse_project_slug(url: str) -> str:
     host_abbr = HOST_ABBR.get(parsed.netloc, parsed.netloc.replace(".", "-"))
     name = path.replace("/", "-").replace(".", "_")
     return f"{host_abbr}-{name}"
+
+
+# Enums
+class AnalysisStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FLAGGED = "flagged"
+
+
+class IdentifierType(str, Enum):
+    EMAIL = "email"
+    GITHUB = "github"
+    GITLAB = "gitlab"
+    BITBUCKET = "bitbucket"
+
+
+class OAuthProvider(str, Enum):
+    GITHUB = "github"
+    GITLAB = "gitlab"
+
+
+class ReportStatus(str, Enum):
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+    RESOLVED = "resolved"
+    REJECTED = "rejected"
+
+
+class ReportType(str, Enum):
+    FAKE_DATA = "fake_data"
+    SPAM = "spam"
+    INAPPROPRIATE = "inappropriate"
+    CHEATING = "cheating"
+    OTHER = "other"
+
+
+class UserRole(str, Enum):
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
 
 
 class FileChange(BaseModel):
@@ -113,3 +151,18 @@ class EmailAddress(BaseModel):
     @property
     def key(self) -> str:
         return f"email:{self.email}"
+
+
+class OAuthTokens(BaseModel):
+    access_token: str
+    refresh_token: str | None = None
+    expires_in: int | None = None  # seconds
+
+
+class OAuthUser(BaseModel):
+    id: str
+    provider: OAuthProvider
+    username: str
+    email: str | None
+    name: str | None
+    avatar_url: str | None
