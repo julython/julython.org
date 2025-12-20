@@ -4,11 +4,13 @@ from enum import Enum
 import hashlib
 import base64
 import secrets
+from typing import override
 
 import httpx
+from sqlmodel import over
 
 
-from july.schema import OAuthProvider, OAuthTokens, OAuthUser
+from july.schema import EmailAddress, OAuthProvider, OAuthTokens, OAuthUser
 
 
 class OAuthProviderBase(ABC):
@@ -91,10 +93,10 @@ class OAuthProviderBase(ABC):
             )
 
     @abstractmethod
-    async def get_user(self, access_token: str) -> OAuthUser: ...
+    async def get_user(self, tokens: OAuthTokens) -> OAuthUser: ...
 
     @abstractmethod
-    async def revoke_token(self, access_token: str) -> bool: ...
+    async def revoke_token(self, tokens: OAuthTokens) -> bool: ...
 
 
 class GitHubOAuth(OAuthProviderBase):
@@ -110,28 +112,37 @@ class GitHubOAuth(OAuthProviderBase):
         # GitHub OAuth tokens don't expire, no refresh needed
         raise NotImplementedError("GitHub OAuth tokens don't expire")
 
-    async def get_user(self, access_token: str) -> OAuthUser:
+    @override
+    async def get_user(self, tokens: OAuthTokens) -> OAuthUser:
+        headers = {
+            "Authorization": f"Bearer {tokens.access_token}",
+            "Accept": "application/vnd.github+json",
+        }
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=headers) as client:
             resp = await client.get(
                 self.user_url,
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Accept": "application/vnd.github+json",
-                },
             )
             resp.raise_for_status()
             data = resp.json()
+
+            user_emails = await client.get(f"{self.user_url}/emails")
+            user_emails.raise_for_status()
+            email_data = user_emails.json()
+            emails = [EmailAddress(**e) for e in email_data]
+
             return OAuthUser(
                 id=str(data["id"]),
                 provider=self.provider,
                 username=data["login"],
-                email=data.get("email"),
+                emails=emails,
                 name=data.get("name"),
                 avatar_url=data.get("avatar_url"),
+                data=tokens.model_dump(mode="json"),
             )
 
-    async def revoke_token(self, access_token: str) -> bool:
+    @override
+    async def revoke_token(self, tokens: OAuthTokens) -> bool:
 
         async with httpx.AsyncClient() as client:
             resp = await client.request(
@@ -142,7 +153,7 @@ class GitHubOAuth(OAuthProviderBase):
                     "Accept": "application/vnd.github+json",
                     "X-GitHub-Api-Version": "2022-11-28",
                 },
-                json={"access_token": access_token},
+                json={"access_token": tokens.access_token},
             )
             return resp.status_code in (204, 404)
 
@@ -155,6 +166,7 @@ class GitLabOAuth(OAuthProviderBase):
     revoke_url = "https://gitlab.com/oauth/revoke"
     supports_pkce = True
     tokens_expire = True
+    scopes = "openid email"
 
     def __init__(
         self,
@@ -166,12 +178,13 @@ class GitLabOAuth(OAuthProviderBase):
         super().__init__(client_id, client_secret, redirect_uri)
         self.base_url = base_url.rstrip("/")
 
-    async def get_user(self, access_token: str) -> OAuthUser:
+    @override
+    async def get_user(self, tokens: OAuthTokens) -> OAuthUser:
 
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 self.user_url,
-                headers={"Authorization": f"Bearer {access_token}"},
+                headers={"Authorization": f"Bearer {tokens.access_token}"},
             )
             resp.raise_for_status()
             data = resp.json()
@@ -179,12 +192,14 @@ class GitLabOAuth(OAuthProviderBase):
                 id=str(data["id"]),
                 provider=self.provider,
                 username=data["username"],
-                email=data.get("email"),
+                emails=data.get("emails", []),
                 name=data.get("name"),
                 avatar_url=data.get("avatar_url"),
+                data=tokens.model_dump(mode="json"),
             )
 
-    async def revoke_token(self, access_token: str) -> bool:
+    @override
+    async def revoke_token(self, tokens: OAuthTokens) -> bool:
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
@@ -192,7 +207,7 @@ class GitLabOAuth(OAuthProviderBase):
                 data={
                     "client_id": self.client_id,
                     "client_secret": self.client_secret,
-                    "token": access_token,
+                    "token": tokens.access_token,
                 },
             )
             return resp.status_code == 200

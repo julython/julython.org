@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from july.db.models import User, UserIdentifier, IdentifierType
-from july.schema import EmailAddress
+from july.schema import EmailAddress, OAuthUser, OAuthProvider
+
 from july.services.user_service import UserService
 
 
@@ -115,12 +116,15 @@ class TestOAuthLoginOrRegister:
         emails = [EmailAddress(email="new@example.com", verified=True, primary=True)]
 
         user, is_new = await user_service.oauth_login_or_register(
-            provider="github",
-            provider_user_id="new-user-123",
-            name="New User",
-            emails=emails,
-            avatar_url="https://example.com/avatar.png",
-            data={"test": "meta"},
+            OAuthUser(
+                username="ted",
+                provider=OAuthProvider.GITHUB,
+                id="new-user-123",
+                name="New User",
+                emails=emails,
+                avatar_url="https://example.com/avatar.png",
+                data={"test": "meta"},
+            )
         )
 
         assert is_new is True
@@ -155,12 +159,15 @@ class TestOAuthLoginOrRegister:
         ]
 
         found_user, is_new = await user_service.oauth_login_or_register(
-            provider="github",
-            provider_user_id="existing-123",
-            name="Updated Name",
-            emails=emails,
-            avatar_url="https://example.com/new-avatar.png",
-            data={"test": "meta"},
+            OAuthUser(
+                username="ted",
+                provider=OAuthProvider.GITHUB,
+                id="existing-123",
+                name="Updated Name",
+                emails=emails,
+                avatar_url="https://example.com/new-avatar.png",
+                data={"test": "meta"},
+            )
         )
 
         assert is_new is True  # Not a new user, but email was added
@@ -186,12 +193,15 @@ class TestOAuthLoginOrRegister:
         ]
 
         found_user, is_new = await user_service.oauth_login_or_register(
-            provider="github",
-            provider_user_id="new-oauth-456",
-            name="Same User",
-            emails=emails,
-            avatar_url=None,
-            data={"test": "meta"},
+            OAuthUser(
+                username="ted",
+                provider=OAuthProvider.GITHUB,
+                id="new-oauth-456",
+                name="Same User",
+                emails=emails,
+                avatar_url=None,
+                data={"test": "meta"},
+            )
         )
 
         assert is_new is False
@@ -222,12 +232,15 @@ class TestOAuthLoginOrRegister:
         ]
 
         found_user, is_new = await user_service.oauth_login_or_register(
-            provider="gitlab",
-            provider_user_id="gitlab-789",
-            name="Same User",
-            emails=emails,
-            avatar_url=None,
-            data={"test": "meta"},
+            OAuthUser(
+                username="ted",
+                provider=OAuthProvider.GITLAB,
+                id="gitlab-789",
+                name="Same User",
+                emails=emails,
+                avatar_url=None,
+                data={"test": "meta"},
+            )
         )
 
         assert is_new is False
@@ -267,12 +280,15 @@ class TestOAuthLoginOrRegister:
 
         with pytest.raises(ValueError, match="multiple existing users"):
             await user_service.oauth_login_or_register(
-                provider="github",
-                provider_user_id="conflict-user",
-                name="Conflict User",
-                emails=emails,
-                avatar_url=None,
-                data={"test": "meta"},
+                OAuthUser(
+                    username="ted",
+                    provider=OAuthProvider.GITHUB,
+                    id="conflict-user",
+                    name="Conflict User",
+                    emails=emails,
+                    avatar_url=None,
+                    data={"test": "meta"},
+                )
             )
 
     async def test_only_verified_emails_used(
@@ -283,12 +299,15 @@ class TestOAuthLoginOrRegister:
         ]
 
         user, is_new = await user_service.oauth_login_or_register(
-            provider="github",
-            provider_user_id="no-verified-email",
-            name="No Email User",
-            emails=emails,
-            avatar_url=None,
-            data={"test": "meta"},
+            OAuthUser(
+                username="ted",
+                provider=OAuthProvider.GITHUB,
+                id="no-verified-email",
+                name="No Email User",
+                emails=emails,
+                avatar_url=None,
+                data={"test": "meta"},
+            )
         )
 
         assert is_new is True

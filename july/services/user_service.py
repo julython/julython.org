@@ -5,8 +5,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import col
 from structlog.stdlib import get_logger
 
-from july.db.models import User, UserIdentifier, IdentifierType
-from july.schema import EmailAddress
+from july.db.models import User, UserIdentifier
+from july.schema import EmailAddress, IdentifierType, OAuthUser
 from july.utils import times
 
 logger = get_logger(__name__)
@@ -15,6 +15,15 @@ logger = get_logger(__name__)
 class UserService:
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def find_by_key(self, key: str) -> User | None:
+        stmt = (
+            select(User)
+            .join(UserIdentifier, col(User.id) == col(UserIdentifier.user_id))
+            .where(col(UserIdentifier.value) == key)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar()
 
     async def find_by_identifier(self, type: IdentifierType, value: str) -> User | None:
         key = f"{type.value}:{value}"
@@ -89,15 +98,7 @@ class UserService:
         created = identifier.created_at == identifier.updated_at
         return identifier, created
 
-    async def oauth_login_or_register(
-        self,
-        provider: str,
-        provider_user_id: str,
-        name: str,
-        emails: list[EmailAddress],
-        avatar_url: str | None,
-        data: dict[str, Any],
-    ) -> tuple[User, bool]:
+    async def oauth_login_or_register(self, oauth_user: OAuthUser) -> tuple[User, bool]:
         """
         Returns (user, is_new_user).
 
@@ -105,24 +106,24 @@ class UserService:
         2. Find by email -> link account
         3. Create new user
         """
-        identifier_type = IdentifierType(provider)
-        verified_emails = [e for e in emails if e.verified]
+        identifier_type = IdentifierType(oauth_user.provider)
+        verified_emails = [e for e in oauth_user.emails if e.verified]
 
         # whether the user or an identity was created
         created = False
 
         # 1. Existing OAuth User
-        if user := await self.find_by_oauth(provider, provider_user_id):
-            user.name = name or user.name
-            user.avatar_url = avatar_url or user.avatar_url
+        if user := await self.find_by_key(oauth_user.key):
+            user.name = oauth_user.name or user.name
+            user.avatar_url = oauth_user.avatar_url or user.avatar_url
             self.session.add(user)
 
             await self.upsert_identifier(
                 user,
                 identifier_type,
-                provider_user_id,
+                oauth_user.id,
                 verified=True,
-                data=data,
+                data=oauth_user.data,
             )
             created = await self._upsert_emails(user, verified_emails)
             await self.session.commit()
@@ -135,25 +136,25 @@ class UserService:
             await self.upsert_identifier(
                 existing_user,
                 identifier_type,
-                provider_user_id,
+                oauth_user.id,
                 verified=True,
-                data=data,
+                data=oauth_user.data,
             )
             created = await self._upsert_emails(existing_user, verified_emails)
             await self.session.commit()
             return existing_user, created
 
         # 3. New user
-        new_user = User(name=name, avatar_url=avatar_url)
+        new_user = User(name=oauth_user.name or "", avatar_url=oauth_user.avatar_url)
         self.session.add(new_user)
         await self.session.flush()
 
         await self.upsert_identifier(
             new_user,
             identifier_type,
-            provider_user_id,
+            oauth_user.id,
             verified=True,
-            data=data,
+            data=oauth_user.data,
         )
         await self._upsert_emails(new_user, verified_emails)
         await self.session.commit()

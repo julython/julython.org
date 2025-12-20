@@ -3,11 +3,13 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.ext.asyncio import AsyncSession
+from structlog.stdlib import get_logger
 
 from july.dependencies import get_session
 from july.globals import settings
 from july.services import auth_service, user_service
 
+logger = get_logger(__name__)
 router = APIRouter(tags=["Auth"])
 
 PROVIDERS: dict[str, auth_service.OAuthProviderBase] = {
@@ -55,14 +57,17 @@ async def callback(
     if not auth_provider:
         raise HTTPException(400, "Invalid provider")
 
+    users = user_service.UserService(session)
     tokens = await auth_provider.exchange_code(code, verifier)
-    request.session["access_token"] = tokens.access_token
-    request.session["refresh_token"] = tokens.refresh_token
+    user_info = await auth_provider.get_user(tokens)
+    user, created = await users.oauth_login_or_register(user_info)
 
-    user_info = await auth_provider.get_user(tokens.access_token)
+    if created:
+        logger.info(f"{user.name} created")
 
     # Store in session
-    request.session["user_id"] = user_info.id
+    request.session["user"] = user.model_dump(mode="json")
+    request.session["identity_key"] = user_info.key
 
     return responses.RedirectResponse("/", status_code=302)
 

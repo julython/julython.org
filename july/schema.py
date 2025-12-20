@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 from urllib.parse import urlparse
 
 import structlog
@@ -163,6 +163,11 @@ class OAuthUser(BaseModel):
     id: str
     provider: OAuthProvider
     username: str
-    email: str | None
+    emails: list[EmailAddress]
     name: str | None
     avatar_url: str | None
+    data: dict[str, Any]
+
+    @property
+    def key(self) -> str:
+        return f"{self.provider.value}:{self.id}"
