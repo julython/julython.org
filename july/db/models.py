@@ -6,16 +6,16 @@ from enum import Enum
 from sqlalchemy import String, UniqueConstraint
 from sqlmodel import SQLModel, Relationship, Field
 
-from july.db.types import (
+from july.db.fields import (
+    Array,
     CreatedAt,
+    Email,
     FK,
     ID,
-    Email,
     Identifier,
     JsonbData,
     PrimaryKey,
     ShortString,
-    StringArray,
     Timestamp,
     UpdatedAt,
 )
@@ -32,6 +32,7 @@ class IdentifierType(str, Enum):
     EMAIL = "email"
     GITHUB = "github"
     GITLAB = "gitlab"
+    BITBUCKET = "bitbucket"
 
 
 class ReportStatus(str, Enum):
@@ -119,7 +120,7 @@ class Project(Base, table=True):
     slug: str = Field(unique=True, index=True)
     description: Optional[str] = None
     repo_id: Optional[int] = Field(default=None, index=True)
-    service: str = Field(default="github")
+    service: str = Field(sa_type=String(20), default=IdentifierType.GITHUB)
     forked: bool = Field(default=False)
     forks: int = Field(default=0)
     watchers: int = Field(default=0)
@@ -144,7 +145,7 @@ class Commit(Base, table=True):
     message: str
     url: str
     timestamp: datetime = Timestamp(nullable=False)
-    languages: list[str] = StringArray(description="programming languages")
+    languages: list[str] = Array(description="programming languages")
     files: dict[str, Any] = JsonbData()
 
     # AI verification status
@@ -211,56 +212,56 @@ class LanguageBoard(Base, table=True):
     commit_count: int = Field(default=0)
 
 
-class RepoAnalysis(Base, table=True):
-    """AI analysis results for a user's repo during a game"""
+# class RepoAnalysis(Base, table=True):
+#     """AI analysis results for a user's repo during a game"""
 
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    project_id: uuid.UUID = Field(foreign_key="project.id", index=True)
-    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+#     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+#     project_id: uuid.UUID = Field(foreign_key="project.id", index=True)
+#     game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
 
-    analyzed_at: datetime
-    ai_model: str = Field(default="gpt-4")
-    status: AnalysisStatus = Field(sa_type=String(20), default=AnalysisStatus.PENDING)
+#     analyzed_at: datetime
+#     ai_model: str = Field(default="gpt-4")
+#     status: AnalysisStatus = Field(sa_type=String(20), default=AnalysisStatus.PENDING)
 
-    # Score impacts
-    quality_score: float
-    authenticity_score: float = Field(default=100.0)
-    points_adjustment: int = Field(default=0)
+#     # Score impacts
+#     quality_score: float
+#     authenticity_score: float = Field(default=100.0)
+#     points_adjustment: int = Field(default=0)
 
-    # AI insights
-    quality_reasoning: Optional[str] = None
-    authenticity_reasoning: Optional[str] = None
-    dev_style: Optional[str] = None
-    style_reasoning: Optional[str] = None
-    ai_insights: Optional[str] = None
-    red_flags: Optional[str] = None
-    key_strengths: Optional[str] = None
-    recommendations: Optional[str] = None
+#     # AI insights
+#     quality_reasoning: Optional[str] = None
+#     authenticity_reasoning: Optional[str] = None
+#     dev_style: Optional[str] = None
+#     style_reasoning: Optional[str] = None
+#     ai_insights: Optional[str] = None
+#     red_flags: Optional[str] = None
+#     key_strengths: Optional[str] = None
+#     recommendations: Optional[str] = None
 
-    # Statistics
-    commit_count: int
-    date_range_start: datetime
-    date_range_end: datetime
-    streak_days: Optional[int] = None
-    avg_commits_per_day: Optional[float] = None
-    ghost_commit_ratio: Optional[float] = None
+#     # Statistics
+#     commit_count: int
+#     date_range_start: datetime
+#     date_range_end: datetime
+#     streak_days: Optional[int] = None
+#     avg_commits_per_day: Optional[float] = None
+#     ghost_commit_ratio: Optional[float] = None
 
-    # Patterns
-    commit_patterns: Optional[str] = None
-    language_breakdown: Optional[str] = None
-    peak_activity_hours: Optional[str] = None
-    consistency_score: Optional[float] = None
+#     # Patterns
+#     commit_patterns: Optional[str] = None
+#     language_breakdown: Optional[str] = None
+#     peak_activity_hours: Optional[str] = None
+#     consistency_score: Optional[float] = None
 
-    # Visibility and moderation
-    is_public: bool = Field(default=True)
-    is_flagged: bool = Field(default=False)
-    is_removed: bool = Field(default=False)
-    removed_reason: Optional[str] = None
-    removed_at: Optional[datetime] = Timestamp(nullable=True)
+#     # Visibility and moderation
+#     is_public: bool = Field(default=True)
+#     is_flagged: bool = Field(default=False)
+#     is_removed: bool = Field(default=False)
+#     removed_reason: Optional[str] = None
+#     removed_at: Optional[datetime] = Timestamp(nullable=True)
 
-    # Social
-    likes_count: int = Field(default=0)
-    reports_count: int = Field(default=0)
+#     # Social
+#     likes_count: int = Field(default=0)
+#     reports_count: int = Field(default=0)
 
 
 # Teams
@@ -289,17 +290,7 @@ class TeamBoard(Base, table=True):
     member_count: int = Field(default=0)
 
 
-# Social features
-class AnalysisLike(Base, table=True):
-    user_id: uuid.UUID = Field(foreign_key="user.id")
-    analysis_id: uuid.UUID = Field(foreign_key="repoanalysis.id")
-
-
 class Report(Base, table=True):
-    reporter_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    analysis_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="repoanalysis.id", index=True
-    )
     reported_user_id: Optional[uuid.UUID] = Field(
         default=None, foreign_key="user.id", index=True
     )

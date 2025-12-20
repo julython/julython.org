@@ -1,5 +1,7 @@
 """
-These represent complex reusable field types using `Annotated`. This helps to keep the model definition simple like:
+# Common Field Types
+
+These represent complex reusable field types for postgres. This helps to keep the model definition simple like:
 
 ```python
 from sqlmodel import Field, SQLModel
@@ -14,6 +16,8 @@ class MyModel(SQLModel):
     description: str | None = None
     meta: dict[str, Any] = JsonbData(nullable=False)
 ```
+
+**Note:** These require Python 3.14 for uuid7
 
 ## Database Types Exposed
 
@@ -51,7 +55,7 @@ from july.utils import times
 
 
 PrimaryKey = Field(
-    default_factory=uuid.uuid7,
+    default_factory=uuid.uuid7,  # type: ignore
     sa_type=SqlUUID,
     primary_key=True,
     description="Primary key identifier",
@@ -75,91 +79,82 @@ UpdatedAt = Field(
     description="Last update timestamp",
 )
 
-ID = lambda nullable=True, description="UUID", index=False, unique=False: Field(
+ID = lambda nullable=True, index=False, unique=False, **kwargs: Field(
     sa_type=SqlUUID,
     nullable=nullable,
     index=index,
     unique=unique,
-    description=description,
+    **kwargs,
 )
 
-FK = lambda fk, nullable=False, description="FK", index=True, unique=False: Field(
+FK = lambda fk, nullable=False, index=True, unique=False, **kwargs: Field(
     foreign_key=fk,
     nullable=nullable,
     index=index,
     unique=unique,
-    description=description,
+    **kwargs,
 )
 
-Identifier = (
-    lambda nullable=True, description="Identifier", index=False, unique=False: Field(
-        max_length=255,
-        sa_type=String(255),
-        nullable=nullable,
-        index=index,
-        unique=unique,
-        description=description,
-    )
+Identifier = lambda nullable=True, index=False, unique=False, **kwargs: Field(
+    max_length=255,
+    sa_type=String(255),
+    nullable=nullable,
+    index=index,
+    unique=unique,
+    **kwargs,
 )
 
-ShortString = lambda length=100, nullable=True, index=False, description="Short text field": Field(
+ShortString = lambda length=100, nullable=True, index=False, **kwargs: Field(
     max_length=length,
     sa_type=String(length),
     nullable=nullable,
     index=index,
-    description=description,
+    **kwargs,
 )
 
 
-LongText = lambda nullable=True, description="Long text field": Field(
+LongText = lambda nullable=True, **kwargs: Field(
     sa_type=Text,
     nullable=nullable,
-    description=description,
+    **kwargs,
 )
 
 
-Email = lambda nullable=True, description="Optional email address field (RFC 5321 compliant)": Field(
+Email = lambda nullable=True, description="Optional email address field (RFC 5321 compliant)", **kwargs: Field(
     max_length=320,
     sa_type=String(320),
     nullable=nullable,
     description=description,
+    **kwargs,
 )
 
 
 # PostgreSQL specific types
-Timestamp = lambda nullable=True, description="Datetime field": Field(
+Timestamp = lambda nullable=True, **kwargs: Field(
     sa_type=TIMESTAMP(timezone=True),
     nullable=nullable,
-    description=description,
+    **kwargs,
 )
 
-JsonbData = lambda nullable=True, description="JSONB field": Field(
+JsonbData = lambda nullable=True, **kwargs: Field(
     default_factory=dict,
     sa_type=JSONB,
     nullable=nullable,
-    description=description,
+    **kwargs,
 )
 
 
-StringArray = lambda nullable=True, description="Array of strings": Field(
+Array = lambda nullable=True, type=String, **kwargs: Field(
     default_factory=list,
-    sa_type=ARRAY(String),
+    sa_type=ARRAY(type),
     nullable=nullable,
-    description=description,
+    **kwargs,
 )
 
 
-IntArray = lambda nullable=True, description="Array of integers": Field(
-    default_factory=list,
-    sa_type=ARRAY(Integer),
-    nullable=nullable,
-    description=description,
-)
-
-
-IpAddress = lambda nullable=True, description="IP address": Field(
+IpAddress = lambda nullable=True, **kwargs: Field(
     sa_type=INET,
     index=True,
     nullable=nullable,
-    description=description,
+    **kwargs,
 )
