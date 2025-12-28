@@ -1,1 +1,11 @@
-# project secrets
+# project secrets (ask for these)
+
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Project settings for development
+
+JSON_LOGGING=false
+IS_DEV=true
+IS_LOCAL=true
+DEBUG=true

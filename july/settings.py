@@ -36,12 +36,12 @@ class Settings(BaseSettings):
 
     # Logging settings
     service_id: str = "july"
-    json_logging: bool = False
+    json_logging: bool = True
     disable_access_log: bool = False
 
     # TODO: Consider integrating this somehow with HOST or DEBUG settings
-    is_dev: bool = True
-    is_local: bool = True
+    is_dev: bool = False
+    is_local: bool = False
 
     database_scheme: str = "postgresql+asyncpg://"
     database_hostname: str = "localhost"
