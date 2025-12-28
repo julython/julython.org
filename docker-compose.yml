@@ -47,7 +47,7 @@ services:
   prod_db_migrate:
     build:
       context: ./
-    command: ['db', 'migrate']
+    command: ['db', 'upgrade']
     env_file:
       - .env-prod
 
