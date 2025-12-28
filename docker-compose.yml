@@ -37,6 +37,20 @@ services:
       db_create:
         condition: service_completed_successfully
 
+  prod_db_create:
+    build:
+      context: ./
+    command: ['db', 'create']
+    env_file:
+      - .env-prod
+
+  prod_db_migrate:
+    build:
+      context: ./
+    command: ['db', 'migrate']
+    env_file:
+      - .env-prod
+
   postgres:
     container_name: postgres
     image: postgres:16.6@sha256:557fea37a744d5f4c8faab304b0a90858b53ab119735a88c131fd19dab802f36

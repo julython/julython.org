@@ -1,9 +1,9 @@
 """
-initial_tables.py
+initial_tables
 
-Revision ID: b16bebb61291
+Revision ID: 29eaa92a14a1
 Revises: 
-Create Date: 2025-12-18 19:41:59.200243
+Create Date: 2025-12-19 23:24:30.288472
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'b16bebb61291'
+revision = '29eaa92a14a1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -53,7 +53,7 @@ def upgrade():
     sa.Column('slug', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('repo_id', sa.Integer(), nullable=True),
-    sa.Column('service', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('service', sa.String(length=20), nullable=False),
     sa.Column('forked', sa.Boolean(), nullable=False),
     sa.Column('forks', sa.Integer(), nullable=False),
     sa.Column('watchers', sa.Integer(), nullable=False),
@@ -184,54 +184,24 @@ def upgrade():
     op.create_index(op.f('ix_player_game_id'), 'player', ['game_id'], unique=False)
     op.create_index(op.f('ix_player_updated_at'), 'player', ['updated_at'], unique=False)
     op.create_index(op.f('ix_player_user_id'), 'player', ['user_id'], unique=False)
-    op.create_table('repoanalysis',
+    op.create_table('report',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
-    sa.Column('project_id', sa.Uuid(), nullable=False),
-    sa.Column('game_id', sa.Uuid(), nullable=False),
-    sa.Column('analyzed_at', sa.DateTime(), nullable=False),
-    sa.Column('ai_model', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('reported_user_id', sa.Uuid(), nullable=True),
+    sa.Column('report_type', sa.String(length=20), nullable=False),
+    sa.Column('reason', sa.String(length=100), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=False),
-    sa.Column('quality_score', sa.Float(), nullable=False),
-    sa.Column('authenticity_score', sa.Float(), nullable=False),
-    sa.Column('points_adjustment', sa.Integer(), nullable=False),
-    sa.Column('quality_reasoning', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('authenticity_reasoning', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('dev_style', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('style_reasoning', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('ai_insights', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('red_flags', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('key_strengths', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('recommendations', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('commit_count', sa.Integer(), nullable=False),
-    sa.Column('date_range_start', sa.DateTime(), nullable=False),
-    sa.Column('date_range_end', sa.DateTime(), nullable=False),
-    sa.Column('streak_days', sa.Integer(), nullable=True),
-    sa.Column('avg_commits_per_day', sa.Float(), nullable=True),
-    sa.Column('ghost_commit_ratio', sa.Float(), nullable=True),
-    sa.Column('commit_patterns', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('language_breakdown', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('peak_activity_hours', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('consistency_score', sa.Float(), nullable=True),
-    sa.Column('is_public', sa.Boolean(), nullable=False),
-    sa.Column('is_flagged', sa.Boolean(), nullable=False),
-    sa.Column('is_removed', sa.Boolean(), nullable=False),
-    sa.Column('removed_reason', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('removed_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
-    sa.Column('likes_count', sa.Integer(), nullable=False),
-    sa.Column('reports_count', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
-    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('reviewed_by', sa.Uuid(), nullable=True),
+    sa.Column('reviewed_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('moderator_notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.ForeignKeyConstraint(['reported_user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['reviewed_by'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_repoanalysis_created_at'), 'repoanalysis', ['created_at'], unique=False)
-    op.create_index(op.f('ix_repoanalysis_game_id'), 'repoanalysis', ['game_id'], unique=False)
-    op.create_index(op.f('ix_repoanalysis_project_id'), 'repoanalysis', ['project_id'], unique=False)
-    op.create_index(op.f('ix_repoanalysis_updated_at'), 'repoanalysis', ['updated_at'], unique=False)
-    op.create_index(op.f('ix_repoanalysis_user_id'), 'repoanalysis', ['user_id'], unique=False)
+    op.create_index(op.f('ix_report_created_at'), 'report', ['created_at'], unique=False)
+    op.create_index(op.f('ix_report_reported_user_id'), 'report', ['reported_user_id'], unique=False)
+    op.create_index(op.f('ix_report_updated_at'), 'report', ['updated_at'], unique=False)
     op.create_table('team',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
@@ -266,18 +236,6 @@ def upgrade():
     op.create_index(op.f('ix_useridentifier_type'), 'useridentifier', ['type'], unique=False)
     op.create_index(op.f('ix_useridentifier_updated_at'), 'useridentifier', ['updated_at'], unique=False)
     op.create_index(op.f('ix_useridentifier_user_id'), 'useridentifier', ['user_id'], unique=False)
-    op.create_table('analysislike',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
-    sa.Column('analysis_id', sa.Uuid(), nullable=False),
-    sa.ForeignKeyConstraint(['analysis_id'], ['repoanalysis.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_analysislike_created_at'), 'analysislike', ['created_at'], unique=False)
-    op.create_index(op.f('ix_analysislike_updated_at'), 'analysislike', ['updated_at'], unique=False)
     op.create_table('playerboard',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
@@ -293,30 +251,6 @@ def upgrade():
     op.create_index(op.f('ix_playerboard_created_at'), 'playerboard', ['created_at'], unique=False)
     op.create_index(op.f('ix_playerboard_player_id'), 'playerboard', ['player_id'], unique=False)
     op.create_index(op.f('ix_playerboard_updated_at'), 'playerboard', ['updated_at'], unique=False)
-    op.create_table('report',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('reporter_id', sa.Uuid(), nullable=False),
-    sa.Column('analysis_id', sa.Uuid(), nullable=True),
-    sa.Column('reported_user_id', sa.Uuid(), nullable=True),
-    sa.Column('report_type', sa.String(length=20), nullable=False),
-    sa.Column('reason', sa.String(length=100), nullable=True),
-    sa.Column('status', sa.String(length=20), nullable=False),
-    sa.Column('reviewed_by', sa.Uuid(), nullable=True),
-    sa.Column('reviewed_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
-    sa.Column('moderator_notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.ForeignKeyConstraint(['analysis_id'], ['repoanalysis.id'], ),
-    sa.ForeignKeyConstraint(['reported_user_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['reporter_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['reviewed_by'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_report_analysis_id'), 'report', ['analysis_id'], unique=False)
-    op.create_index(op.f('ix_report_created_at'), 'report', ['created_at'], unique=False)
-    op.create_index(op.f('ix_report_reported_user_id'), 'report', ['reported_user_id'], unique=False)
-    op.create_index(op.f('ix_report_reporter_id'), 'report', ['reporter_id'], unique=False)
-    op.create_index(op.f('ix_report_updated_at'), 'report', ['updated_at'], unique=False)
     op.create_table('teamboard',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
@@ -363,20 +297,11 @@ def downgrade():
     op.drop_index(op.f('ix_teamboard_game_id'), table_name='teamboard')
     op.drop_index(op.f('ix_teamboard_created_at'), table_name='teamboard')
     op.drop_table('teamboard')
-    op.drop_index(op.f('ix_report_updated_at'), table_name='report')
-    op.drop_index(op.f('ix_report_reporter_id'), table_name='report')
-    op.drop_index(op.f('ix_report_reported_user_id'), table_name='report')
-    op.drop_index(op.f('ix_report_created_at'), table_name='report')
-    op.drop_index(op.f('ix_report_analysis_id'), table_name='report')
-    op.drop_table('report')
     op.drop_index(op.f('ix_playerboard_updated_at'), table_name='playerboard')
     op.drop_index(op.f('ix_playerboard_player_id'), table_name='playerboard')
     op.drop_index(op.f('ix_playerboard_created_at'), table_name='playerboard')
     op.drop_index(op.f('ix_playerboard_board_id'), table_name='playerboard')
     op.drop_table('playerboard')
-    op.drop_index(op.f('ix_analysislike_updated_at'), table_name='analysislike')
-    op.drop_index(op.f('ix_analysislike_created_at'), table_name='analysislike')
-    op.drop_table('analysislike')
     op.drop_index(op.f('ix_useridentifier_user_id'), table_name='useridentifier')
     op.drop_index(op.f('ix_useridentifier_updated_at'), table_name='useridentifier')
     op.drop_index(op.f('ix_useridentifier_type'), table_name='useridentifier')
@@ -387,12 +312,10 @@ def downgrade():
     op.drop_index(op.f('ix_team_name'), table_name='team')
     op.drop_index(op.f('ix_team_created_at'), table_name='team')
     op.drop_table('team')
-    op.drop_index(op.f('ix_repoanalysis_user_id'), table_name='repoanalysis')
-    op.drop_index(op.f('ix_repoanalysis_updated_at'), table_name='repoanalysis')
-    op.drop_index(op.f('ix_repoanalysis_project_id'), table_name='repoanalysis')
-    op.drop_index(op.f('ix_repoanalysis_game_id'), table_name='repoanalysis')
-    op.drop_index(op.f('ix_repoanalysis_created_at'), table_name='repoanalysis')
-    op.drop_table('repoanalysis')
+    op.drop_index(op.f('ix_report_updated_at'), table_name='report')
+    op.drop_index(op.f('ix_report_reported_user_id'), table_name='report')
+    op.drop_index(op.f('ix_report_created_at'), table_name='report')
+    op.drop_table('report')
     op.drop_index(op.f('ix_player_user_id'), table_name='player')
     op.drop_index(op.f('ix_player_updated_at'), table_name='player')
     op.drop_index(op.f('ix_player_game_id'), table_name='player')

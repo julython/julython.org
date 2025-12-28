@@ -11,7 +11,7 @@ wheels/
 .venv
 
 # Settings
-.env
+.env*
 
 # Node
 node_modules

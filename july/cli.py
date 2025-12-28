@@ -71,8 +71,7 @@ def create_if_not_exists() -> None:
     if not settings.is_local:
         raise ValueError("Only use in local development")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(ensure_database_exists(settings.database_uri))
+    asyncio.run(ensure_database_exists(settings.database_uri))
 
 
 def _load_alembic_config(uri: str) -> Config:
