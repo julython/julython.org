@@ -1,11 +1,16 @@
 import pytest
-from datetime import datetime, timezone
 
+from july.db.models import Project, User
+from july.schema import IdentifierType
+from july.services.game_service import GameService
+from july.services.user_service import UserService
 from july.services.webhook_service import (
     parse_github,
     parse_gitlab,
     parse_bitbucket,
     parse_email,
+    WebhookService,
+    WebhookPayload,
 )
 
 
@@ -107,3 +112,68 @@ class TestParseBitbucket:
         assert commit.author_email == "bb@example.com"
         assert commit.author_username == "bbuser"
         assert sorted(commit.languages) == ["Documentation", "Golang"]
+
+
+class TestProcessWebhook:
+
+    @pytest.fixture
+    def webhook_service(self, db_session) -> WebhookService:
+        return WebhookService(db_session)
+
+    @pytest.fixture
+    def sample_payload(self, github_payload) -> WebhookPayload:
+        return parse_github(github_payload)
+
+    async def test_skips_inactive_project(
+        self,
+        webhook_service: WebhookService,
+        sample_payload: WebhookPayload,
+        db_session,
+    ):
+        # Create inactive project first
+        project = Project(
+            name=sample_payload.repo.name,
+            url=sample_payload.repo.url,
+            slug=sample_payload.repo.slug,
+            service=sample_payload.repo.service,
+            repo_id=sample_payload.repo.repo_id,
+            is_active=False,
+        )
+        db_session.add(project)
+        await db_session.commit()
+
+        commits = await webhook_service.process_webhook(sample_payload)
+
+        assert len(commits) == 0
+
+    async def test_skips_commits_from_inactive_user(
+        self,
+        webhook_service: WebhookService,
+        sample_payload: WebhookPayload,
+        user: User,
+        db_session,
+    ):
+        # Create inactive user with matching email
+        user_service = UserService(db_session)
+        await user_service.upsert_identifier(
+            user, IdentifierType.EMAIL, "test@example.com", data={}
+        )
+        game_service = GameService(db_session)
+        await game_service.deactivate_user(user.id)
+        await db_session.commit()
+
+        commits = await webhook_service.process_webhook(sample_payload)
+
+        assert len(commits) == 0
+
+    async def test_skips_duplicate_commits(
+        self,
+        webhook_service: WebhookService,
+        sample_payload: WebhookPayload,
+    ):
+        # Process same payload twice
+        first_commits = await webhook_service.process_webhook(sample_payload)
+        second_commits = await webhook_service.process_webhook(sample_payload)
+
+        assert len(first_commits) == 1
+        assert len(second_commits) == 0

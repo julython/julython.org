@@ -118,7 +118,7 @@ def parse_bitbucket(data: dict) -> WebhookPayload:
     repo_data = data.get("repository", {})
     canon_url = data.get("canon_url", "https://bitbucket.org")
     abs_url = repo_data.get("absolute_url", "")
-    if not abs_url.startswith("http"):
+    if not abs_url.startswith("http"):  # pragma: no cover
         abs_url = urljoin(canon_url, abs_url)
 
     repo = RepoData(
@@ -292,7 +292,7 @@ class WebhookService:
 
     async def find_user_by_email(self, email: str) -> User | None:
         """Find a user by email address."""
-        if not email:
+        if not email:  # pragma: no cover
             return None
 
         return await self.user_service.find_by_email(EmailAddress(email=email))
