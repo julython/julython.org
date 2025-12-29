@@ -2,6 +2,7 @@ import httpx
 
 from tests.fixtures import INAUGURAL_GAME
 
+from july.services.game_service import GameService
 from july.services.user_service import UserService
 from july.schema import IdentifierType, Leader, LeaderBoard
 
@@ -48,3 +49,21 @@ async def test_game_records_commits(
     assert board.points == 11, board
     assert board.url == "https://github.com/user/test-repo", board
     assert board.slug == "gh-user-test-repo", board
+
+    # ban the project and user and verify they no longer show up
+    game_service = GameService(db_session)
+    await game_service.deactivate_project(board.project_id)
+    await game_service.deactivate_user(user.id)
+    await db_session.commit()
+
+    leaders = await client.get("/api/v1/game/leaders")
+
+    assert leaders.status_code == 200, leaders.text
+    leader_data = leaders.json()
+    assert len(leader_data["data"]) == 0, leader_data
+
+    boards = await client.get("/api/v1/game/boards")
+
+    assert boards.status_code == 200, boards.text
+    board_data = boards.json()
+    assert len(board_data["data"]) == 0, board_data

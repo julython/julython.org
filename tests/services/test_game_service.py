@@ -326,6 +326,18 @@ class TestAddCommit:
         await game_service.add_commit(commit)
         assert commit.game_id is None
 
+    async def test_no_user_for_commit(
+        self, game_service: GameService, active_game: Game, make_commit
+    ):
+        commit = await make_commit(
+            hash="abc123",
+            email="foo@bar.com",
+            user_id=None,
+        )
+        assert commit.user_id is None
+        await game_service.add_commit(commit)
+        assert commit.game_id == active_game.id
+
     async def test_from_orphan_skips_project_points(
         self,
         active_game: Game,
@@ -546,3 +558,232 @@ class TestLeaderboards:
 
         points_order = [lb.points for lb in leaderboard]
         assert points_order == sorted(points_order, reverse=True)
+
+    async def test_excludes_inactive_users_from_leaderboard(
+        self,
+        active_game: Game,
+        game_service: GameService,
+        db_session,
+    ):
+        active_user = await _create_user(db_session, "active_user")
+        inactive_user = await _create_user(db_session, "inactive_user")
+        inactive_user.is_active = False
+
+        for user, points in [(active_user, 100), (inactive_user, 200)]:
+            player = Player(
+                game_id=active_game.id,
+                user_id=user.id,
+                potential_points=points,
+                verified_points=points,
+            )
+            db_session.add(player)
+        await db_session.commit()
+
+        leaderboard = await game_service.get_leaderboard(active_game.id)
+
+        assert len(leaderboard) == 1
+        assert leaderboard[0].user_id == active_user.id
+
+    async def test_excludes_inactive_projects_from_leaderboard(
+        self,
+        active_game: Game,
+        game_service: GameService,
+        db_session,
+    ):
+        active_project = Project(
+            name="active-project",
+            url="https://github.com/test/active",
+            slug="active-project",
+            is_active=True,
+        )
+        inactive_project = Project(
+            name="inactive-project",
+            url="https://github.com/test/inactive",
+            slug="inactive-project",
+            is_active=False,
+        )
+        db_session.add(active_project)
+        db_session.add(inactive_project)
+        await db_session.flush()
+
+        for project, points in [(active_project, 50), (inactive_project, 100)]:
+            board = Board(
+                game_id=active_game.id,
+                project_id=project.id,
+                potential_points=points,
+                verified_points=points,
+            )
+            db_session.add(board)
+        await db_session.commit()
+
+        leaderboard = await game_service.get_project_leaderboard(active_game.id)
+
+        assert len(leaderboard) == 1
+        assert leaderboard[0].project_id == active_project.id
+
+    async def test_deactivated_user_removed_from_leaderboard(
+        self,
+        active_game: Game,
+        game_service: GameService,
+        db_session,
+    ):
+        user = await _create_user(db_session, "testuser")
+        player = Player(
+            game_id=active_game.id,
+            user_id=user.id,
+            potential_points=100,
+            verified_points=100,
+        )
+        db_session.add(player)
+        await db_session.commit()
+
+        # Verify user is on leaderboard
+        leaderboard = await game_service.get_leaderboard(active_game.id)
+        assert len(leaderboard) == 1
+
+        # Deactivate user
+        await game_service.deactivate_user(user.id)
+        await db_session.commit()
+
+        # Verify user is no longer on leaderboard
+        leaderboard = await game_service.get_leaderboard(active_game.id)
+        assert len(leaderboard) == 0
+
+    async def test_deactivated_project_removed_from_leaderboard(
+        self,
+        active_game: Game,
+        game_service: GameService,
+        db_session,
+    ):
+        project = Project(
+            name="test-project",
+            url="https://github.com/test/project",
+            slug="test-project",
+        )
+        db_session.add(project)
+        await db_session.flush()
+
+        board = Board(
+            game_id=active_game.id,
+            project_id=project.id,
+            potential_points=100,
+            verified_points=100,
+        )
+        db_session.add(board)
+        await db_session.commit()
+
+        # Verify project is on leaderboard
+        leaderboard = await game_service.get_project_leaderboard(active_game.id)
+        assert len(leaderboard) == 1
+
+        # Deactivate project
+        await game_service.deactivate_project(project.id)
+        await db_session.commit()
+
+        # Verify project is no longer on leaderboard
+        leaderboard = await game_service.get_project_leaderboard(active_game.id)
+        assert len(leaderboard) == 0
+
+
+class TestDeactivateUser:
+
+    async def test_deactivates_existing_user(
+        self,
+        game_service: GameService,
+        db_session,
+    ):
+        user = await _create_user(db_session, "testuser")
+        await db_session.commit()
+
+        result = await game_service.deactivate_user(user.id)
+
+        assert result is True
+        assert user.is_active is False
+
+    async def test_deactivates_with_reason(
+        self,
+        game_service: GameService,
+        db_session,
+    ):
+        user = await _create_user(db_session, "testuser")
+        await db_session.commit()
+
+        result = await game_service.deactivate_user(user.id, reason="Spam commits")
+
+        assert result is True
+        assert user.is_active is False
+        assert user.banned_reason == "Spam commits"
+        assert user.banned_at is not None
+
+    async def test_nonexistent_user_returns_false(
+        self,
+        game_service: GameService,
+    ):
+        fake_id = uuid.uuid4()
+        result = await game_service.deactivate_user(fake_id)
+
+        assert result is False
+
+    async def test_already_inactive_user(
+        self,
+        game_service: GameService,
+        db_session,
+    ):
+        user = await _create_user(db_session, "testuser")
+        user.is_active = False
+        await db_session.commit()
+
+        result = await game_service.deactivate_user(user.id)
+
+        assert result is True
+        assert user.is_active is False
+
+
+class TestDeactivateProject:
+
+    async def test_deactivates_existing_project(
+        self,
+        game_service: GameService,
+        db_session,
+    ):
+        project = Project(
+            name="test-project",
+            url="https://github.com/test/project",
+            slug="test-project",
+        )
+        db_session.add(project)
+        await db_session.commit()
+
+        result = await game_service.deactivate_project(project.id)
+
+        assert result is True
+        assert project.is_active is False
+
+    async def test_deactivates_with_reason_logged(
+        self,
+        game_service: GameService,
+        db_session,
+    ):
+        project = Project(
+            name="test-project",
+            url="https://github.com/test/project",
+            slug="test-project",
+        )
+        db_session.add(project)
+        await db_session.commit()
+
+        result = await game_service.deactivate_project(
+            project.id, reason="Gaming detected"
+        )
+
+        assert result is True
+        assert project.is_active is False
+
+    async def test_nonexistent_project_returns_false(
+        self,
+        game_service: GameService,
+    ):
+        fake_id = uuid.uuid4()
+        result = await game_service.deactivate_project(fake_id)
+
+        assert result is False

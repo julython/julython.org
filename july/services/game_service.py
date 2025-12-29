@@ -16,6 +16,8 @@ from july.db.models import (
     LanguageBoard,
     PlayerBoard,
     AnalysisStatus,
+    Project,
+    User,
 )
 from july.types import Identifier
 from july.utils import times
@@ -406,7 +408,11 @@ class GameService:
         """Get the top players for a game."""
         statement = (
             select(Player)
-            .where(col(Player.game_id) == game_id)
+            .join(User, col(Player.user_id) == col(User.id))
+            .where(
+                col(Player.game_id) == game_id,
+                col(User.is_active) == True,
+            )
             .options(selectinload(Player.user))  # type: ignore
             .order_by(
                 col(Player.verified_points).desc(), col(Player.potential_points).desc()
@@ -422,7 +428,11 @@ class GameService:
         """Get the top projects for a game."""
         statement = (
             select(Board)
-            .where(col(Board.game_id) == game_id)
+            .join(Project, col(Board.project_id) == col(Project.id))
+            .where(
+                col(Board.game_id) == game_id,
+                col(Project.is_active) == True,
+            )
             .options(selectinload(Board.project))  # type: ignore
             .order_by(
                 col(Board.verified_points).desc(), col(Board.potential_points).desc()
@@ -444,3 +454,64 @@ class GameService:
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def deactivate_user(
+        self, user_id: Identifier, reason: Optional[str] = None
+    ) -> bool:
+        """
+        Mark a user as inactive, removing them from leaderboards.
+
+        Args:
+            user_id: The user's UUID
+            reason: Optional reason for deactivation
+
+        Returns:
+            True if user was found and deactivated, False otherwise
+        """
+        statement = select(User).where(col(User.id) == user_id).with_for_update()
+        result = await self.session.execute(statement)
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            logger.warning(f"User {user_id} not found for deactivation")
+            return False
+
+        user.is_active = False
+        if reason:
+            user.banned_reason = reason
+            user.banned_at = times.now()
+
+        logger.info(
+            f"Deactivated user: {user.name} ({user_id}) - {reason or 'no reason'}"
+        )
+        return True
+
+    async def deactivate_project(
+        self, project_id: Identifier, reason: Optional[str] = None
+    ) -> bool:
+        """
+        Mark a project as inactive, removing it from leaderboards.
+
+        Args:
+            project_id: The project's UUID
+            reason: Optional reason for deactivation (logged only)
+
+        Returns:
+            True if project was found and deactivated, False otherwise
+        """
+        statement = (
+            select(Project).where(col(Project.id) == project_id).with_for_update()
+        )
+        result = await self.session.execute(statement)
+        project = result.scalar_one_or_none()
+
+        if project is None:
+            logger.warning(f"Project {project_id} not found for deactivation")
+            return False
+
+        project.is_active = False
+
+        logger.info(
+            f"Deactivated project: {project.name} ({project_id}) - {reason or 'no reason'}"
+        )
+        return True

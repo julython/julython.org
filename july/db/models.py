@@ -41,7 +41,7 @@ class User(Base, table=True):
     username: str = ShortString(length=25, nullable=True)
     avatar_url: Optional[str] = None
     role: UserRole = Field(sa_type=String(20), default=UserRole.USER)
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=True, index=True)
     is_banned: bool = Field(default=False)
     banned_reason: Optional[str] = None
     banned_at: Optional[datetime] = Timestamp(nullable=True)
@@ -94,7 +94,7 @@ class Project(Base, table=True):
     forks: int = Field(default=0)
     watchers: int = Field(default=0)
     parent_url: Optional[str] = None
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=True, index=True)
 
     boards: list["Board"] = Relationship(
         back_populates="project",

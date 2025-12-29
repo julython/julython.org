@@ -159,7 +159,7 @@ def make_commit(db_session: AsyncSession, project: models.Project, user: models.
             message="fixing things",
             url="https://julython.org",
             author="timmy",
-            email="timmy@jimmy.com",
+            email=kwargs.pop("email", "timmy@jimmy.com"),
             timestamp=timestamp or INAUGURAL_GAME,
             project_id=kwargs.pop("project_id", project.id),
             user_id=kwargs.pop("user_id", user.id),
