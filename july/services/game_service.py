@@ -423,6 +423,7 @@ class GameService:
         statement = (
             select(Board)
             .where(col(Board.game_id) == game_id)
+            .options(selectinload(Board.project))  # type: ignore
             .order_by(
                 col(Board.verified_points).desc(), col(Board.potential_points).desc()
             )

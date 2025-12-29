@@ -16,3 +16,6 @@ def test_parse_timestamp():
 
     timestamp = times.parse_timestamp(1334023345)
     assert timestamp.year == 2012
+
+    current = times.parse_timestamp(None)
+    assert current.year

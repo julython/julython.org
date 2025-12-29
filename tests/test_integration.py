@@ -3,7 +3,7 @@ import httpx
 from tests.fixtures import INAUGURAL_GAME
 
 from july.services.user_service import UserService
-from july.schema import IdentifierType
+from july.schema import IdentifierType, Leader, LeaderBoard
 
 
 async def test_game_records_commits(
@@ -25,14 +25,26 @@ async def test_game_records_commits(
     response = await client.post("/api/v1/github", json=github_payload)
     assert response.status_code == 201, response.text
 
-    leaders = await client.get(
-        f"/api/v1/game/leaders?date={INAUGURAL_GAME.isoformat()}"
-    )
+    leaders = await client.get("/api/v1/game/leaders")
 
     assert leaders.status_code == 200, leaders.text
     leader_data = leaders.json()
     assert len(leader_data["data"]) == 1, leader_data
-    leader = leader_data["data"][0]
-    assert leader["rank"] == 1
-    assert leader["name"] == user.name
-    assert leader["avatar_url"] == user.avatar_url
+    leader = Leader.model_validate(leader_data["data"][0])
+    assert leader.rank == 1, leader
+    assert leader.name == user.name, leader
+    assert leader.avatar_url == user.avatar_url, leader
+    assert leader.points == 11, leader
+
+    boards = await client.get("/api/v1/game/boards")
+
+    assert boards.status_code == 200, boards.text
+    board_data = boards.json()
+    assert len(board_data["data"]) == 1, board_data
+    board = LeaderBoard.model_validate(board_data["data"][0])
+    assert board.rank == 1, board
+    assert board.name == "test-repo", board
+    assert board.commit_count == 1, board
+    assert board.points == 11, board
+    assert board.url == "https://github.com/user/test-repo", board
+    assert board.slug == "gh-user-test-repo", board

@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 from typing import Any, Optional
-from enum import Enum
 
 from sqlalchemy import String, UniqueConstraint
 from sqlmodel import SQLModel, Relationship, Field
@@ -23,6 +22,7 @@ from july.schema import (
     AnalysisStatus,
     IdentifierType,
     Leader,
+    LeaderBoard,
     ReportStatus,
     ReportType,
     UserRole,
@@ -48,9 +48,13 @@ class User(Base, table=True):
     last_seen: Optional[datetime] = Timestamp(nullable=True)
 
     identifiers: list["UserIdentifier"] = Relationship(
-        back_populates="user", cascade_delete=True
+        back_populates="user",
+        cascade_delete=True,
     )
-    players: list["Player"] = Relationship(back_populates="user", cascade_delete=True)
+    players: list["Player"] = Relationship(
+        back_populates="user",
+        cascade_delete=True,
+    )
 
 
 class UserIdentifier(SQLModel, table=True):
@@ -58,7 +62,7 @@ class UserIdentifier(SQLModel, table=True):
     type: IdentifierType = ShortString(length=10, nullable=False, index=True)
     created_at: datetime = CreatedAt
     updated_at: datetime = UpdatedAt
-    user_id: uuid.UUID = FK("user.id")
+    user_id: uuid.UUID = FK("user.id", ondelete="CASCADE")
     verified: bool = Field(default=False)
     primary: bool = Field(default=False)
     data: Optional[dict[str, Any]] = JsonbData()
@@ -92,6 +96,15 @@ class Project(Base, table=True):
     parent_url: Optional[str] = None
     is_active: bool = Field(default=True)
 
+    boards: list["Board"] = Relationship(
+        back_populates="project",
+        cascade_delete=True,
+    )
+    commits: list["Commit"] = Relationship(
+        back_populates="project",
+        cascade_delete=True,
+    )
+
     __table_args__ = (
         UniqueConstraint("service", "repo_id", name="uq_project_service_repo"),
     )
@@ -100,8 +113,17 @@ class Project(Base, table=True):
 class Commit(Base, table=True):
     """Individual commit from webhook"""
 
-    user_id: uuid.UUID | None = FK("user.id", index=True, nullable=True)
-    project_id: uuid.UUID | None = FK("project.id", index=True, nullable=True)
+    project_id: uuid.UUID = FK(
+        "project.id",
+        index=True,
+        ondelete="CASCADE",
+    )
+    user_id: uuid.UUID | None = FK(
+        "user.id",
+        index=True,
+        nullable=True,
+        ondelete="CASCADE",
+    )
     game_id: uuid.UUID | None = FK("game.id", index=True, nullable=True)
 
     hash: str = Identifier(unique=True, index=True)
@@ -118,12 +140,18 @@ class Commit(Base, table=True):
     is_flagged: bool = Field(default=False)
     flag_reason: Optional[str] = None
 
+    project: Project = Relationship(back_populates="commits")
+
 
 class Player(Base, table=True):
     """User's participation in a specific game"""
 
-    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    game_id: uuid.UUID = FK("game.id", index=True)
+    user_id: uuid.UUID = FK(
+        "user.id",
+        index=True,
+        ondelete="CASCADE",
+    )
 
     points: int = Field(default=0)
     potential_points: int = Field(default=0)
@@ -155,9 +183,11 @@ class Player(Base, table=True):
 class Board(Base, table=True):
     """Project leaderboard per game"""
 
-    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
-    project_id: uuid.UUID | None = Field(
-        foreign_key="project.id", index=True, nullable=True
+    game_id: uuid.UUID = FK("game.id", index=True)
+    project_id: uuid.UUID = FK(
+        "project.id",
+        index=True,
+        ondelete="CASCADE",
     )
 
     points: int = Field(default=0)
@@ -167,12 +197,27 @@ class Board(Base, table=True):
     commit_count: int = Field(default=0)
     contributor_count: int = Field(default=0)
 
+    project: Project = Relationship(back_populates="boards")
+
+    def to_leader(self, rank: int) -> LeaderBoard:
+        return LeaderBoard(
+            rank=rank,
+            project_id=self.project_id,
+            name=self.project.name,
+            slug=self.project.slug,
+            url=self.project.url,
+            points=self.points,
+            verified_points=self.verified_points,
+            commit_count=self.commit_count,
+            contributor_count=self.contributor_count,
+        )
+
 
 class PlayerBoard(Base, table=True):
     """Many-to-many: which projects a player has contributed to"""
 
-    player_id: uuid.UUID = Field(foreign_key="player.id", index=True)
-    board_id: uuid.UUID = Field(foreign_key="board.id", index=True)
+    player_id: uuid.UUID = FK("player.id", index=True, ondelete="CASCADE")
+    board_id: uuid.UUID = FK("board.id", index=True, ondelete="CASCADE")
     commit_count: int = Field(default=0)
 
 
@@ -185,8 +230,8 @@ class Language(Base, table=True):
 class LanguageBoard(Base, table=True):
     """Language leaderboard per game"""
 
-    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
-    language_id: uuid.UUID = Field(foreign_key="language.id", index=True)
+    game_id: uuid.UUID = FK("game.id", index=True)
+    language_id: uuid.UUID = FK("language.id", index=True)
     points: int = Field(default=0)
     commit_count: int = Field(default=0)
 
@@ -194,9 +239,9 @@ class LanguageBoard(Base, table=True):
 # class RepoAnalysis(Base, table=True):
 #     """AI analysis results for a user's repo during a game"""
 
-#     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-#     project_id: uuid.UUID = Field(foreign_key="project.id", index=True)
-#     game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
+#     user_id: uuid.UUID = FK("user.id", index=True)
+#     project_id: uuid.UUID = FK("project.id", index=True)
+#     game_id: uuid.UUID = FK("game.id", index=True)
 
 #     analyzed_at: datetime
 #     ai_model: str = Field(default="gpt-4")
@@ -249,30 +294,28 @@ class Team(Base, table=True):
     slug: str = Field(unique=True, index=True)
     description: Optional[str] = None
     avatar_url: Optional[str] = None
-    created_by: uuid.UUID = Field(foreign_key="user.id")
+    created_by: uuid.UUID = FK("user.id", ondelete="CASCADE")
     is_public: bool = Field(default=True)
     member_count: int = Field(default=0)
 
 
 class TeamMember(Base, table=True):
-    team_id: uuid.UUID = Field(foreign_key="team.id", index=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    team_id: uuid.UUID = FK("team.id", index=True)
+    user_id: uuid.UUID = FK("user.id", index=True, ondelete="CASCADE")
     role: str = Field(default="member")
 
 
 class TeamBoard(Base, table=True):
     """Team leaderboard per game"""
 
-    game_id: uuid.UUID = Field(foreign_key="game.id", index=True)
-    team_id: uuid.UUID = Field(foreign_key="team.id", index=True)
+    game_id: uuid.UUID = FK("game.id", index=True)
+    team_id: uuid.UUID = FK("team.id", index=True, ondelete="CASCADE")
     points: int = Field(default=0)
     member_count: int = Field(default=0)
 
 
 class Report(Base, table=True):
-    reported_user_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="user.id", index=True
-    )
+    reported_user_id: Optional[uuid.UUID] = FK("user.id", index=True, nullable=True)
     report_type: ReportType = Field(sa_type=String(20), default=ReportType.SPAM)
     reason: str = ShortString(description="Short reason for reporting 'other' type")
     status: ReportStatus = Field(sa_type=String(20), default=ReportStatus.PENDING)
@@ -282,7 +325,7 @@ class Report(Base, table=True):
 
 
 class AuditLog(Base, table=True):
-    moderator_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    moderator_id: uuid.UUID = FK("user.id", index=True)
     action: str
     target_type: str
     target_id: str

@@ -1,9 +1,9 @@
 """
-initial_tables
+initial tables
 
-Revision ID: 29eaa92a14a1
+Revision ID: c88c9ed18482
 Revises: 
-Create Date: 2025-12-19 23:24:30.288472
+Create Date: 2025-12-29 13:19:18.421424
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '29eaa92a14a1'
+revision = 'c88c9ed18482'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -88,7 +88,7 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('moderator_id', sa.Uuid(), nullable=False),
+    sa.Column('moderator_id', sa.UUID(), nullable=False),
     sa.Column('action', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('target_type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('target_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -103,15 +103,15 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('game_id', sa.Uuid(), nullable=False),
-    sa.Column('project_id', sa.Uuid(), nullable=True),
+    sa.Column('game_id', sa.UUID(), nullable=False),
+    sa.Column('project_id', sa.UUID(), nullable=False),
     sa.Column('points', sa.Integer(), nullable=False),
     sa.Column('potential_points', sa.Integer(), nullable=False),
     sa.Column('verified_points', sa.Integer(), nullable=False),
     sa.Column('commit_count', sa.Integer(), nullable=False),
     sa.Column('contributor_count', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
-    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_board_created_at'), 'board', ['created_at'], unique=False)
@@ -122,9 +122,9 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=True),
-    sa.Column('project_id', sa.Uuid(), nullable=True),
-    sa.Column('game_id', sa.Uuid(), nullable=True),
+    sa.Column('project_id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=True),
+    sa.Column('game_id', sa.UUID(), nullable=True),
     sa.Column('hash', sa.String(length=255), nullable=True),
     sa.Column('author', sa.String(length=100), nullable=True),
     sa.Column('email', sa.String(length=320), nullable=True),
@@ -137,8 +137,8 @@ def upgrade():
     sa.Column('is_flagged', sa.Boolean(), nullable=False),
     sa.Column('flag_reason', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
-    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_commit_created_at'), 'commit', ['created_at'], unique=False)
@@ -151,8 +151,8 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('game_id', sa.Uuid(), nullable=False),
-    sa.Column('language_id', sa.Uuid(), nullable=False),
+    sa.Column('game_id', sa.UUID(), nullable=False),
+    sa.Column('language_id', sa.UUID(), nullable=False),
     sa.Column('points', sa.Integer(), nullable=False),
     sa.Column('commit_count', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
@@ -167,8 +167,8 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('game_id', sa.Uuid(), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('game_id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('points', sa.Integer(), nullable=False),
     sa.Column('potential_points', sa.Integer(), nullable=False),
     sa.Column('verified_points', sa.Integer(), nullable=False),
@@ -177,7 +177,7 @@ def upgrade():
     sa.Column('analysis_status', sa.String(length=20), nullable=False),
     sa.Column('last_analyzed_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_player_created_at'), 'player', ['created_at'], unique=False)
@@ -188,7 +188,7 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('reported_user_id', sa.Uuid(), nullable=True),
+    sa.Column('reported_user_id', sa.UUID(), nullable=True),
     sa.Column('report_type', sa.String(length=20), nullable=False),
     sa.Column('reason', sa.String(length=100), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=False),
@@ -210,13 +210,14 @@ def upgrade():
     sa.Column('slug', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('avatar_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('created_by', sa.Uuid(), nullable=False),
+    sa.Column('created_by', sa.UUID(), nullable=False),
     sa.Column('is_public', sa.Boolean(), nullable=False),
     sa.Column('member_count', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['created_by'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['created_by'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_team_created_at'), 'team', ['created_at'], unique=False)
+    op.create_index(op.f('ix_team_created_by'), 'team', ['created_by'], unique=False)
     op.create_index(op.f('ix_team_name'), 'team', ['name'], unique=True)
     op.create_index(op.f('ix_team_slug'), 'team', ['slug'], unique=True)
     op.create_index(op.f('ix_team_updated_at'), 'team', ['updated_at'], unique=False)
@@ -225,11 +226,11 @@ def upgrade():
     sa.Column('type', sa.String(length=10), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('verified', sa.Boolean(), nullable=False),
     sa.Column('primary', sa.Boolean(), nullable=False),
     sa.Column('data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('value')
     )
     op.create_index(op.f('ix_useridentifier_created_at'), 'useridentifier', ['created_at'], unique=False)
@@ -240,11 +241,11 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('player_id', sa.Uuid(), nullable=False),
-    sa.Column('board_id', sa.Uuid(), nullable=False),
+    sa.Column('player_id', sa.UUID(), nullable=False),
+    sa.Column('board_id', sa.UUID(), nullable=False),
     sa.Column('commit_count', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['board_id'], ['board.id'], ),
-    sa.ForeignKeyConstraint(['player_id'], ['player.id'], ),
+    sa.ForeignKeyConstraint(['board_id'], ['board.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['player_id'], ['player.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_playerboard_board_id'), 'playerboard', ['board_id'], unique=False)
@@ -255,12 +256,12 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('game_id', sa.Uuid(), nullable=False),
-    sa.Column('team_id', sa.Uuid(), nullable=False),
+    sa.Column('game_id', sa.UUID(), nullable=False),
+    sa.Column('team_id', sa.UUID(), nullable=False),
     sa.Column('points', sa.Integer(), nullable=False),
     sa.Column('member_count', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['game_id'], ['game.id'], ),
-    sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
+    sa.ForeignKeyConstraint(['team_id'], ['team.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_teamboard_created_at'), 'teamboard', ['created_at'], unique=False)
@@ -271,11 +272,11 @@ def upgrade():
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('team_id', sa.Uuid(), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('team_id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_teammember_created_at'), 'teammember', ['created_at'], unique=False)
@@ -310,6 +311,7 @@ def downgrade():
     op.drop_index(op.f('ix_team_updated_at'), table_name='team')
     op.drop_index(op.f('ix_team_slug'), table_name='team')
     op.drop_index(op.f('ix_team_name'), table_name='team')
+    op.drop_index(op.f('ix_team_created_by'), table_name='team')
     op.drop_index(op.f('ix_team_created_at'), table_name='team')
     op.drop_table('team')
     op.drop_index(op.f('ix_report_updated_at'), table_name='report')

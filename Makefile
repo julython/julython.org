@@ -69,6 +69,16 @@ upgrade: migrate  ## Alias: Upgrade the database by applying migrations
 downgrade: deps ## Downgrade the database to the previous revision
 	$(VIRTUAL_ENV)/bin/python -m $(app_name) db downgrade
 
+prod-create:  ## Create DB in prod
+	docker compose run prod db create
+
+prod-upgrade:  ## Upgrade DB in prod
+	docker compose run prod db upgrade
+
+prod-downgrade: ## Downgrade DB in prod
+	docker compose run prod db downgrade
+
+
 revision: deps ## Generate a new database migration script  (`make revision message="Message"`)
 	$(VIRTUAL_ENV)/bin/python -m $(app_name) db revision -m "$(message)"
 

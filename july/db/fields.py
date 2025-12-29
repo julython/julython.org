@@ -41,7 +41,7 @@ class MyModel(SQLModel):
 
 import uuid
 
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import (
     ARRAY,
     INET,
@@ -87,12 +87,16 @@ ID = lambda nullable=True, index=False, unique=False, **kwargs: Field(
     **kwargs,
 )
 
-FK = lambda fk, nullable=False, index=True, unique=False, **kwargs: Field(
-    foreign_key=fk,
-    nullable=nullable,
-    index=index,
-    unique=unique,
-    **kwargs,
+FK = (
+    lambda fk, nullable=False, index=True, unique=False, ondelete=None, **kwargs: Field(
+        sa_column=Column(
+            SqlUUID(as_uuid=True),
+            ForeignKey(fk, ondelete=ondelete),
+            index=index,
+            nullable=nullable,
+            unique=unique,
+        )
+    )
 )
 
 Identifier = lambda nullable=True, index=False, unique=False, **kwargs: Field(

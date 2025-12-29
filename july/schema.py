@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from re import I
 from typing import Annotated, Any, Generic, Optional, TypeVar
 from urllib.parse import urlparse
 
@@ -185,6 +186,18 @@ class Leader(BaseModel):
     verified_points: int
     commit_count: int
     project_count: int
+
+
+class LeaderBoard(BaseModel):
+    rank: int
+    project_id: Identifier
+    name: str
+    slug: str
+    url: str
+    points: int
+    verified_points: int
+    commit_count: int
+    contributor_count: int
 
 
 class ListResponse(BaseModel, Generic[DataType]):

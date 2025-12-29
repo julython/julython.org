@@ -37,6 +37,11 @@ services:
       db_create:
         condition: service_completed_successfully
 
+  prod:
+    build:
+      context: ./
+    env_file:
+      - .env-prod
   prod_db_create:
     build:
       context: ./

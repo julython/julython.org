@@ -20,7 +20,9 @@ def from_now(**kwargs) -> datetime:
     return currently + timedelta(**kwargs)
 
 
-def parse_timestamp(ts: str | int) -> datetime:
+def parse_timestamp(ts: str | int | None) -> datetime:
+    if ts is None:
+        return now()
     if isinstance(ts, int):
         return datetime.fromtimestamp(ts)
     return parse(ts)
