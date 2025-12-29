@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from july.routes import auth, config, ui, webhooks
+from july.routes import auth, config, game, ui, webhooks
 from july.globals import context, settings, Settings
 from july.middleware import CacheHeadersMiddleware
 from july.utils.logger import setup_logging
@@ -65,6 +65,7 @@ def create_app(settings: Settings) -> FastAPI:
     # Add API routes
     app.include_router(auth.router)
     app.include_router(config.router)
+    app.include_router(game.router)
     app.include_router(webhooks.router)
 
     # Add UI routes last as they are greedy

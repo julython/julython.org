@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -211,8 +212,6 @@ class GameService:
         if commit.user_id:
             await self._add_points_to_player(game, board, commit)
 
-        await self.session.commit()
-
     async def _add_points_to_board(
         self, game: Game, commit: Commit, from_orphan: bool = False
     ) -> Board:
@@ -401,8 +400,6 @@ class GameService:
         player.analysis_status = AnalysisStatus.COMPLETED
         player.last_analyzed_at = times.now()
 
-        await self.session.commit()
-
     async def get_leaderboard(
         self, game_id: Identifier, limit: int = 50
     ) -> list[Player]:
@@ -410,6 +407,7 @@ class GameService:
         statement = (
             select(Player)
             .where(col(Player.game_id) == game_id)
+            .options(selectinload(Player.user))  # type: ignore
             .order_by(
                 col(Player.verified_points).desc(), col(Player.potential_points).desc()
             )

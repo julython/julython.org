@@ -7,7 +7,8 @@ class User:
     name = "Jimmy Johnson"
 
 
-INAGURAL_GAME = datetime(year=2012, month=7, day=4)
+INAUGURAL_GAME = datetime(year=2012, month=7, day=4)
+INAUGARAL_TIME = int(INAUGURAL_GAME.timestamp())
 
 GITHUB_PAYLOAD = {
     "ref": "refs/heads/master",
@@ -39,8 +40,8 @@ GITHUB_PAYLOAD = {
         "url": "https://api.github.com/repos/rmyers/appengine-debugtoolbar",
         "forks_url": "https://api.github.com/repos/rmyers/appengine-debugtoolbar/forks",
         "created_at": 1334023345,
-        "updated_at": "2025-12-07T20:19:06Z",
-        "pushed_at": 1765138838,
+        "updated_at": INAUGURAL_GAME.isoformat(),
+        "pushed_at": INAUGARAL_TIME,
         "git_url": "git://github.com/rmyers/appengine-debugtoolbar.git",
         "ssh_url": "git@github.com:rmyers/appengine-debugtoolbar.git",
         "clone_url": "https://github.com/rmyers/appengine-debugtoolbar.git",

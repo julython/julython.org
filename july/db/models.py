@@ -20,11 +20,12 @@ from july.db.fields import (
     UpdatedAt,
 )
 from july.schema import (
-    UserRole,
+    AnalysisStatus,
     IdentifierType,
+    Leader,
     ReportStatus,
     ReportType,
-    AnalysisStatus,
+    UserRole,
 )
 
 
@@ -49,6 +50,7 @@ class User(Base, table=True):
     identifiers: list["UserIdentifier"] = Relationship(
         back_populates="user", cascade_delete=True
     )
+    players: list["Player"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class UserIdentifier(SQLModel, table=True):
@@ -134,6 +136,20 @@ class Player(Base, table=True):
         sa_type=String(20), default=AnalysisStatus.PENDING
     )
     last_analyzed_at: Optional[datetime] = Timestamp(nullable=True)
+
+    user: User = Relationship(back_populates="players")
+
+    def to_leader(self, rank: int) -> Leader:
+        return Leader(
+            rank=rank,
+            user_id=self.user_id,
+            name=self.user.name,
+            avatar_url=self.user.avatar_url,
+            points=self.points,
+            verified_points=self.verified_points,
+            commit_count=self.commit_count,
+            project_count=self.project_count,
+        )
 
 
 class Board(Base, table=True):

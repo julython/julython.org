@@ -16,7 +16,7 @@ from july.db.models import (
     User,
 )
 
-from tests.fixtures import INAGURAL_GAME
+from tests.fixtures import INAUGURAL_GAME
 
 LOG = structlog.stdlib.get_logger(__name__)
 
@@ -38,12 +38,12 @@ class TestGetActiveGame:
     async def test_returns_active_game(
         self, active_game: Game, game_service: GameService
     ):
-        game = await game_service.get_active_game(INAGURAL_GAME)
+        game = await game_service.get_active_game(INAUGURAL_GAME)
         assert game is not None
         assert game.id == active_game.id
 
     async def test_returns_none_when_no_active_game(self, game_service: GameService):
-        game = await game_service.get_active_game(INAGURAL_GAME)
+        game = await game_service.get_active_game(INAUGURAL_GAME)
         assert game is None
 
     @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ class TestGetActiveOrLatestGame:
     async def test_returns_active_game_when_exists(
         self, active_game: Game, game_service: GameService
     ):
-        game = await game_service.get_active_or_latest_game(INAGURAL_GAME)
+        game = await game_service.get_active_or_latest_game(INAUGURAL_GAME)
         assert game is not None
         assert game.id == active_game.id
 
@@ -111,7 +111,7 @@ class TestCreateGame:
         )
         assert new_game is not None
 
-        old_game = await game_service.get_active_game(INAGURAL_GAME)
+        old_game = await game_service.get_active_game(INAUGURAL_GAME)
         assert old_game is None
 
     async def test_keeps_others_active_when_not_deactivating(
@@ -121,7 +121,7 @@ class TestCreateGame:
             year=2013, is_active=True, deactivate_others=False
         )
 
-        old_game = await game_service.get_active_game(INAGURAL_GAME)
+        old_game = await game_service.get_active_game(INAUGURAL_GAME)
         assert old_game is not None
         assert old_game.id == active_game.id
 

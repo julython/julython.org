@@ -21,7 +21,7 @@ from july.services import game_service
 from july.settings import Settings
 from july.utils.logger import setup_logging
 
-from tests.fixtures import INAGURAL_GAME
+from tests.fixtures import INAUGURAL_GAME, INAUGARAL_TIME
 
 # Fake static
 TEST_STATIC = pathlib.Path(__file__).parent / "static"
@@ -160,7 +160,7 @@ def make_commit(db_session: AsyncSession, project: models.Project, user: models.
             url="https://julython.org",
             author="timmy",
             email="timmy@jimmy.com",
-            timestamp=timestamp or INAGURAL_GAME,
+            timestamp=timestamp or INAUGURAL_GAME,
             project_id=kwargs.pop("project_id", project.id),
             user_id=kwargs.pop("user_id", user.id),
             languages=languages or [],
@@ -258,12 +258,13 @@ def github_payload() -> dict:
             "owner": {"login": "user"},
             "forks": 5,
             "watchers": 10,
+            "pushed_at": INAUGARAL_TIME,
         },
         "commits": [
             {
                 "id": "abc123def456",
                 "message": "Fix bug",
-                "timestamp": "2024-07-15T10:30:00-05:00",
+                "timestamp": "2012-07-15T10:30:00-05:00",
                 "url": "https://github.com/user/test-repo/commit/abc123",
                 "author": {
                     "name": "Test User",

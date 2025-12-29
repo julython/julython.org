@@ -1,14 +1,17 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Generic, Optional, TypeVar
 from urllib.parse import urlparse
 
 import structlog
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from pydantic.types import StringConstraints
+
+from july.types import Identifier
 
 logger = structlog.stdlib.get_logger(__name__)
 
+DataType = TypeVar("DataType")
 
 HOST_ABBR = {
     "github.com": "gh",
@@ -171,3 +174,20 @@ class OAuthUser(BaseModel):
     @property
     def key(self) -> str:
         return f"{self.provider.value}:{self.id}"
+
+
+class Leader(BaseModel):
+    rank: int
+    user_id: Identifier
+    name: str
+    avatar_url: str | None
+    points: int
+    verified_points: int
+    commit_count: int
+    project_count: int
+
+
+class ListResponse(BaseModel, Generic[DataType]):
+    data: list[DataType]
+    limit: int = 100
+    offset: int = 0
