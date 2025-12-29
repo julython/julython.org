@@ -21,7 +21,7 @@ async def get_leaders(
     now: Optional[datetime] = None
     if date:
         now = parser.parse(date)
-    game = await game_service.get_active_game(now)
+    game = await game_service.get_active_or_latest_game(now)
     if game is None:
         raise HTTPException(
             status_code=404, detail=f"Active game not found for date:{now}"

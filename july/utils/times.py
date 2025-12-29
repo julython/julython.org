@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from dateutil.parser import parse
 
 
 def now() -> datetime:
@@ -19,6 +20,7 @@ def from_now(**kwargs) -> datetime:
     return currently + timedelta(**kwargs)
 
 
-def parse_timestamp(ts: str) -> datetime:
-    ts = ts.replace("Z", "+00:00")
-    return datetime.fromisoformat(ts)
+def parse_timestamp(ts: str | int) -> datetime:
+    if isinstance(ts, int):
+        return datetime.fromtimestamp(ts)
+    return parse(ts)
