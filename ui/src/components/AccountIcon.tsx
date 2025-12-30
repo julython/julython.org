@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGetUserSessionAuthSessionGet } from "../api/auth/auth";
+import { IconSettings, IconLogout, IconUser } from "@tabler/icons-react";
 
 export function AccountIcon() {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -48,8 +49,18 @@ export function AccountIcon() {
             <strong>{session.data.user.name}</strong>
           </div>
           <hr />
-          <a href="/settings">Settings</a>
-          <a href="/auth/logout">Sign out</a>
+          <a href="/profile">
+            <IconUser size={18} />
+            <span>Profile</span>
+          </a>
+          <a href="/settings">
+            <IconSettings size={18} />
+            <span>Settings</span>
+          </a>
+          <a href="/auth/logout">
+            <IconLogout size={18} />
+            <span>Sign out</span>
+          </a>
         </div>
       )}
     </div>

@@ -206,7 +206,7 @@ username = Julython Joe <me@example.com>`}</pre>
             <h2 className="what-is-this">What is the code of conduct?</h2>
             <p className="lead">
               Julython uses roughly the same code of conduct policy as{" "}
-              <a href="https://us.pycon.org/2013/about/code-of-conduct/">
+              <a href="https://policies.python.org/us.pycon.org/code-of-conduct/">
                 PyCon
               </a>
               .
@@ -218,7 +218,7 @@ username = Julython Joe <me@example.com>`}</pre>
               do not tolerate harassment of Julython participants in any form.
             </p>
             <p>
-              Be kind to others. Do not insult or put down other attendees.
+              Be kind to others. Do not insult or put down other participants.
               Behave professionally. Remember that harassment and sexist,
               racist, or exclusionary jokes are not appropriate for Julython.
             </p>
