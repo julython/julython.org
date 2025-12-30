@@ -43,10 +43,10 @@ function Header() {
         </Link>
         <ul className="nav">
           <li>
-            <Link to="/">Leaders</Link>
+            <Link to="/leaders">Leaders</Link>
           </li>
           <li>
-            <Link to="/">Projects</Link>
+            <Link to="/projects">Projects</Link>
           </li>
           <li>
             <Link to="/">Blog</Link>
