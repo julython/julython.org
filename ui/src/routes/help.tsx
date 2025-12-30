@@ -1,28 +1,30 @@
-import { createFileRoute } from "@tanstack/solid-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useGetUserSessionAuthSessionGet } from "../api/auth/auth";
 
 export const Route = createFileRoute("/help")({
   component: Help,
 });
 
 function Help() {
-  const isAuthenticated = false; // Replace with your auth check
+  const { data: session } = useGetUserSessionAuthSessionGet();
+  const isAuthenticated = !!session;
 
   return (
-    <div class="help">
-      <div class="container section-container no-border">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="spread-the-word">Help me get started!</h2>
+    <div className="help">
+      <div className="container section-container no-border">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="spread-the-word">Help me get started!</h2>
             {isAuthenticated ? (
-              <p class="lead">
+              <p className="lead">
                 First <a href="/profile/edit">edit your profile</a> and add all
                 the email addresses you use to commit with. This is how we'll
                 identify you, we will not display or share this information.
               </p>
             ) : (
-              <p class="lead">
+              <p className="lead">
                 First{" "}
-                <a href="/signin" class="btn btn-mini btn-info">
+                <a href="/signin" className="btn btn-mini btn-info">
                   Sign In
                 </a>{" "}
                 and add all the email addresses you use to commit with. This is
@@ -38,11 +40,11 @@ function Help() {
         </div>
       </div>
 
-      <div class="container section-container no-border" id="webhook">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">How do I add a webhook?</h2>
-            <p class="lead">
+      <div className="container section-container no-border" id="webhook">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">How do I add a webhook?</h2>
+            <p className="lead">
               Add your project's webhook URL to GitHub, GitLab, or Bitbucket to
               track your commits.
             </p>
@@ -51,16 +53,16 @@ function Help() {
         </div>
       </div>
 
-      <div class="container section-container no-border" id="points">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">How are points scored?</h2>
-            <p class="lead">
+      <div className="container section-container no-border" id="points">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">How are points scored?</h2>
+            <p className="lead">
               Points are awarded to the committer, the project, and optionally
               to the location the user has specified in his/her profile.
             </p>
-            <div class="row">
-              <div class="span5">
+            <div className="row">
+              <div className="span5">
                 <h3>Commits</h3>
                 <p>
                   You can score points by committing to a project that has a{" "}
@@ -68,7 +70,7 @@ function Help() {
                   point.
                 </p>
               </div>
-              <div class="span5">
+              <div className="span5">
                 <h3>New Projects</h3>
                 <p>
                   Everytime a new project is added via{" "}
@@ -81,16 +83,16 @@ function Help() {
         </div>
       </div>
 
-      <div class="container section-container no-border" id="times">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">When will my points count?</h2>
-            <p class="lead">
+      <div className="container section-container no-border" id="times">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">When will my points count?</h2>
+            <p className="lead">
               You should use your local time to 'start' at midnight on the first
               day of the month, and 'end' at midnight on the last day of the
               month.
             </p>
-            <table class="table">
+            <table className="table">
               <thead>
                 <tr>
                   <th>Event</th>
@@ -115,16 +117,16 @@ function Help() {
         </div>
       </div>
 
-      <div class="container section-container no-border" id="git">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">Why don't my commits show up?</h2>
-            <p class="lead">
+      <div className="container section-container no-border" id="git">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">Why don't my commits show up?</h2>
+            <p className="lead">
               Be sure to edit your profile and add the email you use to commit
               with.
             </p>
-            <div class="row">
-              <div class="span5">
+            <div className="row">
+              <div className="span5">
                 <h3>Git Help</h3>
                 <p>Check the existing setting:</p>
                 <pre>git config --global user.email</pre>
@@ -135,7 +137,7 @@ function Help() {
                   git commit --amend --author="Me &lt;me@example.com&gt;"
                 </pre>
               </div>
-              <div class="span5">
+              <div className="span5">
                 <h3>Mercurial Help</h3>
                 <p>Edit .hgrc (or Mercurial.ini on Windows):</p>
                 <pre>{`[ui]
@@ -146,24 +148,24 @@ username = Julython Joe <me@example.com>`}</pre>
         </div>
       </div>
 
-      <div class="container section-container no-border" id="location">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">How do I set my location?</h2>
+      <div className="container section-container no-border" id="location">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">How do I set my location?</h2>
             {isAuthenticated ? (
-              <p class="lead">
+              <p className="lead">
                 <a href="/profile/edit">Edit your profile</a> and add your
                 location.
               </p>
             ) : (
-              <p class="lead">
-                <a href="/signin" class="btn btn-mini btn-info">
+              <p className="lead">
+                <a href="/signin" className="btn btn-mini btn-info">
                   Sign In
                 </a>{" "}
                 first.
               </p>
             )}
-            <p class="lead">
+            <p className="lead">
               The location must be a valid 'city, state, country' location in
               the world.
             </p>
@@ -171,23 +173,23 @@ username = Julython Joe <me@example.com>`}</pre>
         </div>
       </div>
 
-      <div class="container section-container no-border" id="team">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">How do I set my team?</h2>
+      <div className="container section-container no-border" id="team">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">How do I set my team?</h2>
             {isAuthenticated ? (
-              <p class="lead">
+              <p className="lead">
                 <a href="/profile/edit">Edit your profile</a> and add your team.
               </p>
             ) : (
-              <p class="lead">
-                <a href="/signin" class="btn btn-mini btn-info">
+              <p className="lead">
+                <a href="/signin" className="btn btn-mini btn-info">
                   Sign In
                 </a>{" "}
                 first.
               </p>
             )}
-            <p class="lead">
+            <p className="lead">
               The team is a free form field. We slugify the contents so 'Worker
               Bees' and 'worker bees' both become 'worker-bees'.
             </p>
@@ -198,11 +200,11 @@ username = Julython Joe <me@example.com>`}</pre>
         </div>
       </div>
 
-      <div class="container section-container no-border" id="conduct">
-        <div class="row">
-          <div class="span10 offset1">
-            <h2 class="what-is-this">What is the code of conduct?</h2>
-            <p class="lead">
+      <div className="container section-container no-border" id="conduct">
+        <div className="row">
+          <div className="span10 offset1">
+            <h2 className="what-is-this">What is the code of conduct?</h2>
+            <p className="lead">
               Julython uses roughly the same code of conduct policy as{" "}
               <a href="https://us.pycon.org/2013/about/code-of-conduct/">
                 PyCon

@@ -287,3 +287,64 @@ pre {
 
 /* Paragraph text */
 p { color: var(--text-primary); }
+
+/* Account menu */
+.account-menu {
+  position: relative;
+}
+
+.account-button {
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.account-button img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: block;
+}
+
+.account-dropdown {
+  position: absolute;
+  right: 0;
+  background: var(--light-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--pico-border-radius);
+  min-width: 250px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+
+  .account-info {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: block;
+    }
+  }
+
+  hr {
+    margin: 0.5rem 0;
+    border: none;
+    border-top: 1px solid var(--pico-muted-border-color);
+  }
+
+  a {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    display: block;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+}

@@ -1,10 +1,12 @@
 import secrets
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, responses
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from july.db.models import User
 from july.dependencies import get_session
 from july.globals import settings
 from july.services import auth_service, user_service
@@ -24,6 +26,14 @@ PROVIDERS: dict[str, auth_service.OAuthProviderBase] = {
         redirect_uri=settings.auth_callback,
     ),
 }
+
+
+class SessionData(BaseModel):
+    oauth_provider: Optional[str] = None
+    oauth_state: Optional[str] = None
+    oauth_verifier: Optional[str] = None
+    identity_key: Optional[str] = None
+    user: Optional[User] = None
 
 
 @router.get("/auth/login/{provider}")
@@ -72,9 +82,11 @@ async def callback(
     return responses.RedirectResponse("/", status_code=302)
 
 
-@router.get("/auth/session")
-async def get_user_session(request: Request) -> dict:
-    return request.session
+@router.get("/auth/session", responses={401: {}})
+async def get_user_session(request: Request) -> SessionData:
+    if not request.session:
+        raise HTTPException(status_code=401)
+    return SessionData.model_validate(request.session)
 
 
 @router.get("/auth/logout")

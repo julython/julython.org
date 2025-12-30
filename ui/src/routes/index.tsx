@@ -1,5 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/solid-router";
-import { For } from "solid-js";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -19,20 +18,20 @@ function Index() {
 
   return (
     <>
-      <div class="container">
-        <div class="row">
-          <div class="span12">
+      <div className="container">
+        <div className="row">
+          <div className="span12">
             <h1 id="logo">Julython</h1>
           </div>
         </div>
       </div>
 
-      <div class="offset-container">
-        <div class="container">
-          <div class="row">
-            <div class="span4">
-              <h2 class="section-header rocket-header">
-                <span class="section-icon rocket-icon" />
+      <div className="offset-container">
+        <div className="container">
+          <div className="row">
+            <div className="span4">
+              <h2 className="section-header rocket-header">
+                <span className="section-icon rocket-icon" />
                 What is Julython?
               </h2>
               <p>
@@ -43,9 +42,9 @@ function Index() {
                 first time.
               </p>
             </div>
-            <div class="span4">
-              <h2 class="section-header rules-header">
-                <span class="section-icon rules-icon" />
+            <div className="span4">
+              <h2 className="section-header rules-header">
+                <span className="section-icon rules-icon" />
                 Are There Rules?
               </h2>
               <p>
@@ -57,9 +56,9 @@ function Index() {
                 <Link to="/help">during the month of July</Link>.
               </p>
             </div>
-            <div class="span4">
-              <h2 class="section-header plus-one-header">
-                <span class="section-icon plus-one-icon" />
+            <div className="span4">
+              <h2 className="section-header plus-one-header">
+                <span className="section-icon plus-one-icon" />
                 How Do I Join In?
               </h2>
               <p>
@@ -74,67 +73,67 @@ function Index() {
         </div>
       </div>
 
-      <div class="container section-container no-border">
-        <div class="row">
-          <div class="span8">
-            <h2 class="spread-the-word">
+      <div className="container section-container no-border">
+        <div className="row">
+          <div className="span8">
+            <h2 className="spread-the-word">
               <span id="commit-total">{total.toLocaleString()}</span> commits
               during {game}!
             </h2>
-            <div id="user-barchart" class="commit-chart" />
+            <div id="user-barchart" className="commit-chart" />
           </div>
-          <div class="span4">
-            <h2 class="participating">
+          <div className="span4">
+            <h2 className="participating">
               <a href="/live">What's Happening?</a>
             </h2>
-            <ul class="message-list" id="live-messages">
-              <For each={commits}>
-                {(commit) => (
-                  <li class="message">
-                    <div class="media">
-                      <a
-                        href={`/${commit.username}/`}
-                        class="thumbnail pull-left"
-                      >
-                        <img
-                          class="media-object"
-                          src={commit.pictureUrl}
-                          alt={commit.username}
-                        />
-                      </a>
-                      <div class="media-body">
-                        <h4 class="media-heading">
-                          {commit.timestamp} —{" "}
-                          <a href={commit.projectUrl}>{commit.projectName}</a>
-                        </h4>
-                        <p>{commit.message.substring(0, 100)}</p>
-                        <p class="hash">
-                          <a href={`/${commit.username}/`}>{commit.username}</a>{" "}
-                          —{" "}
-                          <a href={commit.url}>{commit.hash.substring(0, 8)}</a>
-                        </p>
-                      </div>
+            <ul className="message-list" id="live-messages">
+              {commits.map((commit) => (
+                <li key={commit.hash} className="message">
+                  <div className="media">
+                    <a
+                      href={`/${commit.username}/`}
+                      className="thumbnail pull-left"
+                    >
+                      <img
+                        className="media-object"
+                        src={commit.pictureUrl}
+                        alt={commit.username}
+                      />
+                    </a>
+                    <div className="media-body">
+                      <h4 className="media-heading">
+                        {commit.timestamp} —{" "}
+                        <a href={commit.projectUrl}>{commit.projectName}</a>
+                      </h4>
+                      <p>{commit.message.substring(0, 100)}</p>
+                      <p className="hash">
+                        <a href={`/${commit.username}/`}>{commit.username}</a> —{" "}
+                        <a href={commit.url}>{commit.hash.substring(0, 8)}</a>
+                      </p>
                     </div>
-                  </li>
-                )}
-              </For>
+                  </div>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
       </div>
 
-      <div class="container section-container no-border">
-        <div class="row">
-          <div class="span8">
-            <h2 class="spread-the-word">{blog.title}</h2>
+      <div className="container section-container no-border">
+        <div className="row">
+          <div className="span8">
+            <h2 className="spread-the-word">{blog.title}</h2>
             <p>
               <em>
                 Posted on {blog.postedAt.toLocaleDateString()} by {blog.user}
               </em>
             </p>
-            <div class="post" innerHTML={blog.body} />
+            <div
+              className="post"
+              dangerouslySetInnerHTML={{ __html: blog.body }}
+            />
           </div>
-          <div class="span4">
+          <div className="span4">
             <h3>Other Posts</h3>
             {/* blog roll here */}
           </div>
