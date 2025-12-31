@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useGetUserSessionAuthSessionGet } from "../api/auth/auth";
-import { IconSettings, IconLogout, IconUser } from "@tabler/icons-react";
+import {
+  IconSettings,
+  IconLogout,
+  IconUser,
+  IconWebhook,
+} from "@tabler/icons-react";
 
 export function AccountIcon() {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -53,7 +58,11 @@ export function AccountIcon() {
             <IconUser size={18} />
             <span>Profile</span>
           </a>
-          <a href="/settings">
+          <a href="/profile/webhooks">
+            <IconWebhook size={18} />
+            <span>Webhooks</span>
+          </a>
+          <a href="/profile/edit">
             <IconSettings size={18} />
             <span>Settings</span>
           </a>

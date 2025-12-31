@@ -42,9 +42,7 @@ class GitHubService:
         }
 
     async def list_repos(
-        self,
-        include_webhooks: bool = False,
-        per_page: int = 20,
+        self, include_webhooks: bool = False, per_page: int = 10, page: int = 1
     ) -> list[GitHubRepo]:
         """
         List repositories the user has push access to.
@@ -54,47 +52,43 @@ class GitHubService:
             per_page: Number of repos per page (max 100)
         """
         repos: list[GitHubRepo] = []
-        page = 1
 
         async with httpx.AsyncClient(headers=self.headers, timeout=30) as client:
-            while True:
-                resp = await client.get(
-                    f"{self.BASE_URL}/user/repos",
-                    params={
-                        "per_page": per_page,
-                        "page": page,
-                        "sort": "updated",
-                        "direction": "desc",
-                        # Only repos where user can manage webhooks
-                        "affiliation": "owner,organization_member",
-                    },
+            resp = await client.get(
+                f"{self.BASE_URL}/user/repos",
+                params={
+                    "per_page": per_page,
+                    "page": page,
+                    "sort": "updated",
+                    "direction": "desc",
+                    # Only repos where user can manage webhooks
+                    "affiliation": "owner,organization_member",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            if not data:
+                return repos
+
+            for repo_data in data:
+                # Skip if user doesn't have admin access (can't manage hooks)
+                permissions = repo_data.get("permissions", {})
+                if not permissions.get("admin", False):
+                    continue
+
+                repo = GitHubRepo(
+                    id=repo_data["id"],
+                    name=repo_data["name"],
+                    full_name=repo_data["full_name"],
+                    owner=repo_data["owner"]["login"],
+                    private=repo_data["private"],
+                    html_url=repo_data["html_url"],
+                    description=repo_data["description"],
+                    default_branch=repo_data.get("default_branch", "main"),
+                    hooks_url=repo_data["hooks_url"],
                 )
-                resp.raise_for_status()
-                data = resp.json()
-
-                if not data:
-                    break
-
-                for repo_data in data:
-                    # Skip if user doesn't have admin access (can't manage hooks)
-                    permissions = repo_data.get("permissions", {})
-                    if not permissions.get("admin", False):
-                        continue
-
-                    repo = GitHubRepo(
-                        id=repo_data["id"],
-                        name=repo_data["name"],
-                        full_name=repo_data["full_name"],
-                        owner=repo_data["owner"]["login"],
-                        private=repo_data["private"],
-                        html_url=repo_data["html_url"],
-                        description=repo_data["description"],
-                        default_branch=repo_data.get("default_branch", "main"),
-                        hooks_url=repo_data["hooks_url"],
-                    )
-                    repos.append(repo)
-
-                page += 1
+                repos.append(repo)
 
             if include_webhooks:
                 for repo in repos:

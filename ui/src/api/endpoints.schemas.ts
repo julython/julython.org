@@ -136,5 +136,6 @@ date?: string | null;
 
 export type ListReposApiGithubReposGetParams = {
 include_webhooks?: boolean;
+page?: number;
 };
 

@@ -1,5 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import {
+  createFileRoute,
+  isRedirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import {
   useListReposApiGithubReposGet,
   useCreateWebhookApiGithubReposOwnerRepoWebhooksPost,
@@ -10,15 +13,27 @@ import {
   IconPlus,
   IconTrash,
   IconLock,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-react";
 import type { GitHubRepo } from "../../api/endpoints.schemas";
 
+type WebhooksSearch = {
+  page?: number;
+};
+
 export const Route = createFileRoute("/profile/webhooks")({
+  validateSearch: (search: Record<string, unknown>): WebhooksSearch => ({
+    page: Number(search.page) || 1,
+  }),
   component: ProfileWebhooks,
 });
 
+const PER_PAGE = 10;
+
 function ProfileWebhooks() {
-  const [filter, setFilter] = useState("");
+  const { page = 1 } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
 
   const {
     data: reposData,
@@ -26,16 +41,15 @@ function ProfileWebhooks() {
     isRefetching,
     error,
     refetch,
-  } = useListReposApiGithubReposGet({ include_webhooks: true });
+  } = useListReposApiGithubReposGet({ page, include_webhooks: true });
 
   const repos = reposData?.data?.repos ?? [];
   const webhookUrl = reposData?.data?.webhook_url ?? "";
+  const hasNext = repos.length === PER_PAGE;
 
-  const filteredRepos = repos.filter(
-    (repo) =>
-      repo.full_name.toLowerCase().includes(filter.toLowerCase()) ||
-      repo.description?.toLowerCase().includes(filter.toLowerCase()),
-  );
+  const handlePageChange = (newPage: number) => {
+    navigate({ search: { page: newPage } });
+  };
 
   if (error?.response?.status === 401) {
     return (
@@ -56,39 +70,50 @@ function ProfileWebhooks() {
         Add webhooks to your repositories to track commits during Julython.
       </p>
 
-      {isLoading || isRefetching ? (
+      {isLoading ? (
         <p>Loading repositories...</p>
       ) : error ? (
         <p>Failed to load repositories. Please try again.</p>
       ) : (
         <>
-          <div className="toolbar">
-            <input
-              type="search"
-              placeholder="Filter repositories..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-            <span>{filteredRepos.length} repositories</span>
-          </div>
-
           <ul className="repo-list">
-            {filteredRepos.map((repo) => (
+            {repos.map((repo) => (
               <RepoItem
                 key={repo.id}
                 repo={repo}
                 webhookUrl={webhookUrl}
-                onUpdate={() => refetch()}
+                onUpdate={refetch}
+                isRefetching={isRefetching}
               />
             ))}
           </ul>
 
-          {filteredRepos.length === 0 && (
+          {repos.length === 0 && (
             <p className="empty-state">
-              {filter
-                ? "No repositories match your filter."
-                : "No repositories found with admin access."}
+              No repositories found with admin access.
             </p>
+          )}
+
+          {(page > 1 || hasNext) && (
+            <div className="pagination">
+              <button
+                className="btn btn-small"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+              >
+                <IconChevronLeft size={16} />
+                Previous
+              </button>
+              <span className="pagination-current">Page {page}</span>
+              <button
+                className="btn btn-small"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={!hasNext}
+              >
+                Next
+                <IconChevronRight size={16} />
+              </button>
+            </div>
           )}
         </>
       )}
@@ -100,17 +125,16 @@ interface RepoItemProps {
   repo: GitHubRepo;
   webhookUrl: string;
   onUpdate: () => void;
+  isRefetching: boolean;
 }
 
-function RepoItem({ repo, webhookUrl, onUpdate }: RepoItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+function RepoItem({ repo, webhookUrl, onUpdate, isRefetching }: RepoItemProps) {
   const createWebhook = useCreateWebhookApiGithubReposOwnerRepoWebhooksPost();
   const deleteWebhook =
     useDeleteWebhookApiGithubReposOwnerRepoWebhooksHookIdDelete();
 
   const existingHook = repo.webhooks?.find(
-    (hook) => hook.config?.url === webhookUrl,
+    (hook) => String(hook.config?.url ?? "") === webhookUrl,
   );
   const hasWebhook = !!existingHook;
 
@@ -137,7 +161,8 @@ function RepoItem({ repo, webhookUrl, onUpdate }: RepoItemProps) {
     }
   };
 
-  const isPending = createWebhook.isPending || deleteWebhook.isPending;
+  const isPending =
+    createWebhook.isPending || deleteWebhook.isPending || isRefetching;
 
   return (
     <li className={`repo-item ${hasWebhook ? "has-webhook" : ""}`}>
@@ -159,7 +184,7 @@ function RepoItem({ repo, webhookUrl, onUpdate }: RepoItemProps) {
             )}
           </h4>
           {repo.description && (
-            <p className="description">{repo.description}</p>
+            <p className="description">{String(repo.description)}</p>
           )}
         </div>
 
@@ -172,7 +197,7 @@ function RepoItem({ repo, webhookUrl, onUpdate }: RepoItemProps) {
               title="Remove webhook"
             >
               <IconTrash size={16} />
-              {isPending ? "Removing..." : "Remove"}
+              {isPending ? "Working" : "Remove"}
             </button>
           ) : (
             <button
@@ -182,43 +207,11 @@ function RepoItem({ repo, webhookUrl, onUpdate }: RepoItemProps) {
               title="Add webhook"
             >
               <IconPlus size={16} />
-              {isPending ? "Adding..." : "Add"}
+              {isPending ? "Working" : "Add"}
             </button>
           )}
         </div>
       </div>
-
-      {repo.webhooks && repo.webhooks.length > 0 && (
-        <>
-          <button
-            className="btn-link expand-toggle"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "Hide" : "Show"} {repo.webhooks.length} webhook
-            {repo.webhooks.length !== 1 && "s"}
-          </button>
-
-          {isExpanded && (
-            <ul className="webhook-list">
-              {repo.webhooks.map((hook) => (
-                <li
-                  key={hook.id}
-                  className={hook.config?.url === webhookUrl ? "ours" : ""}
-                >
-                  <span className="webhook-url">
-                    {String(hook.config?.url ?? "Unknown URL")}
-                  </span>
-                  <span
-                    className={`status ${hook.active ? "active" : "inactive"}`}
-                  >
-                    {hook.active ? " Active" : " Inactive"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
     </li>
   );
 }

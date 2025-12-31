@@ -26,7 +26,7 @@
 
 [data-theme="dark"] {
   --bg-primary: var(--purple-deeper);
-  --bg-secondary: var(--purple-dark);
+  --bg-secondary: var(--light-gray);
   --bg-navbar: var(--purple-dark);
   --text-primary: #e8e8e8;
   --text-secondary: #b8b8b8;
@@ -324,11 +324,14 @@ a {
   &:hover {
     color: #7b4b91;
   }
+  &.btn {
+    display: inline;
+  }
 }
 
 [data-theme="dark"] {
   a {
-    color: #c9a0dc;
+    color: #fff;
 
     &:hover {
       color: #dfc3eb;
@@ -380,7 +383,9 @@ pre {
 }
 
 .btn {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 6px 12px;
   background: var(--purple);
   color: white;

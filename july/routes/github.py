@@ -60,6 +60,7 @@ async def get_github_token(
 async def list_repos(
     token: Annotated[str, Depends(get_github_token)],
     include_webhooks: bool = False,
+    page: int = 1,
 ):
     """
     List GitHub repositories the user can manage webhooks for.
@@ -70,7 +71,10 @@ async def list_repos(
     github = GitHubService(token)
 
     try:
-        repos = await github.list_repos(include_webhooks=include_webhooks)
+        repos = await github.list_repos(
+            include_webhooks=include_webhooks,
+            page=page,
+        )
     except Exception as e:
         logger.exception("Failed to list GitHub repos")
         raise HTTPException(502, f"GitHub API error: {e}")
