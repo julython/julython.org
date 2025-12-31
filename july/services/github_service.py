@@ -44,7 +44,7 @@ class GitHubService:
     async def list_repos(
         self,
         include_webhooks: bool = False,
-        per_page: int = 50,
+        per_page: int = 20,
     ) -> list[GitHubRepo]:
         """
         List repositories the user has push access to.

@@ -90,66 +90,6 @@ export const useGithubWebhookApiV1GithubPost = <TError = AxiosError<HTTPValidati
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Github Webhook
- */
-export const githubWebhookApiGithubPost = (
-     options?: AxiosRequestConfig
- ): Promise<AxiosResponse<unknown>> => {
-    
-    
-    return axios.default.post(
-      `/api/github`,undefined,options
-    );
-  }
-
-
-
-export const getGithubWebhookApiGithubPostMutationOptions = <TError = AxiosError<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof githubWebhookApiGithubPost>>, TError,void, TContext>, axios?: AxiosRequestConfig}
-): UseMutationOptions<Awaited<ReturnType<typeof githubWebhookApiGithubPost>>, TError,void, TContext> => {
-
-const mutationKey = ['githubWebhookApiGithubPost'];
-const {mutation: mutationOptions, axios: axiosOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, axios: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof githubWebhookApiGithubPost>>, void> = () => {
-          
-
-          return  githubWebhookApiGithubPost(axiosOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GithubWebhookApiGithubPostMutationResult = NonNullable<Awaited<ReturnType<typeof githubWebhookApiGithubPost>>>
-    
-    export type GithubWebhookApiGithubPostMutationError = AxiosError<HTTPValidationError>
-
-    /**
- * @summary Github Webhook
- */
-export const useGithubWebhookApiGithubPost = <TError = AxiosError<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof githubWebhookApiGithubPost>>, TError,void, TContext>, axios?: AxiosRequestConfig}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof githubWebhookApiGithubPost>>,
-        TError,
-        void,
-        TContext
-      > => {
-
-      const mutationOptions = getGithubWebhookApiGithubPostMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    /**
  * @summary Gitlab Webhook
  */
 export const gitlabWebhookApiV1GitlabPost = (

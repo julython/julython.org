@@ -9,11 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as LeadersIndexRouteImport } from './routes/leaders/index'
+import { Route as ProfileWebhooksRouteImport } from './routes/profile/webhooks'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
@@ -29,48 +38,106 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const LeadersIndexRoute = LeadersIndexRouteImport.update({
   id: '/leaders/',
   path: '/leaders/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileWebhooksRoute = ProfileWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ProfileRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/help': typeof HelpRoute
+  '/profile': typeof ProfileRouteWithChildren
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/webhooks': typeof ProfileWebhooksRoute
   '/leaders': typeof LeadersIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/help': typeof HelpRoute
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/webhooks': typeof ProfileWebhooksRoute
   '/leaders': typeof LeadersIndexRoute
+  '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/help': typeof HelpRoute
+  '/profile': typeof ProfileRouteWithChildren
+  '/profile/edit': typeof ProfileEditRoute
+  '/profile/webhooks': typeof ProfileWebhooksRoute
   '/leaders/': typeof LeadersIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/help' | '/leaders' | '/projects'
+  fullPaths:
+    | '/'
+    | '/help'
+    | '/profile'
+    | '/profile/edit'
+    | '/profile/webhooks'
+    | '/leaders'
+    | '/profile/'
+    | '/projects'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/help' | '/leaders' | '/projects'
-  id: '__root__' | '/' | '/help' | '/leaders/' | '/projects/'
+  to:
+    | '/'
+    | '/help'
+    | '/profile/edit'
+    | '/profile/webhooks'
+    | '/leaders'
+    | '/profile'
+    | '/projects'
+  id:
+    | '__root__'
+    | '/'
+    | '/help'
+    | '/profile'
+    | '/profile/edit'
+    | '/profile/webhooks'
+    | '/leaders/'
+    | '/profile/'
+    | '/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HelpRoute: typeof HelpRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   LeadersIndexRoute: typeof LeadersIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/help': {
       id: '/help'
       path: '/help'
@@ -92,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/leaders/': {
       id: '/leaders/'
       path: '/leaders'
@@ -99,12 +173,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/webhooks': {
+      id: '/profile/webhooks'
+      path: '/webhooks'
+      fullPath: '/profile/webhooks'
+      preLoaderRoute: typeof ProfileWebhooksRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof ProfileRoute
+    }
   }
 }
+
+interface ProfileRouteChildren {
+  ProfileEditRoute: typeof ProfileEditRoute
+  ProfileWebhooksRoute: typeof ProfileWebhooksRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileEditRoute: ProfileEditRoute,
+  ProfileWebhooksRoute: ProfileWebhooksRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HelpRoute: HelpRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   LeadersIndexRoute: LeadersIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }

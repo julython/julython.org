@@ -42,8 +42,8 @@ import type {
 export const loginAuthLoginProviderGet = (
     provider: 'github' | 'gitlab', options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
-
-
+    
+    
     return axios.default.get(
       `/auth/login/${provider}`,options
     );
@@ -58,7 +58,7 @@ export const getLoginAuthLoginProviderGetQueryKey = (provider?: 'github' | 'gitl
     ] as const;
     }
 
-
+    
 export const getLoginAuthLoginProviderGetQueryOptions = <TData = Awaited<ReturnType<typeof loginAuthLoginProviderGet>>, TError = AxiosError<HTTPValidationError>>(provider: 'github' | 'gitlab', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginAuthLoginProviderGet>>, TError, TData>>, axios?: AxiosRequestConfig}
 ) => {
 
@@ -66,13 +66,13 @@ const {query: queryOptions, axios: axiosOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getLoginAuthLoginProviderGetQueryKey(provider);
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof loginAuthLoginProviderGet>>> = ({ signal }) => loginAuthLoginProviderGet(provider, { signal, ...axiosOptions });
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, enabled: !!(provider), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof loginAuthLoginProviderGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -111,7 +111,7 @@ export function useLoginAuthLoginProviderGet<TData = Awaited<ReturnType<typeof l
 
 export function useLoginAuthLoginProviderGet<TData = Awaited<ReturnType<typeof loginAuthLoginProviderGet>>, TError = AxiosError<HTTPValidationError>>(
  provider: 'github' | 'gitlab', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginAuthLoginProviderGet>>, TError, TData>>, axios?: AxiosRequestConfig}
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getLoginAuthLoginProviderGetQueryOptions(provider,options)
@@ -132,8 +132,8 @@ export function useLoginAuthLoginProviderGet<TData = Awaited<ReturnType<typeof l
 export const callbackAuthCallbackGet = (
     params: CallbackAuthCallbackGetParams, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
-
-
+    
+    
     return axios.default.get(
       `/auth/callback`,{
     ...options,
@@ -150,7 +150,7 @@ export const getCallbackAuthCallbackGetQueryKey = (params?: CallbackAuthCallback
     ] as const;
     }
 
-
+    
 export const getCallbackAuthCallbackGetQueryOptions = <TData = Awaited<ReturnType<typeof callbackAuthCallbackGet>>, TError = AxiosError<HTTPValidationError>>(params: CallbackAuthCallbackGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof callbackAuthCallbackGet>>, TError, TData>>, axios?: AxiosRequestConfig}
 ) => {
 
@@ -158,13 +158,13 @@ const {query: queryOptions, axios: axiosOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getCallbackAuthCallbackGetQueryKey(params);
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof callbackAuthCallbackGet>>> = ({ signal }) => callbackAuthCallbackGet(params, { signal, ...axiosOptions });
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof callbackAuthCallbackGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -203,7 +203,7 @@ export function useCallbackAuthCallbackGet<TData = Awaited<ReturnType<typeof cal
 
 export function useCallbackAuthCallbackGet<TData = Awaited<ReturnType<typeof callbackAuthCallbackGet>>, TError = AxiosError<HTTPValidationError>>(
  params: CallbackAuthCallbackGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof callbackAuthCallbackGet>>, TError, TData>>, axios?: AxiosRequestConfig}
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCallbackAuthCallbackGetQueryOptions(params,options)
@@ -224,8 +224,8 @@ export function useCallbackAuthCallbackGet<TData = Awaited<ReturnType<typeof cal
 export const getUserSessionAuthSessionGet = (
      options?: AxiosRequestConfig
  ): Promise<AxiosResponse<SessionData>> => {
-
-
+    
+    
     return axios.default.get(
       `/auth/session`,options
     );
@@ -240,30 +240,30 @@ export const getGetUserSessionAuthSessionGetQueryKey = () => {
     ] as const;
     }
 
-
-export const getGetUserSessionAuthSessionGetQueryOptions = <TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>>, axios?: AxiosRequestConfig}
+    
+export const getGetUserSessionAuthSessionGetQueryOptions = <TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>>, axios?: AxiosRequestConfig}
 ) => {
 
 const {query: queryOptions, axios: axiosOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetUserSessionAuthSessionGetQueryKey();
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>> = ({ signal }) => getUserSessionAuthSessionGet({ signal, ...axiosOptions });
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUserSessionAuthSessionGetQueryResult = NonNullable<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>>
-export type GetUserSessionAuthSessionGetQueryError = AxiosError<void>
+export type GetUserSessionAuthSessionGetQueryError = AxiosError<unknown>
 
 
-export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<void>>(
+export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<unknown>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>,
@@ -273,7 +273,7 @@ export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeo
       >, axios?: AxiosRequestConfig}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<void>>(
+export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<unknown>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>,
@@ -283,7 +283,7 @@ export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeo
       >, axios?: AxiosRequestConfig}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<void>>(
+export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<unknown>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>>, axios?: AxiosRequestConfig}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -291,9 +291,9 @@ export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeo
  * @summary Get User Session
  */
 
-export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<void>>(
+export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError = AxiosError<unknown>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserSessionAuthSessionGet>>, TError, TData>>, axios?: AxiosRequestConfig}
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetUserSessionAuthSessionGetQueryOptions(options)
@@ -314,8 +314,8 @@ export function useGetUserSessionAuthSessionGet<TData = Awaited<ReturnType<typeo
 export const logoutAuthLogoutGet = (
      options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
-
-
+    
+    
     return axios.default.get(
       `/auth/logout`,options
     );
@@ -330,7 +330,7 @@ export const getLogoutAuthLogoutGetQueryKey = () => {
     ] as const;
     }
 
-
+    
 export const getLogoutAuthLogoutGetQueryOptions = <TData = Awaited<ReturnType<typeof logoutAuthLogoutGet>>, TError = AxiosError<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof logoutAuthLogoutGet>>, TError, TData>>, axios?: AxiosRequestConfig}
 ) => {
 
@@ -338,13 +338,13 @@ const {query: queryOptions, axios: axiosOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getLogoutAuthLogoutGetQueryKey();
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof logoutAuthLogoutGet>>> = ({ signal }) => logoutAuthLogoutGet({ signal, ...axiosOptions });
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof logoutAuthLogoutGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -383,7 +383,7 @@ export function useLogoutAuthLogoutGet<TData = Awaited<ReturnType<typeof logoutA
 
 export function useLogoutAuthLogoutGet<TData = Awaited<ReturnType<typeof logoutAuthLogoutGet>>, TError = AxiosError<unknown>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof logoutAuthLogoutGet>>, TError, TData>>, axios?: AxiosRequestConfig}
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getLogoutAuthLogoutGetQueryOptions(options)

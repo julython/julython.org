@@ -4,6 +4,33 @@
  * Julython API
  * OpenAPI spec version: 0.1.0
  */
+export type GitHubRepoDescription = string | null;
+
+export type GitHubRepoWebhooks = GitHubWebhook[] | null;
+
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  owner: string;
+  private: boolean;
+  html_url: string;
+  description?: GitHubRepoDescription;
+  default_branch?: string;
+  hooks_url: string;
+  webhooks?: GitHubRepoWebhooks;
+}
+
+export type GitHubWebhookConfig = { [key: string]: unknown };
+
+export interface GitHubWebhook {
+  id: number;
+  name: string;
+  active: boolean;
+  events: string[];
+  config: GitHubWebhookConfig;
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -49,6 +76,11 @@ export interface ListResponseLeader {
   offset?: number;
 }
 
+export interface RepoListResponse {
+  repos: GitHubRepo[];
+  webhook_url: string;
+}
+
 export type SessionDataOauthProvider = string | null;
 
 export type SessionDataOauthState = string | null;
@@ -57,7 +89,7 @@ export type SessionDataOauthVerifier = string | null;
 
 export type SessionDataIdentityKey = string | null;
 
-export type SessionDataUser = User | null;
+export type SessionDataUser = SessionUser | null;
 
 export interface SessionData {
   oauth_provider?: SessionDataOauthProvider;
@@ -67,43 +99,19 @@ export interface SessionData {
   user?: SessionDataUser;
 }
 
-export type UserAvatarUrl = string | null;
+export type SessionUserUsername = string | null;
 
-export type UserBannedReason = string | null;
+export type SessionUserAvatarUrl = string | null;
 
-export type UserBannedAt = string | null;
-
-export type UserLastSeen = string | null;
-
-export interface User {
-  /** Primary key identifier */
-  id?: string;
-  /** Creation timestamp */
-  created_at?: string;
-  /** Last update timestamp */
-  updated_at?: string;
-  /** @maxLength 100 */
+export interface SessionUser {
+  id: string;
   name: string;
-  /** @maxLength 25 */
-  username: string;
-  avatar_url?: UserAvatarUrl;
-  role?: UserRole;
-  is_active?: boolean;
-  is_banned?: boolean;
-  banned_reason?: UserBannedReason;
-  banned_at: UserBannedAt;
-  last_seen: UserLastSeen;
+  username?: SessionUserUsername;
+  avatar_url?: SessionUserAvatarUrl;
+  role: string;
+  is_active: boolean;
+  is_banned: boolean;
 }
-
-export type UserRole = typeof UserRole[keyof typeof UserRole];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const UserRole = {
-  user: 'user',
-  moderator: 'moderator',
-  admin: 'admin',
-} as const;
 
 export type ValidationErrorLocItem = string | number;
 
@@ -124,5 +132,9 @@ date?: string | null;
 
 export type GetBoardsApiV1GameBoardsGetParams = {
 date?: string | null;
+};
+
+export type ListReposApiGithubReposGetParams = {
+include_webhooks?: boolean;
 };
 
