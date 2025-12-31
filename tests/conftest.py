@@ -44,7 +44,6 @@ def settings(database_name: str) -> Settings:
     from july.globals import settings
 
     settings.database_name = database_name
-    settings.database_available = True
     settings.static_dir = TEST_STATIC
     return settings
 
