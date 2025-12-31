@@ -9,4 +9,4 @@ JSON_LOGGING=false
 IS_DEV=true
 IS_LOCAL=true
 DEBUG=true
-SMEE_URL=
+GITHUB_WEBHOOK_URL=http://localhost:8000/api/v1/github

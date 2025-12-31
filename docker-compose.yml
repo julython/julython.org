@@ -86,4 +86,4 @@ services:
 
   smee:
     image: node:22-alpine
-    command: ["npx", "smee-client","-u", "$SMEE_URL", "-t", "http://api:8000/api/v1/github"]
+    command: ["npx", "smee-client","-u", "$GITHUB_WEBHOOK_URL", "-t", "http://api:8000/api/v1/github"]

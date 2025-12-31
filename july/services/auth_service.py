@@ -106,7 +106,7 @@ class GitHubOAuth(OAuthProviderBase):
     user_url = "https://api.github.com/user"
     supports_pkce = False
     tokens_expire = False
-    scopes = "read:user user:email"
+    scopes = "read:user user:email admin:repo_hook"
 
     async def refresh_access_token(self, refresh_token: str) -> OAuthTokens:
         # GitHub OAuth tokens don't expire, no refresh needed

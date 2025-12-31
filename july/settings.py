@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     auth_base_url: str = "http://localhost:8000"
     github_client_id: str = ""
     github_client_secret: str = ""
+    github_webhook_url: str = ""
     gitlab_client_id: str = ""
     gitlab_client_secret: str = ""
 

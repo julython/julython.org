@@ -13,7 +13,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from july.dependencies import get_session
+from july.dependencies import get_session, current_user
 from july.globals import settings
 from july.services import auth_service, game_service, user_service
 from july.schema import SessionData
@@ -88,11 +88,11 @@ async def callback(
     return responses.RedirectResponse("/", status_code=302)
 
 
-@router.get("/auth/session", responses={401: {}})
-async def get_user_session(request: Request) -> SessionData:
-    if not request.session:
-        raise HTTPException(status_code=401)
-    return SessionData.model_validate(request.session)
+@router.get("/auth/session")
+async def get_user_session(
+    user: Annotated[SessionData, Depends(current_user)],
+) -> SessionData:
+    return user
 
 
 @router.get("/auth/logout")
