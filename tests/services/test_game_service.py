@@ -132,6 +132,8 @@ class TestCreateGame:
             pytest.param(2024, 1, "J(an)ulython 2024", id="jan-2024"),
             pytest.param(2025, 7, "Julython 2025", id="july-2025"),
             pytest.param(2023, 1, "J(an)ulython 2023", id="jan-2023"),
+            pytest.param(2023, 9, "Testathon Fall 2023", id="fall-2023"),
+            pytest.param(2023, 4, "Testathon Spring 2023", id="spring-2023"),
         ],
     )
     async def test_julython_naming(
@@ -147,10 +149,8 @@ class TestCreateGame:
     @pytest.mark.parametrize(
         "month",
         [
-            pytest.param(2, id="feb"),
-            pytest.param(3, id="mar"),
-            pytest.param(6, id="jun"),
-            pytest.param(12, id="dec"),
+            pytest.param(-6, id="negative"),
+            pytest.param(14, id="invalid"),
         ],
     )
     async def test_invalid_month_raises(self, game_service: GameService, month: int):

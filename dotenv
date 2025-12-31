@@ -9,3 +9,4 @@ JSON_LOGGING=false
 IS_DEV=true
 IS_LOCAL=true
 DEBUG=true
+SMEE_URL=

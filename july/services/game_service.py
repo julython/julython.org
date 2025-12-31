@@ -95,8 +95,6 @@ class GameService:
         )
 
         self.session.add(game)
-        await self.session.commit()
-        await self.session.refresh(game)
 
         logger.info(f"Created game: {game.name} ({game.start} - {game.end})")
 
@@ -136,6 +134,14 @@ class GameService:
             name = f"J(an)ulython {year}"
             start = datetime(year, 1, 1, tzinfo=timezone.utc)
             end = datetime(year, 1, 31, 23, 59, 59, tzinfo=timezone.utc)
+        elif 8 <= month <= 12:
+            name = f"Testathon Fall {year}"
+            start = datetime(year, 8, 1, tzinfo=timezone.utc)
+            end = datetime(year, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+        elif 2 <= month <= 6:
+            name = f"Testathon Spring {year}"
+            start = datetime(year, 2, 1, tzinfo=timezone.utc)
+            end = datetime(year, 6, 30, 23, 59, 59, tzinfo=timezone.utc)
         else:
             raise ValueError(f"Invalid month {month}. Use 7 for July or 1 for January")
 

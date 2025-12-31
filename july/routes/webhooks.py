@@ -37,7 +37,6 @@ async def process_and_respond(
     )
 
 
-@router.post("/api/github")
 @router.post("/api/v1/github")
 async def github_webhook(
     request: Request,
@@ -59,8 +58,8 @@ async def github_webhook(
     else:
         raise HTTPException(400, f"Unsupported content type: {content_type}")
 
-    logger.info(f"{data}")
     payload = webhook_service.parse_github(data)
+    logger.info(f"webhook for {payload.repo.slug} with {len(payload.commits)} commits")
     return await process_and_respond(payload, db_session)
 
 

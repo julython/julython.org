@@ -83,3 +83,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  smee:
+    image: node:22-alpine
+    command: ["npx", "smee-client","-u", "$SMEE_URL", "-t", "http://api:8000/api/v1/github"]

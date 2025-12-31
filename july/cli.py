@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import Optional
 
 import click
 import yaml
@@ -9,7 +10,9 @@ from alembic import command
 from alembic.config import Config
 
 from july.app import create_app
-from july.globals import settings
+from july.globals import settings, context
+from july.services import game_service
+from july.utils import times
 
 # The main instance of the app, which is run by uvicorn
 app = create_app(settings)
@@ -56,6 +59,32 @@ def swagger(api_output_file: str) -> None:
         # json hack to properly serialize pydantic objects into yaml
         data = json.loads(json.dumps(app.openapi()))
         yaml.dump(data, f)
+
+
+async def _add_game(
+    date: Optional[str] = None,
+    active: bool = True,
+    deactivate: bool = False,
+):
+    datetime = times.parse_timestamp(date)
+    await context.initialize(settings)
+    async with context.db_session.begin() as session:
+        GameService = game_service.GameService(session)
+        await GameService.create_julython_game(
+            year=datetime.year,
+            month=datetime.month,
+            is_active=active,
+            deactivate_others=deactivate,
+        )
+    await context.shutdown(settings)
+
+
+@cli.command()
+@click.argument("date", default=None)
+@click.option("--active", is_flag=True, default=False)
+@click.option("--deactivate", is_flag=True, default=False)
+def addgame(date: Optional[str], active: bool, deactivate: bool):
+    asyncio.run(_add_game(date, active, deactivate))
 
 
 @cli.group()

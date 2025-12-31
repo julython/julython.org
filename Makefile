@@ -27,14 +27,14 @@ $(VIRTUAL_ENV)/.reqs-installed: $(REQUIREMENTS)
 .env:
 	cp dotenv .env
 
-setup: $(VIRTUAL_ENV) $(VIRTUAL_ENV)/.reqs-installed ## Setup local environment
+setup: .env $(VIRTUAL_ENV) $(VIRTUAL_ENV)/.reqs-installed ## Setup local environment
 
 deps: ## Make sure the docker deps are running
 	docker compose up -d postgres adminer
 
-up: dev
+up: dev  ## Alias: Run the service in docker
 dev: ## Run the service in docker
-	docker compose up api --build
+	docker compose up api smee --build
 
 dev-ui: ## Run the ui in dev mode
 	pushd ui && npm i && npm run dev
@@ -42,7 +42,7 @@ dev-ui: ## Run the ui in dev mode
 test: deps ## Run pytests
 	$(VIRTUAL_ENV)/bin/pytest
 
-test-failed: deps ## Run pytests
+test-failed: deps ## Re-Run pytest on tests that failed
 	$(VIRTUAL_ENV)/bin/pytest --lf
 
 build:  ## Build the docker image
@@ -70,14 +70,19 @@ downgrade: deps ## Downgrade the database to the previous revision
 	$(VIRTUAL_ENV)/bin/python -m $(app_name) db downgrade
 
 prod-create:  ## Create DB in prod
-	docker compose run --build prod db create
+	docker compose run --build --rm prod db create
 
 prod-upgrade:  ## Upgrade DB in prod
-	docker compose run --build prod db upgrade
+	docker compose run --build --rm prod db upgrade
 
 prod-downgrade: ## Downgrade DB in prod
-	docker compose run --build prod db downgrade
+	docker compose run --build --rm prod db downgrade
 
+prod-game:  ## Create a game in prod (`make prod-game args="--active --deactivate 2026-01-01")
+	docker compose run --build --rm prod addgame $(args)
+
+game: deps  ## Create a game locally (`make game args="--active --deactivate 2026-01-01")
+	docker compose run --build --rm api addgame $(args)
 
 revision: deps ## Generate a new database migration script  (`make revision message="Message"`)
 	$(VIRTUAL_ENV)/bin/python -m $(app_name) db revision -m "$(message)"

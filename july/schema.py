@@ -204,3 +204,21 @@ class ListResponse(BaseModel, Generic[DataType]):
     data: list[DataType]
     limit: int = 100
     offset: int = 0
+
+
+class SessionUser(BaseModel):
+    id: str
+    name: str
+    username: Optional[str]
+    avatar_url: Optional[str] = None
+    role: UserRole
+    is_active: bool
+    is_banned: bool
+
+
+class SessionData(BaseModel):
+    oauth_provider: Optional[str] = None
+    oauth_state: Optional[str] = None
+    oauth_verifier: Optional[str] = None
+    identity_key: Optional[str] = None
+    user: Optional[SessionUser] = None
