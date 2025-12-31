@@ -145,7 +145,11 @@ class UserService:
             return existing_user, created
 
         # 3. New user
-        new_user = User(name=oauth_user.name or "", avatar_url=oauth_user.avatar_url)
+        new_user = User(
+            name=oauth_user.name or "",
+            username=oauth_user.username,
+            avatar_url=oauth_user.avatar_url,
+        )
         self.session.add(new_user)
         await self.session.flush()
 

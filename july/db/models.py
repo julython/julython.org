@@ -40,7 +40,7 @@ class User(Base, table=True):
     name: str = ShortString(nullable=False)
     username: str = ShortString(length=25, nullable=True)
     avatar_url: Optional[str] = None
-    role: UserRole = Field(sa_type=String(20), default=UserRole.USER)
+    role: str = Field(sa_type=String(20), default=UserRole.USER)
     is_active: bool = Field(default=True, index=True)
     is_banned: bool = Field(default=False)
     banned_reason: Optional[str] = None

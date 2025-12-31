@@ -209,9 +209,9 @@ class ListResponse(BaseModel, Generic[DataType]):
 class SessionUser(BaseModel):
     id: str
     name: str
-    username: Optional[str]
+    username: Optional[str] = None
     avatar_url: Optional[str] = None
-    role: UserRole
+    role: str
     is_active: bool
     is_banned: bool
 

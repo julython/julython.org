@@ -1,16 +1,16 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
+
 import hashlib
 import base64
 import secrets
 from typing import override
 
 import httpx
-from sqlmodel import over
-
+import structlog
 
 from july.schema import EmailAddress, OAuthProvider, OAuthTokens, OAuthUser
+
+logger = structlog.stdlib.get_logger(__name__)
 
 
 class OAuthProviderBase(ABC):
@@ -125,6 +125,7 @@ class GitHubOAuth(OAuthProviderBase):
             )
             resp.raise_for_status()
             data = resp.json()
+            logger.info(f"User {data['login']} logged in via github")
 
             user_emails = await client.get(f"{self.user_url}/emails")
             user_emails.raise_for_status()
