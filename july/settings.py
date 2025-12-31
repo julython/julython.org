@@ -48,7 +48,6 @@ class Settings(BaseSettings):
     database_username: str = "postgres"
     database_password: str = "postgres"
     database_name: str = "july"
-    database_available: bool = False
 
     cors_origins: list[str] = []
 

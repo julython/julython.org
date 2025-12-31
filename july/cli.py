@@ -8,11 +8,14 @@ import yaml
 import uvicorn
 from alembic import command
 from alembic.config import Config
+from structlog.stdlib import get_logger
 
 from july.app import create_app
 from july.globals import settings, context
 from july.services import game_service
 from july.utils import times
+
+logger = get_logger(__name__)
 
 # The main instance of the app, which is run by uvicorn
 app = create_app(settings)
@@ -68,6 +71,8 @@ async def _add_game(
 ):
     datetime = times.parse_timestamp(date)
     await context.initialize(settings)
+    logger.info(f"Adding game for {date}: {datetime}")
+
     async with context.db_session.begin() as session:
         GameService = game_service.GameService(session)
         await GameService.create_julython_game(
