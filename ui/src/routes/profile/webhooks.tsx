@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  isRedirect,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   useListReposApiGithubReposGet,
   useCreateWebhookApiGithubReposOwnerRepoWebhooksPost,
