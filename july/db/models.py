@@ -213,14 +213,6 @@ class Board(Base, table=True):
         )
 
 
-class PlayerBoard(Base, table=True):
-    """Many-to-many: which projects a player has contributed to"""
-
-    player_id: uuid.UUID = FK("player.id", index=True, ondelete="CASCADE")
-    board_id: uuid.UUID = FK("board.id", index=True, ondelete="CASCADE")
-    commit_count: int = Field(default=0)
-
-
 class Language(Base, table=True):
     """Programming languages"""
 

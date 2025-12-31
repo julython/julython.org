@@ -1,14 +1,21 @@
 import secrets
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, responses
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    responses,
+)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from july.dependencies import get_session
 from july.globals import settings
-from july.services import auth_service, user_service
+from july.services import auth_service, game_service, user_service
 from july.schema import SessionData
 
 logger = get_logger(__name__)
@@ -48,6 +55,7 @@ async def callback(
     code: str,
     state: str,
     session: Annotated[AsyncSession, Depends(get_session)],
+    background_tasks: BackgroundTasks,
 ):
     verifier = request.session.pop("oauth_verifier", None)
     expected_state = request.session.pop("oauth_state", None)
@@ -65,7 +73,13 @@ async def callback(
     user, created = await users.oauth_login_or_register(user_info)
 
     if created:
-        logger.info(f"{user.name} created")
+        logger.info(f"{user.name} created or verified, claiming orphan commits")
+        verified_emails = [e.email for e in user_info.emails if e.verified]
+        background_tasks.add_task(
+            game_service.claim_orphan_commits_task,
+            user.id,
+            verified_emails,
+        )
 
     # Store in session
     request.session["user"] = user.model_dump(mode="json")

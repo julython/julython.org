@@ -27,7 +27,11 @@ def game_service(db_session) -> GameService:
 
 
 async def _create_user(db_session, username: str):
-    user = User(id=uuid.uuid7(), name=username, username=username)
+    user = User(
+        id=uuid.uuid7(),  # type: ignore
+        name=username,
+        username=username,
+    )
     db_session.add(user)
     await db_session.flush()
     return user
@@ -337,30 +341,6 @@ class TestAddCommit:
         assert commit.user_id is None
         await game_service.add_commit(commit)
         assert commit.game_id == active_game.id
-
-    async def test_from_orphan_skips_project_points(
-        self,
-        active_game: Game,
-        game_service: GameService,
-        make_commit,
-        project,
-        db_session,
-    ):
-        commit1 = await make_commit(hash="abc123")
-        await game_service.add_commit(commit1)
-
-        commit2 = await make_commit(hash="def456")
-        await game_service.add_commit(commit2, from_orphan=True)
-
-        stmt = select(Board).where(
-            col(Board.game_id) == active_game.id,
-            col(Board.project_id) == project.id,
-        )
-        result = await db_session.execute(stmt)
-        board = result.scalar_one()
-
-        assert board.commit_count == 1
-        assert board.points == active_game.project_points + active_game.commit_points
 
 
 class TestLanguageBoards:

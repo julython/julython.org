@@ -1,11 +1,12 @@
-import logging
 from datetime import datetime, timezone
 from typing import Optional
+from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
+from structlog.stdlib import get_logger
 
 from july.db.models import (
     Game,
@@ -14,15 +15,15 @@ from july.db.models import (
     Commit,
     Language,
     LanguageBoard,
-    PlayerBoard,
     AnalysisStatus,
     Project,
     User,
 )
+from july.globals import context
 from july.types import Identifier
 from july.utils import times
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GameService:
@@ -192,14 +193,12 @@ class GameService:
 
         return game
 
-    async def add_commit(self, commit: Commit, from_orphan: bool = False) -> None:
+    async def add_commit(self, commit: Commit) -> None:
         """
         Add a commit to the game and update scores.
 
         Args:
             commit: The commit to add
-            from_orphan: If True, this was previously an orphan commit
-                        (don't add project points again)
         """
         # Get the active game at the time of commit
         game = await self.get_active_game(now=commit.timestamp)
@@ -214,15 +213,81 @@ class GameService:
         commit.game_id = game.id
 
         # Update boards and player scores
-        board = await self._add_points_to_board(game, commit, from_orphan)
+        await self._add_points_to_board(game, commit)
         await self._add_points_to_language_boards(game, commit)
 
         if commit.user_id:
-            await self._add_points_to_player(game, board, commit)
+            await self._add_points_to_player(game, commit.user_id)
 
-    async def _add_points_to_board(
-        self, game: Game, commit: Commit, from_orphan: bool = False
-    ) -> Board:
+    async def claim_orphan_commits(self, user_id: Identifier, emails: list[str]) -> int:
+        """
+        Find commits matching the user's emails and assign them.
+        Returns the number of commits claimed.
+        """
+        if not emails:
+            return 0
+
+        # Only update the latest game
+        game = await self.get_active_or_latest_game()
+        if game is None:
+            return 0
+
+        user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
+
+        # Find orphan commits matching any of the user's emails
+        stmt = (
+            select(Commit)
+            .where(
+                col(Commit.user_id).is_(None),
+                col(Commit.email).in_(emails),
+                col(Commit.game_id) == game.id,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        result = await self.session.execute(stmt)
+        orphan_commits = list(result.scalars().all())
+
+        if not orphan_commits:
+            return 0
+
+        # Bulk update user_id on all orphan commits
+        commit_ids = [c.id for c in orphan_commits]
+        await self.session.execute(
+            update(Commit)
+            .where(col(Commit.id).in_(commit_ids))
+            .values(user_id=user_uuid)
+        )
+
+        # Single recalculate covers everything
+        player = await self._get_or_create_player(game, user_uuid)
+        await self._recalculate_player_points(game, player)
+
+        return len(orphan_commits)
+
+    async def _get_or_create_player(self, game: Game, user_id: UUID) -> Player:
+        stmt = (
+            select(Player)
+            .where(col(Player.game_id) == game.id, col(Player.user_id) == user_id)
+            .with_for_update()
+        )
+        result = await self.session.execute(stmt)
+        player = result.scalar_one_or_none()
+
+        if player is None:
+            player = Player(
+                game_id=game.id,
+                user_id=user_id,
+                points=0,
+                potential_points=0,
+                commit_count=0,
+                project_count=0,
+            )
+            self.session.add(player)
+            await self.session.flush()
+
+        return player
+
+    async def _add_points_to_board(self, game: Game, commit: Commit) -> Board:
         """Create or update a board for a project."""
         # Lock the row for update to prevent race conditions
         statement = (
@@ -247,8 +312,8 @@ class GameService:
                 contributor_count=1,
             )
             self.session.add(board)
-        elif not from_orphan:
-            # Update existing board (don't add points if from orphan)
+        else:
+            # Update existing board
             board.points += game.commit_points
             board.potential_points += game.commit_points
             board.commit_count += 1
@@ -298,93 +363,49 @@ class GameService:
                 language_board.points += game.commit_points
                 language_board.commit_count += 1
 
-    async def _add_points_to_player(
-        self, game: Game, board: Board, commit: Commit
-    ) -> None:
+    async def _add_points_to_player(self, game: Game, user_id: UUID) -> None:
         """Create or update a player's score."""
-        assert commit.user_id is not None, "this should not happen but mypy disagrees"
 
-        # Lock the player row for update
-        statement = (
+        stmt = (
             select(Player)
-            .where(
-                col(Player.game_id) == game.id, col(Player.user_id) == commit.user_id
-            )
+            .where(col(Player.game_id) == game.id, col(Player.user_id) == user_id)
             .with_for_update()
         )
-        result = await self.session.execute(statement)
+        result = await self.session.execute(stmt)
         player = result.scalar_one_or_none()
 
         if player is None:
-            # Create new player with initial points
             player = Player(
                 game_id=game.id,
-                user_id=commit.user_id,
-                points=game.project_points + game.commit_points,
-                potential_points=game.project_points + game.commit_points,
-                commit_count=1,
-                project_count=1,
+                user_id=user_id,
+                points=0,
+                potential_points=0,
+                commit_count=0,
+                project_count=0,
             )
             self.session.add(player)
-            await self.session.flush()  # Get the ID
 
-            # Add the board to player's boards
-            player_board = PlayerBoard(
-                player_id=player.id,
-                board_id=board.id,
-                commit_count=1,
-            )
-            self.session.add(player_board)
-        else:
-            # Check if player already has this board
-            pb_statement = select(PlayerBoard).where(
-                col(PlayerBoard.player_id) == player.id,
-                col(PlayerBoard.board_id) == board.id,
-            )
-            pb_result = await self.session.execute(pb_statement)
-            player_board = pb_result.scalar_one_or_none()
-
-            if player_board is None:
-                # New project for this player
-                player_board = PlayerBoard(
-                    player_id=player.id,
-                    board_id=board.id,
-                    commit_count=1,
-                )
-                self.session.add(player_board)
-                player.project_count += 1
-            else:
-                # Existing project, just increment commit count
-                player_board.commit_count += 1
-
-            # Recalculate total points
-            await self._recalculate_player_points(game, player)
+        await self._recalculate_player_points(game, player)
 
     async def _recalculate_player_points(self, game: Game, player: Player) -> None:
-        """Recalculate a player's total points."""
-        # Count unique projects (boards)
-        project_count_statement = select(func.count(col(PlayerBoard.id))).where(
-            col(PlayerBoard.player_id) == player.id
-        )
-        result = await self.session.execute(project_count_statement)
-        project_count = result.scalar() or 0
-
-        # Count total commits in this game
-        commit_count_statement = select(func.count(col(Commit.id))).where(
+        """Recalculate a player's total points from commits."""
+        stmt = select(
+            func.count(col(Commit.id)).label("commit_count"),
+            func.count(func.distinct(col(Commit.project_id))).label("project_count"),
+        ).where(
             col(Commit.user_id) == player.user_id,
             col(Commit.game_id) == game.id,
         )
-        result = await self.session.execute(commit_count_statement)
-        commit_count = result.scalar() or 0
+        result = await self.session.execute(stmt)
+        row = result.one()
 
-        # Calculate points
-        project_points = project_count * game.project_points
-        commit_points = commit_count * game.commit_points
-
-        player.points = project_points + commit_points
-        player.potential_points = player.points  # Will be adjusted by AI later
-        player.commit_count = commit_count
-        player.project_count = project_count
+        player.commit_count = row.commit_count
+        player.project_count = row.project_count
+        player.points = (
+            row.commit_count * game.commit_points
+            + row.project_count * game.project_points
+        )
+        player.potential_points = player.points
 
     async def apply_ai_analysis_adjustment(
         self, player_id: Identifier, points_adjustment: int
@@ -521,3 +542,32 @@ class GameService:
             f"Deactivated project: {project.name} ({project_id}) - {reason or 'no reason'}"
         )
         return True
+
+
+async def claim_orphan_commits_task(
+    user_id: Identifier,
+    emails: list[str],
+) -> None:
+    """
+    Background task to claim orphan commits for a newly registered user.
+
+    Uses its own session since background tasks outlive the request.
+    """
+    async with context.db_session() as session:
+        try:
+            game_service = GameService(session)
+            claimed = await game_service.claim_orphan_commits(user_id, emails)
+
+            if claimed > 0:
+                await session.commit()
+                logger.info(
+                    f"Claimed orphan {claimed} commits for {user_id}",
+                    user_id=str(user_id),
+                    commit_count=claimed,
+                )
+            else:
+                logger.debug("No orphan commits found", user_id=str(user_id))
+
+        except Exception:
+            logger.exception("Failed to claim orphan commits", user_id=str(user_id))
+            await session.rollback()
