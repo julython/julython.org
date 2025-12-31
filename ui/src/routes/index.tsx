@@ -35,11 +35,11 @@ function Index() {
                 What is Julython?
               </h2>
               <p>
-                During the month of July, we're encouraging developers of all
-                skill levels to try and work on your pet project(s) just a
-                little each day. It's a great excuse to contribute to the
-                communities you follow, or even dive into a language for the
-                first time.
+                During the months of January and July, we're encouraging
+                developers of all skill levels to try and work on your pet
+                project(s) just a little each day. It's a great excuse to
+                contribute to the communities you follow, or even dive into a
+                language for the first time.
               </p>
             </div>
             <div className="span4">
@@ -52,8 +52,7 @@ function Index() {
                 learn something new or to help finish a project you started. If
                 you share your repository or your commits with us, we will{" "}
                 <Link to="/help">tally up points</Link> for each commit or new
-                project you work on{" "}
-                <Link to="/help">during the month of July</Link>.
+                project you work on <Link to="/help">during the month</Link>.
               </p>
             </div>
             <div className="span4">
