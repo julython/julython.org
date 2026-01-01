@@ -43,6 +43,7 @@ export interface Leader {
   rank: number;
   user_id: LeaderUserId;
   name: string;
+  username: string;
   avatar_url: LeaderAvatarUrl;
   points: number;
   verified_points: number;

@@ -38,7 +38,7 @@ class Base(SQLModel, table=False):
 
 class User(Base, table=True):
     name: str = ShortString(nullable=False)
-    username: str = ShortString(length=25, nullable=True)
+    username: str = ShortString(length=25, nullable=False, unique=True)
     avatar_url: Optional[str] = None
     role: str = Field(sa_type=String(20), default=UserRole.USER)
     is_active: bool = Field(default=True, index=True)
@@ -172,6 +172,7 @@ class Player(Base, table=True):
             rank=rank,
             user_id=self.user_id,
             name=self.user.name,
+            username=self.user.username,
             avatar_url=self.user.avatar_url,
             points=self.points,
             verified_points=self.verified_points,

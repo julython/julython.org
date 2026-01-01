@@ -30,7 +30,7 @@ function Leaders() {
                   height="32"
                   style={{ borderRadius: "50%", marginRight: "10px" }}
                 />
-                <a href={`/u/${person.name}`}>
+                <a href={`/u/${person.username}`}>
                   {person.rank}. {person.name}
                 </a>
                 <span className="badge badge-info pull-right">

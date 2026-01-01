@@ -181,6 +181,7 @@ class Leader(BaseModel):
     rank: int
     user_id: Identifier
     name: str
+    username: str
     avatar_url: str | None
     points: int
     verified_points: int

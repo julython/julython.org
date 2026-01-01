@@ -249,7 +249,7 @@ class TestOAuthLoginOrRegister:
     async def test_multiple_emails_different_users_raises(
         self, db_session: AsyncSession, user_service: UserService, user: User
     ):
-        other_user = User(name="Other User")
+        other_user = User(name="Other User", username="ted2")
         db_session.add(other_user)
         await db_session.commit()
 
