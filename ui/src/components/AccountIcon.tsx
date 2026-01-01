@@ -6,6 +6,7 @@ import {
   IconUser,
   IconWebhook,
 } from "@tabler/icons-react";
+import { Link } from "@tanstack/react-router";
 
 export function AccountIcon() {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -54,18 +55,18 @@ export function AccountIcon() {
             <strong>{session.data.user.name}</strong>
           </div>
           <hr />
-          <a href="/profile">
+          <Link to="/profile">
             <IconUser size={18} />
             <span>Profile</span>
-          </a>
-          <a href="/profile/webhooks">
+          </Link>
+          <Link to="/profile/webhooks">
             <IconWebhook size={18} />
             <span>Webhooks</span>
-          </a>
-          <a href="/profile/edit">
+          </Link>
+          <Link to="/profile/edit">
             <IconSettings size={18} />
             <span>Settings</span>
-          </a>
+          </Link>
           <a href="/auth/logout">
             <IconLogout size={18} />
             <span>Sign out</span>
