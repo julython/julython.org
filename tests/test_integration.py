@@ -37,6 +37,15 @@ async def test_game_records_commits(
     assert leader.avatar_url == user.avatar_url, leader
     assert leader.points == 11, leader
 
+    leader = await client.get(f"/api/v1/game/leaders/{user.username}")
+    assert leader.status_code == 200, leader.text
+    player_data = leader.json()
+    player = Leader.model_validate(player_data)
+    assert player.rank == 1, player
+    assert player.name == user.name, player
+    assert player.avatar_url == user.avatar_url, player
+    assert player.points == 11, player
+
     boards = await client.get("/api/v1/game/boards")
 
     assert boards.status_code == 200, boards.text

@@ -167,6 +167,10 @@ class Player(Base, table=True):
 
     user: User = Relationship(back_populates="players")
 
+    __table_args__ = (
+        UniqueConstraint("game_id", "user_id", name="uq_player_user_game"),
+    )
+
     def to_leader(self, rank: int) -> Leader:
         return Leader(
             rank=rank,
@@ -200,6 +204,10 @@ class Board(Base, table=True):
 
     project: Project = Relationship(back_populates="boards")
 
+    __table_args__ = (
+        UniqueConstraint("game_id", "project_id", name="uq_board_project_game"),
+    )
+
     def to_leader(self, rank: int) -> LeaderBoard:
         return LeaderBoard(
             rank=rank,
@@ -227,6 +235,10 @@ class LanguageBoard(Base, table=True):
     language_id: uuid.UUID = FK("language.id", index=True)
     points: int = Field(default=0)
     commit_count: int = Field(default=0)
+
+    __table_args__ = (
+        UniqueConstraint("game_id", "language_id", name="uq_language_game"),
+    )
 
 
 # class RepoAnalysis(Base, table=True):
@@ -305,6 +317,10 @@ class TeamBoard(Base, table=True):
     team_id: uuid.UUID = FK("team.id", index=True, ondelete="CASCADE")
     points: int = Field(default=0)
     member_count: int = Field(default=0)
+
+    __table_args__ = (
+        UniqueConstraint("game_id", "team_id", name="uq_teamboard_team_game"),
+    )
 
 
 class Report(Base, table=True):

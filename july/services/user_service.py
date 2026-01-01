@@ -1,4 +1,6 @@
 from typing import Any
+
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
@@ -7,6 +9,7 @@ from structlog.stdlib import get_logger
 
 from july.db.models import User, UserIdentifier
 from july.schema import EmailAddress, IdentifierType, OAuthUser
+from july.types import Identifier
 from july.utils import times
 
 logger = get_logger(__name__)
@@ -15,6 +18,22 @@ logger = get_logger(__name__)
 class UserService:
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def find_by_id(self, id: Identifier) -> User:
+        stmt = select(User).where(col(User.id) == id)
+        result = await self.session.execute(stmt)
+        user = result.scalar()
+        if user is None:
+            raise HTTPException(404, f"User with id={id} was not found")
+        return user
+
+    async def find_by_username(self, username: str) -> User:
+        stmt = select(User).where(col(User.username) == username)
+        result = await self.session.execute(stmt)
+        user = result.scalar()
+        if user is None:
+            raise HTTPException(404, f"User with username={username} was not found")
+        return user
 
     async def find_by_key(self, key: str) -> User | None:
         stmt = (

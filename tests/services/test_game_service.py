@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlmodel import col
 import structlog
@@ -5,16 +6,20 @@ import uuid
 import pytest
 from datetime import datetime, timezone, timedelta
 
-from july.services.game_service import GameService, Game
+from july.services.game_service import GameService, claim_orphan_commits_task
+from july.services.user_service import UserService
 from july.db.models import (
     AnalysisStatus,
     Board,
+    Game,
     Language,
     LanguageBoard,
     Player,
     Project,
     User,
+    IdentifierType,
 )
+from july.utils import times
 
 from tests.fixtures import INAUGURAL_GAME
 
@@ -24,6 +29,11 @@ LOG = structlog.stdlib.get_logger(__name__)
 @pytest.fixture()
 def game_service(db_session) -> GameService:
     return GameService(db_session)
+
+
+@pytest.fixture()
+def user_service(db_session) -> UserService:
+    return UserService(db_session)
 
 
 async def _create_user(db_session, username: str):
@@ -101,8 +111,8 @@ class TestGetActiveOrLatestGame:
         assert game.id == newer_game.id
 
     async def test_returns_none_when_no_games(self, game_service: GameService):
-        game = await game_service.get_active_or_latest_game()
-        assert game is None
+        with pytest.raises(HTTPException):
+            await game_service.get_active_or_latest_game()
 
 
 class TestCreateGame:
@@ -767,3 +777,85 @@ class TestDeactivateProject:
         result = await game_service.deactivate_project(fake_id)
 
         assert result is False
+
+
+class TestClaimOrphanedCommits:
+
+    async def test_does_nothing_without_active_game(
+        self,
+        make_commit,
+        user: User,
+        user_service: UserService,
+        game_service: GameService,
+    ):
+        commit1 = await make_commit(hash="abc123", user_id=None)
+        await game_service.add_commit(commit1)
+        await user_service.upsert_identifier(
+            user, IdentifierType.EMAIL, commit1.email, data={}
+        )
+        added = await claim_orphan_commits_task(user.id, emails=[commit1.email])
+        assert added == 0
+
+    async def test_does_nothing_without_emails(self, user: User):
+        added = await claim_orphan_commits_task(user.id, emails=[])
+        assert added == 0
+
+    async def test_does_nothing_if_no_orphans_found(
+        self,
+        user: User,
+        make_commit,
+        game_service: GameService,
+        db_session,
+    ):
+        now = times.now()
+        await game_service.create_julython_game(
+            year=now.year,
+            month=now.month,
+            is_active=True,
+        )
+        commit1 = await make_commit(hash="abc123", user_id=None, timestamp=now)
+        await game_service.add_commit(commit1)
+
+        added = await claim_orphan_commits_task(user.id, emails=["jane@doe.com"])
+        assert added == 0
+
+    async def test_adds_player_to_game(
+        self,
+        make_commit,
+        user: User,
+        user_service: UserService,
+        game_service: GameService,
+        db_session,
+    ):
+        # Create an active game for the current time
+        now = times.now()
+        active_game = await game_service.create_julython_game(
+            year=now.year,
+            month=now.month,
+            is_active=True,
+        )
+        commit1 = await make_commit(hash="abc123", user_id=None, timestamp=now)
+        commit2 = await make_commit(hash="def456", user_id=None, timestamp=now)
+
+        await game_service.add_commit(commit1)
+        await game_service.add_commit(commit2)
+
+        stmt = select(Player).where(
+            col(Player.game_id) == active_game.id,
+            col(Player.user_id) == user.id,
+        )
+        result = await db_session.execute(stmt)
+        player = result.scalar_one_or_none()
+        assert player is None
+
+        await user_service.upsert_identifier(
+            user, IdentifierType.EMAIL, commit1.email, data={}
+        )
+        await db_session.commit()
+
+        added = await claim_orphan_commits_task(user.id, emails=[commit1.email])
+        assert added == 2
+
+        result = await db_session.execute(stmt)
+        player = result.scalar_one_or_none()
+        assert player.user_id == user.id

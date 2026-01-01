@@ -2,9 +2,11 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import select, func, update
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import col
 from structlog.stdlib import get_logger
 
@@ -171,9 +173,7 @@ class GameService:
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def get_active_or_latest_game(
-        self, now: Optional[datetime] = None
-    ) -> Optional[Game]:
+    async def get_active_or_latest_game(self, now: Optional[datetime] = None) -> Game:
         """Return an active game or the latest one."""
         now = now or times.now()
 
@@ -190,6 +190,9 @@ class GameService:
             )
             result = await self.session.execute(statement)
             game = result.scalar_one_or_none()
+
+        if game is None:
+            raise HTTPException(404, f"No game found for {now.date()}")
 
         return game
 
@@ -217,7 +220,7 @@ class GameService:
         await self._add_points_to_language_boards(game, commit)
 
         if commit.user_id:
-            await self._add_points_to_player(game, commit.user_id)
+            await self.upsert_player(game, commit.user_id)
 
     async def claim_orphan_commits(self, user_id: Identifier, emails: list[str]) -> int:
         """
@@ -228,7 +231,7 @@ class GameService:
             return 0
 
         # Only update the latest game
-        game = await self.get_active_or_latest_game()
+        game = await self.get_active_game()
         if game is None:
             return 0
 
@@ -258,34 +261,9 @@ class GameService:
             .values(user_id=user_uuid)
         )
 
-        # Single recalculate covers everything
-        player = await self._get_or_create_player(game, user_uuid)
-        await self._recalculate_player_points(game, player)
+        await self.upsert_player(game, user_uuid)
 
         return len(orphan_commits)
-
-    async def _get_or_create_player(self, game: Game, user_id: UUID) -> Player:
-        stmt = (
-            select(Player)
-            .where(col(Player.game_id) == game.id, col(Player.user_id) == user_id)
-            .with_for_update()
-        )
-        result = await self.session.execute(stmt)
-        player = result.scalar_one_or_none()
-
-        if player is None:
-            player = Player(
-                game_id=game.id,
-                user_id=user_id,
-                points=0,
-                potential_points=0,
-                commit_count=0,
-                project_count=0,
-            )
-            self.session.add(player)
-            await self.session.flush()
-
-        return player
 
     async def _add_points_to_board(self, game: Game, commit: Commit) -> Board:
         """Create or update a board for a project."""
@@ -363,49 +341,45 @@ class GameService:
                 language_board.points += game.commit_points
                 language_board.commit_count += 1
 
-    async def _add_points_to_player(self, game: Game, user_id: UUID) -> None:
+    async def upsert_player(self, game: Game, user_id: UUID) -> Player:
         """Create or update a player's score."""
-
-        stmt = (
-            select(Player)
-            .where(col(Player.game_id) == game.id, col(Player.user_id) == user_id)
-            .with_for_update()
-        )
-        result = await self.session.execute(stmt)
-        player = result.scalar_one_or_none()
-
-        if player is None:
-            player = Player(
-                game_id=game.id,
-                user_id=user_id,
-                points=0,
-                potential_points=0,
-                commit_count=0,
-                project_count=0,
-            )
-            self.session.add(player)
-
-        await self._recalculate_player_points(game, player)
-
-    async def _recalculate_player_points(self, game: Game, player: Player) -> None:
-        """Recalculate a player's total points from commits."""
         stmt = select(
             func.count(col(Commit.id)).label("commit_count"),
             func.count(func.distinct(col(Commit.project_id))).label("project_count"),
         ).where(
-            col(Commit.user_id) == player.user_id,
+            col(Commit.user_id) == user_id,
             col(Commit.game_id) == game.id,
         )
         result = await self.session.execute(stmt)
         row = result.one()
 
-        player.commit_count = row.commit_count
-        player.project_count = row.project_count
-        player.points = (
+        points = (
             row.commit_count * game.commit_points
             + row.project_count * game.project_points
         )
-        player.potential_points = player.points
+
+        updates = dict(
+            commit_count=row.commit_count,
+            project_count=row.project_count,
+            points=points,
+            potential_points=points,
+        )
+        values = dict(
+            game_id=game.id,
+            user_id=user_id,
+            **updates,
+        )
+        insert_stmt = insert(Player).values(**values)
+        upsert = insert_stmt.on_conflict_do_update(
+            constraint="uq_player_user_game",
+            set_=updates,
+        ).returning(Player)
+
+        result = await self.session.execute(upsert)
+        player = result.scalar_one()
+        await self.session.flush()
+
+        return player
 
     async def apply_ai_analysis_adjustment(
         self, player_id: Identifier, points_adjustment: int
@@ -547,7 +521,7 @@ class GameService:
 async def claim_orphan_commits_task(
     user_id: Identifier,
     emails: list[str],
-) -> None:
+) -> int:
     """
     Background task to claim orphan commits for a newly registered user.
 
@@ -568,6 +542,8 @@ async def claim_orphan_commits_task(
             else:
                 logger.debug("No orphan commits found", user_id=str(user_id))
 
-        except Exception:
+            return claimed
+        except Exception:  # pragma: no cover
             logger.exception("Failed to claim orphan commits", user_id=str(user_id))
             await session.rollback()
+            return 0
