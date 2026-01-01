@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   // Replace with actual data fetching
   const total = 12345;
-  const game = "Julython 2024";
+  const game = "J(an)ulython 2026";
   const commits: any[] = [];
   const blog = {
     title: "Welcome to Julython",
