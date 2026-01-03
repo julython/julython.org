@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useGetLeadersApiV1GameLeadersGet } from "../../api/game/game";
 
 export const Route = createFileRoute("/leaders/")({
@@ -30,9 +30,12 @@ function Leaders() {
                   height="32"
                   style={{ borderRadius: "50%", marginRight: "10px" }}
                 />
-                <a href={`/u/${person.username}`}>
+                <Link
+                  to={`/u/$username`}
+                  params={{ username: person.username }}
+                >
                   {person.rank}. {person.name}
-                </a>
+                </Link>
                 <span className="badge badge-info pull-right">
                   {person.points || 0} points
                 </span>

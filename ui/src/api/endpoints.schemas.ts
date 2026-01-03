@@ -131,6 +131,10 @@ export type GetLeadersApiV1GameLeadersGetParams = {
 date?: string | null;
 };
 
+export type GetLeaderApiV1GameLeadersUsernameGetParams = {
+date?: string | null;
+};
+
 export type GetBoardsApiV1GameBoardsGetParams = {
 date?: string | null;
 };

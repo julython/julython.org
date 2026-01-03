@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as LeadersIndexRouteImport } from './routes/leaders/index'
+import { Route as UUsernameRouteImport } from './routes/u/$username'
 import { Route as ProfileWebhooksRouteImport } from './routes/profile/webhooks'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 
@@ -48,6 +49,11 @@ const LeadersIndexRoute = LeadersIndexRouteImport.update({
   path: '/leaders/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileWebhooksRoute = ProfileWebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRouteWithChildren
   '/profile/edit': typeof ProfileEditRoute
   '/profile/webhooks': typeof ProfileWebhooksRoute
+  '/u/$username': typeof UUsernameRoute
   '/leaders': typeof LeadersIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/help': typeof HelpRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/webhooks': typeof ProfileWebhooksRoute
+  '/u/$username': typeof UUsernameRoute
   '/leaders': typeof LeadersIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRouteWithChildren
   '/profile/edit': typeof ProfileEditRoute
   '/profile/webhooks': typeof ProfileWebhooksRoute
+  '/u/$username': typeof UUsernameRoute
   '/leaders/': typeof LeadersIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/profile/edit'
     | '/profile/webhooks'
+    | '/u/$username'
     | '/leaders'
     | '/profile/'
     | '/projects'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/help'
     | '/profile/edit'
     | '/profile/webhooks'
+    | '/u/$username'
     | '/leaders'
     | '/profile'
     | '/projects'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/profile/edit'
     | '/profile/webhooks'
+    | '/u/$username'
     | '/leaders/'
     | '/profile/'
     | '/projects/'
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HelpRoute: typeof HelpRoute
   ProfileRoute: typeof ProfileRouteWithChildren
+  UUsernameRoute: typeof UUsernameRoute
   LeadersIndexRoute: typeof LeadersIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
@@ -173,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/webhooks': {
       id: '/profile/webhooks'
       path: '/webhooks'
@@ -209,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HelpRoute: HelpRoute,
   ProfileRoute: ProfileRouteWithChildren,
+  UUsernameRoute: UUsernameRoute,
   LeadersIndexRoute: LeadersIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }

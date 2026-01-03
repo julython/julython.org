@@ -28,8 +28,10 @@ import type {
 
 import type {
   GetBoardsApiV1GameBoardsGetParams,
+  GetLeaderApiV1GameLeadersUsernameGetParams,
   GetLeadersApiV1GameLeadersGetParams,
   HTTPValidationError,
+  Leader,
   ListResponseLeader,
   ListResponseLeaderBoard
 } from '../endpoints.schemas';
@@ -119,6 +121,105 @@ export function useGetLeadersApiV1GameLeadersGet<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetLeadersApiV1GameLeadersGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Get Leader
+ */
+export const getLeaderApiV1GameLeadersUsernameGet = (
+    username: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<Leader>> => {
+    
+    
+    return axios.default.get(
+      `/api/v1/game/leaders/${username}`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+
+
+
+export const getGetLeaderApiV1GameLeadersUsernameGetQueryKey = (username?: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams,) => {
+    return [
+    `/api/v1/game/leaders/${username}`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetLeaderApiV1GameLeadersUsernameGetQueryOptions = <TData = Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError = AxiosError<HTTPValidationError>>(username: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData>>, axios?: AxiosRequestConfig}
+) => {
+
+const {query: queryOptions, axios: axiosOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLeaderApiV1GameLeadersUsernameGetQueryKey(username,params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>> = ({ signal }) => getLeaderApiV1GameLeadersUsernameGet(username,params, { signal, ...axiosOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(username), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLeaderApiV1GameLeadersUsernameGetQueryResult = NonNullable<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>>
+export type GetLeaderApiV1GameLeadersUsernameGetQueryError = AxiosError<HTTPValidationError>
+
+
+export function useGetLeaderApiV1GameLeadersUsernameGet<TData = Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError = AxiosError<HTTPValidationError>>(
+ username: string,
+    params: undefined |  GetLeaderApiV1GameLeadersUsernameGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>,
+          TError,
+          Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetLeaderApiV1GameLeadersUsernameGet<TData = Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError = AxiosError<HTTPValidationError>>(
+ username: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>,
+          TError,
+          Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>
+        > , 'initialData'
+      >, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetLeaderApiV1GameLeadersUsernameGet<TData = Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError = AxiosError<HTTPValidationError>>(
+ username: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Leader
+ */
+
+export function useGetLeaderApiV1GameLeadersUsernameGet<TData = Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError = AxiosError<HTTPValidationError>>(
+ username: string,
+    params?: GetLeaderApiV1GameLeadersUsernameGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLeaderApiV1GameLeadersUsernameGet>>, TError, TData>>, axios?: AxiosRequestConfig}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLeaderApiV1GameLeadersUsernameGetQueryOptions(username,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

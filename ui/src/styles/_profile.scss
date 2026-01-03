@@ -337,3 +337,120 @@ input[type="search"] {
     color: var(--text-secondary);
   }
 }
+
+// Points badge in profile header
+.points {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--orange);
+  background: rgba(239, 98, 28, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  margin-top: 0.5rem;
+}
+
+[data-theme="dark"] .points {
+  background: rgba(239, 98, 28, 0.2);
+}
+
+// Profile links row
+.profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.profile-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+// User stats section
+.user-stats {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+
+  .profile-nav ul {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .profile-nav a {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+
+    &.active {
+      background: transparent;
+      color: var(--purple);
+      border-bottom-color: var(--purple);
+    }
+  }
+
+  .tab-content {
+    padding: 1.5rem;
+  }
+}
+
+[data-theme="dark"] .user-stats .profile-nav a.active {
+  color: #c9a0dc;
+  border-bottom-color: #c9a0dc;
+}
+
+// Commits list
+.commits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commit-item {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  background: var(--bg-primary);
+}
+
+.commit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.commit-hash {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--purple);
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+
+  &:hover {
+    background: #7b4b91;
+    color: white;
+  }
+}
+
+.commit-date {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.commit-message {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.commit-project {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
