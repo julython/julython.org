@@ -37,6 +37,8 @@ class Base(SQLModel, table=False):
 
 
 class User(Base, table=True):
+    __tablename__ = "users"  # type: ignore
+
     name: str = ShortString(nullable=False)
     username: str = ShortString(length=25, nullable=False, unique=True)
     avatar_url: Optional[str] = None
@@ -58,11 +60,13 @@ class User(Base, table=True):
 
 
 class UserIdentifier(SQLModel, table=True):
+    __tablename__ = "user_identifiers"  # type: ignore
+
     value: str = Field(primary_key=True)
     type: IdentifierType = ShortString(length=10, nullable=False, index=True)
     created_at: datetime = CreatedAt
     updated_at: datetime = UpdatedAt
-    user_id: uuid.UUID = FK("user.id", ondelete="CASCADE")
+    user_id: uuid.UUID = FK("users.id", ondelete="CASCADE")
     verified: bool = Field(default=False)
     primary: bool = Field(default=False)
     data: Optional[dict[str, Any]] = JsonbData()
@@ -71,7 +75,7 @@ class UserIdentifier(SQLModel, table=True):
 
 
 class Game(Base, table=True):
-    """Competition period (e.g., Julython 2024)"""
+    __tablename__ = "games"  # type: ignore
 
     name: str = ShortString(length=25, nullable=False)
     start: datetime = Timestamp(nullable=False, description="Start of the Game UTC-12")
@@ -82,7 +86,7 @@ class Game(Base, table=True):
 
 
 class Project(Base, table=True):
-    """A GitHub repository being tracked"""
+    __tablename__ = "projects"  # type: ignore
 
     url: str = Field(unique=True, index=True)
     name: str = ShortString(nullable=False)
@@ -111,20 +115,20 @@ class Project(Base, table=True):
 
 
 class Commit(Base, table=True):
-    """Individual commit from webhook"""
+    __tablename__ = "commits"  # type: ignore
 
     project_id: uuid.UUID = FK(
-        "project.id",
+        "projects.id",
         index=True,
         ondelete="CASCADE",
     )
     user_id: uuid.UUID | None = FK(
-        "user.id",
+        "users.id",
         index=True,
         nullable=True,
         ondelete="CASCADE",
     )
-    game_id: uuid.UUID | None = FK("game.id", index=True, nullable=True)
+    game_id: uuid.UUID | None = FK("games.id", index=True, nullable=True)
 
     hash: str = Identifier(unique=True, index=True)
     author: str = ShortString()
@@ -135,7 +139,6 @@ class Commit(Base, table=True):
     languages: list[str] = Array(description="programming languages")
     files: dict[str, Any] = JsonbData()
 
-    # AI verification status
     is_verified: bool = Field(default=False)
     is_flagged: bool = Field(default=False)
     flag_reason: Optional[str] = None
@@ -144,11 +147,11 @@ class Commit(Base, table=True):
 
 
 class Player(Base, table=True):
-    """User's participation in a specific game"""
+    __tablename__ = "players"  # type: ignore
 
-    game_id: uuid.UUID = FK("game.id", index=True)
+    game_id: uuid.UUID = FK("games.id", index=True)
     user_id: uuid.UUID = FK(
-        "user.id",
+        "users.id",
         index=True,
         ondelete="CASCADE",
     )
@@ -186,11 +189,11 @@ class Player(Base, table=True):
 
 
 class Board(Base, table=True):
-    """Project leaderboard per game"""
+    __tablename__ = "boards"  # type: ignore
 
-    game_id: uuid.UUID = FK("game.id", index=True)
+    game_id: uuid.UUID = FK("games.id", index=True)
     project_id: uuid.UUID = FK(
-        "project.id",
+        "projects.id",
         index=True,
         ondelete="CASCADE",
     )
@@ -223,16 +226,16 @@ class Board(Base, table=True):
 
 
 class Language(Base, table=True):
-    """Programming languages"""
+    __tablename__ = "languages"  # type: ignore
 
     name: str = Field(unique=True, index=True)
 
 
 class LanguageBoard(Base, table=True):
-    """Language leaderboard per game"""
+    __tablename__ = "language_boards"  # type: ignore
 
-    game_id: uuid.UUID = FK("game.id", index=True)
-    language_id: uuid.UUID = FK("language.id", index=True)
+    game_id: uuid.UUID = FK("games.id", index=True)
+    language_id: uuid.UUID = FK("languages.id", index=True)
     points: int = Field(default=0)
     commit_count: int = Field(default=0)
 
@@ -241,80 +244,31 @@ class LanguageBoard(Base, table=True):
     )
 
 
-# class RepoAnalysis(Base, table=True):
-#     """AI analysis results for a user's repo during a game"""
-
-#     user_id: uuid.UUID = FK("user.id", index=True)
-#     project_id: uuid.UUID = FK("project.id", index=True)
-#     game_id: uuid.UUID = FK("game.id", index=True)
-
-#     analyzed_at: datetime
-#     ai_model: str = Field(default="gpt-4")
-#     status: AnalysisStatus = Field(sa_type=String(20), default=AnalysisStatus.PENDING)
-
-#     # Score impacts
-#     quality_score: float
-#     authenticity_score: float = Field(default=100.0)
-#     points_adjustment: int = Field(default=0)
-
-#     # AI insights
-#     quality_reasoning: Optional[str] = None
-#     authenticity_reasoning: Optional[str] = None
-#     dev_style: Optional[str] = None
-#     style_reasoning: Optional[str] = None
-#     ai_insights: Optional[str] = None
-#     red_flags: Optional[str] = None
-#     key_strengths: Optional[str] = None
-#     recommendations: Optional[str] = None
-
-#     # Statistics
-#     commit_count: int
-#     date_range_start: datetime
-#     date_range_end: datetime
-#     streak_days: Optional[int] = None
-#     avg_commits_per_day: Optional[float] = None
-#     ghost_commit_ratio: Optional[float] = None
-
-#     # Patterns
-#     commit_patterns: Optional[str] = None
-#     language_breakdown: Optional[str] = None
-#     peak_activity_hours: Optional[str] = None
-#     consistency_score: Optional[float] = None
-
-#     # Visibility and moderation
-#     is_public: bool = Field(default=True)
-#     is_flagged: bool = Field(default=False)
-#     is_removed: bool = Field(default=False)
-#     removed_reason: Optional[str] = None
-#     removed_at: Optional[datetime] = Timestamp(nullable=True)
-
-#     # Social
-#     likes_count: int = Field(default=0)
-#     reports_count: int = Field(default=0)
-
-
-# Teams
 class Team(Base, table=True):
+    __tablename__ = "teams"  # type: ignore
+
     name: str = Field(unique=True, index=True)
     slug: str = Field(unique=True, index=True)
     description: Optional[str] = None
     avatar_url: Optional[str] = None
-    created_by: uuid.UUID = FK("user.id", ondelete="CASCADE")
+    created_by: uuid.UUID = FK("users.id", ondelete="CASCADE")
     is_public: bool = Field(default=True)
     member_count: int = Field(default=0)
 
 
 class TeamMember(Base, table=True):
-    team_id: uuid.UUID = FK("team.id", index=True)
-    user_id: uuid.UUID = FK("user.id", index=True, ondelete="CASCADE")
+    __tablename__ = "team_members"  # type: ignore
+
+    team_id: uuid.UUID = FK("teams.id", index=True)
+    user_id: uuid.UUID = FK("users.id", index=True, ondelete="CASCADE")
     role: str = Field(default="member")
 
 
 class TeamBoard(Base, table=True):
-    """Team leaderboard per game"""
+    __tablename__ = "team_boards"  # type: ignore
 
-    game_id: uuid.UUID = FK("game.id", index=True)
-    team_id: uuid.UUID = FK("team.id", index=True, ondelete="CASCADE")
+    game_id: uuid.UUID = FK("games.id", index=True)
+    team_id: uuid.UUID = FK("teams.id", index=True, ondelete="CASCADE")
     points: int = Field(default=0)
     member_count: int = Field(default=0)
 
@@ -324,17 +278,21 @@ class TeamBoard(Base, table=True):
 
 
 class Report(Base, table=True):
-    reported_user_id: Optional[uuid.UUID] = FK("user.id", index=True, nullable=True)
+    __tablename__ = "reports"  # type: ignore
+
+    reported_user_id: Optional[uuid.UUID] = FK("users.id", index=True, nullable=True)
     report_type: ReportType = Field(sa_type=String(20), default=ReportType.SPAM)
     reason: str = ShortString(description="Short reason for reporting 'other' type")
     status: ReportStatus = Field(sa_type=String(20), default=ReportStatus.PENDING)
-    reviewed_by: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    reviewed_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
     reviewed_at: Optional[datetime] = Timestamp(nullable=True)
     moderator_notes: Optional[str] = None
 
 
 class AuditLog(Base, table=True):
-    moderator_id: uuid.UUID = FK("user.id", index=True)
+    __tablename__ = "audit_logs"  # type: ignore
+
+    moderator_id: uuid.UUID = FK("users.id", index=True)
     action: str
     target_type: str
     target_id: str
