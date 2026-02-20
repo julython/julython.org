@@ -68,7 +68,7 @@ class UserIdentifier(SQLModel, table=True):
     updated_at: datetime = UpdatedAt
     user_id: uuid.UUID = FK("users.id", ondelete="CASCADE")
     verified: bool = Field(default=False)
-    primary: bool = Field(default=False)
+    is_primary: bool = Field(default=False)
     data: Optional[dict[str, Any]] = JsonbData()
 
     user: User = Relationship(back_populates="identifiers")
@@ -78,8 +78,8 @@ class Game(Base, table=True):
     __tablename__ = "games"  # type: ignore
 
     name: str = ShortString(length=25, nullable=False)
-    start: datetime = Timestamp(nullable=False, description="Start of the Game UTC-12")
-    end: datetime = Timestamp(nullable=False, description="End of the Game UTC+12")
+    starts_at: datetime = Timestamp(nullable=False, description="Start of the Game")
+    ends_at: datetime = Timestamp(nullable=False, description="End of the Game")
     commit_points: int = Field(default=1, description="points per commit")
     project_points: int = Field(default=10, description="points per project")
     is_active: bool = Field(default=False)

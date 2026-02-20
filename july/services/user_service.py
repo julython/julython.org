@@ -67,7 +67,7 @@ class UserService:
         value: str,
         data: dict[str, Any],
         verified: bool = False,
-        primary: bool = False,
+        is_primary: bool = False,
     ) -> tuple[UserIdentifier, bool]:
         """
         Insert or update an identifier.
@@ -84,7 +84,7 @@ class UserService:
             "type": type,
             "user_id": user.id,
             "verified": verified,
-            "primary": primary,
+            "is_primary": is_primary,
             "created_at": now,
             "updated_at": now,
             "data": data,
@@ -92,7 +92,7 @@ class UserService:
 
         update_set = {
             "verified": verified,
-            "primary": primary,
+            "is_primary": is_primary,
             "updated_at": now,
             "data": data,
         }
@@ -204,7 +204,7 @@ class UserService:
                 user,
                 IdentifierType.EMAIL,
                 value=email.email,
-                primary=email.primary,
+                is_primary=email.primary,
                 verified=email.verified,
                 data={},
             )

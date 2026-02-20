@@ -90,8 +90,8 @@ class GameService:
         # Create the new game
         game = Game(
             name=name,
-            start=start,
-            end=end,
+            starts_at=start,
+            ends_at=end,
             commit_points=commit_points,
             project_points=project_points,
             is_active=is_active,
@@ -99,7 +99,7 @@ class GameService:
 
         self.session.add(game)
 
-        logger.info(f"Created game: {game.name} ({game.start} - {game.end})")
+        logger.info(f"Created game: {game.name} ({game.starts_at} - {game.ends_at})")
 
         return game
 
@@ -163,11 +163,11 @@ class GameService:
         statement = (
             select(Game)
             .where(
-                col(Game.start) <= now,
-                col(Game.end) >= now,
+                col(Game.starts_at) <= now,
+                col(Game.ends_at) >= now,
                 col(Game.is_active) == True,
             )
-            .order_by(col(Game.start).desc())
+            .order_by(col(Game.starts_at).desc())
             .limit(1)
         )
         result = await self.session.execute(statement)
@@ -184,8 +184,8 @@ class GameService:
             # Get the most recent completed game
             statement = (
                 select(Game)
-                .where(col(Game.end) <= now)
-                .order_by(col(Game.end).desc())
+                .where(col(Game.ends_at) <= now)
+                .order_by(col(Game.ends_at).desc())
                 .limit(1)
             )
             result = await self.session.execute(statement)

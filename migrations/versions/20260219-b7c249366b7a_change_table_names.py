@@ -41,7 +41,15 @@ def upgrade():
     for old, new in RENAMES:
         op.rename_table(old, new)
 
+    op.alter_column("user_identifiers", "primary", new_column_name="is_primary")
+    op.alter_column("games", "end", new_column_name="ends_at")
+    op.alter_column("games", "start", new_column_name="starts_at")
+
 
 def downgrade():
     for old, new in reversed(RENAMES):
         op.rename_table(new, old)
+
+    op.alter_column("useridentifier", "is_primary", new_column_name="primary")
+    op.alter_column("game", "ends_at", new_column_name="end")
+    op.alter_column("game", "starts_at", new_column_name="start")
