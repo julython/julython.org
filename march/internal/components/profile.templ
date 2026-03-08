@@ -19,7 +19,6 @@ const (
 // ============================================
 // Shared profile shell
 // ============================================
-
 templ ProfileShell(layout LayoutData, section ProfileSection, content templ.Component) {
 	@Layout(layout) {
 		<div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
@@ -149,7 +148,6 @@ templ settingsContent(data SettingsData) {
 // ============================================
 // Webhooks
 // ============================================
-
 templ WebhooksPage(layout LayoutData, page int) {
 	@ProfileShell(layout, SectionWebhooks, webhooksContent(page))
 }
@@ -243,8 +241,14 @@ templ WebhookRepoRow(r services.RepoWithWebhook, webhookBase string) {
 						hx-disabled-elt="this"
 						class="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-300 text-sm font-medium transition-colors group disabled:opacity-60 disabled:cursor-not-allowed"
 					>
-						<span class="htmx-idle flex items-center gap-1.5">@icons.CheckIcon() { i18n.T(ctx, "profile.added") }</span>
-						<span class="htmx-busy items-center gap-1.5">@icons.SpinnerIcon() { i18n.T(ctx, "profile.removing") }</span>
+						<span class="htmx-idle flex items-center gap-1.5">
+							@icons.CheckIcon()
+							<span>{ i18n.T(ctx, "profile.added") }</span>
+						</span>
+						<span class="htmx-busy items-center gap-1.5">
+							@icons.SpinnerIcon()
+							<span>{ i18n.T(ctx, "profile.removing") }</span>
+						</span>
 					</button>
 				} else {
 					<button
@@ -255,8 +259,14 @@ templ WebhookRepoRow(r services.RepoWithWebhook, webhookBase string) {
 						hx-disabled-elt="this"
 						class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface border border-white/10 text-gray-400 hover:text-white hover:border-july-500/40 hover:bg-july-500/10 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
 					>
-						<span class="htmx-idle flex items-center gap-1.5">@icons.PlusIcon() { i18n.T(ctx, "profile.addWebhook") }</span>
-						<span class="htmx-busy items-center gap-1.5">@icons.SpinnerIcon() { i18n.T(ctx, "profile.adding") }</span>
+						<span class="htmx-idle flex items-center gap-1.5">
+							@icons.PlusIcon()
+							<span>{ i18n.T(ctx, "profile.addWebhook") }</span>
+						</span>
+						<span class="htmx-busy items-center gap-1.5">
+							@icons.SpinnerIcon()
+							<span>{ i18n.T(ctx, "profile.adding") }</span>
+						</span>
 					</button>
 				}
 			</div>
@@ -267,7 +277,6 @@ templ WebhookRepoRow(r services.RepoWithWebhook, webhookBase string) {
 // ============================================
 // Settings form (HTMX swap target)
 // ============================================
-
 templ SettingsFormFragment(data SettingsData) {
 	<form
 		method="POST"

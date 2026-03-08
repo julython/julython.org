@@ -1,8 +1,8 @@
 package components
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 
 	"github.com/invopop/ctxi18n/i18n"
 )
@@ -62,7 +62,6 @@ type LanguageLeaderboardData struct {
 // ============================================
 // User Leaderboard
 // ============================================
-
 templ LeaderboardPage(layout LayoutData, data LeaderboardData) {
 	@Layout(layout) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
@@ -151,7 +150,6 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 // ============================================
 // Project Leaderboard
 // ============================================
-
 templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
 	@Layout(layout) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
@@ -202,7 +200,8 @@ templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardRow(entry ProjectLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)</td>
+		<td class="px-6 py-4">@rankCell(entry.Rank)
+</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", entry.Slug)) } class="group">
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.ProjectName }</span>
@@ -226,7 +225,6 @@ templ ProjectLeaderboardRow(entry ProjectLeaderboardEntry) {
 // ============================================
 // Language Leaderboard
 // ============================================
-
 templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
 	@Layout(layout) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
@@ -271,7 +269,8 @@ templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)</td>
+		<td class="px-6 py-4">@rankCell(entry.Rank)
+</td>
 		<td class="px-6 py-4">
 			<span class="font-medium text-white">{ entry.LanguageName }</span>
 		</td>

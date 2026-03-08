@@ -184,7 +184,7 @@ templ RecentCommitRow(commit RecentCommit) {
 					<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
 						{ commit.Username }
 					</a>
-					<span class="text-gray-500"> pushed to </span>
+					<span class="text-gray-500">pushed to </span>
 					<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", commit.Project)) } class="text-gray-300 hover:text-july-400 transition-colors">
 						{ commit.Project }
 					</a>
