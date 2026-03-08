@@ -1,0 +1,116 @@
+es:
+  Home: "Inicio"
+  Leaders: "Líderes"
+  Projects: "Proyectos"
+  Blog: "Blog"
+  Help: "Ayuda"
+  SignIn: "Iniciar sesión"
+  SignOut: "Cerrar sesión"
+  About: "Acerca de"
+  Privacy: "Privacidad"
+
+  Theme: "Tema"
+  ToggleTheme: "Alternar oscuro/claro"
+
+  HeroTagline: "Programa más durante julio y enero. Rastrea tus commits. Compite con amigos."
+
+  WhatIsTitle: "¿Qué es Julython?"
+  WhatIsBody: >-
+    Durante los meses de enero y julio, animamos a desarrolladores de todos los
+    niveles a trabajar en sus proyectos personales un poco cada día. Es una gran
+    excusa para contribuir a las comunidades que sigues, o incluso sumergirte en
+    un nuevo lenguaje por primera vez.
+
+  RulesTitle: "¿Hay Reglas?"
+  RulesBody: "Solo hay una regla: ¡divertirse! El objetivo es aprender algo nuevo o terminar un proyecto que empezaste. Si compartes tu repositorio o tus commits con nosotros, %{scoring_link} por cada commit o proyecto nuevo en el que trabajes %{timing_link}."
+  TallyUpPoints: "sumaremos puntos"
+  DuringTheMonth: "durante el mes"
+
+  JoinTitle: "¿Cómo Participo?"
+  JoinBody: "Solo necesitas un proyecto en el que trabajar que no sea tu trabajo habitual. Recomendamos elegir algo abierto, quizás en GitHub o Bitbucket, para que otros puedan ver tu progreso. Luego %{webhook_link} para tu repositorio, y rastrearemos tu progreso junto a todos los demás."
+  AddAWebhook: "añade un webhook"
+
+  CommitsDuring: "commits durante"
+  WhatsHappening: "¿Qué Está Pasando?"
+  NoRecentActivity: "Aún no hay actividad reciente. ¡Sé el primero en hacer commit!"
+  ViewAllActivity: "Ver toda la actividad"
+
+  Leaderboard: "Tabla de Clasificación"
+  ProjectLeaderboard: "Clasificación de Proyectos"
+  LanguageLeaderboard: "Clasificación de Lenguajes"
+  Participants: "participantes"
+  Users: "Usuarios"
+  Languages: "Lenguajes"
+  Rank: "Posición"
+  Coder: "Programador"
+  Commits: "Commits"
+  Points: "Puntos"
+  Contributors: "Colaboradores"
+  Project: "Proyecto"
+  Language: "Lenguaje"
+  NoParticipants: "Aún no hay participantes en este juego."
+  BeTheFirst: "¡Sé el primero en unirte!"
+  NoProjects: "Aún no hay proyectos en este juego."
+  NoLanguages: "Aún no hay lenguajes registrados."
+  NoCommits: "Aún no hay commits en este proyecto."
+  TopProjectsShown: "Mostrando solo los mejores proyectos."
+  LoadMore: "Cargar más"
+
+  ProjectsSubtitle: "Proyectos participantes"
+  RecentCommits: "Commits Recientes"
+  Fork: "Fork"
+  Forks: "Forks"
+  Watchers: "Seguidores"
+  ViewOnGitHub: "Ver en GitHub"
+  ViewOnGitLab: "Ver en GitLab"
+  ViewOnService: "Ver en el servicio"
+  Flagged: "Marcado"
+  Verified: "Verificado"
+
+  BackHome: "Volver al inicio"
+  Error404Title: "Página No Encontrada"
+  Error404Body: "La página que buscas no existe o ha sido movida."
+  Error401Title: "Inicio de Sesión Requerido"
+  Error401Body: "Debes iniciar sesión para ver esta página."
+  Error403Title: "Acceso Denegado"
+  Error403Body: "No tienes permiso para ver esta página."
+  Error500Title: "Algo Salió Mal"
+  Error500Body: "Tenemos problemas en nuestro lado. Por favor intenta de nuevo en un momento."
+
+  profile:
+    overview: "Overview"
+    webhooks: "Webhooks"
+    settings: "Settings"
+    accountInfo: "info"
+    addWebhook: "webhook"
+    added: "added"
+    adding: "adding"
+    displayName: "name"
+    emails: "emails"
+    namePlaceholder: "placeholder"
+    noRepos: "repos"
+    noReposHint: "repos hint"
+    removing: "removing"
+    saveChanges: "changes"
+    saveSuccess: "success"
+    title: "title"
+    username: "username"
+    webhooksSubtitle: "subtitle"
+
+  CommitCount:
+    one: "%{count} commit"
+    other: "%{count} commits"
+  PointCount:
+    one: "%{count} punto"
+    other: "%{count} puntos"
+  CoderCount:
+    one: "%{count} programador participando"
+    other: "%{count} programadores participando"
+
+  LoadingMore: "loading more"
+  projects:
+    AllServices: "all services"
+    SearchProjects: "search projects"
+
+  Next: "next"
+  Previous: "previous"

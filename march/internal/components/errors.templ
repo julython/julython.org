@@ -1,0 +1,48 @@
+package components
+
+import (
+	"fmt"
+	"context"
+	"net/http"
+
+	"github.com/invopop/ctxi18n/i18n"
+)
+
+templ ErrorPage(data LayoutData, status int) {
+	@Layout(data) {
+		<div class="max-w-2xl mx-auto px-4 py-24 text-center">
+			<p class="text-8xl font-bold text-july-500 mb-4">{ fmt.Sprintf("%d", status) }</p>
+			<h1 class="text-3xl font-bold text-white mb-4">{ errorTitle(ctx, status) }</h1>
+			<p class="text-gray-400 mb-8">{ errorBody(ctx, status) }</p>
+			<a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-july-600 hover:bg-july-500 text-white rounded-lg transition-colors">
+				← { i18n.T(ctx, "BackHome") }
+			</a>
+		</div>
+	}
+}
+
+func errorTitle(ctx context.Context, status int) string {
+	switch status {
+	case http.StatusNotFound:
+		return i18n.T(ctx, "Error404Title")
+	case http.StatusUnauthorized:
+		return i18n.T(ctx, "Error401Title")
+	case http.StatusForbidden:
+		return i18n.T(ctx, "Error403Title")
+	default:
+		return i18n.T(ctx, "Error500Title")
+	}
+}
+
+func errorBody(ctx context.Context, status int) string {
+	switch status {
+	case http.StatusNotFound:
+		return i18n.T(ctx, "Error404Body")
+	case http.StatusUnauthorized:
+		return i18n.T(ctx, "Error401Body")
+	case http.StatusForbidden:
+		return i18n.T(ctx, "Error403Body")
+	default:
+		return i18n.T(ctx, "Error500Body")
+	}
+}

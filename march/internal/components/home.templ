@@ -1,0 +1,223 @@
+package components
+
+import (
+	"fmt"
+
+	"github.com/invopop/ctxi18n/i18n"
+	"july/internal/components/icons"
+)
+
+type GameStats struct {
+	Name          string
+	TotalCommits  int
+	TotalUsers    int
+	TotalProjects int
+}
+
+type DayCommits struct {
+	Day   int
+	Count int
+}
+
+type RecentCommit struct {
+	Username  string
+	AvatarURL string
+	Message   string
+	Project   string
+	TimeAgo   string
+}
+
+type HomeData struct {
+	Game          GameStats
+	DailyCommits  []DayCommits
+	RecentCommits []RecentCommit
+	MaxDayCommits int
+}
+
+templ HomePage(layout LayoutData, data HomeData) {
+	@Layout(layout) {
+		@Hero(data.Game)
+		@InfoCards()
+		@StatsSection(data)
+	}
+}
+
+templ Hero(game GameStats) {
+	<section class="relative overflow-hidden">
+		<div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent"></div>
+		<div class="max-w-7xl mx-auto px-4 py-16 sm:py-24 text-center relative">
+			<div class="flex justify-center mb-6">
+				<div class="relative text-july-500">
+					@icons.JulythonLogoHero()
+					<div class="absolute -inset-4 bg-july-500/20 blur-3xl rounded-full -z-10"></div>
+				</div>
+			</div>
+			<h1 class="text-5xl sm:text-7xl font-bold mb-4">
+				<span class="text-july-500">july</span><span class="text-gray-100">thon</span>
+			</h1>
+			<p class="text-xl text-gray-400 max-w-2xl mx-auto">
+				{ i18n.T(ctx, "HeroTagline") }
+			</p>
+		</div>
+	</section>
+}
+
+templ InfoCards() {
+	<section class="border-y border-white/10 bg-surface-light/50">
+		<div class="max-w-7xl mx-auto px-4 py-12">
+			<div class="grid md:grid-cols-3 gap-8">
+				@InfoCard("🐍", i18n.T(ctx, "WhatIsTitle"), i18n.T(ctx, "WhatIsBody"))
+				@InfoCard("📋", i18n.T(ctx, "RulesTitle"), i18n.T(ctx, "RulesBody", i18n.M{
+					"scoring_link": inlineLink("/help#scoring", i18n.T(ctx, "TallyUpPoints")),
+					"timing_link":  inlineLink("/help#timing", i18n.T(ctx, "DuringTheMonth")),
+				}))
+				@InfoCard("🚀", i18n.T(ctx, "JoinTitle"), i18n.T(ctx, "JoinBody", i18n.M{
+					"webhook_link": inlineLink("/help#webhooks", i18n.T(ctx, "AddAWebhook")),
+				}))
+			</div>
+		</div>
+	</section>
+}
+
+templ InfoCard(emoji, title, body string) {
+	<div class="group">
+		<div class="flex items-center gap-3 mb-3">
+			<span class="text-2xl p-2 bg-july-500/20 rounded-lg group-hover:bg-july-500/30 transition-colors">{ emoji }</span>
+			<h3 class="text-lg font-semibold text-july-400">{ title }</h3>
+		</div>
+		<p class="text-gray-400 leading-relaxed">
+			@templ.Raw(body)
+		</p>
+	</div>
+}
+
+// inlineLink builds a styled anchor tag for interpolation into translated strings.
+func inlineLink(href, text string) string {
+	return fmt.Sprintf(`<a href="%s" class="text-july-400 hover:underline">%s</a>`, href, text)
+}
+
+templ StatsSection(data HomeData) {
+	<section class="max-w-7xl mx-auto px-4 py-12">
+		<div class="grid lg:grid-cols-3 gap-8">
+			<div class="lg:col-span-2">
+				<h2 class="text-2xl font-bold text-july-400 mb-6">
+					{ fmt.Sprintf("%s %s", formatNumber(data.Game.TotalCommits), i18n.T(ctx, "CommitsDuring")) } { data.Game.Name }!
+				</h2>
+				@CommitHistogram(data.DailyCommits, data.MaxDayCommits)
+			</div>
+			<div>
+				<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+					<span class="text-july-400">{ i18n.T(ctx, "WhatsHappening") }</span>
+				</h2>
+				<div class="border-t border-white/10">
+					@RecentActivity(data.RecentCommits)
+				</div>
+			</div>
+		</div>
+	</section>
+}
+
+templ CommitHistogram(days []DayCommits, maxCount int) {
+	<div class="bg-surface-light rounded-xl p-6 border border-white/10">
+		<div class="flex items-end gap-1 h-48">
+			for _, day := range days {
+				@HistogramBar(day, maxCount)
+			}
+		</div>
+		<div class="flex justify-between mt-4 text-xs text-gray-500">
+			<span>1</span>
+			<span>8</span>
+			<span>15</span>
+			<span>22</span>
+			<span>31</span>
+		</div>
+	</div>
+}
+
+templ HistogramBar(day DayCommits, maxCount int) {
+	if maxCount > 0 {
+		<div
+			class="flex-1 bg-gradient-to-t from-july-600 to-july-400 rounded-t hover:from-july-500 hover:to-july-300 transition-colors cursor-pointer group relative"
+			style={ fmt.Sprintf("height: %d%%;", max(5, (day.Count*100)/maxCount)) }
+			title={ fmt.Sprintf("Day %d: %d commits", day.Day, day.Count) }
+		>
+			<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+				{ fmt.Sprintf("%d commits", day.Count) }
+			</div>
+		</div>
+	} else {
+		<div class="flex-1 bg-surface rounded-t" style="height: 5%;"></div>
+	}
+}
+
+templ RecentActivity(commits []RecentCommit) {
+	if len(commits) == 0 {
+		<div class="py-8 text-center text-gray-500">
+			<p>{ i18n.T(ctx, "NoRecentActivity") }</p>
+		</div>
+	} else {
+		<div class="divide-y divide-white/10">
+			for _, commit := range commits {
+				@RecentCommitRow(commit)
+			}
+		</div>
+		<div class="pt-4">
+			<a href="/activity" class="text-sm text-july-400 hover:text-july-300 transition-colors">
+				{ i18n.T(ctx, "ViewAllActivity") } →
+			</a>
+		</div>
+	}
+}
+
+templ RecentCommitRow(commit RecentCommit) {
+	<div class="py-3 group">
+		<div class="flex items-start gap-3">
+			if commit.AvatarURL != "" {
+				<img src={ commit.AvatarURL } alt="" class="w-8 h-8 rounded-full flex-shrink-0"/>
+			} else {
+				<div class="w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0">
+					{ string(commit.Username[0]) }
+				</div>
+			}
+			<div class="min-w-0 flex-1">
+				<p class="text-sm">
+					<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
+						{ commit.Username }
+					</a>
+					<span class="text-gray-500"> pushed to </span>
+					<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", commit.Project)) } class="text-gray-300 hover:text-july-400 transition-colors">
+						{ commit.Project }
+					</a>
+				</p>
+				<p class="text-sm text-gray-500 truncate" title={ commit.Message }>
+					{ truncateMessage(commit.Message, 50) }
+				</p>
+				<p class="text-xs text-gray-600 mt-1">{ commit.TimeAgo }</p>
+			</div>
+		</div>
+	</div>
+}
+
+func formatNumber(n int) string {
+	if n >= 1000000 {
+		return fmt.Sprintf("%.1fM", float64(n)/1000000)
+	}
+	if n >= 1000 {
+		return fmt.Sprintf("%.1fK", float64(n)/1000)
+	}
+	return fmt.Sprintf("%d", n)
+}
+
+func truncateMessage(msg string, maxLen int) string {
+	if len(msg) <= maxLen {
+		return msg
+	}
+	return msg[:maxLen-3] + "..."
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}

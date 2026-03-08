@@ -1,0 +1,116 @@
+en:
+  Home: "Home"
+  Leaders: "Leaders"
+  Projects: "Projects"
+  Blog: "Blog"
+  Help: "Help"
+  SignIn: "Sign in"
+  SignOut: "Sign out"
+  About: "About"
+  Privacy: "Privacy"
+
+  Theme: "Theme"
+  ToggleTheme: "Toggle dark/light"
+
+  HeroTagline: "Code more during July and January. Track your commits. Compete with friends."
+
+  WhatIsTitle: "What is Julython?"
+  WhatIsBody: >-
+    During the months of January and July, we're encouraging developers of all
+    skill levels to try and work on your pet project(s) just a little each day.
+    It's a great excuse to contribute to the communities you follow, or even
+    dive into a language for the first time.
+
+  RulesTitle: "Are There Rules?"
+  RulesBody: "There is only one rule, to have fun! The goal is that you either learn something new or to help finish a project you started. If you share your repository or your commits with us, we will %{scoring_link} for each commit or new project you work on %{timing_link}."
+  TallyUpPoints: "tally up points"
+  DuringTheMonth: "during the month"
+
+  JoinTitle: "How Do I Join In?"
+  JoinBody: "All you need is a project to work on that isn't your regular day job. We recommend you choose something open, perhaps on GitHub or Bitbucket, so that others can see your progress. Then %{webhook_link} for your repository, and we'll track your progress next to everyone else."
+  AddAWebhook: "add a webhook"
+
+  CommitsDuring: "commits during"
+  WhatsHappening: "What's Happening?"
+  NoRecentActivity: "No recent activity yet. Be the first to commit!"
+  ViewAllActivity: "View all activity"
+
+  Leaderboard: "Leaderboard"
+  ProjectLeaderboard: "Project Leaderboard"
+  LanguageLeaderboard: "Language Leaderboard"
+  Participants: "participants"
+  Users: "Users"
+  Languages: "Languages"
+  Rank: "Rank"
+  Coder: "Coder"
+  Commits: "Commits"
+  Points: "Points"
+  Contributors: "Contributors"
+  Project: "Project"
+  Language: "Language"
+  NoParticipants: "No participants yet for this game."
+  BeTheFirst: "Be the first to join!"
+  NoProjects: "No projects yet for this game."
+  NoLanguages: "No languages recorded yet."
+  NoCommits: "No commits yet for this project."
+  TopProjectsShown: "Showing top projects only."
+  LoadMore: "Load more"
+
+  ProjectsSubtitle: "Participating projects"
+  RecentCommits: "Recent Commits"
+  Fork: "Fork"
+  Forks: "Forks"
+  Watchers: "Watchers"
+  ViewOnGitHub: "View on GitHub"
+  ViewOnGitLab: "View on GitLab"
+  ViewOnService: "View on Service"
+  Flagged: "Flagged"
+  Verified: "Verified"
+
+  BackHome: "Back to home"
+  Error404Title: "Page Not Found"
+  Error404Body: "The page you're looking for doesn't exist or has been moved."
+  Error401Title: "Sign In Required"
+  Error401Body: "You need to be signed in to view this page."
+  Error403Title: "Access Denied"
+  Error403Body: "You don't have permission to view this page."
+  Error500Title: "Something Went Wrong"
+  Error500Body: "We're having trouble on our end. Please try again in a moment."
+
+  profile:
+    overview: "Overview"
+    webhooks: "Webhooks"
+    settings: "Settings"
+    accountInfo: "info"
+    addWebhook: "webhook"
+    added: "added"
+    adding: "adding"
+    displayName: "name"
+    emails: "emails"
+    namePlaceholder: "placeholder"
+    noRepos: "repos"
+    noReposHint: "repos hint"
+    removing: "removing"
+    saveChanges: "changes"
+    saveSuccess: "success"
+    title: "title"
+    username: "username"
+    webhooksSubtitle: "subtitle"
+
+  CommitCount:
+    one: "%{count} commit"
+    other: "%{count} commits"
+  PointCount:
+    one: "%{count} point"
+    other: "%{count} points"
+  CoderCount:
+    one: "%{count} coder participating"
+    other: "%{count} coders participating"
+
+  LoadingMore: "loading more"
+  projects:
+    AllServices: "all services"
+    SearchProjects: "search projects"
+
+  Next: "next"
+  Previous: "previous"

@@ -1,0 +1,309 @@
+package components
+
+import (
+	"fmt"
+	"github.com/invopop/ctxi18n/i18n"
+
+	"july/internal/components/icons"
+	"july/internal/services"
+)
+
+type ProfileSection string
+
+const (
+	SectionOverview ProfileSection = "overview"
+	SectionWebhooks ProfileSection = "webhooks"
+	SectionSettings ProfileSection = "settings"
+)
+
+// ============================================
+// Shared profile shell
+// ============================================
+
+templ ProfileShell(layout LayoutData, section ProfileSection, content templ.Component) {
+	@Layout(layout) {
+		<div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+			// Mobile: stacked. Desktop: sidebar + content side by side.
+			<div class="flex flex-col md:flex-row gap-6 md:gap-8">
+				@profileSidebar(section)
+				<main class="flex-1 min-w-0">
+					@content
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ profileSidebar(active ProfileSection) {
+	<aside class="md:w-48 md:shrink-0">
+		// Desktop: sticky vertical nav with label.
+		// Mobile: horizontal scrolling tab strip, label hidden.
+		<p class="hidden md:block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 px-3">
+			{ i18n.T(ctx, "profile.title") }
+		</p>
+		<nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible md:sticky md:top-24 pb-1 md:pb-0">
+			@profileNavItem("/profile", SectionOverview, active, icons.OverviewIcon(), "profile.overview")
+			@profileNavItem("/profile/webhooks", SectionWebhooks, active, icons.WebhookIcon(), "profile.webhooks")
+			@profileNavItem("/profile/settings", SectionSettings, active, icons.SettingsIcon(), "profile.settings")
+		</nav>
+	</aside>
+}
+
+templ profileNavItem(href string, section ProfileSection, active ProfileSection, icon templ.Component, label string) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={
+			"flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap",
+			"md:w-full",
+			templ.KV("bg-white/10 text-white font-medium", section == active),
+			templ.KV("text-gray-400 hover:text-white hover:bg-white/5", section != active),
+		}
+	>
+		@icon
+		{ i18n.T(ctx, label) }
+	</a>
+}
+
+// ============================================
+// Overview
+// ============================================
+
+type OverviewData struct {
+	Username  string
+	Name      string
+	AvatarURL string
+	Emails    []string
+}
+
+templ OverviewPage(layout LayoutData, data OverviewData) {
+	@ProfileShell(layout, SectionOverview, overviewContent(data))
+}
+
+templ overviewContent(data OverviewData) {
+	<div class="space-y-6">
+		<div>
+			<h1 class="text-2xl font-bold text-white mb-1">{ data.Name }</h1>
+			<p class="text-gray-400">{ data.Username }</p>
+		</div>
+		<div class="bg-surface-light rounded-xl border border-white/10 p-6 space-y-4">
+			<h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">
+				{ i18n.T(ctx, "profile.accountInfo") }
+			</h2>
+			<div class="grid gap-3 text-sm">
+				@infoRow(i18n.T(ctx, "profile.username")) {
+					<span class="text-white font-mono break-all">{ data.Username }</span>
+				}
+				@infoRow(i18n.T(ctx, "profile.displayName")) {
+					<span class="text-white break-words">{ data.Name }</span>
+				}
+				if len(data.Emails) > 0 {
+					@infoRow(i18n.T(ctx, "profile.emails")) {
+						<div class="space-y-1">
+							for _, e := range data.Emails {
+								<p class="text-white break-all">{ e }</p>
+							}
+						</div>
+					}
+				}
+			</div>
+		</div>
+	</div>
+}
+
+// infoRow renders a label + right-aligned slot, stacking on small screens.
+templ infoRow(label string) {
+	<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+		<span class="text-gray-500 shrink-0">{ label }</span>
+		<div class="sm:text-right">
+			{ children... }
+		</div>
+	</div>
+}
+
+// ============================================
+// Settings
+// ============================================
+
+type SettingsData struct {
+	Name    string
+	Success bool
+	Error   string
+}
+
+templ SettingsPage(layout LayoutData, data SettingsData) {
+	@ProfileShell(layout, SectionSettings, settingsContent(data))
+}
+
+templ settingsContent(data SettingsData) {
+	<div class="space-y-6">
+		<h1 class="text-2xl font-bold text-white">{ i18n.T(ctx, "profile.settings") }</h1>
+		<div class="bg-surface-light rounded-xl border border-white/10 p-6">
+			<h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-6">
+				{ i18n.T(ctx, "profile.title") }
+			</h2>
+			@SettingsFormFragment(data)
+		</div>
+	</div>
+}
+
+// ============================================
+// Webhooks
+// ============================================
+
+templ WebhooksPage(layout LayoutData, page int) {
+	@ProfileShell(layout, SectionWebhooks, webhooksContent(page))
+}
+
+templ webhooksContent(page int) {
+	<div class="space-y-6">
+		<div>
+			<h1 class="text-2xl font-bold text-white mb-1">{ i18n.T(ctx, "profile.webhooks") }</h1>
+			<p class="text-gray-400 text-sm">{ i18n.T(ctx, "profile.webhooksSubtitle") }</p>
+		</div>
+		<div
+			id="webhook-repos"
+			hx-get={ fmt.Sprintf("/profile/webhooks/repos?page=%d", page) }
+			hx-trigger="load"
+			hx-swap="outerHTML"
+		>
+			@webhookReposLoading()
+		</div>
+	</div>
+}
+
+templ webhookReposLoading() {
+	<div id="webhook-repos" class="space-y-3">
+		for range 4 {
+			<div class="bg-surface-light rounded-xl border border-white/10 p-5 animate-pulse">
+				<div class="flex items-center justify-between">
+					<div class="space-y-2 min-w-0">
+						<div class="h-4 w-48 bg-white/10 rounded"></div>
+						<div class="h-3 w-64 bg-white/5 rounded"></div>
+					</div>
+					<div class="h-8 w-28 bg-white/10 rounded-lg shrink-0 ml-4"></div>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+templ WebhookRepoList(repos []services.RepoWithWebhook, webhookBase string, page int, hasMore bool) {
+	<div id="webhook-repos" class="space-y-3">
+		if len(repos) == 0 && page == 1 {
+			<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
+				<span class="text-5xl mb-4 block">📭</span>
+				<p class="text-gray-400 text-sm">{ i18n.T(ctx, "profile.noRepos") }</p>
+				<p class="text-gray-600 text-xs mt-2">{ i18n.T(ctx, "profile.noReposHint") }</p>
+			</div>
+		} else {
+			for _, r := range repos {
+				@WebhookRepoRow(r, webhookBase)
+			}
+			<div class="flex justify-between items-center pt-2">
+				if page > 1 {
+					<a href={ templ.SafeURL(fmt.Sprintf("/profile/webhooks?page=%d", page-1)) } class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">← { i18n.T(ctx, "Previous") }</a>
+				} else {
+					<span></span>
+				}
+				if hasMore {
+					<a href={ templ.SafeURL(fmt.Sprintf("/profile/webhooks?page=%d", page+1)) } class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">{ i18n.T(ctx, "Next") } →</a>
+				}
+			</div>
+		}
+	</div>
+}
+
+templ WebhookRepoRow(r services.RepoWithWebhook, webhookBase string) {
+	<div id={ fmt.Sprintf("repo-%d", r.ID) } class="bg-surface-light rounded-xl border border-white/10 p-5 hover:border-white/20 transition-colors">
+		<div class="flex items-start justify-between gap-4">
+			<div class="min-w-0">
+				<div class="flex items-center gap-2 mb-1 flex-wrap">
+					<a
+						href={ templ.SafeURL(r.HTMLURL) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-white font-medium hover:text-july-400 transition-colors truncate"
+					>{ r.FullName }</a>
+					if r.Forked {
+						<span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-500/20 text-purple-400" title="Fork">
+							@icons.ForkIcon()
+						</span>
+					}
+				</div>
+				if r.Description != nil && *r.Description != "" {
+					<p class="text-sm text-gray-500 truncate">{ *r.Description }</p>
+				}
+			</div>
+			<div class="shrink-0">
+				if r.HasWebhook {
+					<button
+						hx-delete={ fmt.Sprintf("/profile/webhooks/%d/hooks/%d", r.ID, r.WebhookID) }
+						hx-target={ fmt.Sprintf("#repo-%d", r.ID) }
+						hx-swap="outerHTML"
+						hx-disabled-elt="this"
+						class="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-300 text-sm font-medium transition-colors group disabled:opacity-60 disabled:cursor-not-allowed"
+					>
+						<span class="htmx-idle flex items-center gap-1.5">@icons.CheckIcon() { i18n.T(ctx, "profile.added") }</span>
+						<span class="htmx-busy items-center gap-1.5">@icons.SpinnerIcon() { i18n.T(ctx, "profile.removing") }</span>
+					</button>
+				} else {
+					<button
+						hx-post={ fmt.Sprintf("/profile/webhooks/%d/hooks", r.ID) }
+						hx-vals={ fmt.Sprintf(`{"owner":"%s","repo":"%s"}`, r.Owner.Login, r.Name) }
+						hx-target={ fmt.Sprintf("#repo-%d", r.ID) }
+						hx-swap="outerHTML"
+						hx-disabled-elt="this"
+						class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface border border-white/10 text-gray-400 hover:text-white hover:border-july-500/40 hover:bg-july-500/10 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+					>
+						<span class="htmx-idle flex items-center gap-1.5">@icons.PlusIcon() { i18n.T(ctx, "profile.addWebhook") }</span>
+						<span class="htmx-busy items-center gap-1.5">@icons.SpinnerIcon() { i18n.T(ctx, "profile.adding") }</span>
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+// ============================================
+// Settings form (HTMX swap target)
+// ============================================
+
+templ SettingsFormFragment(data SettingsData) {
+	<form
+		method="POST"
+		action="/profile/settings"
+		hx-post="/profile/settings"
+		hx-target="#settings-form"
+		hx-swap="outerHTML"
+		id="settings-form"
+		class="space-y-5"
+	>
+		if data.Success {
+			<div class="px-4 py-3 rounded-lg bg-green-500/15 border border-green-500/20 text-green-400 text-sm">
+				{ i18n.T(ctx, "profile.saveSuccess") }
+			</div>
+		}
+		if data.Error != "" {
+			<div class="px-4 py-3 rounded-lg bg-red-500/15 border border-red-500/20 text-red-400 text-sm">
+				{ data.Error }
+			</div>
+		}
+		<div>
+			<label for="name" class="block text-sm text-gray-400 mb-1.5">{ i18n.T(ctx, "profile.displayName") }</label>
+			<input
+				type="text"
+				id="name"
+				name="name"
+				value={ data.Name }
+				class="w-full px-4 py-2.5 bg-surface rounded-lg border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-july-500/50 focus:ring-1 focus:ring-july-500/30 transition-colors"
+				placeholder={ i18n.T(ctx, "profile.namePlaceholder") }
+				maxlength="120"
+			/>
+		</div>
+		<div class="flex justify-end">
+			<button type="submit" class="px-5 py-2.5 bg-july-600 hover:bg-july-500 text-white text-sm font-medium rounded-lg transition-colors">
+				{ i18n.T(ctx, "profile.saveChanges") }
+			</button>
+		</div>
+	</form>
+}

@@ -1,0 +1,207 @@
+package components
+
+import (
+	"github.com/invopop/ctxi18n"
+	"github.com/invopop/ctxi18n/i18n"
+
+	"july/internal/components/icons"
+)
+
+type NavItem struct {
+	Label string
+	URL   string
+}
+
+type LayoutData struct {
+	Title       string
+	CurrentPath string
+	User        *UserInfo
+}
+
+type UserInfo struct {
+	Username  string
+	AvatarURL string
+}
+
+templ Layout(data LayoutData) {
+	{{ lang := ctxi18n.Locale(ctx).Code() }}
+	<!DOCTYPE html>
+	<html lang={ lang } class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<meta name="description" content="Julython — code more during July and January.">
+			<title>{ data.Title } | Julython</title>
+			<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+			<link rel="preload" href={ AssetTailwindCSS } as="style">
+			<link rel="preconnect" href="https://avatars.githubusercontent.com">
+			<link rel="stylesheet" href={ AssetTailwindCSS }>
+		</head>
+		<body class="text-gray-100">
+			@Navbar(data)
+			<main>
+				{ children... }
+			</main>
+			@Footer()
+			<script src={ AssetHTMX }></script>
+		</body>
+	</html>
+}
+
+templ Navbar(data LayoutData) {
+	<nav class="bg-surface/80 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+			<div class="flex items-center h-16">
+				<!-- Mobile: hamburger on left -->
+				<button
+					onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+					class="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors mr-2"
+					aria-label="Toggle menu"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+					</svg>
+				</button>
+				<!-- Mobile: logo centered. Desktop: logo left + nav links -->
+				<div class="flex-1 flex items-center">
+					<!-- Logo — centered on mobile via absolute, normal flow on desktop -->
+					<a href="/" class="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex items-center gap-2 text-july-500">
+						@icons.JulythonLogo()
+						<span class="text-xl font-bold">
+							<span class="text-july-500">july</span><span class="text-gray-300">thon</span>
+						</span>
+					</a>
+					<!-- Desktop nav links -->
+					<div class="hidden md:flex items-center gap-6 ml-8">
+						@navLink("/leaders", data.CurrentPath, i18n.T(ctx, "Leaders"))
+						@navLink("/projects", data.CurrentPath, i18n.T(ctx, "Projects"))
+						@navLink("/blog", data.CurrentPath, i18n.T(ctx, "Blog"))
+						@navLink("/help", data.CurrentPath, i18n.T(ctx, "Help"))
+					</div>
+				</div>
+				<!-- Right side: settings (desktop only) + user -->
+				<div class="flex items-center gap-2">
+					<div class="hidden md:block">
+						@LanguageDropdown(data)
+					</div>
+					if data.User != nil {
+						@UserMenu(data.User)
+					} else {
+						<a href="/auth/login/github" class="nav-link flex items-center gap-2 text-sm">
+							{ i18n.T(ctx, "SignIn") }
+						</a>
+					}
+				</div>
+			</div>
+		</div>
+		<!-- Mobile menu panel -->
+		<div id="mobile-menu" class="hidden md:hidden border-t border-white/10 bg-surface/95 backdrop-blur-sm">
+			<div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1">
+				@mobileNavLink("/leaders", data.CurrentPath, i18n.T(ctx, "Leaders"))
+				@mobileNavLink("/projects", data.CurrentPath, i18n.T(ctx, "Projects"))
+				@mobileNavLink("/blog", data.CurrentPath, i18n.T(ctx, "Blog"))
+				@mobileNavLink("/help", data.CurrentPath, i18n.T(ctx, "Help"))
+				<!-- Language section -->
+				<div class="border-t border-white/10 mt-2 pt-3 space-y-1">
+					<p class="text-xs font-semibold uppercase tracking-wider text-gray-500 px-3 mt-3 mb-2">{ i18n.T(ctx, "Language") }</p>
+					{{ lang := ctxi18n.Locale(ctx).Code() }}
+					<a href="/set-language?lang=en" class={ "flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors", templ.KV("text-july-400 font-bold", lang == "en"), templ.KV("text-gray-400 hover:text-white", lang != "en") }>🇺🇸 English</a>
+					<a href="/set-language?lang=es" class={ "flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors", templ.KV("text-july-400 font-bold", lang == "es"), templ.KV("text-gray-400 hover:text-white", lang != "es") }>🇪🇸 Español</a>
+					<a href="/set-language?lang=pt" class={ "flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors", templ.KV("text-july-400 font-bold", lang == "pt"), templ.KV("text-gray-400 hover:text-white", lang != "pt") }>🇧🇷 Português</a>
+				</div>
+			</div>
+		</div>
+	</nav>
+}
+
+templ navLink(href, current, label string) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={
+			"nav-link",
+			templ.KV("active", current == href),
+		}
+	>{ label }</a>
+}
+
+templ mobileNavLink(href, current, label string) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={
+			"block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+			templ.KV("bg-white/10 text-white", current == href),
+			templ.KV("text-gray-400 hover:text-white hover:bg-white/5", current != href),
+		}
+	>{ label }</a>
+}
+
+templ LanguageDropdown(data LayoutData) {
+	{{ lang := ctxi18n.Locale(ctx).Code() }}
+	<div class="relative">
+		<button
+			onclick="this.nextElementSibling.classList.toggle('hidden')"
+			class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+			aria-label="Language"
+		>
+			@icons.GlobeIcon()
+		</button>
+		<div class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
+			<div class="px-4 py-2 text-xs text-gray-400 uppercase tracking-wider">{ i18n.T(ctx, "Language") }</div>
+			<a href="/set-language?lang=en" class={ "w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2", templ.KV("text-july-400 font-bold", lang == "en"), templ.KV("text-gray-300", lang != "en") }>
+				🇺🇸 English
+			</a>
+			<a href="/set-language?lang=es" class={ "w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2", templ.KV("text-july-400 font-bold", lang == "es"), templ.KV("text-gray-300", lang != "es") }>
+				🇪🇸 Español
+			</a>
+			<a href="/set-language?lang=pt" class={ "w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2", templ.KV("text-july-400 font-bold", lang == "pt"), templ.KV("text-gray-300", lang != "pt") }>
+				🇧🇷 Português
+			</a>
+		</div>
+	</div>
+}
+
+templ UserMenu(user *UserInfo) {
+	<div class="relative">
+		<button
+			onclick="this.nextElementSibling.classList.toggle('hidden')"
+			class="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+		>
+			if user.AvatarURL != "" {
+				<img src={ user.AvatarURL } alt="" class="w-8 h-8 rounded-full"/>
+			} else {
+				<div class="w-8 h-8 rounded-full bg-july-500 flex items-center justify-center text-white font-medium">
+					{ string(user.Username[0]) }
+				</div>
+			}
+		</button>
+		<div class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
+			<a href="/profile" class="flex px-4 py-2 text-sm text-gray-300 hover:bg-white/10 items-center gap-2">@icons.OverviewIcon() <span>{ i18n.T(ctx, "profile.settings") }</span></a>
+			<a href="/profile/webhooks" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/10">@icons.WebhookIcon() <span>{ i18n.T(ctx, "profile.webhooks") }</span></a>
+			<div class="border-t border-white/10 my-2"></div>
+			<a href="/auth/logout" class="block px-4 py-2 text-sm text-red-400 hover:bg-white/10">
+				{ i18n.T(ctx, "SignOut") }
+			</a>
+		</div>
+	</div>
+}
+
+templ Footer() {
+	<footer class="border-t border-white/10 mt-16">
+		<div class="max-w-7xl mx-auto px-4 py-8">
+			<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+				<div class="flex items-center gap-2 text-gray-400">
+					@icons.JulythonLogo()
+					<span>© 2026 Julython</span>
+				</div>
+				<div class="flex items-center gap-6 text-sm text-gray-400">
+					<a href="/about" class="hover:text-white transition-colors">{ i18n.T(ctx, "About") }</a>
+					<a href="/privacy" class="hover:text-white transition-colors">{ i18n.T(ctx, "Privacy") }</a>
+					<a href="https://github.com/julython" class="hover:text-white transition-colors flex items-center gap-1">
+						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+						GitHub
+					</a>
+				</div>
+			</div>
+		</div>
+	</footer>
+}

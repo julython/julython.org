@@ -1,0 +1,122 @@
+pt:
+  Home: "Início"
+  Leaders: "Líderes"
+  Projects: "Projetos"
+  Blog: "Blog"
+  Help: "Ajuda"
+  SignIn: "Entrar"
+  SignOut: "Sair"
+  About: "Sobre"
+  Privacy: "Privacidade"
+
+  Theme: "Tema"
+  ToggleTheme: "Alternar escuro/claro"
+
+  HeroTagline: "Programe mais durante julho e janeiro. Acompanhe seus commits. Compita com amigos."
+
+  WhatIsTitle: "O que é Julython?"
+  WhatIsBody: >-
+    Durante os meses de janeiro e julho, encorajamos desenvolvedores de todos os
+    níveis a trabalhar em seus projetos pessoais um pouco a cada dia. É uma
+    ótima desculpa para contribuir com as comunidades que você segue, ou até
+    mesmo mergulhar em uma nova linguagem pela primeira vez.
+
+  RulesTitle: "Existem Regras?"
+  RulesBody: >-
+    Só há uma regra: se divertir! O objetivo é aprender algo novo ou terminar um
+    projeto que você começou. Se você compartilhar seu repositório ou commits
+    conosco, %{scoring_link} por cada commit ou novo projeto em que você trabalhar %{timing_link}.
+  TallyUpPoints: "somaremos pontos"
+  DuringTheMonth: "durante o mês"
+
+  JoinTitle: "Como Participar?"
+  JoinBody: >-
+    Você só precisa de um projeto para trabalhar que não seja seu trabalho regular.
+    Recomendamos escolher algo aberto, talvez no GitHub ou Bitbucket, para que outros
+    possam ver seu progresso. Depois %{webhook_link} para seu repositório, e
+    acompanharemos seu progresso junto com todos os outros.
+  AddAWebhook: "adicione um webhook"
+  CommitsDuring: "commits durante"
+  WhatsHappening: "O Que Está Acontecendo?"
+  NoRecentActivity: "Nenhuma atividade recente ainda. Seja o primeiro a fazer commit!"
+  ViewAllActivity: "Ver toda a atividade"
+
+  Leaderboard: "Classificação"
+  ProjectLeaderboard: "Classificação de Projetos"
+  LanguageLeaderboard: "Classificação de Linguagens"
+  Participants: "participantes"
+  Users: "Usuários"
+  Languages: "Linguagens"
+  Rank: "Posição"
+  Coder: "Programador"
+  Commits: "Commits"
+  Points: "Pontos"
+  Contributors: "Colaboradores"
+  Project: "Projeto"
+  Language: "Linguagem"
+  NoParticipants: "Ainda não há participantes neste jogo."
+  BeTheFirst: "Seja o primeiro a participar!"
+  NoProjects: "Ainda não há projetos neste jogo."
+  NoLanguages: "Ainda não há linguagens registradas."
+  NoCommits: "Ainda não há commits neste projeto."
+  TopProjectsShown: "Mostrando apenas os melhores projetos."
+  LoadMore: "Carregar mais"
+
+  ProjectsSubtitle: "Projetos participantes"
+  RecentCommits: "Commits Recentes"
+  Fork: "Fork"
+  Forks: "Forks"
+  Watchers: "Seguidores"
+  ViewOnGitHub: "Ver no GitHub"
+  ViewOnGitLab: "Ver no GitLab"
+  ViewOnService: "Ver no serviço"
+  Flagged: "Sinalizado"
+  Verified: "Verificado"
+
+  BackHome: "Voltar ao início"
+  Error404Title: "Página Não Encontrada"
+  Error404Body: "A página que você procura não existe ou foi movida."
+  Error401Title: "Login Necessário"
+  Error401Body: "Você precisa estar logado para ver esta página."
+  Error403Title: "Acesso Negado"
+  Error403Body: "Você não tem permissão para ver esta página."
+  Error500Title: "Algo Deu Errado"
+  Error500Body: "Estamos com problemas do nosso lado. Por favor tente novamente em um momento."
+
+  profile:
+    overview: "Overview"
+    webhooks: "Webhooks"
+    settings: "Settings"
+    accountInfo: "info"
+    addWebhook: "webhook"
+    added: "added"
+    adding: "adding"
+    displayName: "name"
+    emails: "emails"
+    namePlaceholder: "placeholder"
+    noRepos: "repos"
+    noReposHint: "repos hint"
+    removing: "removing"
+    saveChanges: "changes"
+    saveSuccess: "success"
+    title: "title"
+    username: "username"
+    webhooksSubtitle: "subtitle"
+
+  CommitCount:
+    one: "%{count} commit"
+    other: "%{count} commits"
+  PointCount:
+    one: "%{count} ponto"
+    other: "%{count} pontos"
+  CoderCount:
+    one: "%{count} programador participando"
+    other: "%{count} programadores participando"
+
+  LoadingMore: "loading more"
+  projects:
+    AllServices: "all services"
+    SearchProjects: "search projects"
+
+  Next: "next"
+  Previous: "previous"

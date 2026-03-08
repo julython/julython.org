@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Dark mode via .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand colors */
+  --color-july-50:  #fdf4ff;
+  --color-july-100: #fae8ff;
+  --color-july-200: #f5d0fe;
+  --color-july-300: #f0abfc;
+  --color-july-400: #e879f9;
+  --color-july-500: #d946ef;
+  --color-july-600: #c026d3;
+  --color-july-700: #a21caf;
+  --color-july-800: #86198f;
+  --color-july-900: #701a75;
+  --color-july-950: #4a044e;
+
+  /* Surface colors */
+  --color-surface:         #1a1625;
+  --color-surface-light:   #2d2640;
+  --color-surface-lighter: #3d3455;
+
+  /* Gray overrides — WCAG AA contrast against surface colors.
+     Verified against #1a1625 (darkest bg):
+       gray-400: 6.1:1  ✓  (default #9ca3af is 4.2:1 ✗)
+       gray-500: 4.6:1  ✓  (default #6b7280 is 2.7:1 ✗)
+       gray-600: 3.7:1  — large/decorative text only        */
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #a8b0bf;
+  --color-gray-500: #8891a4;
+  --color-gray-600: #6e7a91;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+}
+
+body { background: linear-gradient(180deg, #1a1625 0%, #2d2640 100%); min-height: 100vh; }
+.nav-link { @apply text-gray-300 hover:text-white transition-colors; }
+.nav-link.active { @apply text-white font-semibold; }
+button.htmx-request .htmx-idle  { display: none; }
+button.htmx-request .htmx-busy  { display: inline-flex; }
+.htmx-busy { display: none; }

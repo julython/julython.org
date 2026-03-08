@@ -1,0 +1,374 @@
+package components
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/invopop/ctxi18n/i18n"
+)
+
+// ============================================
+// Types
+// ============================================
+
+type ProjectEntry struct {
+	ID          string
+	Name        string
+	Slug        string
+	URL         string
+	Description string
+	Service     string
+	Forks       int
+	Watchers    int
+	Forked      bool
+}
+
+type ProjectBoardStats struct {
+	Points           int
+	PotentialPoints  int
+	VerifiedPoints   int
+	CommitCount      int
+	ContributorCount int
+}
+
+func (s *ProjectBoardStats) DisplayPoints() int {
+	if s.VerifiedPoints > 0 {
+		return s.VerifiedPoints
+	}
+	return s.PotentialPoints
+}
+
+type CommitEntry struct {
+	ID         string
+	Hash       string
+	Message    string
+	Author     string
+	URL        string
+	Timestamp  time.Time
+	Languages  []string
+	IsVerified bool
+	IsFlagged  bool
+	FlagReason string
+}
+
+func (c CommitEntry) ShortHash() string {
+	if len(c.Hash) >= 7 {
+		return c.Hash[:7]
+	}
+	return c.Hash
+}
+
+func (c CommitEntry) ShortMessage() string {
+	msg := strings.SplitN(c.Message, "\n", 2)[0]
+	if len(msg) > 120 {
+		return msg[:117] + "..."
+	}
+	return msg
+}
+
+// ============================================
+// Project List
+// ============================================
+
+type ProjectListData struct {
+	Entries    []ProjectEntry
+	Search     string
+	Service    string
+	NextCursor string
+	HasMore    bool
+}
+
+// listURL builds the HTMX URL preserving current search/service params.
+func (d ProjectListData) listURL() string {
+	params := []string{}
+	if d.Search != "" {
+		params = append(params, fmt.Sprintf("search=%s", d.Search))
+	}
+	if d.Service != "" {
+		params = append(params, fmt.Sprintf("service=%s", d.Service))
+	}
+	if d.NextCursor != "" {
+		params = append(params, fmt.Sprintf("cursor=%s", d.NextCursor))
+	}
+	if len(params) == 0 {
+		return "/projects"
+	}
+	return "/projects?" + strings.Join(params, "&")
+}
+
+templ ProjectListPage(layout LayoutData, data ProjectListData) {
+	@Layout(layout) {
+		<section class="max-w-5xl mx-auto px-4 py-12">
+			<header class="mb-8">
+				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "Projects") }</h1>
+				<p class="text-gray-400">{ i18n.T(ctx, "ProjectsSubtitle") }</p>
+			</header>
+			<!-- Search + filter bar -->
+			<div class="mb-6 flex flex-col sm:flex-row gap-3">
+				<input
+					type="search"
+					name="search"
+					value={ data.Search }
+					placeholder={ i18n.T(ctx, "projects.SearchProjects") }
+					hx-get="/projects"
+					hx-trigger="input changed delay:400ms, search"
+					hx-target="#projects"
+					hx-swap="innerHTML"
+					hx-push-url="true"
+					hx-include="[name='service-filter']:checked"
+					class="flex-1 px-4 py-2 rounded-lg bg-surface-light border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-july-500/50 transition-colors text-sm"
+				/>
+				<div class="flex gap-2 shrink-0">
+					@serviceFilterPill("", data.Service, i18n.T(ctx, "projects.AllServices"))
+					@serviceFilterPill("github", data.Service, "GitHub")
+					@serviceFilterPill("gitlab", data.Service, "GitLab")
+				</div>
+			</div>
+			<div id="projects">
+				@ProjectListItems(data)
+			</div>
+		</section>
+	}
+}
+
+// serviceFilterPill renders a toggle pill for the service filter.
+// It uses a hidden radio input so hx-include picks it up by name.
+templ serviceFilterPill(value, current, label string) {
+	<label
+		class={
+			"cursor-pointer px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
+			templ.KV("bg-july-500/20 border-july-500/50 text-july-300", value == current),
+			templ.KV("bg-surface-light border-white/10 text-gray-400 hover:text-white hover:border-white/20", value != current),
+		}
+	>
+		<input
+			type="radio"
+			name="service-filter"
+			value={ value }
+			class="sr-only"
+			if value == current {
+				checked
+			}
+			hx-get="/projects"
+			hx-trigger="change"
+			hx-target="#projects"
+			hx-swap="innerHTML"
+			hx-push-url="true"
+			hx-include="[name='search']"
+		/>
+		{ label }
+	</label>
+}
+
+// ProjectListItems is the partial returned for both HTMX search/filter requests
+// and the infinite-scroll sentinel swap. It renders the cards plus a sentinel
+// div that triggers the next page load when scrolled into view.
+templ ProjectListItems(data ProjectListData) {
+	if len(data.Entries) == 0 {
+		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
+			<span class="text-6xl mb-4 block">📦</span>
+			<p class="text-gray-400">{ i18n.T(ctx, "NoProjects") }</p>
+		</div>
+	} else {
+		<div class="grid gap-4">
+			for _, entry := range data.Entries {
+				@ProjectCard(entry)
+			}
+		</div>
+		if data.HasMore {
+			<!-- Sentinel: replaced by the next page of items when scrolled into view -->
+			<div
+				hx-get={ data.listURL() }
+				hx-trigger="revealed"
+				hx-swap="outerHTML"
+				class="py-8 flex justify-center"
+			>
+				<span class="text-gray-600 text-sm animate-pulse">{ i18n.T(ctx, "LoadingMore") }</span>
+			</div>
+		}
+	}
+}
+
+templ ProjectCard(entry ProjectEntry) {
+	<div class="bg-surface-light rounded-xl border border-white/10 p-5 hover:border-july-500/40 transition-colors group">
+		<div class="flex items-start justify-between gap-4">
+			<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", entry.Slug)) } class="min-w-0 flex-1">
+				<div class="flex items-center gap-2 mb-1">
+					<h2 class="font-semibold text-white group-hover:text-july-400 transition-colors truncate">
+						{ entry.Name }
+					</h2>
+					if entry.Forked {
+						<span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
+							{ i18n.T(ctx, "Fork") }
+						</span>
+					}
+				</div>
+				if entry.Description != "" {
+					<p class="text-sm text-gray-400 line-clamp-2">{ entry.Description }</p>
+				}
+				<p class="text-xs text-gray-600 mt-2">{ entry.Slug }</p>
+			</a>
+			<div class="shrink-0 flex flex-col items-end gap-2">
+				<a
+					href={ templ.SafeURL(entry.URL) }
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-xs px-3 py-1 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+				>
+					{ serviceLabel(ctx, entry.Service) }
+				</a>
+				<div class="flex items-center gap-3 text-xs text-gray-500">
+					<span title={ i18n.T(ctx, "Forks") }>⑂ { fmt.Sprintf("%d", entry.Forks) }</span>
+					<span title={ i18n.T(ctx, "Watchers") }>👁 { fmt.Sprintf("%d", entry.Watchers) }</span>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+// ============================================
+// Project Detail
+// ============================================
+
+type ProjectDetailData struct {
+	Project    ProjectEntry
+	BoardStats *ProjectBoardStats
+	Commits    []CommitEntry
+	Offset     int
+	Limit      int
+	HasMore    bool
+}
+
+templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
+	@Layout(layout) {
+		<section class="max-w-5xl mx-auto px-4 py-12">
+			<header class="mb-8">
+				<div class="flex items-start justify-between gap-4 flex-wrap">
+					<div>
+						<div class="flex items-center gap-2 mb-1">
+							<h1 class="text-3xl font-bold text-white">{ data.Project.Name }</h1>
+							if data.Project.Forked {
+								<span class="text-sm px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
+									{ i18n.T(ctx, "Fork") }
+								</span>
+							}
+						</div>
+						if data.Project.Description != "" {
+							<p class="text-gray-400 mt-1">{ data.Project.Description }</p>
+						}
+						<p class="text-sm text-gray-600 mt-1">{ data.Project.Slug }</p>
+					</div>
+					<a
+						href={ templ.SafeURL(data.Project.URL) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
+					>
+						{ serviceLabel(ctx, data.Project.Service) }
+					</a>
+				</div>
+			</header>
+			if data.BoardStats != nil {
+				<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+					@statCard(i18n.T(ctx, "Points"), fmt.Sprintf("%d", data.BoardStats.DisplayPoints()))
+					@statCard(i18n.T(ctx, "Commits"), fmt.Sprintf("%d", data.BoardStats.CommitCount))
+					@statCard(i18n.T(ctx, "Contributors"), fmt.Sprintf("%d", data.BoardStats.ContributorCount))
+					@statCard(i18n.T(ctx, "Forks"), fmt.Sprintf("%d", data.Project.Forks))
+				</div>
+			}
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-xl font-semibold text-white">{ i18n.T(ctx, "RecentCommits") }</h2>
+			</div>
+			<div id="commits">
+				@ProjectCommitList(data)
+			</div>
+		</section>
+	}
+}
+
+templ ProjectCommitList(data ProjectDetailData) {
+	if len(data.Commits) == 0 {
+		<div class="text-center py-12 bg-surface-light rounded-xl border border-white/10">
+			<span class="text-5xl mb-3 block">📭</span>
+			<p class="text-gray-400">{ i18n.T(ctx, "NoCommits") }</p>
+		</div>
+	} else {
+		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
+			for _, c := range data.Commits {
+				@CommitRow(c)
+			}
+		</div>
+		if data.HasMore {
+			<div class="mt-6 text-center">
+				<button
+					hx-get={ fmt.Sprintf("/projects/%s?offset=%d", data.Project.Slug, data.Offset+data.Limit) }
+					hx-target="#commits"
+					hx-swap="innerHTML"
+					class="px-6 py-3 bg-surface-light text-gray-300 rounded-lg font-medium hover:bg-surface-lighter transition-colors border border-white/10"
+				>
+					{ i18n.T(ctx, "LoadMore") }
+				</button>
+			</div>
+		}
+	}
+}
+
+templ CommitRow(c CommitEntry) {
+	<div class={ "px-5 py-4 hover:bg-white/5 transition-colors", templ.KV("opacity-50", c.IsFlagged) }>
+		<div class="flex items-start justify-between gap-4">
+			<div class="min-w-0">
+				<p class="text-white text-sm font-medium truncate mb-1">{ c.ShortMessage() }</p>
+				<div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+					<span>{ c.Author }</span>
+					<span>{ c.Timestamp.Format("Jan 2, 2006") }</span>
+					if len(c.Languages) > 0 {
+						<span class="text-gray-600">{ strings.Join(c.Languages, " · ") }</span>
+					}
+					if c.IsFlagged {
+						<span class="text-red-400">⚑ { i18n.T(ctx, "Flagged") }</span>
+					}
+				</div>
+			</div>
+			<div class="shrink-0 flex items-center gap-2">
+				if c.IsVerified {
+					<span class="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">
+						✓ { i18n.T(ctx, "Verified") }
+					</span>
+				}
+				<a
+					href={ templ.SafeURL(c.URL) }
+					target="_blank"
+					rel="noopener noreferrer"
+					class="font-mono text-xs px-2 py-1 rounded bg-white/5 text-july-400 hover:bg-white/10 transition-colors"
+					title={ c.Hash }
+				>
+					{ c.ShortHash() }
+				</a>
+			</div>
+		</div>
+	</div>
+}
+
+// ============================================
+// Shared helpers
+// ============================================
+
+templ statCard(label, value string) {
+	<div class="bg-surface-light rounded-xl border border-white/10 px-5 py-4 text-center">
+		<p class="text-2xl font-bold text-july-400">{ value }</p>
+		<p class="text-xs text-gray-500 mt-1">{ label }</p>
+	</div>
+}
+
+func serviceLabel(ctx context.Context, service string) string {
+	switch strings.ToLower(service) {
+	case "github":
+		return i18n.T(ctx, "ViewOnGitHub") + " ↗"
+	case "gitlab":
+		return i18n.T(ctx, "ViewOnGitLab") + " ↗"
+	default:
+		return i18n.T(ctx, "ViewOnService") + " ↗"
+	}
+}
