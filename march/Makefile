@@ -32,10 +32,13 @@ endif
 
 TAILWIND_VERSION := 4.1.18
 HTMX_VERSION     := 2.0.8
+MERMAID_VERSION  := 11.4.1
 TAILWIND_BIN     := bin/tailwindcss
 TAILWIND_URL     := https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TAILWIND_VERSION)/tailwindcss-$(TAILWIND_PLATFORM)
 HTMX_URL         := https://unpkg.com/htmx.org@$(HTMX_VERSION)/dist/htmx.min.js
 HTMX_DEST        := web/assets/htmx-$(HTMX_VERSION).min.js
+MERMAID_URL      := https://cdn.jsdelivr.net/npm/mermaid@$(MERMAID_VERSION)/dist/mermaid.min.js
+MERMAID_DEST     := web/assets/mermaid-$(MERMAID_VERSION).min.js
 LOCALES_DIR      := internal/i18n/locales
 DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=disable
 
@@ -43,7 +46,7 @@ DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=dis
 # Setup
 # ============================================
 
-setup: $(TAILWIND_BIN) $(HTMX_DEST)  ## Setup project, install dev tools, and vendor assets
+setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) ## Setup project, install dev tools, and vendor assets
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install github.com/a-h/templ/cmd/templ@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
@@ -63,6 +66,12 @@ $(HTMX_DEST):
 	@echo "→ Downloading HTMX v$(HTMX_VERSION)..."
 	@curl -fsSL $(HTMX_URL) -o $@
 	@echo "✓ $(HTMX_DEST)"
+
+$(MERMAID_DEST):
+	@mkdir -p web/assets
+	@echo "→ Downloading Mermaid v$(MERMAID_VERSION)..."
+	@curl -fsSL $(MERMAID_URL) -o $@
+	@echo "✓ $(MERMAID_DEST)"
 
 compose-up:  ## Run the shared services in docker
 	docker compose up -d postgres adminer smee

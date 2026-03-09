@@ -44,3 +44,45 @@ body { background: linear-gradient(180deg, #1a1625 0%, #2d2640 100%); min-height
 button.htmx-request .htmx-idle  { display: none; }
 button.htmx-request .htmx-busy  { display: inline-flex; }
 .htmx-busy { display: none; }
+
+.prose {
+  color: var(--color-gray-300);
+  max-width: none;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--color-white);
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.prose h1 { font-size: 1.875rem; }
+.prose h2 { font-size: 1.5rem; }
+.prose h3 { font-size: 1.25rem; }
+.prose p  { margin-bottom: 1.25rem; line-height: 1.75; }
+.prose a  { color: var(--color-july-400); text-decoration: underline; }
+.prose ul, .prose ol { margin: 1rem 0 1.25rem 1.5rem; }
+.prose ul { list-style: disc; }
+.prose ol { list-style: decimal; }
+.prose li { margin-bottom: 0.25rem; }
+.prose blockquote {
+  border-left: 3px solid var(--color-july-600);
+  padding-left: 1rem;
+  color: var(--color-gray-400);
+  font-style: italic;
+  margin: 1.5rem 0;
+}
+
+.prose pre { border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; padding: 1rem 1.25rem; }
+.prose :not(pre) > code {
+  background: var(--color-surface-light);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+.prose pre.mermaid {
+  background: var(--color-surface-light);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
