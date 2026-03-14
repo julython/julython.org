@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Env      string   `env:"ENV" envDefault:"development"`
-	Server   Server   `envPrefix:"SERVER_"`
-	Database Database `envPrefix:"DATABASE_"`
-	Session  Session  `envPrefix:"SESSION_"`
-	OAuth    OAuth    `envPrefix:"OAUTH_"`
-	Webhooks Webhooks `envPrefix:"WEBHOOK_"`
+	Env       string   `env:"JULY_ENV" envDefault:"development"`
+	ProjectID string   `env:"GOOGLE_CLOUD_PROJECT" envDefault:"julython-go"`
+	Server    Server   `envPrefix:"JULY_SERVER_"`
+	Database  Database `envPrefix:"JULY_DATABASE_"`
+	Session   Session  `envPrefix:"JULY_SESSION_"`
+	OAuth     OAuth    `envPrefix:"JULY_OAUTH_"`
+	Webhooks  Webhooks `envPrefix:"JULY_WEBHOOK_"`
 }
 
 func (c Config) IsProduction() bool  { return c.Env == "production" }
@@ -77,7 +78,7 @@ type Webhooks struct {
 
 func Load() (*Config, error) {
 	cfg := &Config{}
-	if err := env.ParseWithOptions(cfg, env.Options{Prefix: "JULY_"}); err != nil {
+	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("parsing config: %w", err)
 	}
 	cfg.Log()
@@ -95,6 +96,7 @@ func (c Config) Log() {
 	log.Info().
 		// Top-level
 		Str("env", c.Env).
+		Str("projectId", c.ProjectID).
 		// Server
 		Str("server.host", c.Server.Host).
 		Int("server.port", c.Server.Port).

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -113,9 +114,9 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	var handler http.Handler = mux
 	handler = authHandler.UserMiddleware(handler)
 	handler = sessionMgr.LoadAndSave(handler)
-	handler = RecoveryMiddleware(handler)            // writes 500 into ErrorMiddleware's buffer
-	handler = ErrorMiddleware(handler)               // intercepts 4xx/5xx and renders pretty page
-	handler = LoggingMiddleware(log.Logger)(handler) // injects logger + records access log
+	handler = RecoveryMiddleware(handler)                 // writes 500 into ErrorMiddleware's buffer
+	handler = ErrorMiddleware(handler)                    // intercepts 4xx/5xx and renders pretty page
+	handler = LoggingMiddleware(log.Logger, cfg)(handler) // injects logger + records access log
 	handler = i18n.Middleware(handler)
 
 	return handler
@@ -123,7 +124,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 
 // LoggingMiddleware injects a request-scoped zerolog logger (with request ID)
 // into the context and logs each request on completion.
-func LoggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
+func LoggingMiddleware(logger zerolog.Logger, cfg *config.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			reqID := r.Header.Get("X-Request-Id")
@@ -132,11 +133,23 @@ func LoggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 			}
 			w.Header().Set("X-Request-Id", reqID)
 
-			reqLogger := logger.With().
+			ctx := logger.With().
 				Str("request_id", reqID).
 				Str("method", r.Method).
-				Str("path", r.URL.Path).
-				Logger()
+				Str("path", r.URL.Path)
+
+			if cfg.IsProduction() {
+				traceID, spanID := parseTraceHeader(r.Header.Get("X-Cloud-Trace-Context"))
+				trace := fmt.Sprintf("projects/%s/traces/%s", cfg.ProjectID, traceID)
+				ctx = ctx.
+					Str("logging.googleapis.com/trace", trace).
+					Str("logging.googleapis.com/spanId", spanID).
+					Dict("logging.googleapis.com/labels", zerolog.Dict().
+						Str("request_id", reqID),
+					)
+			}
+
+			reqLogger := ctx.Logger()
 			r = r.WithContext(reqLogger.WithContext(r.Context()))
 
 			start := time.Now()
@@ -149,6 +162,22 @@ func LoggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 				Msgf("%s %s", r.Method, r.URL.RequestURI())
 		})
 	}
+}
+
+// parseTraceHeader parses "X-Cloud-Trace-Context: TRACE_ID/SPAN_ID;o=1"
+func parseTraceHeader(h string) (traceID, spanID string) {
+	if h == "" {
+		return "", ""
+	}
+	// Split off the options ";o=1"
+	parts := strings.SplitN(h, ";", 2)
+	// Split trace/span
+	ids := strings.SplitN(parts[0], "/", 2)
+	traceID = ids[0]
+	if len(ids) == 2 {
+		spanID = ids[1]
+	}
+	return traceID, spanID
 }
 
 // RecoveryMiddleware catches panics, logs them with the request-scoped logger,
