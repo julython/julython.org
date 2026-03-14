@@ -2,26 +2,27 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
+	"github.com/caarlos0/env/v11"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Env      string   `mapstructure:"env"`
-	Server   Server   `mapstructure:"server"`
-	Database Database `mapstructure:"database"`
-	Session  Session  `mapstructure:"session"`
-	OAuth    OAuth    `mapstructure:"oauth"`
-	Webhooks Webhooks `mapstructure:"webhooks"`
+	Env      string   `env:"ENV" envDefault:"development"`
+	Server   Server   `envPrefix:"SERVER_"`
+	Database Database `envPrefix:"DATABASE_"`
+	Session  Session  `envPrefix:"SESSION_"`
+	OAuth    OAuth    `envPrefix:"OAUTH_"`
+	Webhooks Webhooks `envPrefix:"WEBHOOK_"`
 }
 
+func (c Config) IsProduction() bool  { return c.Env == "production" }
+func (c Config) IsDevelopment() bool { return c.Env == "development" || c.Env == "" }
+
 type Server struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host string `env:"HOST" envDefault:"0.0.0.0"`
+	Port int    `env:"PORT" envDefault:"8000"`
 }
 
 func (s Server) Addr() string {
@@ -29,14 +30,14 @@ func (s Server) Addr() string {
 }
 
 type Database struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Name     string `mapstructure:"name"`
-	SSLMode  string `mapstructure:"sslmode"`
-	MaxConns int    `mapstructure:"max_conns"`
-	MinConns int    `mapstructure:"min_conns"`
+	Host     string `env:"HOST"     envDefault:"localhost"`
+	Port     int    `env:"PORT"     envDefault:"5432"`
+	User     string `env:"USER"     envDefault:"julython"`
+	Password string `env:"PASSWORD" envDefault:""`
+	Name     string `env:"NAME"     envDefault:"julython"`
+	SSLMode  string `env:"SSLMODE"  envDefault:"disable"`
+	MaxConns int    `env:"MAX_CONNS" envDefault:"25"`
+	MinConns int    `env:"MIN_CONNS" envDefault:"5"`
 }
 
 func (d Database) DSN() string {
@@ -47,15 +48,15 @@ func (d Database) DSN() string {
 }
 
 type Session struct {
-	CookieName      string        `mapstructure:"cookie_name"`
-	Lifetime        time.Duration `mapstructure:"lifetime"`
-	CleanupInterval time.Duration `mapstructure:"cleanup_interval"`
+	CookieName      string        `env:"COOKIE_NAME"      envDefault:"july_session"`
+	Lifetime        time.Duration `env:"LIFETIME"         envDefault:"168h"`
+	CleanupInterval time.Duration `env:"CLEANUP_INTERVAL" envDefault:"15m"`
 }
 
 type OAuth struct {
-	BaseURL string        `mapstructure:"base_url"`
-	GitHub  OAuthProvider `mapstructure:"github"`
-	GitLab  OAuthProvider `mapstructure:"gitlab"`
+	BaseURL string        `env:"BASE_URL" envDefault:"http://localhost:8000"`
+	GitHub  OAuthProvider `envPrefix:"GITHUB_"`
+	GitLab  OAuthProvider `envPrefix:"GITLAB_"`
 }
 
 func (o OAuth) CallbackURL() string {
@@ -63,114 +64,64 @@ func (o OAuth) CallbackURL() string {
 }
 
 type OAuthProvider struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	Enabled      bool   `mapstructure:"enabled"`
+	ClientID     string `env:"CLIENT_ID"`
+	ClientSecret string `env:"CLIENT_SECRET"`
+	Enabled      bool   `env:"ENABLED" envDefault:"true"`
 }
 
 type Webhooks struct {
-	GitHub    string `mapstructure:"github"`
-	GitLab    string `mapstructure:"gitlab"`
-	BitBucket string `mapstructure:"bitbucket"`
+	GitHub    string `env:"GITHUB"    envDefault:"https://julython.org/api/v1/github"`
+	GitLab    string `env:"GITLAB"    envDefault:"https://julython.org/api/v1/gitlab"`
+	BitBucket string `env:"BITBUCKET" envDefault:"https://julython.org/api/v1/bitbucket"`
 }
 
-func (c Config) IsProduction() bool {
-	return c.Env == "production"
-}
-
-func (c Config) IsDevelopment() bool {
-	return c.Env == "development" || c.Env == ""
-}
-
-// Load reads configuration with the following precedence (highest to lowest):
-// 1. Environment variables (JULY_*)
-// 2. config.{env}.yaml (e.g., config.production.yaml)
-// 3. config.yaml (base config)
-// 4. Default values
 func Load() (*Config, error) {
-	env := os.Getenv("JULY_ENV")
-	if env == "" {
-		env = "development"
+	cfg := &Config{}
+	if err := env.ParseWithOptions(cfg, env.Options{Prefix: "JULY_"}); err != nil {
+		return nil, fmt.Errorf("parsing config: %w", err)
 	}
-
-	v := viper.New()
-	v.SetConfigType("yaml")
-
-	// Set all defaults first (required for env var binding)
-	setDefaults(v)
-
-	// Load base config (config.yaml)
-	v.SetConfigName("config")
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config")
-
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("reading base config: %w", err)
-		}
-	} else {
-		log.Debug().Str("file", v.ConfigFileUsed()).Msg("loaded base config")
-	}
-
-	// Merge environment-specific config (config.{env}.yaml)
-	v.SetConfigName("config." + env)
-	if err := v.MergeInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("reading %s config: %w", env, err)
-		}
-	} else {
-		log.Debug().Str("file", v.ConfigFileUsed()).Msg("merged environment config")
-	}
-
-	// Environment variables override everything
-	v.SetEnvPrefix("JULY")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	v.Set("env", env)
-
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("unmarshaling config: %w", err)
-	}
-
-	return &cfg, nil
+	cfg.Log()
+	return cfg, nil
 }
 
-func setDefaults(v *viper.Viper) {
-	// Environment
-	v.SetDefault("env", "development")
+func mask(s string) string {
+	if s == "" {
+		return "(unset)"
+	}
+	return "***"
+}
 
-	// Server
-	v.SetDefault("server.host", "0.0.0.0")
-	v.SetDefault("server.port", 8000)
-
-	// Database
-	v.SetDefault("database.host", "localhost")
-	v.SetDefault("database.port", 5432)
-	v.SetDefault("database.user", "julython")
-	v.SetDefault("database.password", "")
-	v.SetDefault("database.name", "julython")
-	v.SetDefault("database.sslmode", "disable")
-	v.SetDefault("database.max_conns", 25)
-	v.SetDefault("database.min_conns", 5)
-
-	// Session
-	v.SetDefault("session.cookie_name", "july_session")
-	v.SetDefault("session.lifetime", "168h")
-	v.SetDefault("session.cleanup_interval", "15m")
-
-	// OAuth
-	v.SetDefault("oauth.base_url", "http://localhost:8000")
-	v.SetDefault("oauth.github.client_id", "")
-	v.SetDefault("oauth.github.client_secret", "")
-	v.SetDefault("oauth.github.enabled", true)
-	v.SetDefault("oauth.gitlab.client_id", "")
-	v.SetDefault("oauth.gitlab.client_secret", "")
-	v.SetDefault("oauth.gitlab.enabled", false)
-
-	// Webhooks
-	v.SetDefault("webhooks.github", "https://julython.org/api/v1/github")
-	v.SetDefault("webhooks.gitlab", "https://julython.org/api/v1/gitlab")
-	v.SetDefault("webhooks.bitbucket", "https://julython.org/api/v1/bitbucket")
+func (c Config) Log() {
+	log.Info().
+		// Top-level
+		Str("env", c.Env).
+		// Server
+		Str("server.host", c.Server.Host).
+		Int("server.port", c.Server.Port).
+		// Database
+		Str("database.host", c.Database.Host).
+		Int("database.port", c.Database.Port).
+		Str("database.user", c.Database.User).
+		Str("database.password", mask(c.Database.Password)).
+		Str("database.name", c.Database.Name).
+		Str("database.sslmode", c.Database.SSLMode).
+		Int("database.max_conns", c.Database.MaxConns).
+		Int("database.min_conns", c.Database.MinConns).
+		// Session
+		Str("session.cookie_name", c.Session.CookieName).
+		Dur("session.lifetime", c.Session.Lifetime).
+		Dur("session.cleanup_interval", c.Session.CleanupInterval).
+		// OAuth
+		Str("oauth.base_url", c.OAuth.BaseURL).
+		Bool("oauth.github.enabled", c.OAuth.GitHub.Enabled).
+		Str("oauth.github.client_id", mask(c.OAuth.GitHub.ClientID)).
+		Str("oauth.github.client_secret", mask(c.OAuth.GitHub.ClientSecret)).
+		Bool("oauth.gitlab.enabled", c.OAuth.GitLab.Enabled).
+		Str("oauth.gitlab.client_id", mask(c.OAuth.GitLab.ClientID)).
+		Str("oauth.gitlab.client_secret", mask(c.OAuth.GitLab.ClientSecret)).
+		// Webhooks
+		Str("webhooks.github", c.Webhooks.GitHub).
+		Str("webhooks.gitlab", c.Webhooks.GitLab).
+		Str("webhooks.bitbucket", c.Webhooks.BitBucket).
+		Msg("config loaded")
 }

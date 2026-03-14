@@ -20,7 +20,26 @@ import (
 
 func main() {
 	// Logger setup
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.TimeFieldFormat = time.RFC3339Nano
+	zerolog.LevelFieldName = "severity"
+	zerolog.LevelFieldMarshalFunc = func(l zerolog.Level) string {
+		// Map zerolog levels to Cloud Logging severity names
+		switch l {
+		case zerolog.TraceLevel, zerolog.DebugLevel:
+			return "DEBUG"
+		case zerolog.InfoLevel:
+			return "INFO"
+		case zerolog.WarnLevel:
+			return "WARNING"
+		case zerolog.ErrorLevel:
+			return "ERROR"
+		case zerolog.FatalLevel, zerolog.PanicLevel:
+			return "CRITICAL"
+		default:
+			return "DEFAULT"
+		}
+	}
+
 	if os.Getenv("JULY_ENV") != "production" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
@@ -43,7 +62,14 @@ func main() {
 
 	// Database
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, cfg.Database.DSN())
+	poolCfg, err := pgxpool.ParseConfig(cfg.Database.DSN())
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to parse database config")
+	}
+	poolCfg.MaxConns = int32(cfg.Database.MaxConns)
+	poolCfg.MinConns = int32(cfg.Database.MinConns)
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to database")
 	}

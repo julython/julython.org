@@ -144,8 +144,6 @@ func LoggingMiddleware(logger zerolog.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(wrapped, r)
 
 			reqLogger.Info().
-				Str("method", r.Method).
-				Str("path", r.URL.Path).
 				Int("status", wrapped.status).
 				Dur("duration", time.Since(start)).
 				Msgf("%s %s", r.Method, r.URL.RequestURI())

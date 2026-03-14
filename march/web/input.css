@@ -22,11 +22,7 @@
   --color-surface-light:   #2d2640;
   --color-surface-lighter: #3d3455;
 
-  /* Gray overrides — WCAG AA contrast against surface colors.
-     Verified against #1a1625 (darkest bg):
-       gray-400: 6.1:1  ✓  (default #9ca3af is 4.2:1 ✗)
-       gray-500: 4.6:1  ✓  (default #6b7280 is 2.7:1 ✗)
-       gray-600: 3.7:1  — large/decorative text only        */
+  /* Gray overrides — WCAG AA contrast against surface colors. */
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
   --color-gray-300: #d1d5db;
