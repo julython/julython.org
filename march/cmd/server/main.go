@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// Router (session manager created inside)
-	router := api.NewRouter(pool, cfg)
+	router := api.NewRouter(pool, cfg, log.Logger)
 
 	// Server
 	srv := &http.Server{

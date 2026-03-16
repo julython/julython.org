@@ -84,9 +84,11 @@ func TestGameService_CreateJulythonGame(t *testing.T) {
 	})
 
 	t.Run("rejects invalid month", func(t *testing.T) {
-		_, err := svc.CreateJulythonGame(ctx, 2025, 6, false, false)
+		game, err := svc.CreateJulythonGame(ctx, 2025, 6, false, false)
 
-		assert.Error(t, err)
+		require.NoError(t, err)
+		assert.Equal(t, "Test Game June 2025", game.Name)
+		assert.Equal(t, time.June, game.StartsAt.UTC().Month())
 	})
 }
 

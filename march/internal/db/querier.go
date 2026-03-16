@@ -87,7 +87,7 @@ type Querier interface {
 	GetTeamBySlug(ctx context.Context, slug string) (Team, error)
 	GetTeamLeaderboard(ctx context.Context, arg GetTeamLeaderboardParams) ([]GetTeamLeaderboardRow, error)
 	GetTeamMember(ctx context.Context, arg GetTeamMemberParams) (TeamMember, error)
-	GetUnverifiedCommits(ctx context.Context, limitCount int32) ([]GetUnverifiedCommitsRow, error)
+	GetUnverifiedCommits(ctx context.Context, limitCount interface{}) ([]GetUnverifiedCommitsRow, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserIdentifier(ctx context.Context, value string) (UserIdentifier, error)
@@ -95,7 +95,7 @@ type Querier interface {
 	GetUserIdentifiersByType(ctx context.Context, arg GetUserIdentifiersByTypeParams) ([]UserIdentifier, error)
 	GetUserIdentifiersByUserID(ctx context.Context, userID uuid.UUID) ([]UserIdentifier, error)
 	GetVerifiedEmails(ctx context.Context, userID uuid.UUID) ([]UserIdentifier, error)
-	ListActiveProjects(ctx context.Context, arg ListActiveProjectsParams) ([]Project, error)
+	ListActiveProjects(ctx context.Context, limitCount interface{}) ([]Project, error)
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]ListAuditLogsRow, error)
 	ListAuditLogsByTarget(ctx context.Context, arg ListAuditLogsByTargetParams) ([]ListAuditLogsByTargetRow, error)
 	ListBannedUsers(ctx context.Context, limitCount int32) ([]User, error)
@@ -109,6 +109,7 @@ type Querier interface {
 	RemoveTeamMember(ctx context.Context, arg RemoveTeamMemberParams) error
 	ReviewReport(ctx context.Context, arg ReviewReportParams) error
 	SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error)
+	SetCommitGame(ctx context.Context, arg SetCommitGameParams) error
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"july/internal/db"
 	"july/internal/services"
 	"july/internal/testutil"
 	"july/internal/webhooks"
@@ -260,6 +261,46 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.False(t, project.Forked)
 		assert.Equal(t, int32(5), project.Forks)
 		assert.Equal(t, int32(10), project.Watchers)
+	})
+
+	t.Run("adds commit to the active game", func(t *testing.T) {
+		game := testutil.CreateActiveGame(t, env)
+
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:          77777,
+				Name:        "new-repo",
+				FullName:    "carol/new-repo",
+				HTMLURL:     "https://github.com/carol/new-repo",
+				Description: "A brand new repository",
+				Fork:        false,
+				ForksCount:  5,
+				Watchers:    10,
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "newcommit1234",
+					Message:   "Initial commit with README",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/carol/new-repo/commit/newcommit1234",
+					Author:    webhooks.GitHubAuthor{Name: "Carol", Email: "carol@test.com"},
+					Added:     []string{"README.md"},
+				},
+			},
+		}
+
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		// Verify commit was added to the game
+		commits, err := env.Queries.GetRecentCommits(
+			t.Context(),
+			db.GetRecentCommitsParams{GameID: db.UUID(game.ID), LimitCount: int32(10)},
+		)
+		require.NoError(t, err)
+		assert.Equal(t, len(commits), 1)
 	})
 
 	t.Run("links commit to existing user", func(t *testing.T) {

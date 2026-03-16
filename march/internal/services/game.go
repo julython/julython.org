@@ -92,7 +92,10 @@ func (s *GameService) CreateJulythonGame(
 		startsAt = time.Date(year, time.January, 1, 12, 0, 0, 0, time.UTC)
 		endsAt = time.Date(year, time.January, 31, 12, 0, 0, 0, time.UTC)
 	default:
-		return db.Game{}, fmt.Errorf("invalid month %d: use 7 for July or 1 for January", month)
+		startsAt = time.Date(year, time.Month(month), 1, 12, 0, 0, 0, time.UTC)
+		// Last day: first day of next month minus one day
+		endsAt = time.Date(year, time.Month(month+1), 1, 12, 0, 0, 0, time.UTC).AddDate(0, 0, -1)
+		name = fmt.Sprintf("Test Game %s", startsAt.Format("January 2006"))
 	}
 
 	return s.CreateGame(ctx, name, startsAt, endsAt, 1, 10, isActive, deactivateOthers)
@@ -150,8 +153,17 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 		logger.Debug().Msg("no active game for commit")
 		return nil
 	}
+
 	if err != nil {
 		return err
+	}
+	logger.Debug().Msgf("Adding commit to game: %s", game.Name)
+
+	if err := s.queries.SetCommitGame(ctx, db.SetCommitGameParams{
+		ID:     commit.ID,
+		GameID: db.UUID(game.ID),
+	}); err != nil {
+		return fmt.Errorf("set commit game: %w", err)
 	}
 
 	if err := s.addPointsToBoard(ctx, game, commit); err != nil {

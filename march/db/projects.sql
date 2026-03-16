@@ -51,13 +51,13 @@ WHERE is_active = true
   AND (sqlc.narg('service')::text IS NULL OR service = sqlc.narg('service'))
   AND (sqlc.narg('cursor')::uuid IS NULL OR id < sqlc.narg('cursor')::uuid)
 ORDER BY id DESC
-LIMIT @limit_count;
+LIMIT GREATEST(@limit_count, 1);
 
 -- name: ListActiveProjects :many
 SELECT * FROM projects
 WHERE is_active = true
-ORDER BY updated_at DESC
-LIMIT @limit_count OFFSET @offset_count;
+ORDER BY id DESC
+LIMIT GREATEST(@limit_count, 1);
 
 -- name: DeactivateProject :exec
 UPDATE projects SET is_active = false WHERE id = @id;

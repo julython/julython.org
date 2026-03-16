@@ -223,14 +223,14 @@ func (q *Queries) GetCommitStats(ctx context.Context, gameID pgtype.UUID) (GetCo
 const getCommitsByProject = `-- name: GetCommitsByProject :many
 SELECT id, hash, project_id, user_id, game_id, author, email, message, url, timestamp, languages, files, is_verified, is_flagged, flag_reason, created_at, updated_at FROM commits
 WHERE project_id = $1
-ORDER BY timestamp DESC
-LIMIT $3 OFFSET $2
+ORDER BY id DESC
+LIMIT GREATEST($3, 1) OFFSET $2
 `
 
 type GetCommitsByProjectParams struct {
-	ProjectID   uuid.UUID `json:"project_id"`
-	OffsetCount int32     `json:"offset_count"`
-	LimitCount  int32     `json:"limit_count"`
+	ProjectID   uuid.UUID   `json:"project_id"`
+	OffsetCount int32       `json:"offset_count"`
+	LimitCount  interface{} `json:"limit_count"`
 }
 
 func (q *Queries) GetCommitsByProject(ctx context.Context, arg GetCommitsByProjectParams) ([]Commit, error) {
@@ -274,15 +274,15 @@ func (q *Queries) GetCommitsByProject(ctx context.Context, arg GetCommitsByProje
 const getCommitsByUserAndGame = `-- name: GetCommitsByUserAndGame :many
 SELECT id, hash, project_id, user_id, game_id, author, email, message, url, timestamp, languages, files, is_verified, is_flagged, flag_reason, created_at, updated_at FROM commits
 WHERE user_id = $1 AND game_id = $2
-ORDER BY timestamp DESC
-LIMIT $4 OFFSET $3
+ORDER BY id DESC
+LIMIT GREATEST($4, 1) OFFSET $3
 `
 
 type GetCommitsByUserAndGameParams struct {
 	UserID      pgtype.UUID `json:"user_id"`
 	GameID      pgtype.UUID `json:"game_id"`
 	OffsetCount int32       `json:"offset_count"`
-	LimitCount  int32       `json:"limit_count"`
+	LimitCount  interface{} `json:"limit_count"`
 }
 
 func (q *Queries) GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByUserAndGameParams) ([]Commit, error) {
@@ -379,12 +379,12 @@ LEFT JOIN users u ON u.id = c.user_id
 JOIN projects p ON p.id = c.project_id
 WHERE c.game_id = $1
 ORDER BY c.timestamp DESC
-LIMIT $2
+LIMIT GREATEST($2, 1)
 `
 
 type GetRecentCommitsParams struct {
 	GameID     pgtype.UUID `json:"game_id"`
-	LimitCount int32       `json:"limit_count"`
+	LimitCount interface{} `json:"limit_count"`
 }
 
 type GetRecentCommitsRow struct {
@@ -435,7 +435,7 @@ FROM commits c
 JOIN projects p ON p.id = c.project_id
 WHERE c.is_verified = false AND c.is_flagged = false
 ORDER BY c.created_at ASC
-LIMIT $1
+LIMIT GREATEST($1, 1)
 `
 
 type GetUnverifiedCommitsRow struct {
@@ -460,7 +460,7 @@ type GetUnverifiedCommitsRow struct {
 	ProjectName string      `json:"project_name"`
 }
 
-func (q *Queries) GetUnverifiedCommits(ctx context.Context, limitCount int32) ([]GetUnverifiedCommitsRow, error) {
+func (q *Queries) GetUnverifiedCommits(ctx context.Context, limitCount interface{}) ([]GetUnverifiedCommitsRow, error) {
 	rows, err := q.db.Query(ctx, getUnverifiedCommits, limitCount)
 	if err != nil {
 		return nil, err
@@ -498,6 +498,22 @@ func (q *Queries) GetUnverifiedCommits(ctx context.Context, limitCount int32) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const setCommitGame = `-- name: SetCommitGame :exec
+UPDATE commits
+SET game_id = $1
+WHERE id = $2
+`
+
+type SetCommitGameParams struct {
+	GameID pgtype.UUID `json:"game_id"`
+	ID     uuid.UUID   `json:"id"`
+}
+
+func (q *Queries) SetCommitGame(ctx context.Context, arg SetCommitGameParams) error {
+	_, err := q.db.Exec(ctx, setCommitGame, arg.GameID, arg.ID)
+	return err
 }
 
 const verifyCommit = `-- name: VerifyCommit :exec

@@ -17,14 +17,14 @@ SELECT * FROM commits WHERE id = @id;
 -- name: GetCommitsByProject :many
 SELECT * FROM commits
 WHERE project_id = @project_id
-ORDER BY timestamp DESC
-LIMIT @limit_count OFFSET @offset_count;
+ORDER BY id DESC
+LIMIT GREATEST(@limit_count, 1) OFFSET @offset_count;
 
 -- name: GetCommitsByUserAndGame :many
 SELECT * FROM commits
 WHERE user_id = @user_id AND game_id = @game_id
-ORDER BY timestamp DESC
-LIMIT @limit_count OFFSET @offset_count;
+ORDER BY id DESC
+LIMIT GREATEST(@limit_count, 1) OFFSET @offset_count;
 
 -- name: ClaimOrphanCommits :execrows
 UPDATE commits SET user_id = @user_id
@@ -54,7 +54,7 @@ FROM commits c
 JOIN projects p ON p.id = c.project_id
 WHERE c.is_verified = false AND c.is_flagged = false
 ORDER BY c.created_at ASC
-LIMIT @limit_count;
+LIMIT GREATEST(@limit_count, 1);
 
 -- name: GetCommitStats :one
 SELECT
@@ -89,4 +89,9 @@ LEFT JOIN users u ON u.id = c.user_id
 JOIN projects p ON p.id = c.project_id
 WHERE c.game_id = @game_id
 ORDER BY c.timestamp DESC
-LIMIT @limit_count;
+LIMIT GREATEST(@limit_count, 1);
+
+-- name: SetCommitGame :exec
+UPDATE commits
+SET game_id = @game_id
+WHERE id = @id;

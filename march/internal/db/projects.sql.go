@@ -200,17 +200,12 @@ func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, err
 const listActiveProjects = `-- name: ListActiveProjects :many
 SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects
 WHERE is_active = true
-ORDER BY updated_at DESC
-LIMIT $2 OFFSET $1
+ORDER BY id DESC
+LIMIT GREATEST($1, 1)
 `
 
-type ListActiveProjectsParams struct {
-	OffsetCount int32 `json:"offset_count"`
-	LimitCount  int32 `json:"limit_count"`
-}
-
-func (q *Queries) ListActiveProjects(ctx context.Context, arg ListActiveProjectsParams) ([]Project, error) {
-	rows, err := q.db.Query(ctx, listActiveProjects, arg.OffsetCount, arg.LimitCount)
+func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listActiveProjects, limitCount)
 	if err != nil {
 		return nil, err
 	}
@@ -251,14 +246,14 @@ WHERE is_active = true
   AND ($2::text IS NULL OR service = $2)
   AND ($3::uuid IS NULL OR id < $3::uuid)
 ORDER BY id DESC
-LIMIT $4
+LIMIT GREATEST($4, 1)
 `
 
 type SearchActiveProjectsParams struct {
 	Search     pgtype.Text `json:"search"`
 	Service    pgtype.Text `json:"service"`
 	Cursor     pgtype.UUID `json:"cursor"`
-	LimitCount int32       `json:"limit_count"`
+	LimitCount interface{} `json:"limit_count"`
 }
 
 func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error) {

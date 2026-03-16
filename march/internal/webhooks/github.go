@@ -101,6 +101,7 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	// Skip non-default branches
 	if !isDefaultBranch(event.Ref) {
 		w.WriteHeader(http.StatusOK)
+		logger.Info().Msg("skipping push as it is on a branch")
 		json.NewEncoder(w).Encode(map[string]string{"status": "skipped", "reason": "not default branch"})
 		return
 	}
@@ -151,12 +152,16 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func githubSlug(fullName string) string {
+	return "gh-" + strings.ReplaceAll(fullName, "/", "-")
+}
+
 func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Project, error) {
 	return h.queries.UpsertProjectByRepoID(ctx, db.UpsertProjectByRepoIDParams{
 		ID:          db.NewID(),
 		Url:         repo.HTMLURL,
 		Name:        repo.Name,
-		Slug:        repo.FullName,
+		Slug:        githubSlug(repo.FullName),
 		Description: db.Text(repo.Description),
 		RepoID:      db.BigInt(repo.ID),
 		Service:     "github",
@@ -179,16 +184,18 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, commit
 	for _, c := range commits {
 		// Skip low-quality commits
 		if !IsValidCommit(c) {
+			logger.Info().Str("hash", c.ID).Str("message", c.Message).Msg("skipping invalid commit")
 			result.Skipped++
 			continue
 		}
 
-		// Check if commit already exists
 		_, err := h.queries.GetCommitByHash(ctx, db.Text(c.ID))
 		if err == nil {
+			logger.Info().Str("hash", c.ID).Msg("skipping duplicate commit")
 			result.Skipped++
 			continue
 		}
+		logger.Info().Str("hash", c.ID).Msg("commit not found, will create")
 
 		// Find user by email
 		userID := db.NullUUID()

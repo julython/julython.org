@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +17,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -43,6 +47,9 @@ type TestEnv struct {
 func SetupTestEnv(t *testing.T) *TestEnv {
 	t.Helper()
 	ctx := context.Background()
+
+	// Use test writer so logs appear with -v or on failure
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).With().Timestamp().Logger()
 
 	// Initialize shared container once
 	setupOnce.Do(func() {
@@ -104,7 +111,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		t.Fatalf("failed to truncate tables: %v", err)
 	}
 
-	router := api.NewRouter(sharedPool, sharedCfg)
+	router := api.NewRouter(sharedPool, sharedCfg, logger)
 	server := httptest.NewServer(router)
 
 	t.Cleanup(func() {
@@ -332,4 +339,20 @@ func CreateGameScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Gam
 	}
 
 	return user, project, game, commit
+}
+
+// Request Helpers
+func PostJSON(t *testing.T, env *TestEnv, path string, body any) *http.Response {
+	t.Helper()
+	b, _ := json.Marshal(body)
+	resp, err := env.Client.Post(env.Server.URL+path, "application/json", bytes.NewReader(b))
+	require.NoError(t, err)
+	return resp
+}
+
+func GetJSON(t *testing.T, env *TestEnv, path string) *http.Response {
+	t.Helper()
+	resp, err := env.Client.Get(env.Server.URL + path)
+	require.NoError(t, err)
+	return resp
 }

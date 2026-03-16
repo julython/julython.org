@@ -22,7 +22,7 @@ import (
 	"july/web"
 )
 
-func NewRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
+func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) http.Handler {
 	mux := http.NewServeMux()
 
 	// Session manager with postgres store
@@ -114,9 +114,9 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	var handler http.Handler = mux
 	handler = authHandler.UserMiddleware(handler)
 	handler = sessionMgr.LoadAndSave(handler)
-	handler = RecoveryMiddleware(handler)                 // writes 500 into ErrorMiddleware's buffer
-	handler = ErrorMiddleware(handler)                    // intercepts 4xx/5xx and renders pretty page
-	handler = LoggingMiddleware(log.Logger, cfg)(handler) // injects logger + records access log
+	handler = RecoveryMiddleware(handler)             // writes 500 into ErrorMiddleware's buffer
+	handler = ErrorMiddleware(handler)                // intercepts 4xx/5xx and renders pretty page
+	handler = LoggingMiddleware(logger, cfg)(handler) // injects logger + records access log
 	handler = i18n.Middleware(handler)
 
 	return handler
