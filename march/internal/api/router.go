@@ -68,6 +68,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	projectHandler := handlers.NewProjectHandler(queries, gameSvc)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := handlers.NewBlogHandler()
+	helpHandler := handlers.NewHelpHandler()
 
 	// Routes
 	mux.HandleFunc("GET /favicon.svg", handlers.FaviconHandler)
@@ -92,6 +93,9 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	mux.HandleFunc("DELETE /profile/webhooks/{repoID}/hooks/{hookID}", profileHandler.DeleteWebhook)
 	mux.HandleFunc("GET /profile/settings", profileHandler.Settings)
 	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
+
+	// Help
+	mux.HandleFunc("GET /help", helpHandler.Help)
 
 	// Blog
 	mux.HandleFunc("GET /blog", blogHandler.List)

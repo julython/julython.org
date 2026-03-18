@@ -46,7 +46,7 @@ button.htmx-request .htmx-busy  { display: inline-flex; }
   max-width: none;
 }
 .prose h1, .prose h2, .prose h3, .prose h4 {
-  color: var(--color-white);
+  color: var(--color-july-500);
   font-weight: 700;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
@@ -75,10 +75,12 @@ button.htmx-request .htmx-busy  { display: inline-flex; }
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
-.prose pre.mermaid {
+.prose pre.mermaid, .prose pre.help {
   background: var(--color-surface-light);
   border: 1px solid rgb(255 255 255 / 0.1);
   padding: 1.5rem;
   display: flex;
+}
+.prose pre.mermaid {
   justify-content: center;
 }
