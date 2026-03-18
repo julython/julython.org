@@ -1,10 +1,12 @@
 package webhooks_test
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"net/url"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,20 +15,83 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"july/internal/db"
-	"july/internal/services"
 	"july/internal/testutil"
 	"july/internal/webhooks"
 )
 
-func setupHandler(t *testing.T, env *testutil.TestEnv) *webhooks.Handler {
-	t.Helper()
-	gameService := services.NewGameService(env.Queries)
-	return webhooks.NewHandler(env.Queries, gameService)
+func TestMain(m *testing.M) {
+	if err := testutil.SetupSharedEnv(); err != nil {
+		fmt.Fprintf(os.Stderr, "shared setup failed: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
+}
+
+// PayloadOpts allows callers to override specific fields of the default payload.
+type PayloadOpts struct {
+	Ref         string
+	Forced      bool
+	RepoID      int64
+	RepoName    string
+	FullName    string
+	HTMLURL     string
+	Description string
+	Fork        bool
+	ForksCount  int
+	Watchers    int
+	Author      webhooks.GitHubAuthor
+	Files       []string
+	Message     string
+	Timestamp   time.Time
+}
+
+// webhookPayload builds a minimal valid GitHubPushEvent. Hash is required;
+// opts allow callers to override fields without constructing the full struct.
+func webhookPayload(hash string, opts ...func(*PayloadOpts)) webhooks.GitHubPushEvent {
+	o := &PayloadOpts{
+		Ref:      "refs/heads/main",
+		RepoID:   12345,
+		RepoName: "test-repo",
+		FullName: "alice/test-repo",
+		HTMLURL:  "https://github.com/alice/test-repo",
+		Author:   webhooks.GitHubAuthor{Name: "Alice", Email: "alice@test.com"},
+		Message:  "Add a meaningful change",
+		Files:    []string{"main.go"},
+	}
+	if o.Timestamp.IsZero() {
+		o.Timestamp = time.Now()
+	}
+	for _, opt := range opts {
+		opt(o)
+	}
+	return webhooks.GitHubPushEvent{
+		Ref:    o.Ref,
+		Forced: o.Forced,
+		Repository: webhooks.GitHubRepo{
+			ID:          o.RepoID,
+			Name:        o.RepoName,
+			FullName:    o.FullName,
+			HTMLURL:     o.HTMLURL,
+			Description: o.Description,
+			Fork:        o.Fork,
+			ForksCount:  o.ForksCount,
+			Watchers:    o.Watchers,
+		},
+		Commits: []webhooks.GitHubCommit{
+			{
+				ID:        hash,
+				Message:   o.Message,
+				Timestamp: o.Timestamp,
+				URL:       o.HTMLURL + "/commit/" + hash,
+				Author:    o.Author,
+				Added:     o.Files,
+			},
+		},
+	}
 }
 
 func TestGitHubWebhook(t *testing.T) {
 	env := testutil.SetupTestEnv(t)
-	handler := setupHandler(t, env)
 
 	t.Run("processes valid push event", func(t *testing.T) {
 		payload := webhooks.GitHubPushEvent{
@@ -58,114 +123,50 @@ func TestGitHubWebhook(t *testing.T) {
 			},
 		}
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var result webhooks.ProcessResult
-		err := json.NewDecoder(rec.Body).Decode(&result)
-		require.NoError(t, err)
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 		assert.Equal(t, 2, result.Received)
 		assert.Equal(t, 2, result.Created)
 		assert.Equal(t, 0, result.Skipped)
 
-		// Verify project was created
-		project, err := env.Queries.GetProjectBySlug(t.Context(), "alice/my-project")
+		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-alice-my-project")
 		require.NoError(t, err)
 		assert.Equal(t, "my-project", project.Name)
 		assert.Equal(t, "github", project.Service)
 	})
 
 	t.Run("skips duplicate commits", func(t *testing.T) {
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:       12345,
-				Name:     "my-project",
-				FullName: "alice/my-project",
-				HTMLURL:  "https://github.com/alice/my-project",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "abc123def456789", // Already exists from previous test
-					Message:   "Add user authentication feature",
-					Timestamp: time.Now(),
-					URL:       "https://github.com/alice/my-project/commit/abc123",
-					Author:    webhooks.GitHubAuthor{Name: "Alice", Email: "alice@test.com"},
-				},
-			},
-		}
+		testutil.PostJSON(t, env, "/api/v1/github", webhookPayload("duplicate-hash-001"))
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
+		resp := testutil.PostJSON(t, env, "/api/v1/github", webhookPayload("duplicate-hash-001"))
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var result webhooks.ProcessResult
-		json.NewDecoder(rec.Body).Decode(&result)
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 		assert.Equal(t, 1, result.Received)
 		assert.Equal(t, 1, result.Skipped)
 		assert.Equal(t, 0, result.Created)
 	})
 
 	t.Run("skips non-default branches", func(t *testing.T) {
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/feature-branch",
-			Repository: webhooks.GitHubRepo{
-				ID:       12345,
-				FullName: "alice/my-project",
-				HTMLURL:  "https://github.com/alice/my-project",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "xyz789",
-					Message:   "Feature work in progress",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Alice", Email: "alice@test.com"},
-				},
-			},
-		}
-
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Body.String(), "not default branch")
+		payload := webhookPayload("branch-hash-001", func(o *PayloadOpts) {
+			o.Ref = "refs/heads/feature-branch"
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, testutil.DecodeBody(t, resp), "not default branch")
 	})
 
 	t.Run("skips force pushes", func(t *testing.T) {
-		payload := webhooks.GitHubPushEvent{
-			Ref:    "refs/heads/main",
-			Forced: true,
-			Repository: webhooks.GitHubRepo{
-				ID:       12345,
-				FullName: "alice/my-project",
-				HTMLURL:  "https://github.com/alice/my-project",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "forced123",
-					Message:   "Rewritten history",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Alice", Email: "alice@test.com"},
-				},
-			},
-		}
-
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Body.String(), "force push")
+		payload := webhookPayload("force-hash-001", func(o *PayloadOpts) {
+			o.Forced = true
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, testutil.DecodeBody(t, resp), "force push")
 	})
 
 	t.Run("skips invalid commits", func(t *testing.T) {
@@ -178,81 +179,36 @@ func TestGitHubWebhook(t *testing.T) {
 				HTMLURL:  "https://github.com/bob/test-repo",
 			},
 			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "wip123",
-					Message:   "wip",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Bob", Email: "bob@test.com"},
-				},
-				{
-					ID:        "merge123",
-					Message:   "Merge branch 'feature' into main",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Bob", Email: "bob@test.com"},
-				},
-				{
-					ID:        "short1",
-					Message:   "fix",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Bob", Email: "bob@test.com"},
-				},
-				{
-					ID:        "valid123",
-					Message:   "Add proper feature implementation",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Bob", Email: "bob@test.com"},
-				},
+				{ID: "wip-001", Message: "wip", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "bob@test.com"}},
+				{ID: "merge-001", Message: "Merge branch 'feature' into main", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "bob@test.com"}},
+				{ID: "short-001", Message: "fix", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "bob@test.com"}},
+				{ID: "valid-001", Message: "Add proper feature implementation", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "bob@test.com"}},
 			},
 		}
-
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var result webhooks.ProcessResult
-		json.NewDecoder(rec.Body).Decode(&result)
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 		assert.Equal(t, 4, result.Received)
-		assert.Equal(t, 1, result.Created) // Only valid123
-		assert.Equal(t, 3, result.Skipped) // wip, merge, short
+		assert.Equal(t, 1, result.Created)
+		assert.Equal(t, 3, result.Skipped)
 	})
 
 	t.Run("creates new project from webhook", func(t *testing.T) {
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:          77777,
-				Name:        "new-repo",
-				FullName:    "carol/new-repo",
-				HTMLURL:     "https://github.com/carol/new-repo",
-				Description: "A brand new repository",
-				Fork:        false,
-				ForksCount:  5,
-				Watchers:    10,
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "newrepo123",
-					Message:   "Initial commit with README",
-					Timestamp: time.Now(),
-					URL:       "https://github.com/carol/new-repo/commit/newrepo123",
-					Author:    webhooks.GitHubAuthor{Name: "Carol", Email: "carol@test.com"},
-					Added:     []string{"README.md"},
-				},
-			},
-		}
+		payload := webhookPayload("newrepo-hash-001", func(o *PayloadOpts) {
+			o.RepoID = 77777
+			o.RepoName = "new-repo"
+			o.FullName = "carol/new-repo"
+			o.HTMLURL = "https://github.com/carol/new-repo"
+			o.Description = "A brand new repository"
+			o.ForksCount = 5
+			o.Watchers = 10
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-
-		// Verify project was created with all fields
-		project, err := env.Queries.GetProjectBySlug(t.Context(), "carol/new-repo")
+		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-carol-new-repo")
 		require.NoError(t, err)
 		assert.Equal(t, "new-repo", project.Name)
 		assert.Equal(t, "https://github.com/carol/new-repo", project.Url)
@@ -265,78 +221,38 @@ func TestGitHubWebhook(t *testing.T) {
 
 	t.Run("adds commit to the active game", func(t *testing.T) {
 		game := testutil.CreateActiveGame(t, env)
-
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:          77777,
-				Name:        "new-repo",
-				FullName:    "carol/new-repo",
-				HTMLURL:     "https://github.com/carol/new-repo",
-				Description: "A brand new repository",
-				Fork:        false,
-				ForksCount:  5,
-				Watchers:    10,
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "newcommit1234",
-					Message:   "Initial commit with README",
-					Timestamp: time.Now(),
-					URL:       "https://github.com/carol/new-repo/commit/newcommit1234",
-					Author:    webhooks.GitHubAuthor{Name: "Carol", Email: "carol@test.com"},
-					Added:     []string{"README.md"},
-				},
-			},
-		}
-
+		payload := webhookPayload("game-hash-001", func(o *PayloadOpts) {
+			o.RepoID = 77777
+			o.FullName = "carol/new-repo"
+			o.HTMLURL = "https://github.com/carol/new-repo"
+		})
 		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
-
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		// Verify commit was added to the game
-		commits, err := env.Queries.GetRecentCommits(
-			t.Context(),
-			db.GetRecentCommitsParams{GameID: db.UUID(game.ID), LimitCount: int32(10)},
-		)
+		commits, err := env.Queries.GetRecentCommits(t.Context(), db.GetRecentCommitsParams{
+			GameID:     db.UUID(game.ID),
+			LimitCount: 10,
+		})
 		require.NoError(t, err)
-		assert.Equal(t, len(commits), 1)
+		assert.Len(t, commits, 1)
 	})
 
 	t.Run("links commit to existing user", func(t *testing.T) {
-		// Create user with email identifier
 		user := testutil.CreateUser(t, env, "dave", "Dave Developer")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "dave@test.com", true, true)
 
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:       88888,
-				Name:     "dave-repo",
-				FullName: "dave/dave-repo",
-				HTMLURL:  "https://github.com/dave/dave-repo",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "dave123",
-					Message:   "Add feature from Dave",
-					Timestamp: time.Now(),
-					URL:       "https://github.com/dave/dave-repo/commit/dave123",
-					Author:    webhooks.GitHubAuthor{Name: "Dave Developer", Email: "dave@test.com"},
-					Added:     []string{"feature.py"},
-				},
-			},
-		}
+		payload := webhookPayload("dave-hash-001", func(o *PayloadOpts) {
+			o.RepoID = 88888
+			o.RepoName = "dave-repo"
+			o.FullName = "dave/dave-repo"
+			o.HTMLURL = "https://github.com/dave/dave-repo"
+			o.Author = webhooks.GitHubAuthor{Name: "Dave Developer", Email: "dave@test.com"}
+			o.Files = []string{"feature.py"}
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-
-		// Verify commit is linked to user
-		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "dave123")
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "dave-hash-001")
 		require.NoError(t, err)
 		assert.True(t, commit.UserID.Valid)
 		commitUserID, err := uuid.FromBytes(commit.UserID.Bytes[:])
@@ -345,35 +261,18 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("detects languages from files", func(t *testing.T) {
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:       66666,
-				Name:     "polyglot",
-				FullName: "poly/polyglot",
-				HTMLURL:  "https://github.com/poly/polyglot",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "poly123",
-					Message:   "Add multiple language files",
-					Timestamp: time.Now(),
-					URL:       "https://github.com/poly/polyglot/commit/poly123",
-					Author:    webhooks.GitHubAuthor{Name: "Poly", Email: "poly@test.com"},
-					Added:     []string{"main.go", "app.py", "index.ts"},
-					Modified:  []string{"README.md"},
-				},
-			},
-		}
+		payload := webhookPayload("poly-hash-001", func(o *PayloadOpts) {
+			o.RepoID = 66666
+			o.RepoName = "polyglot"
+			o.FullName = "poly/polyglot"
+			o.HTMLURL = "https://github.com/poly/polyglot"
+			o.Author = webhooks.GitHubAuthor{Name: "Poly", Email: "poly@test.com"}
+			o.Files = []string{"main.go", "app.py", "index.ts", "README.md"}
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
-
-		handler.HandleGitHubWebhook(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-
-		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "poly123")
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "poly-hash-001")
 		require.NoError(t, err)
 		assert.Contains(t, commit.Languages, "Go")
 		assert.Contains(t, commit.Languages, "Python")
@@ -381,36 +280,83 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("skips inactive project", func(t *testing.T) {
-		// Create project with repo_id and deactivate it
-		project := testutil.CreateProjectWithRepoID(t, env, "inactive-project", "test/inactive-project", "https://github.com/test/inactive-project", 55555)
-		err := env.Queries.DeactivateProject(t.Context(), project.ID)
+		project := testutil.CreateProjectWithRepoID(t, env, "inactive-project", "gh-test-inactive-project", "https://github.com/test/inactive-project", 55555)
+		require.NoError(t, env.Queries.DeactivateProject(t.Context(), project.ID))
+
+		payload := webhookPayload("inactive-hash-001", func(o *PayloadOpts) {
+			o.RepoID = 55555
+			o.RepoName = "inactive-project"
+			o.FullName = "test/inactive-project"
+			o.HTMLURL = "https://github.com/test/inactive-project"
+		})
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, testutil.DecodeBody(t, resp), "project inactive")
+	})
+
+	t.Run("handles ping event", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodPost, env.Server.URL+"/api/v1/github", strings.NewReader("{}"))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-GitHub-Event", "ping")
+
+		resp, err := env.Client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "pong", testutil.DecodeBody(t, resp))
+	})
+}
+
+func TestGitHubWebhookContentTypes(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+
+	t.Run("accepts application/json", func(t *testing.T) {
+		resp := testutil.PostJSON(t, env, "/api/v1/github", webhookPayload("ct-json-001"))
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+	})
+
+	t.Run("accepts form-encoded payload", func(t *testing.T) {
+		payload := webhookPayload("ct-form-001")
+		b, err := json.Marshal(payload)
 		require.NoError(t, err)
 
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:       55555,
-				Name:     "inactive-project",
-				FullName: "test/inactive-project",
-				HTMLURL:  "https://github.com/test/inactive-project",
-			},
-			Commits: []webhooks.GitHubCommit{
-				{
-					ID:        "inactive123",
-					Message:   "This should be skipped",
-					Timestamp: time.Now(),
-					Author:    webhooks.GitHubAuthor{Name: "Test", Email: "test@test.com"},
-				},
-			},
-		}
+		form := url.Values{"payload": {string(b)}}
+		req, err := http.NewRequest(http.MethodPost, env.Server.URL+"/api/v1/github", strings.NewReader(form.Encode()))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		req := makeWebhookRequest(t, payload)
-		rec := httptest.NewRecorder()
+		resp, err := env.Client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		handler.HandleGitHubWebhook(rec, req)
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+	})
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Body.String(), "project inactive")
+	t.Run("rejects unsupported content type", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodPost, env.Server.URL+"/api/v1/github", strings.NewReader("data"))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "text/plain")
+
+		resp, err := env.Client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+	})
+
+	t.Run("rejects form without payload field", func(t *testing.T) {
+		form := url.Values{"wrong_field": {"data"}}
+		req, err := http.NewRequest(http.MethodPost, env.Server.URL+"/api/v1/github", strings.NewReader(form.Encode()))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := env.Client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
 
@@ -434,8 +380,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
-			result := webhooks.DetectLanguage(tt.file)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, webhooks.DetectLanguage(tt.file))
 		})
 	}
 }
@@ -458,19 +403,7 @@ func TestIsValidCommit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			commit := webhooks.GitHubCommit{Message: tt.message}
-			result := webhooks.IsValidCommit(commit)
-			assert.Equal(t, tt.valid, result)
+			assert.Equal(t, tt.valid, webhooks.IsValidCommit(webhooks.GitHubCommit{Message: tt.message}))
 		})
 	}
-}
-
-func makeWebhookRequest(t *testing.T, payload any) *http.Request {
-	t.Helper()
-	body, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/webhooks/github", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	return req
 }

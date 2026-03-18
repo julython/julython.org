@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -44,14 +46,11 @@ type TestEnv struct {
 	Queries *db.Queries
 }
 
-func SetupTestEnv(t *testing.T) *TestEnv {
-	t.Helper()
+// SetupSharedEnv initializes the shared container, pool, and config once.
+// Call this from TestMain — it has no *testing.T dependency.
+func SetupSharedEnv() error {
 	ctx := context.Background()
 
-	// Use test writer so logs appear with -v or on failure
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).With().Timestamp().Logger()
-
-	// Initialize shared container once
 	setupOnce.Do(func() {
 		if err := i18n.Init(); err != nil {
 			setupErr = fmt.Errorf("failed to init i18n: %w", err)
@@ -93,7 +92,6 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		}
 		sharedPool = pool
 
-		// Load config
 		cfg, err := config.Load()
 		if err != nil {
 			setupErr = fmt.Errorf("failed to load config: %w", err)
@@ -102,21 +100,34 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		sharedCfg = cfg
 	})
 
+	return setupErr
+}
+
+// SetupTestEnv truncates tables and creates a fresh server for each test.
+// The logger routes through t so output is scoped to the test.
+func SetupTestEnv(t *testing.T) *TestEnv {
+	t.Helper()
+
 	if setupErr != nil {
-		t.Fatalf("test setup failed: %v", setupErr)
+		t.Fatalf("shared setup failed: %v", setupErr)
+	}
+	if sharedPool == nil {
+		// Support calling SetupTestEnv directly without a prior TestMain
+		if err := SetupSharedEnv(); err != nil {
+			t.Fatalf("test setup failed: %v", err)
+		}
 	}
 
-	// Truncate all tables before each test
-	if err := truncateTables(ctx, sharedPool); err != nil {
+	if err := truncateTables(context.Background(), sharedPool); err != nil {
 		t.Fatalf("failed to truncate tables: %v", err)
 	}
 
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
+		With().Timestamp().Logger()
+
 	router := api.NewRouter(sharedPool, sharedCfg, logger)
 	server := httptest.NewServer(router)
-
-	t.Cleanup(func() {
-		server.Close()
-	})
+	t.Cleanup(server.Close)
 
 	return &TestEnv{
 		Pool:    sharedPool,
@@ -342,6 +353,7 @@ func CreateGameScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Gam
 }
 
 // Request Helpers
+
 func PostJSON(t *testing.T, env *TestEnv, path string, body any) *http.Response {
 	t.Helper()
 	b, _ := json.Marshal(body)
@@ -355,4 +367,20 @@ func GetJSON(t *testing.T, env *TestEnv, path string) *http.Response {
 	resp, err := env.Client.Get(env.Server.URL + path)
 	require.NoError(t, err)
 	return resp
+}
+
+func DecodeBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return strings.TrimSpace(string(b))
+}
+
+// LoggerForTest returns a console logger routing through t.Log.
+// Exported so test packages can use it when constructing services directly.
+func LoggerForTest(t *testing.T) zerolog.Logger {
+	t.Helper()
+	return zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
+		With().Timestamp().Logger()
 }

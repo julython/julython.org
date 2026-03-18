@@ -129,10 +129,13 @@ tailwind:  ## Build Tailwind CSS and generate asset manifest
 # Testing
 # ============================================
 
+test-clean:
+	go clean -testcache
+
 test:  ## Run the tests
 	gotestsum --format short -- -race ./...
 
-test-v:  ## Run the tests with verbose output
+test-v: test-clean  ## Run the tests with verbose output
 	gotestsum --format short-verbose -- -race ./...
 
 test-dots:  ## Run the tests with dot output

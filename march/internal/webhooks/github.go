@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -86,22 +88,67 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "failed to read body", http.StatusBadRequest)
+	// Handle ping event
+	if r.Header.Get("X-GitHub-Event") == "ping" {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("pong"))
+		return
+	}
+
+	var data []byte
+	rawContentType := r.Header.Get("Content-Type")
+	contentType, _, _ := mime.ParseMediaType(rawContentType)
+	hookLog := logger.With().Str("contentType", contentType).Logger()
+
+	hookLog.Info().Msg("processing webhook body")
+
+	switch {
+	case strings.Contains(contentType, "application/json"):
+		var err error
+		data, err = io.ReadAll(r.Body)
+		if err != nil {
+			hookLog.Warn().Err(err).Msg("failed to read request body")
+			http.Error(w, "failed to read body", http.StatusBadRequest)
+			return
+		}
+		// smee.io wraps the payload in {"payload": "<json string>"}
+		var wrapper struct {
+			Payload string `json:"payload"`
+		}
+		if err := json.Unmarshal(data, &wrapper); err == nil && wrapper.Payload != "" {
+			hookLog.Debug().Msg("unwrapping smee payload")
+			data = []byte(wrapper.Payload)
+		}
+	case strings.Contains(contentType, "form"):
+		if err := r.ParseForm(); err != nil {
+			hookLog.Warn().Err(err).Msg("failed to parse form")
+			http.Error(w, "failed to parse form", http.StatusBadRequest)
+			return
+		}
+		payload := r.FormValue("payload")
+		hookLog.Info().Msgf("body: %s", payload)
+		if payload == "" {
+			hookLog.Warn().Msg("form post missing 'payload'")
+			http.Error(w, "missing payload field", http.StatusBadRequest)
+			return
+		}
+		data = []byte(payload)
+	default:
+		hookLog.Warn().Msgf("unsupported content type: %s", contentType)
+		http.Error(w, fmt.Sprintf("unsupported content type: %s", contentType), http.StatusUnsupportedMediaType)
 		return
 	}
 
 	var event GitHubPushEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+	if err := json.Unmarshal(data, &event); err != nil {
+		hookLog.Error().Err(err).Msg("failed to parse webhook payload")
+		http.Error(w, "invalid payload", http.StatusBadRequest)
 		return
 	}
-
 	// Skip non-default branches
 	if !isDefaultBranch(event.Ref) {
 		w.WriteHeader(http.StatusOK)
-		logger.Info().Msg("skipping push as it is on a branch")
+		hookLog.Info().Msg("skipping push as it is on a branch")
 		json.NewEncoder(w).Encode(map[string]string{"status": "skipped", "reason": "not default branch"})
 		return
 	}
