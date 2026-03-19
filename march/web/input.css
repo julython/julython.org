@@ -75,12 +75,10 @@ button.htmx-request .htmx-busy  { display: inline-flex; }
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
-.prose pre.mermaid, .prose pre.help {
+.prose pre.mermaid {
   background: var(--color-surface-light);
   border: 1px solid rgb(255 255 255 / 0.1);
   padding: 1.5rem;
   display: flex;
-}
-.prose pre.mermaid {
   justify-content: center;
 }

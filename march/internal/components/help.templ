@@ -1,5 +1,23 @@
 package components
 
+import "github.com/invopop/ctxi18n/i18n"
+
+// SignInGate renders children if the user is signed in, otherwise a sign-in link.
+templ SignInGate(user *UserInfo) {
+	if user != nil {
+		{ children... }
+	} else {
+		<a href="/auth/login/github" class="inline-block px-3 py-1 text-sm bg-purple-700 hover:bg-purple-600 text-white rounded transition-colors">
+			{ i18n.T(ctx, "SignIn") }
+		</a>
+		{ children... }
+	}
+}
+
+templ helpHeading(text string, id string) {
+	<h2 id={ id } class="text-3xl font-bold text-purple-400 border-b border-purple-800 pb-3">{ text }</h2>
+}
+
 templ HelpPage(layout LayoutData) {
 	@Layout(layout) {
 		@helpPage(layout.User)
@@ -8,174 +26,153 @@ templ HelpPage(layout LayoutData) {
 
 templ helpPage(user *UserInfo) {
 	<section class="max-w-3xl mx-auto px-4 py-12">
-		<article class="prose">
-			<h2 class="spread-the-word">Help me get started!</h2>
-			if user != nil {
-				<p class="lead">
-					First <a href="/profile/edit">edit your profile</a> and add all
+		<article class="space-y-8">
+			@helpHeading("Help me get started!", "get-started")
+			@SignInGate(user) {
+				<p class="text-lg text-gray-300 leading-relaxed">
+					First <a href="/profile/settings" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">edit your profile</a> and add all
 					the email addresses you use to commit with. This is how we'll
 					identify you, we will not display or share this information.
 				</p>
-			} else {
-				<p class="lead">
-					First
-					<a href="/signin" class="btn btn-mini btn-info">
-						Sign In
-					</a>
-					and add all the email addresses you use to commit with. This is
-					how we'll identify you, we will not display or share this
-					information.
-				</p>
 			}
-			<p>
+			<p class="text-gray-400">
 				If you have any questions not answered below, please send an email
-				to <a href="mailto:help@julython.org">help@julython.org</a>.
+				to <a href="mailto:help@julython.org" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">help@julython.org</a>.
 			</p>
-			<h2 class="what-is-this">How do I add a webhook?</h2>
-			<p class="lead">
-				Add your project's webhook URL to GitHub, GitLab, or Bitbucket to
-				track your commits.
+			@helpHeading("How to Add a Webhook", "webhooks")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				Head to your <a href="/profile/webhooks" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">{ i18n.T(ctx, "profile.webhooks") }</a> page,
+				find the repository you want to track, and click the
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-gray-700 rounded border border-gray-600 text-gray-200 font-mono">+ webhook</span>
+				button — we'll take care of the rest!
 			</p>
-			<h2 class="what-is-this">How are points scored?</h2>
-			<p class="lead">
+			<div class="bg-gray-800 rounded-xl p-5 border border-purple-900 space-y-4">
+				<div>
+					<p class="text-sm text-purple-300 font-semibold mb-1">Wanna do it manually?</p>
+				</div>
+				<ol class="list-decimal list-inside space-y-2 text-gray-400 text-sm">
+					<li>Navigate to your repository on GitHub and open <span class="text-gray-200">Settings → Webhooks → Add webhook</span>.</li>
+					<li>
+						Paste the URL into the <span class="text-gray-200">Payload URL</span> field.
+						<pre class="bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 overflow-x-auto">https://julython.org/api/v1/github</pre>
+					</li>
+					<li>Set <span class="text-gray-200">Content type</span> to <span class="font-mono text-green-400">application/json</span>.</li>
+					<li>Under <span class="text-gray-200">Which events?</span> choose <span class="text-gray-200">Just the push event</span>.</li>
+					<li>Click <span class="text-gray-200">Add webhook</span> — your next push will start scoring points!</li>
+				</ol>
+			</div>
+			@helpHeading("How are points scored?", "scoring")
+			<p class="text-lg text-gray-300 leading-relaxed">
 				Points are awarded to the committer, the project, and optionally
 				to the location the user has specified in his/her profile.
 			</p>
-			<div class="row">
-				<div class="span5">
-					<h3>Commits</h3>
-					<p>
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+				<div class="bg-gray-800 rounded-xl p-5 border border-purple-900">
+					<h3 class="text-lg font-semibold text-purple-300 mb-2">Commits</h3>
+					<p class="text-gray-400">
 						You can score points by committing to a project that has a{ " " }
-						<a href="#webhook">web hook</a> setup. Each commit is worth 1
-						point.
+						<a href="#webhook" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">web hook</a> setup. Each commit is worth 1 point.
 					</p>
 				</div>
-				<div class="span5">
-					<h3>New Projects</h3>
-					<p>
+				<div class="bg-gray-800 rounded-xl p-5 border border-purple-900">
+					<h3 class="text-lg font-semibold text-purple-300 mb-2">New Projects</h3>
+					<p class="text-gray-400">
 						Everytime a new project is added via{ " " }
-						<a href="#webhook">web hook</a> points are awarded. Each new
-						project is worth 10 points.
+						<a href="#webhook" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">web hook</a> points are awarded. Each new project is worth 10 points.
 					</p>
 				</div>
 			</div>
-			<h2 class="what-is-this">When will my points count?</h2>
-			<p class="lead">
+			@helpHeading("When will my points count?", "timing")
+			<p class="text-lg text-gray-300 leading-relaxed">
 				You should use your local time to 'start' at midnight on the first
 				day of the month, and 'end' at midnight on the last day of the
 				month.
 			</p>
-			<table class="table">
-				<thead>
-					<tr>
-						<th>Event</th>
-						<th>Start</th>
-						<th>End</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<th>Julython</th>
-						<td>July 1st</td>
-						<td>July 31st</td>
-					</tr>
-					<tr>
-						<th>J(an)ulython</th>
-						<td>January 1st</td>
-						<td>January 31st</td>
-					</tr>
-				</tbody>
-			</table>
-			<h2 class="what-is-this">Why don't my commits show up?</h2>
-			<p class="lead">
-				Be sure to edit your profile and add the email you use to commit
-				with.
-			</p>
-			<div class="row">
-				<div class="span5">
-					<h3>Git Help</h3>
-					<p>Check the existing setting:</p>
-					<pre class="help">git config --global user.email</pre>
-					<p>Set a new value:</p>
-					<pre class="help">git config --global user.email "me@example.com"</pre>
-					<p>Fix the email address used for the last commit:</p>
-					<pre class="help">
-						git commit --amend --author="Me &lt;me@example.com&gt;"
-					</pre>
-				</div>
-				<div class="span5">
-					<h3>Mercurial Help</h3>
-					<p>Edit .hgrc (or Mercurial.ini on Windows):</p>
-					<pre class="help">
-						{ `[ui]
-username = Julython Joe <me@example.com>` }
-					</pre>
-				</div>
+			<div class="overflow-x-auto rounded-xl border border-purple-900">
+				<table class="w-full text-sm text-left">
+					<thead class="bg-purple-900/50 text-purple-300 uppercase text-xs tracking-wider">
+						<tr>
+							<th class="px-4 py-3">Event</th>
+							<th class="px-4 py-3">Start</th>
+							<th class="px-4 py-3">End</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-purple-900/40">
+						<tr class="bg-gray-800/60 hover:bg-gray-800 transition-colors">
+							<th class="px-4 py-3 font-medium text-gray-200">Julython</th>
+							<td class="px-4 py-3 text-gray-400">July 1st</td>
+							<td class="px-4 py-3 text-gray-400">July 31st</td>
+						</tr>
+						<tr class="bg-gray-800/60 hover:bg-gray-800 transition-colors">
+							<th class="px-4 py-3 font-medium text-gray-200">J(an)ulython</th>
+							<td class="px-4 py-3 text-gray-400">January 1st</td>
+							<td class="px-4 py-3 text-gray-400">January 31st</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
-			<h2 class="what-is-this">How do I set my location?</h2>
-			if user != nil {
-				<p class="lead">
-					First <a href="/profile/edit">edit your profile</a> and add your location
-				</p>
-			} else {
-				<p class="lead">
-					First
-					<a href="/signin" class="btn btn-mini btn-info">
-						Sign In
-					</a>
-				</p>
-			}
-			<p class="lead">
-				The location must be a valid 'city, state, country' location in
-				the world.
+			@helpHeading("Why don't my commits show up?", "git-help")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				Be sure to edit your profile and add the email you use to commit with.
 			</p>
-			<h2 class="what-is-this">How do I set my team?</h2>
-			if user != nil {
-				<p class="lead">
-					First <a href="/profile/edit">edit your profile</a> and add your team
-				</p>
-			} else {
-				<p class="lead">
-					First
-					<a href="/signin" class="btn btn-mini btn-info">
-						Sign In
-					</a>
+			<div class="bg-gray-800 rounded-xl p-5 border border-purple-900">
+				<h3 class="text-lg font-semibold text-purple-300 mb-3">Git Help</h3>
+				<p class="text-gray-400 mb-1">Check the existing setting:</p>
+				<pre class="bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto">git config --global user.email</pre>
+				<p class="text-gray-400 mb-1">Set a new value:</p>
+				<pre class="bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto">git config --global user.email "me@example.com"</pre>
+				<p class="text-gray-400 mb-1">Fix the email for the last commit:</p>
+				<pre class="bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 overflow-x-auto">git commit --amend --author="Me &lt;me@example.com&gt;"</pre>
+			</div>
+			@helpHeading("How do I set my location?", "location")
+			@SignInGate(user) {
+				<p class="text-lg text-gray-300 leading-relaxed">
+					First <a href="/profile/settings" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">edit your profile</a> and add your location.
 				</p>
 			}
-			<p class="lead">
+			<p class="text-gray-400">
+				The location must be a valid 'city, state, country' location in the world.
+			</p>
+			@helpHeading("How do I set my team?", "teams")
+			@SignInGate(user) {
+				<p class="text-lg text-gray-300 leading-relaxed">
+					First <a href="/profile/settings" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">edit your profile</a> and add your team.
+				</p>
+			}
+			<p class="text-gray-400">
 				The team is a free form field. We slugify the contents so 'Worker
 				Bees' and 'worker bees' both become 'worker-bees'.
 			</p>
-			<p>
+			<p class="text-sm text-gray-500 italic">
 				* New teams must be approved first before they appear on the site.
 			</p>
-			<h2 class="what-is-this">What is the code of conduct?</h2>
-			<p class="lead">
+			@helpHeading("What is the code of conduct?", "conduct")
+			<p class="text-lg text-gray-300 leading-relaxed">
 				Julython uses roughly the same code of conduct policy as{ " " }
-				<a href="https://policies.python.org/us.pycon.org/code-of-conduct/">
+				<a href="https://policies.python.org/us.pycon.org/code-of-conduct/" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">
 					PyCon
-				</a>
-				.
+				</a>.
 			</p>
-			<p>
-				Julython is dedicated to providing a harassment-free experience for everyone,
-				regardless of gender, sexual orientation, disability, physical appearance,
-				body size, race, or religion. We do not tolerate harassment of Julython
-				participants in any form.
-			</p>
-			<p>
-				Be kind to others. Do not insult or put down other participants.
-				Behave professionally. Remember that harassment and sexist,
-				racist, or exclusionary jokes are not appropriate for Julython.
-			</p>
-			<p>
-				Violating these rules may result in your account and all points
-				associated removed.
-			</p>
-			<p>
-				Thank you for helping make this a welcoming, friendly event for
-				all.
-			</p>
+			<div class="space-y-4 text-gray-400 leading-relaxed">
+				<p>
+					Julython is dedicated to providing a harassment-free experience for everyone,
+					regardless of gender, sexual orientation, disability, physical appearance,
+					body size, race, or religion. We do not tolerate harassment of Julython
+					participants in any form.
+				</p>
+				<p>
+					Be kind to others. Do not insult or put down other participants.
+					Behave professionally. Remember that harassment and sexist,
+					racist, or exclusionary jokes are not appropriate for Julython.
+				</p>
+				<p>
+					Violating these rules may result in your account and all points
+					associated removed.
+				</p>
+				<p class="text-gray-300 font-medium">
+					Thank you for helping make this a welcoming, friendly event for all.
+				</p>
+			</div>
 		</article>
 	</section>
 }
