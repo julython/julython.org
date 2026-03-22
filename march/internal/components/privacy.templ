@@ -1,0 +1,147 @@
+package components
+
+templ PrivacyPage(layout LayoutData) {
+	@Layout(layout) {
+		@privacyPage()
+	}
+}
+
+templ privacyPage() {
+	<section class="max-w-3xl mx-auto px-4 py-12">
+		<article class="space-y-8">
+			@helpHeading("Privacy Policy", "privacy")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				Welcome to the Julython Privacy Policy — a document you are reading voluntarily,
+				which already puts you in the top 1% of internet users. We'll keep this short,
+				honest, and mercifully free of legalese.
+			</p>
+			<p class="text-sm text-gray-500 italic">
+				Last updated: July 2025. We are not lawyers. This is not legal advice.
+				If you need legal advice, we recommend finding a lawyer, not a coding challenge website.
+			</p>
+			@helpHeading("What We Collect", "collect")
+			<p class="text-gray-400 leading-relaxed">
+				Here is the terrifying list of data we hoard about you:
+			</p>
+			<div class="bg-gray-800 rounded-xl p-5 border border-purple-900 space-y-4">
+				<div>
+					<h3 class="text-md font-semibold text-purple-300 mb-1">Your GitHub identity</h3>
+					<p class="text-gray-400 text-sm">
+						When you sign in via GitHub, we receive your public GitHub profile — username,
+						display name, and avatar. GitHub has a whole separate privacy policy for that
+						part, and they are much larger than us.
+					</p>
+				</div>
+				<div>
+					<h3 class="text-md font-semibold text-purple-300 mb-1">Your GitHub OAuth token</h3>
+					<p class="text-gray-400 text-sm">
+						We store a GitHub OAuth token so that you can register and manage webhooks on
+						your repositories without having to re-authenticate every time. This token has
+						three permissions: <span class="font-mono text-green-400">read:user</span>,
+						<span class="font-mono text-green-400">user:email</span>, and — the big one —
+						<span class="font-mono text-green-400">write:repo_hook</span> (full control of
+						repository hooks). We use it only to add webhooks on your behalf. We acknowledge
+						this is a meaningful level of trust and we don't take that lightly.
+					</p>
+					<p class="text-gray-400 text-sm mt-2">
+						You can revoke this token at any time by visiting
+						<a href="https://github.com/settings/applications" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">github.com/settings/applications</a>
+						and removing Julython. Doing so will sign you out and disable webhook management
+						until you re-authorize, but your account and points will remain intact.
+					</p>
+				</div>
+				<div>
+					<h3 class="text-md font-semibold text-purple-300 mb-1">Email addresses</h3>
+					<p class="text-gray-400 text-sm">
+						We ask for the email address(es) you commit with. This is the <em>only</em> way
+						we can match your commits to your account. We do not display this, sell this,
+						rent this, or write it on a sticky note on our monitor.
+					</p>
+				</div>
+				<div>
+					<h3 class="text-md font-semibold text-purple-300 mb-1">Location (optional)</h3>
+					<p class="text-gray-400 text-sm">
+						If you choose to add a city/region to your profile, we display it on the
+						leaderboard so you can compete with your neighbors. You can leave this blank.
+						We will not judge you. Much.
+					</p>
+				</div>
+				<div>
+					<h3 class="text-md font-semibold text-purple-300 mb-1">Commit metadata</h3>
+					<p class="text-gray-400 text-sm">
+						When your webhook fires, we record the commit message, author email, timestamp,
+						and repository name. That's it. We do not receive your code. We do not want
+						your code. We have enough code of our own to be embarrassed by.
+					</p>
+				</div>
+			</div>
+			@helpHeading("What We Don't Collect", "dont-collect")
+			<p class="text-gray-400 leading-relaxed">
+				This is the fun section.
+			</p>
+			<div class="bg-gray-800 rounded-xl p-5 border border-purple-900 space-y-2 text-gray-400 text-sm">
+				<p>🚫 <span class="text-gray-200">Your actual code.</span> We only support public, open source repositories. We never pull, clone, read, or judge your variable naming choices.</p>
+				<p>🚫 <span class="text-gray-200">Private repositories.</span> We don't have access and we don't want it. Keep your secrets.</p>
+				<p>🚫 <span class="text-gray-200">Payment information.</span> Julython is free. There is nothing to buy. There are no prizes. This is a labor of love and mild obsession.</p>
+				<p>🚫 <span class="text-gray-200">Your browsing habits.</span> We don't run ad trackers, analytics pixels, or any of that stuff. We can barely keep the server running.</p>
+				<p>🚫 <span class="text-gray-200">Your soul.</span> Unlike some platforms, we are not interested in maximizing engagement, time-on-site, or existential dread.</p>
+			</div>
+			@helpHeading("Who We Share It With", "sharing")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				Nobody. We don't sell your data. We don't share it with advertisers because
+				we don't have advertisers. We don't share it with "partners" — a word that in
+				privacy policies usually means "strangers who gave us money."
+			</p>
+			<p class="text-gray-400">
+				The only third party involved is GitHub, who handles authentication. You can
+				read their privacy policy at
+				<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">docs.github.com</a>.
+				It is significantly longer than this one.
+			</p>
+			@helpHeading("Cookies", "cookies")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				We use a session cookie to keep you logged in. That's the whole cookie story.
+				No tracking cookies. No third-party cookies. No cookies that inexplicably follow
+				you around the internet showing you ads for shoes you looked at once.
+			</p>
+			<p class="text-gray-400">
+				If you'd like to remove it, clear your cookies or sign out. The cookie will not
+				be offended.
+			</p>
+			@helpHeading("Data Retention", "retention")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				We keep your account data for as long as your account exists. If you'd like
+				your data removed, email us at
+				<a href="mailto:help@julython.org" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">help@julython.org</a>
+				and we'll delete it. No questions asked, no dark patterns, no "are you sure?
+				you'll lose all your points!" guilt trips.
+			</p>
+			<p class="text-gray-400">
+				Well — you <em>will</em> lose all your points. But we won't guilt trip you about it.
+			</p>
+			@helpHeading("Security", "security")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				We take reasonable precautions to protect your data. We use HTTPS, we don't
+				store passwords (GitHub handles that), and we try not to do anything obviously
+				foolish. That said, no system is perfectly secure, and we are a small open source
+				project, not a bank.
+			</p>
+			<p class="text-gray-400">
+				Speaking of open source — if you find a security issue, please email
+				<a href="mailto:help@julython.org" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">help@julython.org</a>
+				rather than, say, posting it publicly or using it to give yourself a suspiciously
+				round score.
+			</p>
+			@helpHeading("Changes to This Policy", "changes")
+			<p class="text-gray-400 leading-relaxed">
+				If we ever need to update this policy, we'll update the date at the top and
+				try to communicate any meaningful changes. Since we're not planning to
+				suddenly start harvesting your data, dramatic changes are unlikely.
+			</p>
+			<p class="text-sm text-gray-500 italic">
+				Questions? Concerns? Unsolicited legal opinions?
+				<a href="mailto:help@julython.org" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">help@julython.org</a>
+			</p>
+		</article>
+	</section>
+}

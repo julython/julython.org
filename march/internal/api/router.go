@@ -96,6 +96,8 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 
 	// Help
 	mux.HandleFunc("GET /help", helpHandler.Help)
+	mux.HandleFunc("GET /about", helpHandler.About)
+	mux.HandleFunc("GET /privacy", helpHandler.Privacy)
 
 	// Blog
 	mux.HandleFunc("GET /blog", blogHandler.List)
