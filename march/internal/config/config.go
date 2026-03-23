@@ -39,6 +39,7 @@ type Database struct {
 	SSLMode  string `env:"SSLMODE"  envDefault:"disable"`
 	MaxConns int    `env:"MAX_CONNS" envDefault:"25"`
 	MinConns int    `env:"MIN_CONNS" envDefault:"5"`
+	EncKey   string `env:"ENC_KEY" envDefault:""`
 }
 
 func (d Database) DSN() string {

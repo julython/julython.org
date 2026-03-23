@@ -31,7 +31,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 
 	// Services
 	queries := db.New(pool)
-	userSvc := services.NewUserService(queries)
+	userSvc := services.MustNewUserService(queries, cfg.Database.EncKey)
 	gameSvc := services.NewGameService(queries)
 
 	// OAuth providers

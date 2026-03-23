@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -29,11 +31,24 @@ const (
 )
 
 type UserService struct {
-	queries *db.Queries
+	queries       *db.Queries
+	encryptionKey []byte // 32 bytes for AES-256, from env
 }
 
-func NewUserService(queries *db.Queries) *UserService {
-	return &UserService{queries: queries}
+func NewUserService(queries *db.Queries, encryptionKey string) (*UserService, error) {
+	key, err := hex.DecodeString(encryptionKey)
+	if err != nil || len(key) != 32 {
+		return nil, errors.New("ENCRYPTION_KEY must be a hex-encoded 32-byte key")
+	}
+	return &UserService{queries: queries, encryptionKey: key}, nil
+}
+
+func MustNewUserService(queries *db.Queries, encKey string) *UserService {
+	svc, err := NewUserService(queries, encKey)
+	if err != nil {
+		log.Fatal().Err(err).Msg("invalid encryption key")
+	}
+	return svc
 }
 
 func (s *UserService) FindByID(ctx context.Context, id uuid.UUID) (db.User, error) {
@@ -86,20 +101,25 @@ func (s *UserService) UpsertIdentifier(
 ) (db.UserIdentifier, bool, error) {
 	key := fmt.Sprintf("%s:%s", idType, value)
 
-	// Check if identifier exists and belongs to different user
 	existing, err := s.queries.GetUserIdentifier(ctx, key)
 	if err == nil && existing.UserID != userID {
 		return db.UserIdentifier{}, false, ErrIdentifierConflict
 	}
 
-	// Upsert - the ON CONFLICT clause handles the rest
+	// Encrypt any token fields before persisting.
+	// Emails and other non-token identifiers have empty data maps so this is a no-op for them.
+	encrypted, err := s.encryptTokenData(data)
+	if err != nil {
+		return db.UserIdentifier{}, false, fmt.Errorf("encrypt identifier data: %w", err)
+	}
+
 	identifier, err := s.queries.UpsertUserIdentifier(ctx, db.UpsertUserIdentifierParams{
 		Value:     key,
 		Type:      string(idType),
 		UserID:    userID,
 		Verified:  verified,
 		IsPrimary: primary,
-		Data:      toJSONB(data),
+		Data:      toJSONB(encrypted),
 	})
 	if err != nil {
 		return db.UserIdentifier{}, false, err
@@ -206,7 +226,46 @@ func (s *UserService) GetOAuthToken(ctx context.Context, userID uuid.UUID, provi
 	if token == "" {
 		return "", fmt.Errorf("no access token found for %s", provider)
 	}
-	return token, nil
+	return decrypt(s.encryptionKey, token)
+}
+
+// encryptTokenData encrypts access_token and refresh_token fields in a data map.
+// Returns a new map — never mutates the input.
+func (s *UserService) encryptTokenData(data map[string]any) (map[string]any, error) {
+	if len(data) == 0 {
+		return data, nil
+	}
+	out := make(map[string]any, len(data))
+	for k, v := range data {
+		out[k] = v
+	}
+	for _, field := range []string{"access_token", "refresh_token"} {
+		raw, ok := out[field].(string)
+		if !ok || raw == "" {
+			continue
+		}
+		// Already encrypted — don't double-encrypt.
+		if !isPlaintextToken(raw) {
+			continue
+		}
+		enc, err := encrypt(s.encryptionKey, raw)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt %s: %w", field, err)
+		}
+		out[field] = enc
+	}
+	return out, nil
+}
+
+// isPlaintextToken detects known plaintext token prefixes.
+// GitHub tokens: "gho_", "ghp_", "ghs_"
+// GitLab tokens are opaque but generally not valid base64 — we check for
+// known GitHub prefixes only and treat everything else as encrypted.
+func isPlaintextToken(s string) bool {
+	return strings.HasPrefix(s, "gho_") ||
+		strings.HasPrefix(s, "ghp_") ||
+		strings.HasPrefix(s, "ghs_") ||
+		strings.HasPrefix(s, "gloas-") // GitLab OAuth token prefix
 }
 
 func (s *UserService) findUserByEmails(ctx context.Context, emails []EmailAddress) (*db.User, error) {
