@@ -46,3 +46,31 @@ func errorBody(ctx context.Context, status int) string {
 		return i18n.T(ctx, "Error500Body")
 	}
 }
+
+// ErrorFragment renders an inline error for HTMX swaps.
+// Retargeted into #htmx-error by the middleware via HX-Retarget.
+templ ErrorFragment(data LayoutData, status int) {
+	<div class="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-red-500/15 border border-red-500/20 text-red-400 text-sm">
+		<span>{ errorBody(ctx, status) }</span>
+		if status == http.StatusUnauthorized {
+			<a
+				href="/auth/login/github"
+				class="shrink-0 px-3 py-1 rounded-md bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-medium transition-colors"
+			>
+				{ i18n.T(ctx, "SignIn") }
+			</a>
+		}
+		<button
+			onclick="this.closest('#htmx-error').innerHTML=''"
+			class="shrink-0 text-red-500 hover:text-red-300 transition-colors"
+			aria-label="Dismiss"
+		>✕</button>
+	</div>
+}
+
+// HTMXErrorContainer should be placed once in your layout template,
+// somewhere persistent — top of <main> or just inside the nav.
+// The middleware targets this via HX-Retarget: #htmx-error.
+templ HTMXErrorContainer() {
+	<div id="htmx-error" class="max-w-5xl mx-auto px-4 pt-4 empty:hidden"></div>
+}
