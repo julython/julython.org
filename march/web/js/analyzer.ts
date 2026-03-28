@@ -10,6 +10,7 @@
  */
 
 import type { Scorecard, ScoredCategory } from "./worker";
+import { createSession, buildSystemPrompt, type LLMSession } from "./llm";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
   // ── Wire up button ──────────────────────────────────────────────────────────
   let scorecard: Scorecard | null = null;
   let repoFiles: Record<string, string> = {};
+  let llmSession: LLMSession | null = null;
 
   btn.addEventListener("click", () => {
     btn.disabled = true;
@@ -83,6 +85,8 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
       } else if (type === "result") {
         scorecard = sc as Scorecard;
         repoFiles = e.data.fileContents ?? {};
+        llmSession?.destroy();
+        llmSession = null; // recreate with fresh context on re-analyze
         body.innerHTML = "";
         body.appendChild(renderScorecard(scorecard));
         chatWrap.classList.remove("hidden");
@@ -101,12 +105,33 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
   });
 
   // ── Chat handler ────────────────────────────────────────────────────────────
-  const sendChat = () => {
+  const sendChat = async () => {
     const q = chatInput.value.trim();
     if (!q || !scorecard) return;
     chatInput.value = "";
+    chatBtn.disabled = true;
     appendChat(chatLog, "you", q);
-    appendChat(chatLog, "ai", chat(q, scorecard, repoFiles));
+
+    // Lazy-init LLM session on first chat
+    if (!llmSession) {
+      const statusBubble = appendChat(chatLog, "ai", "");
+      try {
+        llmSession = await createSession(
+          buildSystemPrompt(scorecard.repo, scorecard.total, scorecard.categories, repoFiles),
+          (msg) => { statusBubble.textContent = msg; },
+        );
+      } catch (e) {
+        statusBubble.textContent = (e as Error).message;
+        chatBtn.disabled = false;
+        return;
+      }
+    }
+
+    const bubble = appendChat(chatLog, "ai", "");
+    await llmSession.prompt(q, (fullText) => {
+      updateBubble(bubble, fullText);
+    });
+    chatBtn.disabled = false;
   };
 
   chatBtn.addEventListener("click", sendChat);
@@ -166,27 +191,6 @@ function renderCategory(cat: ScoredCategory): HTMLElement {
   return wrap;
 }
 
-// ── Chat (simple local LLM hook — swap fetch target as needed) ───────────────
-
-function chat(question: string, sc: Scorecard, files: Record<string, string>): string {
-  // For now: a rule-based responder using the scorecard data.
-  // Replace this body with a fetch to /api/v1/chat or window.ai when ready.
-  const low = sc.categories.filter(c => (c.score / c.max) < 0.5);
-  if (/improve|suggest|fix|better/i.test(question)) {
-    if (low.length === 0) return "This repo scores well across all categories — nice work!";
-    return `Focus on: ${low.map(c => c.name).join(", ")}. ` +
-      low.flatMap(c => c.signals.length === 0
-        ? [`${c.name} has no detected signals — check the category requirements.`]
-        : []
-      ).join(" ");
-  }
-  if (/score|total/i.test(question)) {
-    return `Overall score is ${sc.total}/100. ` +
-      sc.categories.map(c => `${c.name}: ${c.score}/${c.max}`).join(", ") + ".";
-  }
-  return `I can see the repo scored ${sc.total}/100. Try asking "what should I improve?" or "explain the score".`;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function showProgress(container: HTMLElement, msg: string) {
@@ -202,17 +206,42 @@ function showError(container: HTMLElement, msg: string) {
   container.appendChild(p);
 }
 
-function appendChat(log: HTMLElement, who: "you" | "ai", text: string) {
+function appendChat(log: HTMLElement, who: "you" | "ai", text: string): HTMLElement {
   const row = el("div", who === "you" ? "text-right" : "text-left");
   const bubble = el("span",
     who === "you"
       ? "inline-block px-3 py-1.5 rounded-lg bg-july-500/20 text-july-200 text-sm"
-      : "inline-block px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 text-sm"
+      : "inline-block px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 text-sm text-left"
   );
-  bubble.textContent = text;
+  if (who === "ai") {
+    bubble.innerHTML = renderMarkdown(text);
+  } else {
+    bubble.textContent = text;
+  }
   row.appendChild(bubble);
   log.appendChild(row);
   log.scrollTop = log.scrollHeight;
+  return bubble;
+}
+
+/** Update a streaming AI bubble — accumulate full text, re-render markdown. */
+function updateBubble(bubble: HTMLElement, fullText: string) {
+  bubble.innerHTML = renderMarkdown(fullText);
+  const log = bubble.closest(".space-y-2") as HTMLElement | null;
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+function renderMarkdown(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    // code blocks before inline code
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, "<pre class='mt-1 p-2 rounded bg-black/30 text-xs overflow-x-auto whitespace-pre'>$1</pre>")
+    .replace(/`([^`]+)`/g, "<code class='px-1 rounded bg-black/30 text-xs'>$1</code>")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/^#{1,3} (.+)$/gm, "<strong class='block mt-2'>$1</strong>")
+    .replace(/\n/g, "<br>");
 }
 
 function el(tag: string, cls: string): HTMLElement {
