@@ -175,6 +175,7 @@ function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTML
       if (!ok) { chatBtn.disabled = false; return; }
 
       const statusBubble = appendChat(chatLog, "ai", "");
+      setSpinner(statusBubble, "Loading model…");
       try {
         llmSession = await createSession(
           buildSystemPrompt(scorecard.repo, scorecard.total, scorecard.categories, repoFiles),
@@ -182,7 +183,8 @@ function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTML
           llmWorkerURL,
           (msg) => { statusBubble.textContent = msg; },
         );
-        statusBubble.textContent = "";
+        // Remove the status bubble entirely once loaded
+        statusBubble.closest("div")?.remove();
         await refreshDeleteBtn();
       } catch (e) {
         statusBubble.textContent = (e as Error).message;
@@ -192,6 +194,7 @@ function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTML
     }
 
     const bubble = appendChat(chatLog, "ai", "");
+    setSpinner(bubble, "Thinking…");
     await llmSession.prompt(q, (fullText) => { updateBubble(bubble, fullText); });
     chatBtn.disabled = false;
   };
@@ -251,6 +254,16 @@ function renderCategory(cat: ScoredCategory): HTMLElement {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function setSpinner(bubble: HTMLElement, label: string) {
+  bubble.innerHTML =
+    `<span class="inline-flex items-center gap-1.5 text-gray-500">` +
+    `<span class="inline-flex gap-0.5">` +
+    `<span class="w-1 h-1 rounded-full bg-gray-500 animate-bounce [animation-delay:-0.3s]"></span>` +
+    `<span class="w-1 h-1 rounded-full bg-gray-500 animate-bounce [animation-delay:-0.15s]"></span>` +
+    `<span class="w-1 h-1 rounded-full bg-gray-500 animate-bounce"></span>` +
+    `</span>${label}</span>`;
+}
 
 function showProgress(container: HTMLElement, msg: string) {
   const p = el("p", "text-sm text-gray-400 flex items-center gap-2");
