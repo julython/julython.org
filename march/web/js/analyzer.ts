@@ -64,6 +64,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
 
   // ── Wire up button ──────────────────────────────────────────────────────────
   let scorecard: Scorecard | null = null;
+  let repoFiles: Record<string, string> = {};
 
   btn.addEventListener("click", () => {
     btn.disabled = true;
@@ -81,6 +82,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
         showProgress(body, message);
       } else if (type === "result") {
         scorecard = sc as Scorecard;
+        repoFiles = e.data.fileContents ?? {};
         body.innerHTML = "";
         body.appendChild(renderScorecard(scorecard));
         chatWrap.classList.remove("hidden");
@@ -104,7 +106,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
     if (!q || !scorecard) return;
     chatInput.value = "";
     appendChat(chatLog, "you", q);
-    appendChat(chatLog, "ai", chat(q, scorecard));
+    appendChat(chatLog, "ai", chat(q, scorecard, repoFiles));
   };
 
   chatBtn.addEventListener("click", sendChat);
@@ -166,7 +168,7 @@ function renderCategory(cat: ScoredCategory): HTMLElement {
 
 // ── Chat (simple local LLM hook — swap fetch target as needed) ───────────────
 
-function chat(question: string, sc: Scorecard): string {
+function chat(question: string, sc: Scorecard, files: Record<string, string>): string {
   // For now: a rule-based responder using the scorecard data.
   // Replace this body with a fetch to /api/v1/chat or window.ai when ready.
   const low = sc.categories.filter(c => (c.score / c.max) < 0.5);

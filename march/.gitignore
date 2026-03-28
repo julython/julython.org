@@ -4,4 +4,6 @@ coverage.*
 .env
 .claude
 web/assets/tailwind.*.css
+web/assets/analyzer.*.js
+web/assets/worker.*.js
 internal/components/assets_gen.go

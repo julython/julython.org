@@ -232,7 +232,7 @@ function score(repo: RepoMeta, paths: string[], contents: Record<string, string>
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-async function analyze(owner: string, repo: string): Promise<Scorecard> {
+async function analyze(owner: string, repo: string): Promise<{ scorecard: Scorecard; fileContents: Record<string, string> }> {
   post("progress", `Fetching metadata for ${owner}/${repo}…`);
   const meta = await ghGet<RepoMeta>(`repos/${owner}/${repo}`);
   const ref = meta.default_branch;
@@ -250,15 +250,19 @@ async function analyze(owner: string, repo: string): Promise<Scorecard> {
   );
 
   post("progress", "Scoring…");
-  return score(meta, allPaths, contents);
+  const scorecard = score(meta, allPaths, contents);
+
+  // Return contents alongside scorecard so the main thread can
+  // pass them to the LLM chat without keeping the worker alive.
+  return { scorecard, fileContents: contents };
 }
 
 self.addEventListener("message", async (e: MessageEvent) => {
   const { type, owner, repo } = e.data;
   if (type !== "analyze") return;
   try {
-    const scorecard = await analyze(owner, repo);
-    self.postMessage({ type: "result", scorecard });
+    const { scorecard, fileContents } = await analyze(owner, repo);
+    self.postMessage({ type: "result", scorecard, fileContents });
   } catch (err) {
     self.postMessage({ type: "error", message: (err as Error).message });
   }
