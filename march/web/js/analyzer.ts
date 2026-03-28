@@ -1,51 +1,68 @@
-/**
- * Project Analyzer — main thread
- *
- * Mounted by the project detail templ page via:
- *   <div id="analyzer" data-repo-url="https://github.com/owner/repo"
- *                      data-worker-url="/assets/worker.abc123.js"></div>
- *   <script type="module" src="/assets/analyzer.abc123.js"></script>
- *
- * Spawns the worker, streams progress, and renders the scorecard + chat UI.
- */
-
 import type { Scorecard, ScoredCategory } from "./worker";
-import { createSession, buildSystemPrompt, type LLMSession } from "./llm";
+import {
+  createSession, buildSystemPrompt, deleteCachedModels,
+  getCachedModels, MODELS, DEFAULT_MODEL,
+  type LLMSession,
+} from "./llm";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 const mount = document.getElementById("analyzer");
 if (mount) {
-  const repoURL = mount.dataset.repoUrl ?? "";
-  const workerURL = mount.dataset.workerUrl ?? "";
-  if (repoURL && workerURL) {
-    mount.appendChild(buildUI(repoURL, workerURL));
+  const repoURL = mount.dataset.repoUrl;
+  const workerURL = mount.dataset.workerUrl;
+  const llmWorkerURL = mount.dataset.llmWorkerUrl;
+  if (repoURL && workerURL && llmWorkerURL) {
+    mount.appendChild(buildUI(repoURL, workerURL, llmWorkerURL));
   }
 }
 
 // ── UI builder ────────────────────────────────────────────────────────────────
 
-function buildUI(repoURL: string, workerURL: string): HTMLElement {
+function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTMLElement {
   const { owner, repo } = parseRepoURL(repoURL);
 
   const root = el("div", "mt-8 border border-white/10 rounded-xl bg-surface-light overflow-hidden");
 
-  // Header bar
+  // ── Header ─────────────────────────────────────────────────────────────────
   const header = el("div", "flex items-center justify-between px-5 py-4 border-b border-white/10");
   const title = el("h2", "text-sm font-semibold text-white");
   title.textContent = "Repo Analyzer";
-  const btn = el("button",
+
+  const headerRight = el("div", "flex items-center gap-2");
+
+  const modelSelect = el("select",
+    "text-xs px-2 py-1 rounded-lg bg-surface border border-white/10 text-gray-300 " +
+    "focus:outline-none focus:border-july-500/50"
+  ) as HTMLSelectElement;
+  for (const m of MODELS) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.label;
+    if (m.id === DEFAULT_MODEL) opt.selected = true;
+    modelSelect.appendChild(opt);
+  }
+
+  const deleteBtn = el("button",
+    "text-xs px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 " +
+    "hover:bg-red-500/20 transition-colors hidden"
+  ) as HTMLButtonElement;
+  deleteBtn.title = "Remove downloaded model from browser cache";
+
+  const analyzeBtn = el("button",
     "px-4 py-1.5 rounded-lg text-sm font-medium bg-july-500/20 border border-july-500/40 " +
     "text-july-300 hover:bg-july-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
   ) as HTMLButtonElement;
-  btn.textContent = "Analyze & Report";
-  header.append(title, btn);
+  analyzeBtn.textContent = "Analyze & Report";
 
-  // Progress / results area
+  headerRight.append(modelSelect, deleteBtn, analyzeBtn);
+  header.append(title, headerRight);
+
+  // ── Body ───────────────────────────────────────────────────────────────────
   const body = el("div", "px-5 py-4 space-y-4");
 
-  // Chat area (hidden until analysis complete)
-  const chatWrap = el("div", "hidden border-t border-white/10 pt-4 mt-2");
+  // ── Chat ───────────────────────────────────────────────────────────────────
+  const chatWrap = el("div", "hidden border-t border-white/10 pt-4 mt-2 px-5 pb-4");
   const chatLog = el("div", "space-y-2 mb-3 max-h-48 overflow-y-auto text-sm text-gray-300");
   const chatRow = el("div", "flex gap-2");
   const chatInput = el("input",
@@ -55,7 +72,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
   chatInput.placeholder = "Ask about this repo…";
   const chatBtn = el("button",
     "px-3 py-2 rounded-lg bg-july-500/20 border border-july-500/40 text-july-300 text-sm " +
-    "hover:bg-july-500/30 transition-colors"
+    "hover:bg-july-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
   ) as HTMLButtonElement;
   chatBtn.textContent = "Ask";
   chatRow.append(chatInput, chatBtn);
@@ -63,48 +80,88 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
 
   root.append(header, body, chatWrap);
 
-  // ── Wire up button ──────────────────────────────────────────────────────────
+  // ── Cache helpers ──────────────────────────────────────────────────────────
+  const refreshDeleteBtn = async () => {
+    const cached = await getCachedModels();
+    const hit = cached.find(c => c.modelId === modelSelect.value);
+    if (hit) {
+      deleteBtn.textContent = `Delete model (${hit.sizeMB}MB)`;
+      deleteBtn.classList.remove("hidden");
+    } else {
+      deleteBtn.classList.add("hidden");
+    }
+  };
+  refreshDeleteBtn();
+  modelSelect.addEventListener("change", refreshDeleteBtn);
+
+  deleteBtn.addEventListener("click", async () => {
+    const modelId = modelSelect.value;
+    const rec = MODELS.find(m => m.id === modelId)!;
+    if (!confirm(`Delete the cached "${rec.label}" model? You'll need to re-download it next time.`)) return;
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting…";
+    await deleteCachedModels(modelId);
+    await refreshDeleteBtn();
+    deleteBtn.disabled = false;
+  });
+
+  // ── Download confirmation ──────────────────────────────────────────────────
+  const confirmDownload = async (modelId: string): Promise<boolean> => {
+    const cached = await getCachedModels();
+    if (cached.find(c => c.modelId === modelId)) return true;
+    const rec = MODELS.find(m => m.id === modelId)!;
+    return confirm(
+      `To chat about this repo, "${rec.label}" (~${rec.sizeMB}MB) will be downloaded ` +
+      `and cached in your browser.\n\nThis only happens once — subsequent uses load from cache.\n\nContinue?`
+    );
+  };
+
+  // ── State ──────────────────────────────────────────────────────────────────
   let scorecard: Scorecard | null = null;
   let repoFiles: Record<string, string> = {};
   let llmSession: LLMSession | null = null;
 
-  btn.addEventListener("click", () => {
-    btn.disabled = true;
-    btn.textContent = "Analyzing…";
+  // ── Analyze button ─────────────────────────────────────────────────────────
+  analyzeBtn.addEventListener("click", () => {
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = "Analyzing…";
     body.innerHTML = "";
     chatWrap.classList.add("hidden");
     scorecard = null;
+    llmSession?.destroy();
+    llmSession = null;
 
     const worker = new Worker(workerURL, { type: "module" });
-
     worker.addEventListener("message", (e: MessageEvent) => {
       const { type, message, scorecard: sc } = e.data;
-
       if (type === "progress") {
         showProgress(body, message);
       } else if (type === "result") {
         scorecard = sc as Scorecard;
         repoFiles = e.data.fileContents ?? {};
-        llmSession?.destroy();
-        llmSession = null; // recreate with fresh context on re-analyze
         body.innerHTML = "";
         body.appendChild(renderScorecard(scorecard));
         chatWrap.classList.remove("hidden");
-        btn.textContent = "Re-analyze";
-        btn.disabled = false;
+        analyzeBtn.textContent = "Re-analyze";
+        analyzeBtn.disabled = false;
         worker.terminate();
       } else if (type === "error") {
         showError(body, message);
-        btn.textContent = "Retry";
-        btn.disabled = false;
+        analyzeBtn.textContent = "Retry";
+        analyzeBtn.disabled = false;
         worker.terminate();
       }
     });
-
     worker.postMessage({ type: "analyze", owner, repo });
   });
 
-  // ── Chat handler ────────────────────────────────────────────────────────────
+  // Reset session when model changes
+  modelSelect.addEventListener("change", () => {
+    llmSession?.destroy();
+    llmSession = null;
+  });
+
+  // ── Chat ───────────────────────────────────────────────────────────────────
   const sendChat = async () => {
     const q = chatInput.value.trim();
     if (!q || !scorecard) return;
@@ -112,14 +169,21 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
     chatBtn.disabled = true;
     appendChat(chatLog, "you", q);
 
-    // Lazy-init LLM session on first chat
     if (!llmSession) {
+      const modelId = modelSelect.value;
+      const ok = await confirmDownload(modelId);
+      if (!ok) { chatBtn.disabled = false; return; }
+
       const statusBubble = appendChat(chatLog, "ai", "");
       try {
         llmSession = await createSession(
           buildSystemPrompt(scorecard.repo, scorecard.total, scorecard.categories, repoFiles),
+          modelId,
+          llmWorkerURL,
           (msg) => { statusBubble.textContent = msg; },
         );
+        statusBubble.textContent = "";
+        await refreshDeleteBtn();
       } catch (e) {
         statusBubble.textContent = (e as Error).message;
         chatBtn.disabled = false;
@@ -128,9 +192,7 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
     }
 
     const bubble = appendChat(chatLog, "ai", "");
-    await llmSession.prompt(q, (fullText) => {
-      updateBubble(bubble, fullText);
-    });
+    await llmSession.prompt(q, (fullText) => { updateBubble(bubble, fullText); });
     chatBtn.disabled = false;
   };
 
@@ -147,7 +209,6 @@ function buildUI(repoURL: string, workerURL: string): HTMLElement {
 function renderScorecard(sc: Scorecard): HTMLElement {
   const wrap = el("div", "space-y-4");
 
-  // Total score badge
   const totalRow = el("div", "flex items-center gap-4");
   const badge = el("div", "text-4xl font-bold tabular-nums " + scoreColor(sc.total));
   badge.textContent = String(sc.total);
@@ -156,11 +217,9 @@ function renderScorecard(sc: Scorecard): HTMLElement {
   totalRow.append(badge, badgeSub);
   wrap.appendChild(totalRow);
 
-  // Category bars
   for (const cat of sc.categories) {
     wrap.appendChild(renderCategory(cat));
   }
-
   return wrap;
 }
 
@@ -224,7 +283,6 @@ function appendChat(log: HTMLElement, who: "you" | "ai", text: string): HTMLElem
   return bubble;
 }
 
-/** Update a streaming AI bubble — accumulate full text, re-render markdown. */
 function updateBubble(bubble: HTMLElement, fullText: string) {
   bubble.innerHTML = renderMarkdown(fullText);
   const log = bubble.closest(".space-y-2") as HTMLElement | null;
@@ -235,7 +293,6 @@ function renderMarkdown(text: string): string {
   if (!text) return "";
   return text
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    // code blocks before inline code
     .replace(/```[\w]*\n?([\s\S]*?)```/g, "<pre class='mt-1 p-2 rounded bg-black/30 text-xs overflow-x-auto whitespace-pre'>$1</pre>")
     .replace(/`([^`]+)`/g, "<code class='px-1 rounded bg-black/30 text-xs'>$1</code>")
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")

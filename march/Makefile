@@ -53,6 +53,7 @@ setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) ## Setup project, install de
 	go install github.com/air-verse/air@v1.61.7
 	go install gotest.tools/gotestsum@v1.13.0
 	go mod tidy
+	cd web/js && npm install
 
 $(TAILWIND_BIN):
 	@mkdir -p bin

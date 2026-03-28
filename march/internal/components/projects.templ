@@ -288,6 +288,7 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 				id="analyzer"
 				data-repo-url={ data.Project.URL }
 				data-worker-url={ AssetWorker }
+				data-llm-worker-url={ AssetLLMWorker }
 			></div>
 			<script type="module" src={ AssetAnalyzer }></script>
 		</section>

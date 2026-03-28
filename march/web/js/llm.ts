@@ -1,22 +1,97 @@
-/**
- * LLM abstraction: tries window.ai (Chrome Gemini Nano) first,
- * falls back to WebLLM (Qwen2.5-Coder-1.5B via WebGPU).
- *
- * Both backends expose the same interface: stream tokens via onChunk,
- * resolve with the full response string.
- */
+import { CreateWebWorkerMLCEngine } from "@mlc-ai/web-llm";
+import type { MLCEngineInterface } from "@mlc-ai/web-llm";
+
+// ── Model registry ────────────────────────────────────────────────────────────
+// Add new models here as they're released. size is approximate download in MB.
+
+export interface ModelRecord {
+  id: string;
+  label: string;
+  sizeMB: number;
+  description: string;
+}
+
+export const MODELS: ModelRecord[] = [
+  {
+    id: "SmolLM2-360M-Instruct-q4f16_1-MLC",
+    label: "SmolLM2 360M (fast, ~130MB)",
+    sizeMB: 130,
+    description: "Fastest option, limited reasoning",
+  },
+  {
+    id: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    label: "Llama 3.2 1B (~879MB)",
+    sizeMB: 879,
+    description: "Good balance of speed and quality",
+  },
+  {
+    id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+    label: "Llama 3.2 3B (~2.2GB)",
+    sizeMB: 2263,
+    description: "Best quality, requires more VRAM",
+  },
+];
+
+export const DEFAULT_MODEL = MODELS[1].id; // Llama 1B
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface LLMSession {
-  /** onChunk receives the full accumulated text so far, not just the new token. */
+  /** onChunk receives the full accumulated text so far. */
   prompt(text: string, onChunk: (fullText: string) => void): Promise<string>;
   destroy(): void;
 }
 
-// ── window.ai (Chrome 127+, Gemini Nano) ─────────────────────────────────────
+// ── Cache helpers ─────────────────────────────────────────────────────────────
 
-// Gemini Nano has a small context window — keep system prompt tight.
+/**
+ * Returns the approximate total size in MB of cached WebLLM model data,
+ * and which model IDs appear to be cached.
+ */
+export async function getCachedModels(): Promise<{ modelId: string; sizeMB: number }[]> {
+  if (!("caches" in window)) return [];
+  try {
+    const cacheNames = await caches.keys();
+    const webllmCaches = cacheNames.filter(n => n.startsWith("webllm/"));
+    const results: { modelId: string; sizeMB: number }[] = [];
+
+    for (const name of webllmCaches) {
+      const cache = await caches.open(name);
+      const keys = await cache.keys();
+      let bytes = 0;
+      for (const req of keys) {
+        const res = await cache.match(req);
+        if (res) {
+          const blob = await res.blob();
+          bytes += blob.size;
+        }
+      }
+      // Cache name is like "webllm/Llama-3.2-1B-Instruct-q4f16_1-MLC"
+      const modelId = name.replace("webllm/", "");
+      results.push({ modelId, sizeMB: Math.round(bytes / 1024 / 1024) });
+    }
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Delete all WebLLM model caches, or a specific model by ID.
+ */
+export async function deleteCachedModels(modelId?: string): Promise<void> {
+  if (!("caches" in window)) return;
+  const cacheNames = await caches.keys();
+  const targets = modelId
+    ? cacheNames.filter(n => n === `webllm/${modelId}`)
+    : cacheNames.filter(n => n.startsWith("webllm/"));
+  await Promise.all(targets.map(n => caches.delete(n)));
+  // Also reset the engine so next use re-downloads
+  webllmEngine = null;
+}
+
+// ── window.ai ─────────────────────────────────────────────────────────────────
+
 const MAX_SYSTEM_PROMPT_CHARS = 2000;
 
 async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
@@ -31,8 +106,6 @@ async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
   const truncated = systemPrompt.slice(0, MAX_SYSTEM_PROMPT_CHARS);
   const session = await api.create({
     systemPrompt: truncated,
-    // initialPrompts is more reliably respected than systemPrompt alone —
-    // seed the conversation with context as an established assistant turn.
     initialPrompts: [
       { role: "user", content: "What is the context for our conversation?" },
       { role: "assistant", content: truncated },
@@ -43,23 +116,14 @@ async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
   });
   if (!session) return null;
 
-  // Also keep the full context to inject into each prompt in case
-  // the system prompt was truncated.
   const context = systemPrompt;
-
   return {
     async prompt(text, onChunk) {
-      // Prepend a short context reminder so Gemini Nano can't forget it.
-      const fullPrompt = `Regarding the repo "${context.slice(0, 100).split('\n')[0]}":\n${text}`;
-
+      const fullPrompt = `Regarding the repo "${context.slice(0, 100).split("\n")[0]}":\n${text}`;
       const stream = session.promptStreaming(fullPrompt);
       let full = "";
       for await (const chunk of stream) {
-        if (chunk.startsWith(full)) {
-          full = chunk;
-        } else {
-          full += chunk;
-        }
+        full = chunk.startsWith(full) ? chunk : full + chunk;
         onChunk(full);
       }
       return full;
@@ -68,49 +132,60 @@ async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
   };
 }
 
-// ── WebLLM fallback (Qwen2.5-Coder-1.5B, runs via WebGPU) ───────────────────
-// Loaded from CDN dynamically so it doesn't bloat the main bundle.
-// ~1GB model download on first use, cached in browser cache thereafter.
+// ── WebLLM ────────────────────────────────────────────────────────────────────
 
-const WEBLLM_CDN = "https://esm.run/@mlc-ai/web-llm";
-const WEBLLM_MODEL = "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC";
-
-let webllmEngine: any = null; // reuse across sessions
+let webllmEngine: MLCEngineInterface | null = null;
+let loadedModelId: string | null = null;
 
 async function tryWebLLM(
   systemPrompt: string,
+  modelId: string,
+  workerURL: string,
   onProgress?: (msg: string) => void,
 ): Promise<LLMSession | null> {
   try {
-    const { CreateMLCEngine } = await import(/* @vite-ignore */ WEBLLM_CDN);
-
-    if (!webllmEngine) {
-      onProgress?.("Loading Qwen2.5-Coder model (first load may take a minute)…");
-      webllmEngine = await CreateMLCEngine(WEBLLM_MODEL, {
-        initProgressCallback: (p: any) => {
-          onProgress?.(`Loading model: ${Math.round((p.progress ?? 0) * 100)}%`);
-        },
-      });
+    // Reload if model changed
+    if (webllmEngine && loadedModelId !== modelId) {
+      webllmEngine = null;
+      loadedModelId = null;
     }
 
+    if (!webllmEngine) {
+      const rec = MODELS.find(m => m.id === modelId);
+      onProgress?.(`Loading ${rec?.label ?? modelId}…`);
+      webllmEngine = await CreateWebWorkerMLCEngine(
+        new Worker(workerURL, { type: "module" }),
+        modelId,
+        {
+          initProgressCallback: (p) => {
+            const pct = Math.round((p.progress ?? 0) * 100);
+            onProgress?.(`Loading model: ${pct}% — ${p.text ?? ""}`);
+          },
+        },
+      );
+      loadedModelId = modelId;
+    }
+
+    const sysPrompt = systemPrompt;
     return {
       async prompt(text, onChunk) {
-        const messages = [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ];
-          let full = "";
-        const stream = await webllmEngine.chat.completions.create({ messages, stream: true });
+        let full = "";
+        const stream = await webllmEngine!.chat.completions.create({
+          messages: [
+            { role: "system", content: sysPrompt },
+            { role: "user", content: text },
+          ],
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 512,
+        });
         for await (const chunk of stream) {
           const token = chunk.choices[0]?.delta?.content ?? "";
-          if (token) {
-            full += token;
-            onChunk(full);
-          }
+          if (token) { full += token; onChunk(full); }
         }
         return full;
       },
-      destroy() { /* keep engine alive for reuse */ },
+      destroy() { /* keep engine alive across chats */ },
     };
   } catch (e) {
     console.warn("WebLLM unavailable:", e);
@@ -120,12 +195,10 @@ async function tryWebLLM(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/**
- * Create an LLM session. Tries window.ai first, then WebLLM.
- * onProgress is called with status messages during model loading.
- */
 export async function createSession(
   systemPrompt: string,
+  modelId: string,
+  workerURL: string,
   onProgress?: (msg: string) => void,
 ): Promise<LLMSession> {
   onProgress?.("Checking for browser AI…");
@@ -137,18 +210,15 @@ export async function createSession(
   }
 
   onProgress?.("Chrome AI unavailable, loading WebLLM…");
-  const webllm = await tryWebLLM(systemPrompt, onProgress);
+  const webllm = await tryWebLLM(systemPrompt, modelId, workerURL, onProgress);
   if (webllm) return webllm;
 
   throw new Error(
-    "No LLM available. Enable Chrome AI at chrome://flags/#optimization-guide-on-device-model, " +
-    "or use a WebGPU-capable browser."
+    "No LLM available. Requires Chrome 127+ with #prompt-api-for-gemini-nano, " +
+    "or a WebGPU-capable browser."
   );
 }
 
-/**
- * Build the system prompt from scorecard + file contents.
- */
 export function buildSystemPrompt(
   repoName: string,
   score: number,
@@ -156,14 +226,12 @@ export function buildSystemPrompt(
   files: Record<string, string>,
 ): string {
   const scorecard = categories
-    .map(c => `- ${c.name}: ${c.score}/${c.max} (${c.signals.join(", ") || "no signals detected"})`)
+    .map(c => `- ${c.name}: ${c.score}/${c.max} (${c.signals.join(", ") || "no signals"})`)
     .join("\n");
-
   const fileDump = Object.entries(files)
+    .slice(0, 5)
     .map(([path, content]) => `### ${path}\n\`\`\`\n${content.slice(0, 500)}\n\`\`\``)
-    .slice(0, 5)  // at most 5 files
     .join("\n\n");
-
   return `You are a code quality assistant analyzing the GitHub repository "${repoName}".
 Answer questions about this repo concisely. Focus on actionable advice.
 If asked about something not covered by the files below, say so honestly.
