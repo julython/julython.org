@@ -69,6 +69,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := handlers.NewBlogHandler()
 	helpHandler := handlers.NewHelpHandler()
+	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
 
 	// Routes
 	mux.HandleFunc("GET /favicon.svg", handlers.FaviconHandler)
@@ -104,6 +105,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	mux.HandleFunc("GET /blog/{slug}", blogHandler.Detail)
 
 	// Webhooks
+	mux.HandleFunc("GET /api/v1/gh/{path...}", proxyHandler.Proxy)
 	mux.HandleFunc("POST /api/v1/github", webhookHandler.HandleGitHubWebhook)
 
 	// Static files

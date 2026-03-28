@@ -47,11 +47,11 @@ DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=dis
 # ============================================
 
 setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) ## Setup project, install dev tools, and vendor assets
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-	go install github.com/a-h/templ/cmd/templ@latest
-	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-	go install github.com/air-verse/air@latest
-	go install gotest.tools/gotestsum@latest
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+	go install github.com/a-h/templ/cmd/templ@v0.3.1001
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+	go install github.com/air-verse/air@v1.61.7
+	go install gotest.tools/gotestsum@v1.13.0
 	go mod tidy
 
 $(TAILWIND_BIN):
