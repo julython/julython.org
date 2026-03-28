@@ -284,6 +284,12 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 			<div id="commits">
 				@ProjectCommitList(data)
 			</div>
+			<div
+				id="analyzer"
+				data-repo-url={ data.Project.URL }
+				data-worker-url={ AssetWorker }
+			></div>
+			<script type="module" src={ AssetAnalyzer }></script>
 		</section>
 	}
 }
