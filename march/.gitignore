@@ -1,5 +1,6 @@
 bin/*
 tmp/*
+web/vendor/
 coverage.*
 .env
 .claude

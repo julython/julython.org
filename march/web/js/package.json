@@ -1,7 +1,0 @@
-{
-  "name": "julython-js",
-  "private": true,
-  "dependencies": {
-    "@mlc-ai/web-llm": "^0.2.82"
-  }
-}

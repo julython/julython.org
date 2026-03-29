@@ -33,12 +33,16 @@ endif
 TAILWIND_VERSION := 4.1.18
 HTMX_VERSION     := 2.0.8
 MERMAID_VERSION  := 11.4.1
+WEBLLM_VERSION   := 0.2.82
 TAILWIND_BIN     := bin/tailwindcss
 TAILWIND_URL     := https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TAILWIND_VERSION)/tailwindcss-$(TAILWIND_PLATFORM)
 HTMX_URL         := https://unpkg.com/htmx.org@$(HTMX_VERSION)/dist/htmx.min.js
 HTMX_DEST        := web/assets/htmx-$(HTMX_VERSION).min.js
 MERMAID_URL      := https://cdn.jsdelivr.net/npm/mermaid@$(MERMAID_VERSION)/dist/mermaid.min.js
 MERMAID_DEST     := web/assets/mermaid-$(MERMAID_VERSION).min.js
+WEBLLM_TGZ_URL    := https://registry.npmjs.org/@mlc-ai/web-llm/-/web-llm-$(WEBLLM_VERSION).tgz
+WEBLLM_VENDOR_DIR := web/vendor/mlc-web-llm
+WEBLLM_TGZ        := tmp/web-llm-$(WEBLLM_VERSION).tgz
 LOCALES_DIR      := internal/i18n/locales
 DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=disable
 
@@ -46,14 +50,13 @@ DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=dis
 # Setup
 # ============================================
 
-setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) ## Setup project, install dev tools, and vendor assets
+setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 	go install github.com/a-h/templ/cmd/templ@v0.3.1001
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
 	go install github.com/air-verse/air@v1.61.7
 	go install gotest.tools/gotestsum@v1.13.0
 	go mod tidy
-	cd web/js && npm install
 
 $(TAILWIND_BIN):
 	@mkdir -p bin
@@ -73,6 +76,16 @@ $(MERMAID_DEST):
 	@echo "→ Downloading Mermaid v$(MERMAID_VERSION)..."
 	@curl -fsSL $(MERMAID_URL) -o $@
 	@echo "✓ $(MERMAID_DEST)"
+
+# @mlc-ai/web-llm from npm (not committed; see web/vendor/ in .gitignore). Run make setup before make generate.
+$(WEBLLM_VENDOR_DIR)/lib/index.js:
+	@mkdir -p tmp web/vendor
+	@echo "→ Downloading @mlc-ai/web-llm v$(WEBLLM_VERSION)..."
+	@curl -fsSL $(WEBLLM_TGZ_URL) -o $(WEBLLM_TGZ)
+	@rm -rf $(WEBLLM_VENDOR_DIR)
+	@mkdir -p $(WEBLLM_VENDOR_DIR)
+	@tar -xzf $(WEBLLM_TGZ) -C $(WEBLLM_VENDOR_DIR) --strip-components=1 package
+	@echo "✓ $(WEBLLM_VENDOR_DIR)"
 
 compose-up:  ## Run the shared services in docker
 	docker compose up -d postgres adminer smee
@@ -123,7 +136,7 @@ sqlc:  ## Generate sqlc files
 templ:  ## Generate templ files
 	templ generate
 
-tailwind:  ## Build Tailwind CSS and generate asset manifest
+tailwind:  ## Build Tailwind + asset manifest (needs make setup for web/vendor WebLLM)
 	go run ./cmd/assetgen
 
 # ============================================

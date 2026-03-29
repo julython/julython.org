@@ -1,12 +1,8 @@
 // assetgen runs Tailwind CSS + esbuild, hashes outputs, writes to web/assets/,
 // and generates internal/components/assets_gen.go with filenames as constants.
 //
-// Usage:
-//
-//	go run ./cmd/assetgen          # production: minified + hashed
-//	go run ./cmd/assetgen -dev     # dev: unminified, fixed filenames
-//
-//go:generate go run ./cmd/assetgen
+// @mlc-ai/web-llm is vendored at web/vendor/mlc-web-llm/ by make setup (gitignored).
+// The npm package version is pinned only in the Makefile for the download URL.
 package main
 
 import (
@@ -21,15 +17,21 @@ import (
 )
 
 const (
-	tailwindBin  = "bin/tailwindcss"
-	inputCSS     = "web/input.css"
-	assetsDir    = "web/assets"
-	manifestPath = "internal/components/assets_gen.go"
+	tailwindBin       = "bin/tailwindcss"
+	inputCSS          = "web/input.css"
+	assetsDir         = "web/assets"
+	manifestPath      = "internal/components/assets_gen.go"
+	webLLMVendorIndex = "web/vendor/mlc-web-llm/lib/index.js"
 )
 
 func main() {
 	dev := flag.Bool("dev", false, "dev mode: no hash, no minify")
 	flag.Parse()
+
+	webllmAlias, err := webLLMIndexAbs()
+	if err != nil {
+		fatalf("web-llm vendor: %v\n", err)
+	}
 
 	cssName, err := buildCSS(*dev)
 	if err != nil {
@@ -46,17 +48,17 @@ func main() {
 		fatalf("mermaid: %v\n", err)
 	}
 
-	analyzerName, err := buildJS("web/js/analyzer.ts", "analyzer", *dev)
+	analyzerName, err := buildJS("web/js/analyzer.ts", "analyzer", *dev, webllmAlias)
 	if err != nil {
 		fatalf("analyzer build: %v\n", err)
 	}
 
-	workerName, err := buildJS("web/js/worker.ts", "worker", *dev)
+	workerName, err := buildJS("web/js/worker.ts", "worker", *dev, webllmAlias)
 	if err != nil {
 		fatalf("worker build: %v\n", err)
 	}
 
-	llmWorkerName, err := buildJS("web/js/llm-worker.ts", "llm-worker", *dev)
+	llmWorkerName, err := buildJS("web/js/llm-worker.ts", "llm-worker", *dev, webllmAlias)
 	if err != nil {
 		fatalf("llm-worker build: %v\n", err)
 	}
@@ -67,6 +69,14 @@ func main() {
 
 	fmt.Printf("assets_gen.go → tailwind: %s  htmx: %s  mermaid: %s  analyzer: %s  worker: %s  llm-worker: %s\n",
 		cssName, htmxName, mermaidName, analyzerName, workerName, llmWorkerName)
+}
+
+// webLLMIndexAbs returns an absolute path to vendored lib/index.js for esbuild Alias.
+func webLLMIndexAbs() (string, error) {
+	if _, err := os.Stat(webLLMVendorIndex); err != nil {
+		return "", fmt.Errorf("%q missing — run make setup from the march directory: %w", webLLMVendorIndex, err)
+	}
+	return filepath.Abs(webLLMVendorIndex)
 }
 
 func buildCSS(dev bool) (string, error) {
@@ -96,7 +106,7 @@ func buildCSS(dev bool) (string, error) {
 
 // buildJS bundles a TypeScript entry point with esbuild and writes the result
 // to web/assets/ with a content hash. Returns the hashed filename.
-func buildJS(entry, stem string, dev bool) (string, error) {
+func buildJS(entry, stem string, dev bool, webLLMAlias string) (string, error) {
 	minify := !dev
 	result := api.Build(api.BuildOptions{
 		EntryPoints:       []string{entry},
@@ -108,6 +118,9 @@ func buildJS(entry, stem string, dev bool) (string, error) {
 		Target:            api.ES2020,
 		Platform:          api.PlatformBrowser,
 		External:          []string{"node:*", "url", "path", "fs", "crypto"},
+		Alias: map[string]string{
+			"@mlc-ai/web-llm": webLLMAlias,
+		},
 		// Stub out process so the typeof window === 'undefined' branch
 		// in @mlc-ai/web-llm resolves to the browser path at runtime.
 		Banner: map[string]string{
