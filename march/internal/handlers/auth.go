@@ -21,7 +21,7 @@ func init() {
 }
 
 const (
-	sessionKeyUser          = "user"
+	SessionKeyUser          = "user"
 	sessionKeyIdentityKey   = "identity_key"
 	sessionKeyOAuthState    = "oauth_state"
 	sessionKeyOAuthProvider = "oauth_provider"
@@ -142,7 +142,7 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store session
-	h.session.Put(ctx, sessionKeyUser, SessionUser{
+	h.session.Put(ctx, SessionKeyUser, SessionUser{
 		ID:        user.ID,
 		Username:  user.Username,
 		Name:      user.Name,
@@ -193,7 +193,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 // GetCurrentUser returns the logged-in user from session, or nil
 func (h *AuthHandler) GetCurrentUser(r *http.Request) *SessionUser {
-	user, ok := h.session.Get(r.Context(), sessionKeyUser).(SessionUser)
+	user, ok := h.session.Get(r.Context(), SessionKeyUser).(SessionUser)
 	if !ok {
 		return nil
 	}

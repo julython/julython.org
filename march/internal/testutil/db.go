@@ -125,7 +125,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
 		With().Timestamp().Logger()
 
-	router := api.NewRouter(sharedPool, sharedCfg, logger)
+	router := api.NewTestRouter(sharedPool, sharedCfg, logger)
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 
@@ -208,14 +208,14 @@ func CreateUserIdentifier(t *testing.T, env *TestEnv, userID uuid.UUID, idType, 
 	return identifier
 }
 
-func CreateProject(t *testing.T, env *TestEnv, name, repoURL string) db.Project {
+func CreateProject(t *testing.T, env *TestEnv, slug, repoURL string) db.Project {
 	t.Helper()
 
-	slug := fmt.Sprintf("owner/%s", name)
+	// slug is already the canonical form: e.g. "gh-alice-my-repo"
 	project, err := env.Queries.CreateProject(context.Background(), db.CreateProjectParams{
 		ID:          db.NewID(),
 		Url:         repoURL,
-		Name:        name,
+		Name:        slug,
 		Slug:        slug,
 		Description: db.NullText(),
 		RepoID:      pgtype.Int8{},
@@ -229,6 +229,16 @@ func CreateProject(t *testing.T, env *TestEnv, name, repoURL string) db.Project 
 		t.Fatalf("failed to create project: %v", err)
 	}
 	return project
+}
+
+// CreateOwnedProject builds a slug from the user's username so that
+// canEditProject will allow that user to edit the project.
+//
+//	project := testutil.CreateOwnedProject(t, env, user, "my-repo", repoURL)
+func CreateOwnedProject(t *testing.T, env *TestEnv, owner db.User, repo, repoURL string) db.Project {
+	t.Helper()
+	slug := fmt.Sprintf("gh-%s-%s", owner.Username, repo)
+	return CreateProject(t, env, slug, repoURL)
 }
 
 func CreateProjectWithRepoID(t *testing.T, env *TestEnv, name, slug, repoURL string, repoID int64) db.Project {

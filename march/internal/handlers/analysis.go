@@ -22,6 +22,12 @@ type analysisPayload struct {
 	Data       json.RawMessage `json:"data"`
 }
 
+type analysisResponse struct {
+	MetricType string `json:"metricType"`
+	Score      int16  `json:"score"`
+	Level      int16  `json:"level"`
+}
+
 // POST /api/projects/{projectID}/analysis
 // Level 0/1: scores the tile and upserts the metric row.
 // Level 2/3: records an AI-graded level up, data contains the AI reasoning.
@@ -85,7 +91,6 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// L1 scan — parse the typed struct and score it.
 	m, err := metrics.Parse(p.MetricType, p.Data)
 	if err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -94,7 +99,27 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 
 	score := metrics.Score(m)
 
+	// L2/L3 path: AI has reviewed the metric and is grading it up.
+	// Guard: the metric must already exist at L1 — we never skip levels.
 	if p.Level >= 2 && score == 10 {
+		existing, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
+			ProjectID:  projectUUID,
+			MetricType: p.MetricType,
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "bad request: metric must reach L1 before AI grading", http.StatusBadRequest)
+			return
+		}
+		if err != nil {
+			logger.Error().Err(err).Msg("get analysis metric for level guard")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if existing.Level < 1 {
+			http.Error(w, "bad request: metric must reach L1 before AI grading", http.StatusBadRequest)
+			return
+		}
+
 		if err := h.queries.UpdateAnalysisMetricLevel(ctx, db.UpdateAnalysisMetricLevelParams{
 			ProjectID:  projectUUID,
 			MetricType: p.MetricType,
@@ -105,7 +130,12 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
+
+		writeJSON(w, analysisResponse{
+			MetricType: p.MetricType,
+			Score:      existing.Score,
+			Level:      p.Level,
+		})
 		return
 	}
 
@@ -126,7 +156,28 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Fetch the persisted row so the response reflects the true level
+	// (the SQL upsert owns the L0/L1 transition logic).
+	saved, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
+		ProjectID:  projectUUID,
+		MetricType: p.MetricType,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("get analysis metric after upsert")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, analysisResponse{
+		MetricType: saved.MetricType,
+		Score:      saved.Score,
+		Level:      saved.Level,
+	})
+}
+
+func writeJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
 }
 
 // canEditProject returns true if the user is an admin or the slug owner.
