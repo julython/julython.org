@@ -14,10 +14,11 @@ import (
 type ProjectHandler struct {
 	queries     *db.Queries
 	gameService *services.GameService
+	userService *services.UserService
 }
 
-func NewProjectHandler(q *db.Queries, gs *services.GameService) *ProjectHandler {
-	return &ProjectHandler{queries: q, gameService: gs}
+func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService) *ProjectHandler {
+	return &ProjectHandler{queries: q, gameService: gs, userService: us}
 }
 
 const projectPageSize = 25

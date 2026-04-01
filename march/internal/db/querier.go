@@ -57,6 +57,8 @@ type Querier interface {
 	FlagCommit(ctx context.Context, arg FlagCommitParams) error
 	GetActiveGame(ctx context.Context, now time.Time) (Game, error)
 	GetActiveGameAtTime(ctx context.Context, timestamp time.Time) (Game, error)
+	GetAnalysisMetric(ctx context.Context, arg GetAnalysisMetricParams) (AnalysisMetric, error)
+	GetAnalysisMetricsByProject(ctx context.Context, projectID uuid.UUID) ([]AnalysisMetric, error)
 	GetBoardByProjectAndGame(ctx context.Context, arg GetBoardByProjectAndGameParams) (Board, error)
 	GetCommitByHash(ctx context.Context, hash pgtype.Text) (Commit, error)
 	GetCommitByID(ctx context.Context, id uuid.UUID) (Commit, error)
@@ -81,6 +83,7 @@ type Querier interface {
 	GetProjectBySlug(ctx context.Context, slug string) (Project, error)
 	GetProjectByURL(ctx context.Context, url string) (Project, error)
 	GetProjectLeaderboard(ctx context.Context, arg GetProjectLeaderboardParams) ([]GetProjectLeaderboardRow, error)
+	GetProjectTotalScore(ctx context.Context, projectID uuid.UUID) (int32, error)
 	GetRecentCommits(ctx context.Context, arg GetRecentCommitsParams) ([]GetRecentCommitsRow, error)
 	GetReportByID(ctx context.Context, id uuid.UUID) (Report, error)
 	GetTeamByID(ctx context.Context, id uuid.UUID) (Team, error)
@@ -110,11 +113,18 @@ type Querier interface {
 	ReviewReport(ctx context.Context, arg ReviewReportParams) error
 	SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error)
 	SetCommitGame(ctx context.Context, arg SetCommitGameParams) error
+	// Called after AI grading for L2/L3 upgrades only.
+	// Requires the metric to already be at L1 (enforced in the handler).
+	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserLastSeen(ctx context.Context, id uuid.UUID) error
+	// Score always reflects latest scan. Level auto-transitions between 0 and 1
+	// based on whether the score hits the threshold (10). L2/L3 are never
+	// downgraded by a rescan — the AI grading endpoint owns those transitions.
+	UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error
 	// ============================================
 	// Boards (Project Scores)
 	// ============================================

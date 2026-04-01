@@ -65,7 +65,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
 	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
 	webhookHandler := webhooks.NewHandler(queries, gameSvc)
-	projectHandler := handlers.NewProjectHandler(queries, gameSvc)
+	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := handlers.NewBlogHandler()
 	helpHandler := handlers.NewHelpHandler()
@@ -85,6 +85,9 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	mux.HandleFunc("GET /projects", projectHandler.List)
 	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
+
+	// Projects
+	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
 
 	// Profiles
 	mux.HandleFunc("GET /profile", profileHandler.Overview)

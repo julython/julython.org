@@ -88,6 +88,70 @@ func (q *Queries) DeactivateProject(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getAnalysisMetric = `-- name: GetAnalysisMetric :one
+SELECT id, project_id, metric_type, level, score, data, sha, updated_at, updated_by FROM analysis_metrics
+WHERE project_id = $1
+  AND metric_type = $2
+`
+
+type GetAnalysisMetricParams struct {
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+}
+
+func (q *Queries) GetAnalysisMetric(ctx context.Context, arg GetAnalysisMetricParams) (AnalysisMetric, error) {
+	row := q.db.QueryRow(ctx, getAnalysisMetric, arg.ProjectID, arg.MetricType)
+	var i AnalysisMetric
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.MetricType,
+		&i.Level,
+		&i.Score,
+		&i.Data,
+		&i.Sha,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+	)
+	return i, err
+}
+
+const getAnalysisMetricsByProject = `-- name: GetAnalysisMetricsByProject :many
+SELECT id, project_id, metric_type, level, score, data, sha, updated_at, updated_by FROM analysis_metrics
+WHERE project_id = $1
+ORDER BY metric_type
+`
+
+func (q *Queries) GetAnalysisMetricsByProject(ctx context.Context, projectID uuid.UUID) ([]AnalysisMetric, error) {
+	rows, err := q.db.Query(ctx, getAnalysisMetricsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AnalysisMetric
+	for rows.Next() {
+		var i AnalysisMetric
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.MetricType,
+			&i.Level,
+			&i.Score,
+			&i.Data,
+			&i.Sha,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getProjectByID = `-- name: GetProjectByID :one
 SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects WHERE id = $1
 `
@@ -197,6 +261,19 @@ func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, err
 	return i, err
 }
 
+const getProjectTotalScore = `-- name: GetProjectTotalScore :one
+SELECT COALESCE(SUM(score * level), 0)::int AS total_score
+FROM analysis_metrics
+WHERE project_id = $1
+`
+
+func (q *Queries) GetProjectTotalScore(ctx context.Context, projectID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, getProjectTotalScore, projectID)
+	var total_score int32
+	err := row.Scan(&total_score)
+	return total_score, err
+}
+
 const listActiveProjects = `-- name: ListActiveProjects :many
 SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects
 WHERE is_active = true
@@ -294,6 +371,76 @@ func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProj
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAnalysisMetricLevel = `-- name: UpdateAnalysisMetricLevel :exec
+UPDATE analysis_metrics SET
+  level      = $1,
+  updated_at = now(),
+  updated_by = $2
+WHERE project_id = $3
+  AND metric_type = $4
+`
+
+type UpdateAnalysisMetricLevelParams struct {
+	Level      int16     `json:"level"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+}
+
+// Called after AI grading for L2/L3 upgrades only.
+// Requires the metric to already be at L1 (enforced in the handler).
+func (q *Queries) UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error {
+	_, err := q.db.Exec(ctx, updateAnalysisMetricLevel,
+		arg.Level,
+		arg.UpdatedBy,
+		arg.ProjectID,
+		arg.MetricType,
+	)
+	return err
+}
+
+const upsertAnalysisMetric = `-- name: UpsertAnalysisMetric :exec
+INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
+VALUES ($1, $2, $3, CASE WHEN $4 = 10 THEN 1 ELSE 0 END, $4, $5, $6, $7)
+ON CONFLICT (project_id, metric_type) DO UPDATE SET
+  sha        = EXCLUDED.sha,
+  updated_at = now(),
+  updated_by = EXCLUDED.updated_by,
+  data       = EXCLUDED.data,
+  score      = EXCLUDED.score,
+  level      = CASE
+    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3
+    WHEN EXCLUDED.score = 10         THEN 1                       -- promote to L1
+    ELSE                                  0                       -- incomplete
+  END
+`
+
+type UpsertAnalysisMetricParams struct {
+	ID         uuid.UUID `json:"id"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+	Score      int16     `json:"score"`
+	Data       JSONMap   `json:"data"`
+	Sha        string    `json:"sha"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+}
+
+// Score always reflects latest scan. Level auto-transitions between 0 and 1
+// based on whether the score hits the threshold (10). L2/L3 are never
+// downgraded by a rescan — the AI grading endpoint owns those transitions.
+func (q *Queries) UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error {
+	_, err := q.db.Exec(ctx, upsertAnalysisMetric,
+		arg.ID,
+		arg.ProjectID,
+		arg.MetricType,
+		arg.Score,
+		arg.Data,
+		arg.Sha,
+		arg.UpdatedBy,
+	)
+	return err
 }
 
 const upsertProjectByRepoID = `-- name: UpsertProjectByRepoID :one
