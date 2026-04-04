@@ -11,69 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// bodyContains reads the response body and asserts each fragment is present.
-// On failure it prints a short plain-text summary instead of raw HTML:
-// the status code, the content-type, and any non-tag lines near the miss.
-func bodyContains(t *testing.T, resp *http.Response, fragments ...string) string {
-	t.Helper()
-	body := testutil.DecodeBody(t, resp)
-	for _, f := range fragments {
-		if !strings.Contains(body, f) {
-			assert.Fail(t, "fragment not found in response",
-				"looking for: %q\nstatus:      %d\ncontent-type: %s\ntext lines:\n%s",
-				f,
-				resp.StatusCode,
-				resp.Header.Get("Content-Type"),
-				textLines(body, 30),
-			)
-		}
-	}
-	return body
-}
-
-// textLines strips HTML tags and returns up to n non-empty lines of visible text.
-func textLines(html string, n int) string {
-	var b strings.Builder
-	count := 0
-	inTag := false
-	var line strings.Builder
-
-	flush := func() {
-		s := strings.TrimSpace(line.String())
-		if s != "" && count < n {
-			b.WriteString("  ")
-			b.WriteString(s)
-			b.WriteByte('\n')
-			count++
-		}
-		line.Reset()
-	}
-
-	for _, ch := range html {
-		switch {
-		case ch == '<':
-			inTag = true
-			flush()
-		case ch == '>':
-			inTag = false
-		case ch == '\n':
-			if !inTag {
-				flush()
-			}
-		case !inTag:
-			line.WriteRune(ch)
-		}
-	}
-	flush()
-	return b.String()
-}
 func TestLeaderboard(t *testing.T) {
 	t.Run("empty state renders without error when no game exists", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		// No game, no users — handler falls back to renderEmptyLeaderboard.
 		resp := testutil.GetJSON(t, env, "/leaders")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, "Julython", "🏆")
+		testutil.BodyContains(t, resp, "Julython", "🏆")
 	})
 
 	t.Run("shows participant username and game name", func(t *testing.T) {
@@ -82,7 +26,7 @@ func TestLeaderboard(t *testing.T) {
 
 		resp := testutil.GetJSON(t, env, "/leaders")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, game.Name, user.Username)
+		testutil.BodyContains(t, resp, game.Name, user.Username)
 	})
 
 	t.Run("top 3 entries get medal highlight class", func(t *testing.T) {
@@ -140,7 +84,7 @@ func TestProjectLeaderboard(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		resp := testutil.GetJSON(t, env, "/leaders/projects")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, "Julython", "📦")
+		testutil.BodyContains(t, resp, "Julython", "📦")
 	})
 
 	t.Run("shows project name and slug", func(t *testing.T) {
@@ -149,7 +93,7 @@ func TestProjectLeaderboard(t *testing.T) {
 
 		resp := testutil.GetJSON(t, env, "/leaders/projects")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, project.Name, project.Slug)
+		testutil.BodyContains(t, resp, project.Name, project.Slug)
 	})
 
 	t.Run("HTMX request returns table fragment only", func(t *testing.T) {
@@ -175,7 +119,7 @@ func TestLanguageLeaderboard(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		resp := testutil.GetJSON(t, env, "/leaders/languages")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, "Julython", "💻")
+		testutil.BodyContains(t, resp, "Julython", "💻")
 	})
 
 	t.Run("shows language names from commits", func(t *testing.T) {
@@ -185,6 +129,6 @@ func TestLanguageLeaderboard(t *testing.T) {
 
 		resp := testutil.GetJSON(t, env, "/leaders/languages")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyContains(t, resp, "Go", "Python")
+		testutil.BodyContains(t, resp, "Go", "Python")
 	})
 }
