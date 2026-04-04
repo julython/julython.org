@@ -10,8 +10,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/require"
 
 	"july/internal/db"
+	"july/internal/webhooks"
 )
 
 func CreateProject(t *testing.T, env *TestEnv, slug, repoURL string) db.Project {
@@ -62,6 +64,9 @@ func CreateProjectWithRepoID(t *testing.T, env *TestEnv, name, slug, repoURL str
 	return project
 }
 
+// CreateCommit inserts a raw commit row with no game association and no service
+// processing. Use this only when the test doesn't care about scoring or boards
+// (e.g. webhook ingestion tests, project detail pages).
 func CreateCommit(t *testing.T, env *TestEnv, projectID uuid.UUID, hash, message string) db.Commit {
 	t.Helper()
 	commit, err := env.Queries.CreateCommit(context.Background(), db.CreateCommitParams{
@@ -81,21 +86,6 @@ func CreateCommit(t *testing.T, env *TestEnv, projectID uuid.UUID, hash, message
 	if err != nil {
 		t.Fatalf("failed to create commit: %v", err)
 	}
-	return commit
-}
-
-// AddCommit creates a commit and runs it through GameService.AddCommit so that
-// boards, players, and language_boards are all updated exactly as production does.
-func AddCommit(t *testing.T, env *TestEnv, projectID uuid.UUID, userID uuid.UUID, hash, message string, timestamp time.Time, languages []string) db.Commit {
-	t.Helper()
-	ctx := context.Background()
-
-	commit := CreateCommit(t, env, projectID, hash, message)
-	// Run through the service so boards/players/language_boards are populated.
-	if err := env.GameService.AddCommit(ctx, commit); err != nil {
-		t.Fatalf("game service failed to process commit %s: %v", hash, err)
-	}
-
 	return commit
 }
 
@@ -119,16 +109,16 @@ func CreateGame(t *testing.T, env *TestEnv, name string, startAt, endAt time.Tim
 func CreateActiveGame(t *testing.T, env *TestEnv) db.Game {
 	t.Helper()
 	now := time.Now().UTC()
-	start := now.Add(-24 * time.Hour)
-	end := now.Add(24 * time.Hour)
 	return CreateGame(t, env,
 		fmt.Sprintf("Test Game %s", db.NewID().String()[:8]),
-		start, end, true,
+		now.Add(-24*time.Hour),
+		now.Add(24*time.Hour),
+		true,
 	)
 }
 
-// CreateTestScenario sets up a user with a project and a commit processed
-// through the game service so all derived tables are populated.
+// CreateTestScenario sets up a user with a project and a bare commit row.
+// No game association — use CreateGameScenario when scoring matters.
 func CreateTestScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Commit) {
 	t.Helper()
 
@@ -137,48 +127,69 @@ func CreateTestScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Com
 	CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
 
 	project := CreateProject(t, env, "test-project", "https://github.com/testuser/test-project")
-	commit := AddCommit(t, env, project.ID, user.ID, "abc123def456", "Initial commit", time.Now(), []string{})
+	commit := CreateCommit(t, env, project.ID, "abc123def456", "Initial commit")
 
 	return user, project, commit
 }
 
-// CreateGameScenario sets up a full game scenario. Commits are routed through
-// GameService.AddCommit so that players, boards, and language_boards are all
-// populated exactly as they would be in production.
+// CreateGameScenario posts a commit through the real webhook endpoint so the
+// full pipeline runs: project upsert, language detection, game association,
+// and board/player scoring.
 func CreateGameScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Game, db.Commit) {
 	t.Helper()
+	ctx := context.Background()
 
 	user := CreateUser(t, env, "testuser", "Test User")
 	CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 	CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
 
-	project := CreateOwnedProject(t, env, user, "test-project", "https://github.com/testuser/test-project")
 	game := CreateActiveGame(t, env)
 
-	// Timestamp inside the active game window so AddCommit picks up the game.
-	commit := AddCommit(t, env, project.ID, user.ID,
-		fmt.Sprintf("game-%s", db.NewID().String()[:8]),
-		"Game commit",
-		time.Now(),
-		[]string{"Go", "Python"},
-	)
+	hash := fmt.Sprintf("game-%s", db.NewID().String()[:8])
+	WebhookCommit(t, env, hash, func(o *WebhookOpts) {
+		o.RepoID = 11111
+		o.RepoName = "test-project"
+		o.FullName = "testuser/test-project"
+		o.HTMLURL = "https://github.com/testuser/test-project"
+		o.Author = webhooks.GitHubAuthor{Name: user.Name, Email: "test@example.com"}
+		o.Files = []string{"main.go", "app.py"}
+		o.Message = "Initial game commit"
+	})
+
+	project, err := env.Queries.GetProjectBySlug(ctx, "gh-testuser-test-project")
+	require.NoError(t, err, "project should have been created by webhook")
+
+	commit, err := env.Queries.GetCommitByHashStr(ctx, hash)
+	require.NoError(t, err, "commit should have been created by webhook")
 
 	return user, project, game, commit
 }
 
-// CreateGameScenarioForUser adds a participant to an existing game.
+// CreateGameScenarioForUser adds a new participant to an existing game by
+// posting through the webhook endpoint. The user's email identifier is
+// registered first so the commit is linked to them automatically.
 func CreateGameScenarioForUser(t *testing.T, env *TestEnv, game db.Game, username, name string) (db.User, db.Project) {
 	t.Helper()
+	ctx := context.Background()
 
 	user := CreateUser(t, env, username, name)
-	project := CreateOwnedProject(t, env, user, "repo", "https://github.com/"+username+"/repo")
+	CreateUserIdentifier(t, env, user.ID, "email", username+"@example.com", true, true)
 
-	AddCommit(t, env, project.ID, user.ID,
-		fmt.Sprintf("%s-%s", username, db.NewID().String()[:8]),
-		"commit for "+username,
-		time.Now(),
-		[]string{"Go", "Python"},
-	)
+	repoName := username + "-repo"
+	hash := fmt.Sprintf("%s-%s", username, db.NewID().String()[:8])
+	WebhookCommit(t, env, hash, func(o *WebhookOpts) {
+		o.RepoID = int64(db.NewID().ID())
+		o.RepoName = repoName
+		o.FullName = username + "/" + repoName
+		o.HTMLURL = "https://github.com/" + username + "/" + repoName
+		o.Author = webhooks.GitHubAuthor{Name: name, Email: username + "@example.com"}
+		o.Files = []string{"main.go", "app.py"}
+		o.Message = "Commit for " + username
+	})
+
+	slug := fmt.Sprintf("gh-%s-%s", username, repoName)
+	project, err := env.Queries.GetProjectBySlug(ctx, slug)
+	require.NoError(t, err, "project should have been created by webhook for %s", username)
 
 	return user, project
 }

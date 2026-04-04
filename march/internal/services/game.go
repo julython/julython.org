@@ -171,6 +171,11 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 		return fmt.Errorf("add points to board: %w", err)
 	}
 
+	if err := s.addLanguageBoards(ctx, game, commit); err != nil {
+		logger.Debug().Msgf("add language boards: %s", err)
+		return fmt.Errorf("add language boards: %w", err)
+	}
+
 	if commit.UserID.Valid {
 		userID, _ := uuid.FromBytes(commit.UserID.Bytes[:])
 		logger.Debug().Msgf("Upsert user %v", userID)
@@ -203,6 +208,34 @@ func (s *GameService) addPointsToBoard(ctx context.Context, game db.Game, commit
 		ContributorCount: 1,
 	})
 	return err
+}
+
+func (s *GameService) addLanguageBoards(ctx context.Context, game db.Game, commit db.Commit) error {
+	for _, name := range commit.Languages {
+		if name == "" {
+			continue
+		}
+
+		lang, err := s.queries.GetOrCreateLanguage(ctx, db.GetOrCreateLanguageParams{
+			ID:   db.NewID(),
+			Name: name,
+		})
+		if err != nil {
+			return fmt.Errorf("upsert language %q: %w", name, err)
+		}
+
+		_, err = s.queries.UpsertLanguageBoard(ctx, db.UpsertLanguageBoardParams{
+			ID:          db.NewID(),
+			GameID:      game.ID,
+			LanguageID:  lang.ID,
+			Points:      game.CommitPoints,
+			CommitCount: 1,
+		})
+		if err != nil {
+			return fmt.Errorf("upsert language board %q: %w", name, err)
+		}
+	}
+	return nil
 }
 
 // UpsertPlayer recalculates and updates a player's score.
