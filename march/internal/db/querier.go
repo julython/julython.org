@@ -75,6 +75,8 @@ type Querier interface {
 	// Languages
 	// ============================================
 	GetOrCreateLanguage(ctx context.Context, arg GetOrCreateLanguageParams) (Language, error)
+	// Returns just the identifier row so the handler can read data->>'password_hash'.
+	GetPasswordHash(ctx context.Context, value string) ([]byte, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)
@@ -92,6 +94,9 @@ type Querier interface {
 	GetTeamMember(ctx context.Context, arg GetTeamMemberParams) (TeamMember, error)
 	GetUnverifiedCommits(ctx context.Context, limitCount interface{}) ([]GetUnverifiedCommitsRow, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	// Looks up a user by email identifier so the handler can verify
+	// the bcrypt hash stored in data->>'password_hash'.
+	GetUserByPasswordIdentifier(ctx context.Context, value string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserIdentifier(ctx context.Context, value string) (UserIdentifier, error)
 	GetUserIdentifierByUserAndType(ctx context.Context, arg GetUserIdentifierByUserAndTypeParams) (UserIdentifier, error)

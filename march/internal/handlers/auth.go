@@ -59,12 +59,17 @@ func NewAuthHandler(
 
 // Login initiates the OAuth flow - GET /auth/login/{provider}
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := log.Ctx(ctx)
+
 	providerName := r.PathValue("provider")
 	provider, ok := h.providers[providerName]
 	if !ok {
+		logger.Error().Msgf("Unknown provider: %s", providerName)
 		http.Error(w, "Unknown provider", http.StatusBadRequest)
 		return
 	}
+	logger.Info().Str("provider", providerName).Msg("Handling auth login")
 
 	state, _ := generateRandomString(16)
 	verifier, challenge, _ := services.GeneratePKCE()
@@ -86,6 +91,7 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	expectedState := h.session.PopString(ctx, sessionKeyOAuthState)
 	if state == "" || state != expectedState {
+		logger.Error().Msg("Invalid state")
 		http.Error(w, "Invalid state", http.StatusBadRequest)
 		return
 	}
@@ -94,6 +100,7 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	providerName := h.session.GetString(ctx, sessionKeyOAuthProvider)
 	provider, ok := h.providers[providerName]
 	if !ok {
+		logger.Error().Msg("Invalid provider")
 		http.Error(w, "Invalid provider", http.StatusBadRequest)
 		return
 	}
@@ -101,12 +108,14 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Check for OAuth error
 	if errCode := r.URL.Query().Get("error"); errCode != "" {
 		errDesc := r.URL.Query().Get("error_description")
+		logger.Warn().Str("error", errDesc).Msg("OAuth Error")
 		http.Error(w, errDesc, http.StatusBadRequest)
 		return
 	}
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
+		logger.Warn().Msg("Missing code")
 		http.Error(w, "Missing code", http.StatusBadRequest)
 		return
 	}

@@ -56,9 +56,10 @@ type Session struct {
 }
 
 type OAuth struct {
-	BaseURL string        `env:"BASE_URL" envDefault:"http://localhost:8000"`
-	GitHub  OAuthProvider `envPrefix:"GITHUB_"`
-	GitLab  OAuthProvider `envPrefix:"GITLAB_"`
+	BaseURL  string        `env:"BASE_URL" envDefault:"http://localhost:8000"`
+	GitHub   OAuthProvider `envPrefix:"GITHUB_"`
+	GitLab   OAuthProvider `envPrefix:"GITLAB_"`
+	Password OAuthProvider `envPrefix:"PASSWORD_"`
 }
 
 func (o OAuth) CallbackURL() string {
@@ -122,6 +123,7 @@ func (c Config) Log() {
 		Bool("oauth.gitlab.enabled", c.OAuth.GitLab.Enabled).
 		Str("oauth.gitlab.client_id", mask(c.OAuth.GitLab.ClientID)).
 		Str("oauth.gitlab.client_secret", mask(c.OAuth.GitLab.ClientSecret)).
+		Bool("oauth.password.enabled", c.OAuth.Password.Enabled).
 		// Webhooks
 		Str("webhooks.github", c.Webhooks.GitHub).
 		Str("webhooks.gitlab", c.Webhooks.GitLab).

@@ -125,7 +125,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
 		With().Timestamp().Logger()
 
-	router := api.NewTestRouter(sharedPool, sharedCfg, logger)
+	router := api.NewRouter(sharedPool, sharedCfg, logger)
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 

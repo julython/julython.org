@@ -100,3 +100,23 @@ DELETE FROM user_identifiers WHERE user_id = @user_id;
 SELECT * FROM user_identifiers
 WHERE user_id = @user_id AND type = @type
 LIMIT 1;
+
+
+-- name: GetUserByPasswordIdentifier :one
+-- Looks up a user by email identifier so the handler can verify
+-- the bcrypt hash stored in data->>'password_hash'.
+SELECT u.*
+FROM users u
+JOIN user_identifiers ui ON ui.user_id = u.id
+WHERE ui.type  = 'email'
+  AND ui.value = @value   -- format: "email:<address>"
+  AND ui.data ? 'password_hash'
+LIMIT 1;
+
+-- name: GetPasswordHash :one
+-- Returns just the identifier row so the handler can read data->>'password_hash'.
+SELECT data
+FROM user_identifiers
+WHERE type  = 'email'
+  AND value = @value
+LIMIT 1;

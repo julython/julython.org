@@ -54,6 +54,9 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 			cfg.OAuth.CallbackURL(),
 		)
 	}
+	if cfg.OAuth.Password.Enabled {
+		providers["password"] = services.NewPasswordOAuth(queries, cfg.OAuth.BaseURL)
+	}
 
 	enabled := make([]string, 0, len(providers))
 	for name := range providers {

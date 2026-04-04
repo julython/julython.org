@@ -119,12 +119,60 @@ func (q *Queries) FindUserByIdentifier(ctx context.Context, value string) (User,
 	return i, err
 }
 
+const getPasswordHash = `-- name: GetPasswordHash :one
+SELECT data
+FROM user_identifiers
+WHERE type  = 'email'
+  AND value = $1
+LIMIT 1
+`
+
+// Returns just the identifier row so the handler can read data->>'password_hash'.
+func (q *Queries) GetPasswordHash(ctx context.Context, value string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getPasswordHash, value)
+	var data []byte
+	err := row.Scan(&data)
+	return data, err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, name, username, avatar_url, role, is_active, is_banned, banned_reason, banned_at, last_seen, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Username,
+		&i.AvatarUrl,
+		&i.Role,
+		&i.IsActive,
+		&i.IsBanned,
+		&i.BannedReason,
+		&i.BannedAt,
+		&i.LastSeen,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByPasswordIdentifier = `-- name: GetUserByPasswordIdentifier :one
+SELECT u.id, u.name, u.username, u.avatar_url, u.role, u.is_active, u.is_banned, u.banned_reason, u.banned_at, u.last_seen, u.created_at, u.updated_at
+FROM users u
+JOIN user_identifiers ui ON ui.user_id = u.id
+WHERE ui.type  = 'email'
+  AND ui.value = $1   -- format: "email:<address>"
+  AND ui.data ? 'password_hash'
+LIMIT 1
+`
+
+// Looks up a user by email identifier so the handler can verify
+// the bcrypt hash stored in data->>'password_hash'.
+func (q *Queries) GetUserByPasswordIdentifier(ctx context.Context, value string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByPasswordIdentifier, value)
 	var i User
 	err := row.Scan(
 		&i.ID,

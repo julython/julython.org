@@ -80,7 +80,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 	t.Run("unknown project returns 404", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		resp := postAnalysis(t, env, "00000000-0000-0000-0000-000000000000", "readme", "abc123", 0, readmePartial)
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
@@ -90,7 +91,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		testutil.CreateProject(t, env, "gh-alice-repo", "https://github.com/alice/repo")
 		bob := testutil.CreateUser(t, env, "bob", "Bob")
-		env.LoginAs(t, bob)
+		testutil.CreateUserIdentifier(t, env, bob.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		// alice's project; bob must be rejected
 		aliceProject := testutil.CreateProject(t, env, "gh-alice-other", "https://github.com/alice/other")
@@ -102,7 +104,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 0, readmePartial)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -117,7 +120,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -131,7 +135,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		readmeResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc", 0, readmeFull)))
 		ciResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "ci", "abc", 0, ciFull)))
@@ -146,7 +151,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		// No prior metric — handler must reject with 400.
 		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull)
@@ -157,7 +163,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		// Establish L1 via the route.
 		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull))
@@ -175,7 +182,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		// L1 → L2 via the route.
 		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull))
@@ -195,7 +203,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		ctx := context.Background()
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		// Seed L2 directly for this edge-case test.
 		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
@@ -218,7 +227,8 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		env.LoginAs(t, user)
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
 
 		cases := []struct {
 			name    string

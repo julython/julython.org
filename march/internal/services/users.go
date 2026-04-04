@@ -99,7 +99,9 @@ func (s *UserService) UpsertIdentifier(
 	verified bool,
 	primary bool,
 ) (db.UserIdentifier, bool, error) {
+	logger := log.Ctx(ctx)
 	key := fmt.Sprintf("%s:%s", idType, value)
+	logger.Info().Str("identifier", key).Msg("Upsert Identifier")
 
 	existing, err := s.queries.GetUserIdentifier(ctx, key)
 	if err == nil && existing.UserID != userID {
@@ -136,8 +138,11 @@ func (s *UserService) UpsertIdentifier(
 // 3. Create new user
 // Returns the user and whether a new user/identity was created.
 func (s *UserService) OAuthLoginOrRegister(ctx context.Context, oauth OAuthUser) (db.User, bool, error) {
+	logger := log.Ctx(ctx)
 	idType := IdentifierType(oauth.Provider)
 	verifiedEmails := filterVerifiedEmails(oauth.Emails)
+
+	logger.Info().Str("idType", string(idType)).Msg("OAuth Login or Register")
 
 	// 1. Check for existing OAuth identity
 	if user, err := s.FindByKey(ctx, oauth.Key()); err == nil {
