@@ -1,15 +1,52 @@
 package testutil
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"july/internal/db"
 )
+
+func CreateUser(t *testing.T, env *TestEnv, username, name string) db.User {
+	t.Helper()
+
+	user, err := env.Queries.CreateUser(context.Background(), db.CreateUserParams{
+		ID:        db.NewID(),
+		Name:      name,
+		Username:  username,
+		AvatarUrl: db.Text(""),
+		Role:      "user",
+	})
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+	return user
+}
+
+func CreateUserIdentifier(t *testing.T, env *TestEnv, userID uuid.UUID, idType, value string, verified, primary bool) db.UserIdentifier {
+	t.Helper()
+
+	key := fmt.Sprintf("%s:%s", idType, value)
+	identifier, err := env.Queries.UpsertUserIdentifier(context.Background(), db.UpsertUserIdentifierParams{
+		Value:     key,
+		Type:      idType,
+		UserID:    userID,
+		Verified:  verified,
+		IsPrimary: primary,
+		Data:      []byte("{}"),
+	})
+	if err != nil {
+		t.Fatalf("failed to create user identifier: %v", err)
+	}
+	return identifier
+}
 
 // LoginAs authenticates the test client as the given user by hitting the
 // test-only /test/login endpoint (registered by api.NewTestRouter).
