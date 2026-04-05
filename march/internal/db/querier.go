@@ -84,6 +84,7 @@ type Querier interface {
 	GetProjectByServiceAndRepoID(ctx context.Context, arg GetProjectByServiceAndRepoIDParams) (Project, error)
 	GetProjectBySlug(ctx context.Context, slug string) (Project, error)
 	GetProjectByURL(ctx context.Context, url string) (Project, error)
+	GetProjectGameActivityAggregates(ctx context.Context, arg GetProjectGameActivityAggregatesParams) (GetProjectGameActivityAggregatesRow, error)
 	GetProjectLeaderboard(ctx context.Context, arg GetProjectLeaderboardParams) ([]GetProjectLeaderboardRow, error)
 	GetProjectTotalScore(ctx context.Context, projectID uuid.UUID) (int32, error)
 	GetRecentCommits(ctx context.Context, arg GetRecentCommitsParams) ([]GetRecentCommitsRow, error)

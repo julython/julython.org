@@ -88,7 +88,7 @@ $(WEBLLM_VENDOR_DIR)/lib/index.js:
 	@echo "✓ $(WEBLLM_VENDOR_DIR)"
 
 compose-up:  ## Run the shared services in docker
-	docker compose up -d postgres adminer smee
+	docker compose up api smee
 
 compose-down:  ## Stop the docker services
 	docker compose down

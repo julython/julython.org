@@ -26,18 +26,38 @@ type ProjectEntry struct {
 }
 
 type ProjectBoardStats struct {
-	Points           int
-	PotentialPoints  int
-	VerifiedPoints   int
 	CommitCount      int
 	ContributorCount int
 }
 
-func (s *ProjectBoardStats) DisplayPoints() int {
-	if s.VerifiedPoints > 0 {
-		return s.VerifiedPoints
+type ProjectGameActivitySummary struct {
+	HasGame          bool
+	Board            *ProjectBoardStats
+	CommitsThisMonth int
+	CommitsThisWeek  int
+	FileTouchCount   int
+	UniqueDirs       int
+}
+
+type ProjectAnalysisTile struct {
+	MetricKey string
+	Level     int16
+	I18nKey   string
+}
+
+type ProjectAnalysisBoard struct {
+	Tiles              []ProjectAnalysisTile
+	EarnedPts          int
+	MaxPts             int
+	LastAnalyzedAgo    string
+	AnalysisRunCount   int
+}
+
+func (b ProjectAnalysisBoard) ProgressPct() int {
+	if b.MaxPts <= 0 {
+		return 0
 	}
-	return s.PotentialPoints
+	return (b.EarnedPts * 100) / b.MaxPts
 }
 
 type CommitEntry struct {
@@ -233,12 +253,13 @@ templ ProjectCard(entry ProjectEntry) {
 // ============================================
 
 type ProjectDetailData struct {
-	Project    ProjectEntry
-	BoardStats *ProjectBoardStats
-	Commits    []CommitEntry
-	Offset     int
-	Limit      int
-	HasMore    bool
+	Project       ProjectEntry
+	AnalysisBoard ProjectAnalysisBoard
+	GameActivity  ProjectGameActivitySummary
+	Commits       []CommitEntry
+	Offset        int
+	Limit         int
+	HasMore       bool
 }
 
 templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
@@ -270,14 +291,14 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 					</a>
 				</div>
 			</header>
-			if data.BoardStats != nil {
-				<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-					@statCard(i18n.T(ctx, "Points"), fmt.Sprintf("%d", data.BoardStats.DisplayPoints()))
-					@statCard(i18n.T(ctx, "Commits"), fmt.Sprintf("%d", data.BoardStats.CommitCount))
-					@statCard(i18n.T(ctx, "Contributors"), fmt.Sprintf("%d", data.BoardStats.ContributorCount))
-					@statCard(i18n.T(ctx, "Forks"), fmt.Sprintf("%d", data.Project.Forks))
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
+				<div class="min-w-0 flex lg:col-span-1">
+					@projectAnalysisBoard(data.AnalysisBoard)
 				</div>
-			}
+				<div class="min-w-0 flex lg:col-span-2">
+					@projectGameActivityPanel(data.GameActivity)
+				</div>
+			</div>
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-xl font-semibold text-white">{ i18n.T(ctx, "RecentCommits") }</h2>
 			</div>
@@ -359,14 +380,148 @@ templ CommitRow(c CommitEntry) {
 }
 
 // ============================================
-// Shared helpers
+// Analysis board (project detail)
 // ============================================
-templ statCard(label, value string) {
-	<div class="bg-surface-light rounded-xl border border-white/10 px-5 py-4 text-center">
-		<p class="text-2xl font-bold text-july-400">{ value }</p>
-		<p class="text-xs text-gray-500 mt-1">{ label }</p>
+
+templ analysisDash(level int16, dashIdx int) {
+	if level >= 3 {
+		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-green-400"></span>
+	} else if level <= 0 {
+		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-zinc-600"></span>
+	} else if int16(dashIdx) <= level {
+		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-blue-400"></span>
+	} else {
+		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-zinc-600/80"></span>
+	}
+}
+
+templ analysisMetricTile(tile ProjectAnalysisTile) {
+	<div
+		class={
+			"rounded-md px-1.5 py-1.5 border transition-colors min-w-0",
+			templ.KV("border-green-500/45 bg-green-500/[0.07]", tile.Level >= 3),
+			templ.KV("border-blue-500/40 bg-blue-500/[0.06]", tile.Level >= 1 && tile.Level < 3),
+			templ.KV("border-white/10 bg-white/[0.02]", tile.Level < 1),
+		}
+	>
+		<div class="flex gap-0.5 mb-1 justify-center">
+			@analysisDash(tile.Level, 1)
+			@analysisDash(tile.Level, 2)
+			@analysisDash(tile.Level, 3)
+		</div>
+		<p
+			class={
+				"text-[10px] sm:text-[11px] font-medium text-center leading-tight tracking-tight",
+				templ.KV("text-green-300", tile.Level >= 3),
+				templ.KV("text-blue-200", tile.Level >= 1 && tile.Level < 3),
+				templ.KV("text-gray-500", tile.Level < 1),
+			}
+		>
+			{ i18n.T(ctx, tile.I18nKey) }
+		</p>
 	</div>
 }
+
+templ projectGameActivityPanel(a ProjectGameActivitySummary) {
+	<div class="flex flex-col flex-1 w-full min-w-0">
+		<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">{ i18n.T(ctx, "projects.GameActivity") }</h2>
+		<div class="flex-1 flex flex-col">
+			if !a.HasGame {
+				<p class="text-sm text-gray-500">{ i18n.T(ctx, "projects.NoGameData") }</p>
+			} else {
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
+					<div>
+						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.GameCommits") }</p>
+						<p class="text-white text-lg font-semibold tabular-nums">
+							if a.Board != nil {
+								{ fmt.Sprintf("%d", a.Board.CommitCount) }
+							} else {
+								<span class="text-gray-500 font-normal text-base">—</span>
+							}
+						</p>
+					</div>
+					<div>
+						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "Contributors") }</p>
+						<p class="text-white text-lg font-semibold tabular-nums">
+							if a.Board != nil {
+								{ fmt.Sprintf("%d", a.Board.ContributorCount) }
+							} else {
+								<span class="text-gray-500 font-normal text-base">—</span>
+							}
+						</p>
+					</div>
+					<div>
+						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.CommitsThisMonth") }</p>
+						<p class="text-white text-lg font-semibold tabular-nums">
+							{ fmt.Sprintf("%d", a.CommitsThisMonth) }
+							<span class="text-gray-500 font-normal text-sm">
+								(+{ fmt.Sprintf("%d", a.CommitsThisWeek) } { i18n.T(ctx, "projects.ThisWeek") })
+							</span>
+						</p>
+					</div>
+					<div>
+						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.FilesAndLines") }</p>
+						<p class="text-white text-lg font-semibold tabular-nums">
+							{ fmt.Sprintf("%d", a.FileTouchCount) }
+							if a.UniqueDirs > 0 {
+								<span class="text-gray-500 font-normal text-sm">
+									({ fmt.Sprintf("%d", a.UniqueDirs) } { i18n.T(ctx, "projects.UniqueDirs") })
+								</span>
+							}
+						</p>
+						<p class="text-gray-500 text-xs mt-1">{ i18n.T(ctx, "projects.LinesNotTracked") }</p>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ projectAnalysisBoard(board ProjectAnalysisBoard) {
+	<div class="rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full">
+		<div class="px-3 py-2 border-b border-white/10">
+			<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase">{ i18n.T(ctx, "projects.AnalysisBoard") }</h2>
+		</div>
+		<div class="p-2.5 sm:p-3 space-y-3">
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+				for _, tile := range board.Tiles {
+					@analysisMetricTile(tile)
+				}
+			</div>
+			<div>
+				<div class="flex items-center justify-between text-[10px] sm:text-xs mb-1">
+					<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
+					<span class="text-gray-300 tabular-nums font-medium">
+						{ fmt.Sprintf("%d", board.EarnedPts) } / { fmt.Sprintf("%d", board.MaxPts) } pts
+					</span>
+				</div>
+				<div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+					<div
+						class="h-full rounded-full bg-green-500/80 transition-all"
+						style={ fmt.Sprintf("width: %d%%", board.ProgressPct()) }
+					></div>
+				</div>
+			</div>
+			<div class="border-t border-white/10 pt-2.5">
+				<p class="text-gray-500 text-[10px] sm:text-xs mb-0.5">{ i18n.T(ctx, "projects.LastAnalyzed") }</p>
+				<p class="text-white text-xs leading-snug">
+					if board.LastAnalyzedAgo != "" {
+						{ board.LastAnalyzedAgo }
+						<span class="text-gray-500 font-normal">
+							({ fmt.Sprintf("%d", board.AnalysisRunCount) } { i18n.T(ctx, "projects.AnalysesTotal") })
+						</span>
+					} else {
+						<span class="text-gray-500">{ i18n.T(ctx, "projects.NeverAnalyzed") }</span>
+					}
+				</p>
+			</div>
+		</div>
+	</div>
+}
+
+// ============================================
+// Shared helpers
+// ============================================
 
 func serviceLabel(ctx context.Context, service string) string {
 	switch strings.ToLower(service) {

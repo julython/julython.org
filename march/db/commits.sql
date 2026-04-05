@@ -95,3 +95,59 @@ LIMIT GREATEST(@limit_count, 1);
 UPDATE commits
 SET game_id = @game_id
 WHERE id = @id;
+
+-- name: GetProjectGameActivityAggregates :one
+WITH month_commits AS (
+    SELECT m.files, m.timestamp
+    FROM commits m
+    WHERE m.project_id = @project_id
+      AND m.game_id = @game_id
+      AND m.timestamp >= @month_start
+)
+SELECT
+    (SELECT COUNT(*)::int FROM month_commits) AS commits_this_month,
+    (
+        SELECT COUNT(*)::int
+        FROM commits w
+        WHERE w.project_id = @project_id
+          AND w.game_id = @game_id
+          AND w.timestamp >= @week_start
+    ) AS commits_this_week,
+    CAST(
+        COALESCE(
+            (
+                SELECT SUM(
+                    CASE
+                        WHEN jsonb_typeof(mc.files) = 'array' THEN jsonb_array_length(mc.files)
+                        ELSE 0
+                    END
+                )
+                FROM month_commits mc
+            ),
+            0
+        ) AS int
+    ) AS file_touch_count,
+    CAST(
+        COALESCE(
+            (
+                SELECT COUNT(DISTINCT dir_path)
+                FROM (
+                    SELECT
+                        CASE
+                            WHEN elem->>'file' IS NULL OR elem->>'file' = '' THEN NULL
+                            WHEN position('/' IN elem->>'file') = 0 THEN '.'
+                            ELSE regexp_replace(elem->>'file', '/[^/]+$', '')
+                        END AS dir_path
+                    FROM month_commits c
+                    CROSS JOIN LATERAL jsonb_array_elements(
+                        CASE
+                            WHEN jsonb_typeof(c.files) = 'array' THEN c.files
+                            ELSE '[]'::jsonb
+                        END
+                    ) AS elem
+                ) paths
+                WHERE dir_path IS NOT NULL
+            ),
+            0
+        ) AS int
+    ) AS unique_dirs;
