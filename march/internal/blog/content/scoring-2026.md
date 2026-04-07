@@ -27,43 +27,30 @@ We care a lot about [your privacy](/privacy) and don't want to hand code and IP 
 
 ## How the Analysis Works
 
-### Level 1 (server-side, public GitHub repos)
+### Level 1 — heuristics (server-side for public GitHub)
 
-For **public** GitHub repositories, **Level 1** analysis runs on the Julython server when we receive a **push webhook** on the default branch (and you can also trigger a re-scan with **`POST /api/projects/{projectID}/analysis/l1`** if you own the project). The server uses the GitHub API to inspect the repository tree and a bounded set of files, then writes scores into **`analysis_metrics`**. **Private** repositories are skipped for now (we persist visibility from the webhook and do not run server-side L1 against them).
+For **public** GitHub repositories, **Level 1** is **fast heuristic** scoring (partial credit **0–10** per metric) from checklist-style signals. The **authoritative** run is **server-side** when we receive a **push webhook** on the default branch. You can also **re-scan** from the **project page** (if you own the repo) or call **`POST /api/projects/{projectID}/analysis/l1`**. **Private** repositories are skipped (we persist visibility from the webhook).
 
-Each metric row’s **`data`** JSON stores both the scored checklist (boolean signals) and a small **`prompt_context`** object (paths and text snippets) so that future **L2/L3** grading can build prompts without re-downloading the whole repository.
+**First progress bar:** you only get **L1** (the first tier) when the heuristic **score is greater than zero** — a scan that finds nothing useful stays at **L0** for that metric.
 
-### Level 2 / Level 3 (browser, optional)
+Each metric row’s **`data`** JSON stores both the scored checklist (boolean signals) and a small **`prompt_context`** object (paths and text snippets) so **L2/L3** grading in the browser can build prompts without re-downloading the whole repository.
 
-For deeper **L2** and **L3** passes, you can still run **WebLLM entirely in your browser** so your full codebase never has to be uploaded for those steps. Here is a rough outline:
+### Level 2 / Level 3 — WebLLM in the browser (optional)
+
+For **L2** and **L3**, you run **WebLLM entirely in your browser** so your full codebase is not uploaded to Julython. **AI grading** (POST **`/api/projects/{projectID}/analysis`**) is allowed once that metric already has **heuristic L1** with **any** partial score **greater than zero** — you do **not** need a perfect 10/10 checklist before trying the model.
+
+The **L2** pass is the step where the model either tells you what is still missing or marks the metric **done** for **L2** credit; **L3** is a stricter “excellent” tier when you want to go further.
 
 ```mermaid
-flowchart TD
-    A([User selects metric]) --> B[Download repo source to browser in worker thread]
-    B --> C[Run L1 check JS Worker heuristic / static analysis]
-    C --> D{L1 passed?}
-    D -- No --> E[Score: 0 pts]
-    D -- Yes --> F[Score: +10 pts]
-    F --> G{Run WebLLM for deeper analysis?}
-    G -- No --> H([Done - save result])
-    G -- Yes --> I[Send metric context to WebLLM]
-    I --> J{LLM grade}
-    J -- L2 --> K[Score: +30 pts]
-    J -- L3 --> L[Score: +60 pts]
-    K --> H
-    L --> H
-    E --> H
+flowchart LR
+    H[Heuristic_L1_partial]
+    AI[WebLLM_L2_or_L3]
+    H --> AI
 ```
 
-Each metric is scored in three levels:
+**Board points** combine **score** (0–10) and **level** (0–3) per metric so partial heuristics are not treated like a perfect tile: **points ≈ score × level × 2** per metric, capped at **60** per metric when score is 10 and level is 3. Across **8** metrics, a repo can earn up to **480** points; up to **3** repos per game → **1,440** points max per player.
 
-- **L1** - a fast heuristic check (10 pts at full credit). For public GitHub repos, the **authoritative** L1 run is **server-side** on push; the in-browser worker remains available for local experimentation. L1 must pass before L2/L3 can be attempted.
-- **L2** - a WebLLM pass that evaluates the metric more deeply (30 pts)
-- **L3** - excellent quality, as graded by the local model (60 pts)
-
-With 8 metric categories and a maximum of 60 points each, a single repo can score up to **480 points**. Players can add up to 3 repos per game, for a maximum of **1,440 points** per player.
-
-You don't have to use WebLLM if you don't want to. But by using a small model we're proving that meaningful code analysis is possible without sending your code anywhere - and if a small model can summarize your project clearly, a large one will have no trouble at all.
+You don't have to use WebLLM. Using a small local model shows that meaningful analysis can happen without sending your code to us — and if a small model can summarize your project clearly, a large one will have no trouble at all.
 
 ### Example: Testing Metric Prompt
 

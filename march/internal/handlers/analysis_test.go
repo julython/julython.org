@@ -100,7 +100,7 @@ func TestPostProjectAnalysis(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 
-	t.Run("partial readme payload returns score 2 at L0", func(t *testing.T) {
+	t.Run("partial readme payload returns score 2 at heuristic L1", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
@@ -113,7 +113,7 @@ func TestPostProjectAnalysis(t *testing.T) {
 		body := decodeAnalysis(t, resp)
 		assert.Equal(t, "readme", body.MetricType)
 		assert.Equal(t, int16(2), body.Score) // 1 true / 5 bools * 10 = 2
-		assert.Equal(t, int16(0), body.Level)
+		assert.Equal(t, int16(1), body.Level)
 	})
 
 	t.Run("full readme payload returns score 10 at L1", func(t *testing.T) {
@@ -176,6 +176,23 @@ func TestPostProjectAnalysis(t *testing.T) {
 		body := decodeAnalysis(t, resp)
 		assert.Equal(t, int16(2), body.Level)
 		assert.Equal(t, int16(10), body.Score)
+	})
+
+	t.Run("L2 upgrade succeeds after partial heuristic L1", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 0, readmePartial))
+
+		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		body := decodeAnalysis(t, resp)
+		assert.Equal(t, int16(2), body.Level)
+		assert.Equal(t, int16(2), body.Score)
 	})
 
 	t.Run("rescan does not downgrade an L2 metric", func(t *testing.T) {

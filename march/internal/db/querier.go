@@ -127,9 +127,8 @@ type Querier interface {
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserLastSeen(ctx context.Context, id uuid.UUID) error
-	// Score always reflects latest scan. Level auto-transitions between 0 and 1
-	// based on whether the score hits the threshold (10). L2/L3 are never
-	// downgraded by a rescan — the AI grading endpoint owns those transitions.
+	// Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
+	// L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
 	UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error
 	// ============================================
 	// Boards (Project Scores)

@@ -68,11 +68,10 @@ UPDATE projects SET is_active = false WHERE id = @id;
 UPDATE projects SET is_active = true WHERE id = @id;
 
 -- name: UpsertAnalysisMetric :exec
--- Score always reflects latest scan. Level auto-transitions between 0 and 1
--- based on whether the score hits the threshold (10). L2/L3 are never
--- downgraded by a rescan — the AI grading endpoint owns those transitions.
+-- Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
+-- L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
 INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
-VALUES (@id, @project_id, @metric_type, CASE WHEN @score = 10 THEN 1 ELSE 0 END, @score, @data, @sha, @updated_by)
+VALUES (@id, @project_id, @metric_type, CASE WHEN @score > 0 THEN 1 ELSE 0 END, @score, @data, @sha, @updated_by)
 ON CONFLICT (project_id, metric_type) DO UPDATE SET
   sha        = EXCLUDED.sha,
   updated_at = now(),
@@ -80,9 +79,9 @@ ON CONFLICT (project_id, metric_type) DO UPDATE SET
   data       = EXCLUDED.data,
   score      = EXCLUDED.score,
   level      = CASE
-    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3
-    WHEN EXCLUDED.score = 10         THEN 1                       -- promote to L1
-    ELSE                                  0                       -- incomplete
+    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3 AI
+    WHEN EXCLUDED.score > 0          THEN 1                       -- L1 heuristic partial
+    ELSE                                  0                       -- score 0, no L1 bar
   END;
 
 -- name: UpdateAnalysisMetricLevel :exec

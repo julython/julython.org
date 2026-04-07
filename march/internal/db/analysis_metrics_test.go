@@ -47,9 +47,9 @@ func TestUpsertAnalysisMetric(t *testing.T) {
 		}))
 	}
 
-	t.Run("partial score stays at L0", func(t *testing.T) {
+	t.Run("partial score promotes to heuristic L1", func(t *testing.T) {
 		m := upsert("readme", 7)
-		assert.Equal(t, int16(0), m.Level)
+		assert.Equal(t, int16(1), m.Level)
 		assert.Equal(t, int16(7), m.Score)
 	})
 
@@ -59,9 +59,9 @@ func TestUpsertAnalysisMetric(t *testing.T) {
 		assert.Equal(t, int16(10), m.Score)
 	})
 
-	t.Run("rescan below 10 drops L1 back to L0", func(t *testing.T) {
+	t.Run("rescan below 10 stays heuristic L1", func(t *testing.T) {
 		m := upsert("readme", 8)
-		assert.Equal(t, int16(0), m.Level)
+		assert.Equal(t, int16(1), m.Level)
 		assert.Equal(t, int16(8), m.Score)
 	})
 
@@ -144,11 +144,11 @@ func TestGetProjectTotalScore(t *testing.T) {
 		assert.Equal(t, int32(0), total)
 	})
 
-	t.Run("partial scores contribute zero until L1", func(t *testing.T) {
-		upsert("readme", 7) // L0 — score * level = 7 * 0 = 0
+	t.Run("partial scores contribute at heuristic L1", func(t *testing.T) {
+		upsert("readme", 7) // L1 — score * level = 7 * 1 = 7
 		total, err := env.Queries.GetProjectTotalScore(ctx, project.ID)
 		require.NoError(t, err)
-		assert.Equal(t, int32(0), total)
+		assert.Equal(t, int32(7), total)
 	})
 
 	t.Run("full score at L1 contributes 10 points", func(t *testing.T) {

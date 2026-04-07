@@ -1,3 +1,5 @@
+// Browser-side heuristics + chat. Persisting L2/L3 to the server is via
+// POST /api/projects/{projectID}/analysis (after heuristic L1 exists for that metric).
 import type { Scorecard, ScoredCategory } from "./worker";
 import {
   createSession, buildSystemPrompt, deleteCachedModels,

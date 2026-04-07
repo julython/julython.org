@@ -32,8 +32,8 @@ type analysisResponse struct {
 }
 
 // POST /api/projects/{projectID}/analysis
-// Level 0/1: scores the tile and upserts the metric row.
-// Level 2/3: records an AI-graded level up, data contains the AI reasoning.
+// Level 0/1: scores the tile and upserts the metric row (heuristic L1 when score > 0).
+// Level 2/3: records an AI-graded level up; requires existing heuristic row with score > 0.
 func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
@@ -94,23 +94,14 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	m, err := metrics.Parse(p.MetricType, p.Data)
-	if err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	score := metrics.Score(m)
-
-	// L2/L3 path: AI has reviewed the metric and is grading it up.
-	// Guard: the metric must already exist at L1 — we never skip levels.
-	if p.Level >= 2 && score == 10 {
+	// L2/L3 path: AI grading — gate on stored heuristic score > 0 (any partial L1), not 10/10.
+	if p.Level >= 2 {
 		existing, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
 			ProjectID:  projectUUID,
 			MetricType: p.MetricType,
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
-			http.Error(w, "bad request: metric must reach L1 before AI grading", http.StatusBadRequest)
+			http.Error(w, "bad request: metric must have heuristic data (L1) before AI grading", http.StatusBadRequest)
 			return
 		}
 		if err != nil {
@@ -118,8 +109,8 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		if existing.Level < 1 {
-			http.Error(w, "bad request: metric must reach L1 before AI grading", http.StatusBadRequest)
+		if existing.Score <= 0 || existing.Level < 1 {
+			http.Error(w, "bad request: metric must have heuristic data (L1) before AI grading", http.StatusBadRequest)
 			return
 		}
 
@@ -141,6 +132,14 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
+
+	m, err := metrics.Parse(p.MetricType, p.Data)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	score := metrics.Score(m)
 
 	var data db.JSONMap
 	json.Unmarshal(p.Data, &data)

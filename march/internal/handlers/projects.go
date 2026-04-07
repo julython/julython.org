@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -164,8 +165,10 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	levelByType := make(map[string]int16, len(analysisRows))
+	scoreByType := make(map[string]int16, len(analysisRows))
 	for _, row := range analysisRows {
 		levelByType[row.MetricType] = row.Level
+		scoreByType[row.MetricType] = row.Score
 	}
 	tiles := make([]components.ProjectAnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
@@ -177,10 +180,13 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		if level > 3 {
 			level = 3
 		}
-		earned += int(level) * 20
+		score := scoreByType[spec.key]
+		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
+		earned += int(score) * int(level) * 2
 		tiles = append(tiles, components.ProjectAnalysisTile{
 			MetricKey: spec.key,
 			Level:     level,
+			Score:     score,
 			I18nKey:   spec.i18nKey,
 		})
 	}
@@ -204,6 +210,19 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 	if haveMetricAt {
 		analysisBoard.LastAnalyzedAgo = timeAgo(lastMetricAt)
+	}
+	if sess := UserFromContext(ctx); sess != nil {
+		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
+			analysisBoard.RescanL1ProjectID = project.ID.String()
+			switch {
+			case project.IsPrivate:
+				analysisBoard.RescanL1Disabled = true
+				analysisBoard.RescanL1DisabledReason = "private"
+			case strings.TrimSpace(h.githubToken) == "":
+				analysisBoard.RescanL1Disabled = true
+				analysisBoard.RescanL1DisabledReason = "no_token"
+			}
+		}
 	}
 
 	gameActivity := components.ProjectGameActivitySummary{

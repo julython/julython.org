@@ -133,6 +133,9 @@ es:
     LastAnalyzed: "Último análisis"
     AnalysesTotal: "análisis en total"
     NeverAnalyzed: "Aún no"
+    RescanL1: "Reanalizar (L1)"
+    RescanL1DisabledPrivate: "El análisis en servidor no está disponible para repositorios privados."
+    RescanL1DisabledNoToken: "El servidor no está configurado para análisis de GitHub (GITHUB_TOKEN)."
 
   Next: "next"
   Previous: "previous"
