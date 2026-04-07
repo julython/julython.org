@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Env       string   `env:"JULY_ENV" envDefault:"development"`
-	ProjectID string   `env:"GOOGLE_CLOUD_PROJECT" envDefault:"julython-go"`
-	Server    Server   `envPrefix:"JULY_SERVER_"`
-	Database  Database `envPrefix:"JULY_DATABASE_"`
-	Session   Session  `envPrefix:"JULY_SESSION_"`
-	OAuth     OAuth    `envPrefix:"JULY_OAUTH_"`
-	Webhooks  Webhooks `envPrefix:"JULY_WEBHOOK_"`
+	Env         string   `env:"JULY_ENV" envDefault:"development"`
+	ProjectID   string   `env:"GOOGLE_CLOUD_PROJECT" envDefault:"julython-go"`
+	Server      Server   `envPrefix:"JULY_SERVER_"`
+	Database    Database `envPrefix:"JULY_DATABASE_"`
+	Session     Session  `envPrefix:"JULY_SESSION_"`
+	OAuth       OAuth    `envPrefix:"JULY_OAUTH_"`
+	Webhooks    Webhooks `envPrefix:"JULY_WEBHOOK_"`
+	GitHubToken string   `env:"GITHUB_TOKEN"` // public-repo L1 scans (optional)
 }
 
 func (c Config) IsProduction() bool  { return c.Env == "production" }
@@ -128,5 +129,6 @@ func (c Config) Log() {
 		Str("webhooks.github", c.Webhooks.GitHub).
 		Str("webhooks.gitlab", c.Webhooks.GitLab).
 		Str("webhooks.bitbucket", c.Webhooks.BitBucket).
+		Str("github_token", mask(c.GitHubToken)).
 		Msg("config loaded")
 }

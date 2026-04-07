@@ -118,8 +118,12 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		}
 	}
 
-	if err := truncateTables(context.Background(), sharedPool); err != nil {
+	ctx := context.Background()
+	if err := truncateTables(ctx, sharedPool); err != nil {
 		t.Fatalf("failed to truncate tables: %v", err)
+	}
+	if err := ensureSystemUser(ctx, sharedPool); err != nil {
+		t.Fatalf("failed to ensure system user: %v", err)
 	}
 
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
@@ -138,6 +142,15 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		Client:      server.Client(),
 		GameService: services.NewGameService(queries),
 	}
+}
+
+func ensureSystemUser(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, `
+		INSERT INTO users (id, name, username, role)
+		VALUES ($1, 'Julython System', 'julython-system', 'admin')
+		ON CONFLICT (id) DO NOTHING
+	`, db.SystemUserID)
+	return err
 }
 
 func truncateTables(ctx context.Context, pool *pgxpool.Pool) error {

@@ -3,13 +3,13 @@
 -- ============================================
 
 -- name: CreateProject :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @parent_url)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @parent_url, @is_private)
 RETURNING *;
 
 -- name: UpsertProjectByRepoID :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private)
 ON CONFLICT (service, repo_id) WHERE repo_id IS NOT NULL
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -17,19 +17,21 @@ DO UPDATE SET
     slug = EXCLUDED.slug,
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
-    watchers = EXCLUDED.watchers
+    watchers = EXCLUDED.watchers,
+    is_private = EXCLUDED.is_private
 RETURNING *;
 
 -- name: UpsertProjectBySlug :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private)
 ON CONFLICT (slug)
 DO UPDATE SET
     url = EXCLUDED.url,
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
-    watchers = EXCLUDED.watchers
+    watchers = EXCLUDED.watchers,
+    is_private = EXCLUDED.is_private
 RETURNING *;
 
 -- name: GetProjectByID :one

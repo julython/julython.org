@@ -71,8 +71,8 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
 	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
 	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
-	webhookHandler := webhooks.NewHandler(queries, gameSvc)
-	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc)
+	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, cfg.GitHubToken)
+	projectHandler := handlers.NewProjectHandler(queries, pool, gameSvc, userSvc, cfg.GitHubToken)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := handlers.NewBlogHandler()
 	helpHandler := handlers.NewHelpHandler()
@@ -95,6 +95,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 
 	// Projects
 	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
+	mux.HandleFunc("POST /api/projects/{projectID}/analysis/l1", projectHandler.PostProjectL1Scan)
 
 	// Profiles
 	mux.HandleFunc("GET /profile", profileHandler.Overview)

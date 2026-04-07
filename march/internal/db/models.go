@@ -126,6 +126,7 @@ type Project struct {
 	IsActive    bool        `json:"is_active"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	IsPrivate   bool        `json:"is_private"`
 }
 
 type Report struct {

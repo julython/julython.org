@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"july/internal/components"
 	"july/internal/db"
@@ -16,12 +17,14 @@ import (
 
 type ProjectHandler struct {
 	queries     *db.Queries
+	pool        *pgxpool.Pool
 	gameService *services.GameService
 	userService *services.UserService
+	githubToken string
 }
 
-func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService) *ProjectHandler {
-	return &ProjectHandler{queries: q, gameService: gs, userService: us}
+func NewProjectHandler(q *db.Queries, pool *pgxpool.Pool, gs *services.GameService, us *services.UserService, githubToken string) *ProjectHandler {
+	return &ProjectHandler{queries: q, pool: pool, gameService: gs, userService: us, githubToken: githubToken}
 }
 
 // Order matches metrics.Parse and the project detail board UI.

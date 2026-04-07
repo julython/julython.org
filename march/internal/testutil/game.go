@@ -30,6 +30,7 @@ func CreateProject(t *testing.T, env *TestEnv, slug, repoURL string) db.Project 
 		Forks:       0,
 		Watchers:    0,
 		ParentUrl:   db.NullText(),
+		IsPrivate:   false,
 	})
 	if err != nil {
 		t.Fatalf("failed to create project: %v", err)
@@ -57,6 +58,7 @@ func CreateProjectWithRepoID(t *testing.T, env *TestEnv, name, slug, repoURL str
 		Forks:       0,
 		Watchers:    0,
 		ParentUrl:   db.NullText(),
+		IsPrivate:   false,
 	})
 	if err != nil {
 		t.Fatalf("failed to create project: %v", err)

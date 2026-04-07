@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,6 +15,7 @@ import (
 
 	"july/internal/db"
 	"july/internal/metrics"
+	"july/internal/services"
 )
 
 type analysisPayload struct {
@@ -173,6 +176,98 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		Score:      saved.Score,
 		Level:      saved.Level,
 	})
+}
+
+type l1ScanMetricRow struct {
+	MetricType string `json:"metricType"`
+	Score      int16  `json:"score"`
+	Level      int16  `json:"level"`
+}
+
+type l1ScanResponse struct {
+	SHA     string            `json:"sha"`
+	Metrics []l1ScanMetricRow `json:"metrics"`
+}
+
+// POST /api/projects/{projectID}/analysis/l1
+// Runs server-side L1 analysis and upserts all eight metric rows (public GitHub repos only).
+func (h *ProjectHandler) PostProjectL1Scan(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	projectID := r.PathValue("projectID")
+
+	sessionUser := UserFromContext(ctx)
+	if sessionUser == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	user, err := h.userService.FindByID(ctx, sessionUser.ID)
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	project, err := h.queries.GetProjectByID(ctx, projectUUID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("get project")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !canEditProject(&user, project) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	if project.IsPrivate {
+		http.Error(w, "server L1 is not available for private repositories", http.StatusBadRequest)
+		return
+	}
+
+	if h.githubToken == "" {
+		http.Error(w, "GITHUB_TOKEN is not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	l1 := services.NewL1Scanner(h.pool, h.githubToken)
+	scanCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	if err := l1.RunL1Scan(scanCtx, project, user.ID); err != nil {
+		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("L1 scan")
+		http.Error(w, "L1 scan failed", http.StatusBadGateway)
+		return
+	}
+
+	rows, err := h.queries.GetAnalysisMetricsByProject(ctx, project.ID)
+	if err != nil {
+		log.Ctx(ctx).Error().Err(err).Msg("get analysis metrics after L1")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	var sha string
+	metricsOut := make([]l1ScanMetricRow, 0, len(rows))
+	for _, row := range rows {
+		if sha == "" && row.Sha != "" {
+			sha = row.Sha
+		}
+		metricsOut = append(metricsOut, l1ScanMetricRow{
+			MetricType: row.MetricType,
+			Score:      row.Score,
+			Level:      row.Level,
+		})
+	}
+
+	writeJSON(w, l1ScanResponse{SHA: sha, Metrics: metricsOut})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

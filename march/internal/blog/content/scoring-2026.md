@@ -27,7 +27,15 @@ We care a lot about [your privacy](/privacy) and don't want to hand code and IP 
 
 ## How the Analysis Works
 
-The analysis runs completely in your browser. Here is a rough outline:
+### Level 1 (server-side, public GitHub repos)
+
+For **public** GitHub repositories, **Level 1** analysis runs on the Julython server when we receive a **push webhook** on the default branch (and you can also trigger a re-scan with **`POST /api/projects/{projectID}/analysis/l1`** if you own the project). The server uses the GitHub API to inspect the repository tree and a bounded set of files, then writes scores into **`analysis_metrics`**. **Private** repositories are skipped for now (we persist visibility from the webhook and do not run server-side L1 against them).
+
+Each metric row’s **`data`** JSON stores both the scored checklist (boolean signals) and a small **`prompt_context`** object (paths and text snippets) so that future **L2/L3** grading can build prompts without re-downloading the whole repository.
+
+### Level 2 / Level 3 (browser, optional)
+
+For deeper **L2** and **L3** passes, you can still run **WebLLM entirely in your browser** so your full codebase never has to be uploaded for those steps. Here is a rough outline:
 
 ```mermaid
 flowchart TD
@@ -49,7 +57,7 @@ flowchart TD
 
 Each metric is scored in three levels:
 
-- **L1** - a fast, heuristic check that runs entirely in a JS worker (10 pts). L1 must pass before L2/L3 can be attempted.
+- **L1** - a fast heuristic check (10 pts at full credit). For public GitHub repos, the **authoritative** L1 run is **server-side** on push; the in-browser worker remains available for local experimentation. L1 must pass before L2/L3 can be attempted.
 - **L2** - a WebLLM pass that evaluates the metric more deeply (30 pts)
 - **L3** - excellent quality, as graded by the local model (60 pts)
 
