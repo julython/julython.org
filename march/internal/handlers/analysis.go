@@ -177,22 +177,34 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 	})
 }
 
-type l1ScanMetricRow struct {
-	MetricType string `json:"metricType"`
-	Score      int16  `json:"score"`
-	Level      int16  `json:"level"`
+var (
+	errL1PrivateRepo   = errors.New("l1: private repository")
+	errL1NoGitHubToken = errors.New("l1: GITHUB_TOKEN not configured")
+)
+
+// performL1Scan runs server-side L1 (push webhook and manual rescan use this path).
+func (h *ProjectHandler) performL1Scan(ctx context.Context, project db.Project, updatedBy uuid.UUID) error {
+	if project.IsPrivate {
+		return errL1PrivateRepo
+	}
+	if strings.TrimSpace(h.githubToken) == "" {
+		return errL1NoGitHubToken
+	}
+
+	l1 := services.NewL1Scanner(h.pool, h.githubToken)
+	scanCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	if err := l1.RunL1Scan(scanCtx, project, updatedBy); err != nil {
+		return err
+	}
+	return nil
 }
 
-type l1ScanResponse struct {
-	SHA     string            `json:"sha"`
-	Metrics []l1ScanMetricRow `json:"metrics"`
-}
-
-// POST /api/projects/{projectID}/analysis/l1
-// Runs server-side L1 analysis and upserts all eight metric rows (public GitHub repos only).
-func (h *ProjectHandler) PostProjectL1Scan(w http.ResponseWriter, r *http.Request) {
+// POST /projects/{slug}/analysis/l1
+// HTMX-triggered L1 rescan from the project page; redirects back on success.
+func (h *ProjectHandler) PostProjectRescanL1(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	projectID := r.PathValue("projectID")
+	slug := r.PathValue("slug")
 
 	sessionUser := UserFromContext(ctx)
 	if sessionUser == nil {
@@ -205,19 +217,13 @@ func (h *ProjectHandler) PostProjectL1Scan(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	projectUUID, err := uuid.Parse(projectID)
-	if err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	project, err := h.queries.GetProjectByID(ctx, projectUUID)
+	project, err := h.queries.GetProjectBySlug(ctx, slug)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("get project")
+		log.Ctx(ctx).Error().Err(err).Str("slug", slug).Msg("get project for rescan")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -227,46 +233,27 @@ func (h *ProjectHandler) PostProjectL1Scan(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if project.IsPrivate {
+	err = h.performL1Scan(ctx, project, user.ID)
+	if errors.Is(err, errL1PrivateRepo) {
 		http.Error(w, "server L1 is not available for private repositories", http.StatusBadRequest)
 		return
 	}
-
-	if h.githubToken == "" {
+	if errors.Is(err, errL1NoGitHubToken) {
 		http.Error(w, "GITHUB_TOKEN is not configured", http.StatusServiceUnavailable)
 		return
 	}
-
-	l1 := services.NewL1Scanner(h.pool, h.githubToken)
-	scanCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-	if err := l1.RunL1Scan(scanCtx, project, user.ID); err != nil {
-		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("L1 scan")
+	if err != nil {
+		log.Ctx(ctx).Error().Err(err).Str("slug", slug).Msg("L1 scan")
 		http.Error(w, "L1 scan failed", http.StatusBadGateway)
 		return
 	}
 
-	rows, err := h.queries.GetAnalysisMetricsByProject(ctx, project.ID)
-	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Msg("get analysis metrics after L1")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", fmt.Sprintf("/projects/%s", slug))
+		w.WriteHeader(http.StatusOK)
 		return
 	}
-
-	var sha string
-	metricsOut := make([]l1ScanMetricRow, 0, len(rows))
-	for _, row := range rows {
-		if sha == "" && row.Sha != "" {
-			sha = row.Sha
-		}
-		metricsOut = append(metricsOut, l1ScanMetricRow{
-			MetricType: row.MetricType,
-			Score:      row.Score,
-			Level:      row.Level,
-		})
-	}
-
-	writeJSON(w, l1ScanResponse{SHA: sha, Metrics: metricsOut})
+	http.Redirect(w, r, fmt.Sprintf("/projects/%s", slug), http.StatusSeeOther)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

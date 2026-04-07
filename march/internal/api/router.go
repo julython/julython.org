@@ -90,12 +90,12 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /leaders/projects", leaderboardHandler.Projects)
 	mux.HandleFunc("GET /leaders/languages", leaderboardHandler.Languages)
 	mux.HandleFunc("GET /projects", projectHandler.List)
+	mux.HandleFunc("POST /projects/{slug}/analysis/l1", projectHandler.PostProjectRescanL1)
 	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
 	// Projects
 	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
-	mux.HandleFunc("POST /api/projects/{projectID}/analysis/l1", projectHandler.PostProjectL1Scan)
 
 	// Profiles
 	mux.HandleFunc("GET /profile", profileHandler.Overview)

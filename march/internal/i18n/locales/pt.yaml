@@ -140,6 +140,7 @@ pt:
     AnalysesTotal: "análises no total"
     NeverAnalyzed: "Ainda não"
     RescanL1: "Analisar de novo (L1)"
+    RescanL1Running: "Analisando…"
     RescanL1DisabledPrivate: "Análise no servidor não está disponível para repositórios privados."
     RescanL1DisabledNoToken: "O servidor não está configurado para análise do GitHub (GITHUB_TOKEN)."
 

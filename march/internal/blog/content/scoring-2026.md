@@ -29,7 +29,7 @@ We care a lot about [your privacy](/privacy) and don't want to hand code and IP 
 
 ### Level 1 — heuristics (server-side for public GitHub)
 
-For **public** GitHub repositories, **Level 1** is **fast heuristic** scoring (partial credit **0–10** per metric) from checklist-style signals. The **authoritative** run is **server-side** when we receive a **push webhook** on the default branch. You can also **re-scan** from the **project page** (if you own the repo) or call **`POST /api/projects/{projectID}/analysis/l1`**. **Private** repositories are skipped (we persist visibility from the webhook).
+For **public** GitHub repositories, **Level 1** is **fast heuristic** scoring (partial credit **0–10** per metric) from checklist-style signals. The **authoritative** run is **server-side** when we receive a **push webhook** on the default branch. You can also **re-scan** from the **project page** (if you own the repo) via the same server-side scan. **Private** repositories are skipped (we persist visibility from the webhook).
 
 **First progress bar:** you only get **L1** (the first tier) when the heuristic **score is greater than zero** — a scan that finds nothing useful stays at **L0** for that metric.
 

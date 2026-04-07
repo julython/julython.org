@@ -213,7 +213,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 	if sess := UserFromContext(ctx); sess != nil {
 		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
-			analysisBoard.RescanL1ProjectID = project.ID.String()
+			analysisBoard.RescanL1Slug = project.Slug
 			switch {
 			case project.IsPrivate:
 				analysisBoard.RescanL1Disabled = true

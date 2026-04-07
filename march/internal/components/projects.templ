@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/invopop/ctxi18n/i18n"
+
+	"july/internal/components/icons"
 )
 
 // ============================================
@@ -52,8 +54,8 @@ type ProjectAnalysisBoard struct {
 	MaxPts                int
 	LastAnalyzedAgo       string
 	AnalysisRunCount      int
-	RescanL1ProjectID     string
-	RescanL1Disabled      bool
+	RescanL1Slug           string
+	RescanL1Disabled       bool
 	RescanL1DisabledReason string
 }
 
@@ -520,12 +522,13 @@ templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 					}
 				</p>
 			</div>
-			if board.RescanL1ProjectID != "" {
+			if board.RescanL1Slug != "" {
 				<div class="border-t border-white/10 pt-2.5">
 					<button
 						type="button"
-						id="l1-rescan-btn"
-						data-project-id={ board.RescanL1ProjectID }
+						hx-post={ fmt.Sprintf("/projects/%s/analysis/l1", board.RescanL1Slug) }
+						hx-swap="none"
+						hx-disabled-elt="this"
 						if board.RescanL1Disabled {
 							disabled
 						}
@@ -533,14 +536,19 @@ templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 							title={ l1RescanTitle(ctx, board.RescanL1DisabledReason) }
 						}
 						class={
-							"w-full text-xs font-medium py-2 px-3 rounded-lg border transition-colors",
+							"w-full text-xs font-medium py-2 px-3 rounded-lg border transition-colors group disabled:opacity-60 disabled:cursor-not-allowed",
 							templ.KV("bg-july-500/15 border-july-500/35 text-july-200 hover:bg-july-500/25", !board.RescanL1Disabled),
 							templ.KV("bg-white/5 border-white/10 text-gray-500 cursor-not-allowed", board.RescanL1Disabled),
 						}
 					>
-						{ i18n.T(ctx, "projects.RescanL1") }
+						<span class="htmx-idle flex items-center justify-center gap-1.5 w-full">
+							{ i18n.T(ctx, "projects.RescanL1") }
+						</span>
+						<span class="htmx-busy items-center justify-center gap-1.5 w-full">
+							@icons.SpinnerIcon()
+							<span>{ i18n.T(ctx, "projects.RescanL1Running") }</span>
+						</span>
 					</button>
-					@l1RescanScript()
 				</div>
 			}
 		</div>
@@ -556,44 +564,6 @@ func l1RescanTitle(ctx context.Context, reason string) string {
 	default:
 		return ""
 	}
-}
-
-templ l1RescanScript() {
-	<script>
-	(function () {
-		const btn = document.getElementById("l1-rescan-btn");
-		if (!btn || btn.disabled) return;
-		btn.addEventListener("click", async function () {
-			const id = btn.getAttribute("data-project-id");
-			if (!id) return;
-			btn.disabled = true;
-			const label = btn.textContent;
-			btn.textContent = "…";
-			try {
-				const r = await fetch("/api/projects/" + id + "/analysis/l1", {
-					method: "POST",
-					credentials: "same-origin",
-					headers: { Accept: "application/json" },
-				});
-				if (r.ok) {
-					location.reload();
-					return;
-				}
-				let msg = "Request failed";
-				try {
-					const t = await r.text();
-					if (t) msg = t.slice(0, 200);
-				} catch (_) {}
-				alert(msg);
-			} catch (e) {
-				alert(e && e.message ? e.message : "Network error");
-			} finally {
-				btn.disabled = false;
-				btn.textContent = label;
-			}
-		});
-	})();
-	</script>
 }
 
 // ============================================
