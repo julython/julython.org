@@ -37,6 +37,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	queries := db.New(pool)
 	userSvc := services.MustNewUserService(queries, cfg.Database.EncKey)
 	gameSvc := services.NewGameService(queries)
+	l1Scanner := services.NewL1Scanner(queries, pool, cfg.GitHubToken)
 
 	// OAuth providers
 	providers := make(map[string]services.OAuthProvider)
@@ -71,7 +72,6 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
 	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
 	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
-	l1Scanner := services.NewL1Scanner(queries, pool, cfg.GitHubToken)
 	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
