@@ -39,16 +39,16 @@ type GitHubPushEvent struct {
 }
 
 type GitHubRepo struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	FullName       string `json:"full_name"`
-	HTMLURL        string `json:"html_url"`
-	Description    string `json:"description"`
-	DefaultBranch  string `json:"default_branch"`
-	Private        bool   `json:"private"`
-	Fork           bool   `json:"fork"`
-	ForksCount     int    `json:"forks_count"`
-	Watchers       int    `json:"watchers_count"`
+	ID            int64  `json:"id"`
+	Name          string `json:"name"`
+	FullName      string `json:"full_name"`
+	HTMLURL       string `json:"html_url"`
+	Description   string `json:"description"`
+	DefaultBranch string `json:"default_branch"`
+	Private       bool   `json:"private"`
+	Fork          bool   `json:"fork"`
+	ForksCount    int    `json:"forks_count"`
+	Watchers      int    `json:"watchers_count"`
 }
 
 type GitHubCommit struct {
@@ -82,12 +82,12 @@ type Handler struct {
 	l1Scanner   *services.L1Scanner
 }
 
-func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, githubToken string) *Handler {
+func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, l1Scanner *services.L1Scanner) *Handler {
 	return &Handler{
 		queries:     queries,
 		pool:        pool,
 		gameService: gameService,
-		l1Scanner:   services.NewL1Scanner(pool, githubToken),
+		l1Scanner:   l1Scanner,
 	}
 }
 

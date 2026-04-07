@@ -4,12 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"path"
 	"strings"
 )
+
+// ErrGitHubForbidden is returned when GitHub responds 403 (e.g. private repo or token cannot read).
+// Callers may treat this as "mark project private" for mis-labeled public rows; note 403 can also mean rate/abuse limits.
+var ErrGitHubForbidden = errors.New("github: forbidden")
 
 const graphqlEndpoint = "https://api.github.com/graphql"
 
@@ -176,6 +181,9 @@ func (c *Client) fetchRecursiveTree(ctx context.Context, owner, repo, treeSHA st
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusForbidden {
+			return nil, false, fmt.Errorf("tree API: %w", ErrGitHubForbidden)
+		}
 		return nil, false, fmt.Errorf("tree API responded %d: %s", resp.StatusCode, b)
 	}
 
@@ -472,6 +480,9 @@ func (c *Client) doGraphQL(ctx context.Context, query string) (map[string]json.R
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusForbidden {
+			return nil, fmt.Errorf("github graphql: %w", ErrGitHubForbidden)
+		}
 		return nil, fmt.Errorf("github responded %d: %s", resp.StatusCode, b)
 	}
 

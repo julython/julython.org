@@ -1,10 +1,12 @@
 package handlers_test
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"testing"
 
+	"july/internal/db"
 	"july/internal/testutil"
 
 	"github.com/stretchr/testify/assert"
@@ -111,6 +113,26 @@ func TestProjectLeaderboard(t *testing.T) {
 		body := testutil.DecodeBody(t, resp)
 		assert.True(t, strings.Contains(body, "<tbody>"))
 		assert.False(t, strings.Contains(body, "<html"))
+	})
+
+	t.Run("excludes private projects from leaderboard", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		_, projectPublic, game, _ := testutil.CreateGameScenario(t, env)
+		_, projectPrivate := testutil.CreateGameScenarioForUser(t, env, game, "privuser", "Private User")
+
+		err := env.Queries.SetProjectIsPrivate(context.Background(), db.SetProjectIsPrivateParams{
+			ID:        projectPrivate.ID,
+			IsPrivate: true,
+		})
+		require.NoError(t, err)
+
+		resp := testutil.GetJSON(t, env, "/leaders/projects")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		body := testutil.DecodeBody(t, resp)
+		assert.Contains(t, body, projectPublic.Name)
+		assert.Contains(t, body, projectPublic.Slug)
+		assert.NotContains(t, body, projectPrivate.Name)
+		assert.NotContains(t, body, projectPrivate.Slug)
 	})
 }
 

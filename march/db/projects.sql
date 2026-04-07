@@ -49,6 +49,7 @@ SELECT * FROM projects WHERE service = @service AND repo_id = @repo_id;
 -- name: SearchActiveProjects :many
 SELECT * FROM projects
 WHERE is_active = true
+  AND is_private = false
   AND (sqlc.narg('search')::text IS NULL OR name ILIKE '%' || sqlc.narg('search') || '%' OR description ILIKE '%' || sqlc.narg('search') || '%')
   AND (sqlc.narg('service')::text IS NULL OR service = sqlc.narg('service'))
   AND (sqlc.narg('cursor')::uuid IS NULL OR id < sqlc.narg('cursor')::uuid)
@@ -58,8 +59,12 @@ LIMIT GREATEST(@limit_count, 1);
 -- name: ListActiveProjects :many
 SELECT * FROM projects
 WHERE is_active = true
+  AND is_private = false
 ORDER BY id DESC
 LIMIT GREATEST(@limit_count, 1);
+
+-- name: SetProjectIsPrivate :exec
+UPDATE projects SET is_private = @is_private WHERE id = @id;
 
 -- name: DeactivateProject :exec
 UPDATE projects SET is_active = false WHERE id = @id;

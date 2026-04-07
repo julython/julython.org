@@ -15,7 +15,6 @@ import (
 
 	"july/internal/db"
 	"july/internal/metrics"
-	"july/internal/services"
 )
 
 type analysisPayload struct {
@@ -187,14 +186,13 @@ func (h *ProjectHandler) performL1Scan(ctx context.Context, project db.Project, 
 	if project.IsPrivate {
 		return errL1PrivateRepo
 	}
-	if strings.TrimSpace(h.githubToken) == "" {
+	if !h.l1Scanner.IsConfigured() {
 		return errL1NoGitHubToken
 	}
 
-	l1 := services.NewL1Scanner(h.pool, h.githubToken)
 	scanCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	if err := l1.RunL1Scan(scanCtx, project, updatedBy); err != nil {
+	if err := h.l1Scanner.RunL1Scan(scanCtx, project, updatedBy); err != nil {
 		return err
 	}
 	return nil

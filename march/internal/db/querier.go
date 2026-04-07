@@ -119,6 +119,7 @@ type Querier interface {
 	ReviewReport(ctx context.Context, arg ReviewReportParams) error
 	SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error)
 	SetCommitGame(ctx context.Context, arg SetCommitGameParams) error
+	SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPrivateParams) error
 	// Called after AI grading for L2/L3 upgrades only.
 	// Requires the metric to already be at L1 (enforced in the handler).
 	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error

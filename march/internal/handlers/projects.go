@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"july/internal/components"
 	"july/internal/db"
@@ -18,14 +16,13 @@ import (
 
 type ProjectHandler struct {
 	queries     *db.Queries
-	pool        *pgxpool.Pool
 	gameService *services.GameService
 	userService *services.UserService
-	githubToken string
+	l1Scanner   *services.L1Scanner
 }
 
-func NewProjectHandler(q *db.Queries, pool *pgxpool.Pool, gs *services.GameService, us *services.UserService, githubToken string) *ProjectHandler {
-	return &ProjectHandler{queries: q, pool: pool, gameService: gs, userService: us, githubToken: githubToken}
+func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) *ProjectHandler {
+	return &ProjectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
 }
 
 // Order matches metrics.Parse and the project detail board UI.
@@ -218,7 +215,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 			case project.IsPrivate:
 				analysisBoard.RescanL1Disabled = true
 				analysisBoard.RescanL1DisabledReason = "private"
-			case strings.TrimSpace(h.githubToken) == "":
+			case !h.l1Scanner.IsConfigured():
 				analysisBoard.RescanL1Disabled = true
 				analysisBoard.RescanL1DisabledReason = "no_token"
 			}

@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog/log"
 
 	"july/internal/db"
 	"july/internal/metrics"
@@ -14,12 +16,15 @@ import (
 
 // L1Scanner runs server-side L1 analysis and upserts analysis_metrics rows.
 type L1Scanner struct {
-	pool  *pgxpool.Pool
-	token string
+	queries *db.Queries
+	pool    *pgxpool.Pool
+	token   string
 }
 
-func NewL1Scanner(pool *pgxpool.Pool, token string) *L1Scanner {
-	return &L1Scanner{pool: pool, token: token}
+// NewL1Scanner wires the app-wide queries handle and pool from the composition root (same as api.buildMux).
+// Pool is used only for transactions; queries is used for pool-scoped SQL (e.g. SetProjectIsPrivate).
+func NewL1Scanner(queries *db.Queries, pool *pgxpool.Pool, token string) *L1Scanner {
+	return &L1Scanner{queries: queries, pool: pool, token: token}
 }
 
 // IsConfigured returns true when a non-empty GitHub token was provided (public-repo reads).
@@ -66,6 +71,16 @@ func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy
 	client := metrics.NewClient(s.token)
 	res, err := client.FetchL1Scan(ctx, owner, repoName)
 	if err != nil {
+		if errors.Is(err, metrics.ErrGitHubForbidden) {
+			if err := s.queries.SetProjectIsPrivate(ctx, db.SetProjectIsPrivateParams{
+				ID:        project.ID,
+				IsPrivate: true,
+			}); err != nil {
+				return fmt.Errorf("set project private after GitHub 403: %w", err)
+			}
+			log.Info().Str("slug", project.Slug).Str("id", project.ID.String()).Msg("marked project private after GitHub 403 during L1 scan")
+			return nil
+		}
 		return fmt.Errorf("fetch L1 scan: %w", err)
 	}
 

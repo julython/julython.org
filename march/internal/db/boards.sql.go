@@ -43,7 +43,7 @@ const getProjectLeaderboard = `-- name: GetProjectLeaderboard :many
 SELECT b.id, b.game_id, b.project_id, b.points, b.potential_points, b.verified_points, b.commit_count, b.contributor_count, b.created_at, b.updated_at, p.name AS project_name, p.url AS project_url, p.slug
 FROM boards b
 JOIN projects p ON p.id = b.project_id
-WHERE b.game_id = $1 AND p.is_active = true
+WHERE b.game_id = $1 AND p.is_active = true AND p.is_private = false
 ORDER BY
     CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.potential_points END DESC,
     b.points DESC

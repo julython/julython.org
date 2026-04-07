@@ -284,6 +284,7 @@ func (q *Queries) GetProjectTotalScore(ctx context.Context, projectID uuid.UUID)
 const listActiveProjects = `-- name: ListActiveProjects :many
 SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
 WHERE is_active = true
+  AND is_private = false
 ORDER BY id DESC
 LIMIT GREATEST($1, 1)
 `
@@ -327,6 +328,7 @@ func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}
 const searchActiveProjects = `-- name: SearchActiveProjects :many
 SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
 WHERE is_active = true
+  AND is_private = false
   AND ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%')
   AND ($2::text IS NULL OR service = $2)
   AND ($3::uuid IS NULL OR id < $3::uuid)
@@ -380,6 +382,20 @@ func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProj
 		return nil, err
 	}
 	return items, nil
+}
+
+const setProjectIsPrivate = `-- name: SetProjectIsPrivate :exec
+UPDATE projects SET is_private = $1 WHERE id = $2
+`
+
+type SetProjectIsPrivateParams struct {
+	IsPrivate bool      `json:"is_private"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPrivateParams) error {
+	_, err := q.db.Exec(ctx, setProjectIsPrivate, arg.IsPrivate, arg.ID)
+	return err
 }
 
 const updateAnalysisMetricLevel = `-- name: UpdateAnalysisMetricLevel :exec
