@@ -167,6 +167,16 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		levelByType[row.MetricType] = row.Level
 		scoreByType[row.MetricType] = row.Score
 	}
+
+	showMetricAI := false
+	if sess := UserFromContext(ctx); sess != nil {
+		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
+			if !project.IsPrivate && h.l1Scanner.IsConfigured() {
+				showMetricAI = true
+			}
+		}
+	}
+
 	tiles := make([]components.ProjectAnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
 	for _, spec := range analysisBoardSpec {
@@ -181,10 +191,11 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
 		earned += int(score) * int(level) * 2
 		tiles = append(tiles, components.ProjectAnalysisTile{
-			MetricKey: spec.key,
-			Level:     level,
-			Score:     score,
-			I18nKey:   spec.i18nKey,
+			MetricKey:    spec.key,
+			Level:        level,
+			Score:        score,
+			I18nKey:      spec.i18nKey,
+			ShowMetricAI: showMetricAI,
 		})
 	}
 	shaDistinct := make(map[string]struct{})

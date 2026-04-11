@@ -42,10 +42,11 @@ type ProjectGameActivitySummary struct {
 }
 
 type ProjectAnalysisTile struct {
-	MetricKey string
-	Level     int16
-	Score     int16
-	I18nKey   string
+	MetricKey     string
+	Level         int16
+	Score         int16
+	I18nKey       string
+	ShowMetricAI  bool
 }
 
 type ProjectAnalysisBoard struct {
@@ -270,39 +271,45 @@ type ProjectDetailData struct {
 
 templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 	@Layout(layout) {
-		<section class="max-w-5xl mx-auto px-4 py-12">
-			<header class="mb-8">
-				<div class="flex items-start justify-between gap-4 flex-wrap">
-					<div>
-						<div class="flex items-center gap-2 mb-1">
-							<h1 class="text-3xl font-bold text-white">{ data.Project.Name }</h1>
-							if data.Project.Forked {
-								<span class="text-sm px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
-									{ i18n.T(ctx, "Fork") }
-								</span>
+		<section>
+			<div class="max-w-5xl mx-auto px-4 pt-12">
+				<header class="mb-8">
+					<div class="flex items-start justify-between gap-4 flex-wrap">
+						<div>
+							<div class="flex items-center gap-2 mb-1">
+								<h1 class="text-3xl font-bold text-white">{ data.Project.Name }</h1>
+								if data.Project.Forked {
+									<span class="text-sm px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
+										{ i18n.T(ctx, "Fork") }
+									</span>
+								}
+							</div>
+							if data.Project.Description != "" {
+								<p class="text-gray-400 mt-1">{ data.Project.Description }</p>
 							}
+							<p class="text-sm text-gray-600 mt-1">{ data.Project.Slug }</p>
 						</div>
-						if data.Project.Description != "" {
-							<p class="text-gray-400 mt-1">{ data.Project.Description }</p>
-						}
-						<p class="text-sm text-gray-600 mt-1">{ data.Project.Slug }</p>
+						<div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center shrink-0">
+							<a
+								href={ templ.SafeURL(data.Project.URL) }
+								target="_blank"
+								rel="noopener noreferrer"
+								class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
+							>
+								{ serviceLabel(ctx, data.Project.Service) }
+							</a>
+						</div>
 					</div>
-					<a
-						href={ templ.SafeURL(data.Project.URL) }
-						target="_blank"
-						rel="noopener noreferrer"
-						class="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
-					>
-						{ serviceLabel(ctx, data.Project.Service) }
-					</a>
-				</div>
-			</header>
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
+				</header>
+			</div>
+			@projectStatsBar(data)
+			<div class="max-w-5xl mx-auto px-4 pb-12 pt-6">
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
 				<div class="min-w-0 flex lg:col-span-1">
 					@projectAnalysisBoard(data.AnalysisBoard)
 				</div>
 				<div class="min-w-0 flex lg:col-span-2">
-					@projectGameActivityPanel(data.GameActivity)
+					@projectChatPanel(data)
 				</div>
 			</div>
 			<div class="flex items-center justify-between mb-4">
@@ -311,13 +318,7 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 			<div id="commits">
 				@ProjectCommitList(data)
 			</div>
-			<div
-				id="analyzer"
-				data-repo-url={ data.Project.URL }
-				data-worker-url={ AssetWorker }
-				data-llm-worker-url={ AssetLLMWorker }
-			></div>
-			<script type="module" src={ AssetAnalyzer }></script>
+			</div>
 		</section>
 	}
 }
@@ -426,60 +427,104 @@ templ analysisMetricTile(tile ProjectAnalysisTile) {
 			{ i18n.T(ctx, tile.I18nKey) }
 		</p>
 		<p class="text-[9px] text-gray-600 text-center tabular-nums mt-0.5">{ fmt.Sprintf("%d/10", tile.Score) }</p>
+		if tile.ShowMetricAI {
+			<button
+				type="button"
+				class="metric-ai-btn mt-1 w-full text-[9px] font-medium py-0.5 rounded border border-july-500/30 text-july-300/90 hover:bg-july-500/15 transition-colors"
+				data-metric-key={ tile.MetricKey }
+			>
+				AI
+			</button>
+		}
 	</div>
 }
 
-templ projectGameActivityPanel(a ProjectGameActivitySummary) {
-	<div class="flex flex-col flex-1 w-full min-w-0">
-		<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">{ i18n.T(ctx, "projects.GameActivity") }</h2>
-		<div class="flex-1 flex flex-col">
-			if !a.HasGame {
-				<p class="text-sm text-gray-500">{ i18n.T(ctx, "projects.NoGameData") }</p>
-			} else {
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
-					<div>
-						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.GameCommits") }</p>
-						<p class="text-white text-lg font-semibold tabular-nums">
-							if a.Board != nil {
-								{ fmt.Sprintf("%d", a.Board.CommitCount) }
-							} else {
-								<span class="text-gray-500 font-normal text-base">—</span>
-							}
-						</p>
-					</div>
-					<div>
-						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "Contributors") }</p>
-						<p class="text-white text-lg font-semibold tabular-nums">
-							if a.Board != nil {
-								{ fmt.Sprintf("%d", a.Board.ContributorCount) }
-							} else {
-								<span class="text-gray-500 font-normal text-base">—</span>
-							}
-						</p>
-					</div>
-					<div>
-						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.CommitsThisMonth") }</p>
-						<p class="text-white text-lg font-semibold tabular-nums">
-							{ fmt.Sprintf("%d", a.CommitsThisMonth) }
-							<span class="text-gray-500 font-normal text-sm">
-								(+{ fmt.Sprintf("%d", a.CommitsThisWeek) } { i18n.T(ctx, "projects.ThisWeek") })
-							</span>
-						</p>
-					</div>
-					<div>
-						<p class="text-gray-500 text-xs mb-0.5">{ i18n.T(ctx, "projects.FilesAndLines") }</p>
-						<p class="text-white text-lg font-semibold tabular-nums">
-							{ fmt.Sprintf("%d", a.FileTouchCount) }
-							if a.UniqueDirs > 0 {
-								<span class="text-gray-500 font-normal text-sm">
-									({ fmt.Sprintf("%d", a.UniqueDirs) } { i18n.T(ctx, "projects.UniqueDirs") })
-								</span>
-							}
-						</p>
-						<p class="text-gray-500 text-xs mt-1">{ i18n.T(ctx, "projects.LinesNotTracked") }</p>
-					</div>
+templ projectChatPanel(data ProjectDetailData) {
+	<div class="rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full min-h-[420px]">
+		<div class="px-3 sm:px-4 py-2.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+			<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase shrink-0">{ i18n.T(ctx, "projects.Assistant") }</h2>
+			<div class="flex flex-wrap items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
+				<label for="llm-model-select" class="sr-only">{ i18n.T(ctx, "projects.BrowserModel") }</label>
+				<select
+					id="llm-model-select"
+					class="text-xs px-2 py-1.5 rounded-md bg-black/25 border border-white/10 text-gray-300 min-w-[10rem] max-w-[min(100vw-8rem,18rem)] focus:outline-none focus:border-july-500/50"
+				></select>
+				<button
+					type="button"
+					id="llm-cache-clear"
+					class="hidden text-xs px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0"
+					title={ i18n.T(ctx, "projects.ClearModelCache") }
+				>
+					{ i18n.T(ctx, "projects.ClearModelCache") }
+				</button>
+			</div>
+		</div>
+		<p class="px-4 pt-3 pb-1 text-[11px] text-gray-500 leading-snug">{ i18n.T(ctx, "projects.AssistantHint") }</p>
+		<div
+			id="analyzer"
+			class="flex flex-col flex-1 min-h-0"
+			data-repo-url={ data.Project.URL }
+			data-project-id={ data.Project.ID }
+			data-llm-worker-url={ AssetLLMWorker }
+			data-repo-name={ githubRepoPath(data.Project.URL) }
+			data-repo-description={ data.Project.Description }
+		></div>
+		<script type="module" src={ AssetAnalyzer }></script>
+	</div>
+}
+
+templ projectStatsBar(data ProjectDetailData) {
+	<div class="w-full border-y border-white/10 bg-black/25">
+		<div class="max-w-5xl mx-auto px-2 py-1.5 sm:px-3">
+			<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] sm:text-xs">
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+					<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
+					<span class="text-gray-200 tabular-nums font-medium">
+						{ fmt.Sprintf("%d", data.AnalysisBoard.EarnedPts) } / { fmt.Sprintf("%d", data.AnalysisBoard.MaxPts) }
+					</span>
 				</div>
-			}
+				if data.AnalysisBoard.LastAnalyzedAgo != "" {
+					<span class="text-gray-500">
+						{ i18n.T(ctx, "projects.LastAnalyzed") }:
+						<span class="text-gray-300 ml-1">{ data.AnalysisBoard.LastAnalyzedAgo }</span>
+						<span class="text-gray-600 ml-1">
+							({ fmt.Sprintf("%d", data.AnalysisBoard.AnalysisRunCount) } { i18n.T(ctx, "projects.AnalysesTotal") })
+						</span>
+					</span>
+				} else {
+					<span class="text-gray-600">{ i18n.T(ctx, "projects.NeverAnalyzed") }</span>
+				}
+			</div>
+			<div class="mt-1 flex flex-wrap gap-x-5 gap-y-0.5 text-[11px] text-gray-400">
+				if !data.GameActivity.HasGame {
+					<span>{ i18n.T(ctx, "projects.NoGameData") }</span>
+				} else {
+					if data.GameActivity.Board != nil {
+						<span>
+							<span class="text-gray-500">{ i18n.T(ctx, "projects.GameCommits") }:</span>
+							<span class="text-gray-200 tabular-nums ml-1">{ fmt.Sprintf("%d", data.GameActivity.Board.CommitCount) }</span>
+						</span>
+						<span>
+							<span class="text-gray-500">{ i18n.T(ctx, "Contributors") }:</span>
+							<span class="text-gray-200 tabular-nums ml-1">{ fmt.Sprintf("%d", data.GameActivity.Board.ContributorCount) }</span>
+						</span>
+					}
+					<span>
+						<span class="text-gray-500">{ i18n.T(ctx, "projects.CommitsThisMonth") }:</span>
+						<span class="text-gray-200 tabular-nums ml-1">{ fmt.Sprintf("%d", data.GameActivity.CommitsThisMonth) }</span>
+						<span class="text-gray-600 ml-1">(+{ fmt.Sprintf("%d", data.GameActivity.CommitsThisWeek) } { i18n.T(ctx, "projects.ThisWeek") })</span>
+					</span>
+					<span>
+						<span class="text-gray-500">{ i18n.T(ctx, "projects.FilesAndLines") }:</span>
+						<span class="text-gray-200 tabular-nums ml-1">{ fmt.Sprintf("%d", data.GameActivity.FileTouchCount) }</span>
+						if data.GameActivity.UniqueDirs > 0 {
+							<span class="text-gray-600 ml-1">
+								({ fmt.Sprintf("%d", data.GameActivity.UniqueDirs) } { i18n.T(ctx, "projects.UniqueDirs") })
+							</span>
+						}
+					</span>
+				}
+			</div>
 		</div>
 	</div>
 }
@@ -564,6 +609,19 @@ func l1RescanTitle(ctx context.Context, reason string) string {
 	default:
 		return ""
 	}
+}
+
+// githubRepoPath returns "owner/repo" for GitHub URLs, or the cleaned path for other hosts.
+func githubRepoPath(url string) string {
+	u := strings.TrimSpace(url)
+	u = strings.TrimPrefix(u, "https://github.com/")
+	u = strings.TrimPrefix(u, "http://github.com/")
+	u = strings.TrimSuffix(u, "/")
+	u = strings.TrimSuffix(u, ".git")
+	if u == "" {
+		return url
+	}
+	return u
 }
 
 // ============================================

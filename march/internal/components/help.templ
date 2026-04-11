@@ -82,6 +82,25 @@ templ helpPage(user *UserInfo) {
 					</p>
 				</div>
 			</div>
+			@helpHeading("Project analysis & AI reviews", "analysis-metrics")
+			<p class="text-lg text-gray-300 leading-relaxed">
+				Julython runs a server-side scan (L1) on linked GitHub repositories and scores each area—README, tests, CI, structure, and more—from 0 to 10.
+				The optional <strong class="text-gray-200">AI</strong> button on each metric uses your browser’s model only after L1 has found at least minimal evidence for that area (a <strong class="text-gray-200">non-zero</strong> score).
+			</p>
+			<p class="text-gray-400 text-sm leading-relaxed">
+				If a metric shows <strong class="text-gray-300">0/10</strong>, improve that part of the project (for example add a README or CI workflow), then use
+				<strong class="text-gray-300">Rescan analysis (L1)</strong> on your project page. After the score updates, try the AI review again.
+			</p>
+			<ul class="list-none space-y-3 text-gray-400 text-sm leading-relaxed">
+				<li id="analysis-metric-readme" class="scroll-mt-24"><strong class="text-gray-300">README</strong> — README presence and basic quality.</li>
+				<li id="analysis-metric-tests" class="scroll-mt-24"><strong class="text-gray-300">Tests</strong> — Test files and configuration.</li>
+				<li id="analysis-metric-ci" class="scroll-mt-24"><strong class="text-gray-300">CI</strong> — Continuous integration setup.</li>
+				<li id="analysis-metric-structure" class="scroll-mt-24"><strong class="text-gray-300">Structure</strong> — Repository layout and organization.</li>
+				<li id="analysis-metric-linting" class="scroll-mt-24"><strong class="text-gray-300">Linting</strong> — Linters and style checks.</li>
+				<li id="analysis-metric-deps" class="scroll-mt-24"><strong class="text-gray-300">Dependencies</strong> — Dependency manifests and updates.</li>
+				<li id="analysis-metric-docs" class="scroll-mt-24"><strong class="text-gray-300">Documentation</strong> — Docs beyond the README.</li>
+				<li id="analysis-metric-ai_ready" class="scroll-mt-24"><strong class="text-gray-300">AI-ready</strong> — Tooling for AI-assisted development.</li>
+			</ul>
 			@helpHeading("When will my points count?", "timing")
 			<p class="text-lg text-gray-300 leading-relaxed">
 				You should use your local time to 'start' at midnight on the first

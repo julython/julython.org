@@ -97,6 +97,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 
 	// Projects
 	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
+	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", projectHandler.GetProjectMetricLLMContext)
 
 	// Profiles
 	mux.HandleFunc("GET /profile", profileHandler.Overview)

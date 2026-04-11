@@ -94,9 +94,19 @@ export async function deleteCachedModels(modelId?: string): Promise<void> {
 
 const MAX_SYSTEM_PROMPT_CHARS = 2000;
 
-async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
+function getLanguageModelAPI(): any | null {
   const w = window as any;
-  const api = w.LanguageModel ?? w.ai?.languageModel;
+  return w.LanguageModel ?? w.ai?.languageModel ?? null;
+}
+
+/**
+ * Chrome built-in Gemini session. The spec requires system text as
+ * `initialPrompts: [{ role: "system", content }]` — a top-level `systemPrompt` field
+ * is not part of the Prompt API and is ignored, which produced empty-context replies.
+ * @see https://github.com/webmachinelearning/prompt-api/blob/main/README.md#system-prompts
+ */
+async function tryChromePromptAPI(systemPrompt: string): Promise<LLMSession | null> {
+  const api = getLanguageModelAPI();
   if (!api) return null;
 
   const avail: string = await api.availability().catch(() => "unavailable");
@@ -104,26 +114,41 @@ async function tryWindowAI(systemPrompt: string): Promise<LLMSession | null> {
   if (avail === "unavailable" || avail === "no") return null;
 
   const truncated = systemPrompt.slice(0, MAX_SYSTEM_PROMPT_CHARS);
-  const session = await api.create({
-    systemPrompt: truncated,
-    initialPrompts: [
-      { role: "user", content: "What is the context for our conversation?" },
-      { role: "assistant", content: truncated },
-    ],
-  }).catch((e: unknown) => {
-    console.warn("[window.ai] create failed:", e);
+
+  const createOpts = {
+    initialPrompts: [{ role: "system", content: truncated }],
+    expectedInputs: [{ type: "text", languages: ["en"] }],
+    expectedOutputs: [{ type: "text", languages: ["en"] }],
+  };
+
+  let session = await api.create(createOpts).catch((e: unknown) => {
+    console.warn("[window.ai] create (with expectedInputs) failed:", e);
     return null;
   });
+  if (!session) {
+    session = await api.create({
+      initialPrompts: [{ role: "system", content: truncated }],
+    }).catch((e: unknown) => {
+      console.warn("[window.ai] create failed:", e);
+      return null;
+    });
+  }
   if (!session) return null;
 
   const context = systemPrompt;
   return {
     async prompt(text, onChunk) {
-      const fullPrompt = `Regarding the repo "${context.slice(0, 100).split("\n")[0]}":\n${text}`;
-      const stream = session.promptStreaming(fullPrompt);
+      const firstLine = context.split("\n")[0] ?? "";
+      const repoMatch = firstLine.match(/analyzing the GitHub repository "([^"]+)"/);
+      const userPayload = repoMatch
+        ? `Regarding the repo "${repoMatch[1]}":\n${text}`
+        : text;
+
+      const stream = session.promptStreaming(userPayload);
       let full = "";
       for await (const chunk of stream) {
-        full = chunk.startsWith(full) ? chunk : full + chunk;
+        const piece = typeof chunk === "string" ? chunk : String(chunk ?? "");
+        full += piece;
         onChunk(full);
       }
       return full;
@@ -200,13 +225,25 @@ export async function createSession(
   modelId: string,
   workerURL: string,
   onProgress?: (msg: string) => void,
+  /** Called once when WebLLM will download this model (not cached). Chrome path never triggers this. */
+  onWebLLMDownload?: (info: { sizeMB: number; label: string }) => void,
 ): Promise<LLMSession> {
   onProgress?.("Checking for browser AI…");
 
-  const windowAI = await tryWindowAI(systemPrompt);
+  const windowAI = await tryChromePromptAPI(systemPrompt);
   if (windowAI) {
     onProgress?.("Using Chrome built-in AI (Gemini Nano)");
     return windowAI;
+  }
+
+  const cached = await getCachedModels();
+  const haveCached = cached.some((c) => c.modelId === modelId);
+  if (!haveCached) {
+    const rec = MODELS.find((m) => m.id === modelId);
+    onWebLLMDownload?.({
+      sizeMB: rec?.sizeMB ?? 0,
+      label: rec?.label ?? modelId,
+    });
   }
 
   onProgress?.("Chrome AI unavailable, loading WebLLM…");
@@ -217,6 +254,37 @@ export async function createSession(
     "No LLM available. Requires Chrome 127+ with #prompt-api-for-gemini-nano, " +
     "or a WebGPU-capable browser."
   );
+}
+
+/** Parse {"score":N,"message":"..."} from model output (allows extra prose). */
+export function parseMetricAnalysisJSON(text: string): { score: number; message: string } | null {
+  const trimmed = text.trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const o = JSON.parse(trimmed.slice(start, end + 1)) as { score?: unknown; message?: unknown };
+    if (typeof o.message !== "string") return null;
+    const n = Number(o.score);
+    if (!Number.isFinite(n)) return null;
+    const score = Math.round(n);
+    if (score < 0 || score > 10) return null;
+    return { score, message: o.message };
+  } catch {
+    return null;
+  }
+}
+
+/** General Q&A without a local clone — uses repo URL + optional description only. */
+export function buildMinimalChatSystemPrompt(
+  repoDisplay: string,
+  repoURL: string,
+  description: string,
+): string {
+  const desc = description.trim();
+  return `You are a helpful assistant for the software repository "${repoDisplay}" (${repoURL}).
+${desc ? `Project description: ${desc}\n` : ""}
+You do not have the repository files in context. Answer from general knowledge and the user's message; suggest checking GitHub for details when appropriate. Be concise.`;
 }
 
 export function buildSystemPrompt(

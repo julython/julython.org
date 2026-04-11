@@ -101,7 +101,7 @@ func TestWriteManifest(t *testing.T) {
 	dir := filepath.Dir(manifestPath)
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 
-	err := writeManifest("a.css", "b.js", "c.js", "d.js", "e.js", "f.js")
+	err := writeManifest("a.css", "b.js", "c.js", "d.js", "e.js")
 	require.NoError(t, err)
 
 	b, err := os.ReadFile(manifestPath)
@@ -112,8 +112,7 @@ func TestWriteManifest(t *testing.T) {
 	require.Contains(t, s, `AssetHTMX        = "/assets/b.js"`)
 	require.Contains(t, s, `AssetMermaid     = "/assets/c.js"`)
 	require.Contains(t, s, `AssetAnalyzer    = "/assets/d.js"`)
-	require.Contains(t, s, `AssetWorker      = "/assets/e.js"`)
-	require.Contains(t, s, `AssetLLMWorker   = "/assets/f.js"`)
+	require.Contains(t, s, `AssetLLMWorker   = "/assets/e.js"`)
 }
 
 func TestBuildJS_trivialEntry(t *testing.T) {

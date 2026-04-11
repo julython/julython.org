@@ -272,3 +272,94 @@ func must200(t *testing.T, resp *http.Response) *http.Response {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	return resp
 }
+
+func llmContextPath(projectID, metric string) string {
+	return "/api/projects/" + projectID + "/analysis/metrics/" + metric + "/llm-context"
+}
+
+func TestGetProjectMetricLLMContext(t *testing.T) {
+	t.Run("unauthenticated request is rejected", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		project := testutil.CreateProject(t, env, "gh-nobody-repo", "https://github.com/nobody/repo")
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	})
+
+	t.Run("returns JSON for owner with L1 metric", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		ctx := context.Background()
+		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
+			ID:         db.NewID(),
+			ProjectID:  project.ID,
+			MetricType: "readme",
+			Score:      6,
+			Data:       db.JSONMap{"has_readme": true},
+			Sha:        "abc123",
+			UpdatedBy:  user.ID,
+		}))
+
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		resp.Body.Close()
+		assert.Equal(t, "readme", body["metricType"])
+		assert.NotEmpty(t, body["userPrompt"])
+		assert.NotEmpty(t, body["systemPrompt"])
+		assert.Equal(t, float64(6), body["l1Score"])
+	})
+
+	t.Run("rejects zero score metric with JSON body", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		ctx := context.Background()
+		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
+			ID:         db.NewID(),
+			ProjectID:  project.ID,
+			MetricType: "readme",
+			Score:      0,
+			Data:       db.JSONMap{"has_readme": false},
+			Sha:        "abc123",
+			UpdatedBy:  user.ID,
+		}))
+
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		resp.Body.Close()
+		assert.Equal(t, "metric_l1_zero", body["error"])
+		assert.NotEmpty(t, body["message"])
+		assert.Equal(t, "readme", body["metricType"])
+		assert.Equal(t, "/help#analysis-metrics", body["helpUrl"])
+		assert.Equal(t, "/help#analysis-metric-readme", body["metricHelpUrl"])
+		assert.Equal(t, float64(0), body["l1Score"])
+	})
+
+	t.Run("rejects missing metric row with JSON body", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		resp.Body.Close()
+		assert.Equal(t, "metric_no_analysis", body["error"])
+		assert.NotEmpty(t, body["message"])
+		assert.Equal(t, "/help#analysis-metrics", body["helpUrl"])
+		assert.Equal(t, "/help#analysis-metric-readme", body["metricHelpUrl"])
+	})
+}
