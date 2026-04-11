@@ -110,45 +110,30 @@ async function tryChromePromptAPI(systemPrompt: string): Promise<LLMSession | nu
   if (!api) return null;
 
   const avail: string = await api.availability().catch(() => "unavailable");
-  console.debug("[window.ai] availability:", avail);
   if (avail === "unavailable" || avail === "no") return null;
 
-  const truncated = systemPrompt.slice(0, MAX_SYSTEM_PROMPT_CHARS);
-
-  const createOpts = {
-    initialPrompts: [{ role: "system", content: truncated }],
-    expectedInputs: [{ type: "text", languages: ["en"] }],
+  let session = await api.create({
     expectedOutputs: [{ type: "text", languages: ["en"] }],
-  };
-
-  let session = await api.create(createOpts).catch((e: unknown) => {
-    console.warn("[window.ai] create (with expectedInputs) failed:", e);
+  }).catch((e: unknown) => {
+    console.warn("[chrome-ai] create failed:", e);
     return null;
   });
-  if (!session) {
-    session = await api.create({
-      initialPrompts: [{ role: "system", content: truncated }],
-    }).catch((e: unknown) => {
-      console.warn("[window.ai] create failed:", e);
-      return null;
-    });
-  }
   if (!session) return null;
 
-  const context = systemPrompt;
   return {
     async prompt(text, onChunk) {
-      const firstLine = context.split("\n")[0] ?? "";
-      const repoMatch = firstLine.match(/analyzing the GitHub repository "([^"]+)"/);
-      const userPayload = repoMatch
-        ? `Regarding the repo "${repoMatch[1]}":\n${text}`
-        : text;
+      const combined = `<instructions>\n${systemPrompt}\n</instructions>\n\n${text}`;
+      console.debug("[chrome-ai] combined prompt length:", combined.length);
 
-      const stream = session.promptStreaming(userPayload);
+      const stream = session.promptStreaming(combined);
       let full = "";
       for await (const chunk of stream) {
         const piece = typeof chunk === "string" ? chunk : String(chunk ?? "");
-        full += piece;
+        if (piece.length >= full.length) {
+          full = piece;
+        } else {
+          full += piece;
+        }
         onChunk(full);
       }
       return full;
