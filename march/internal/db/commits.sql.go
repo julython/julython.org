@@ -363,6 +363,72 @@ func (q *Queries) GetDailyCommitCounts(ctx context.Context, gameID pgtype.UUID) 
 	return items, nil
 }
 
+const getProjectGameActivityAggregates = `-- name: GetProjectGameActivityAggregates :one
+SELECT
+    COUNT(*)::int AS commits_this_month,
+    COUNT(*) FILTER (WHERE c.timestamp >= $1)::int AS commits_this_week,
+    COALESCE(SUM(
+        CASE
+            WHEN jsonb_typeof(c.files) = 'array' THEN jsonb_array_length(c.files)
+            ELSE 0
+        END
+    ), 0)::int AS file_touch_count,
+    (
+        SELECT COUNT(DISTINCT dir_path)::int
+        FROM (
+            SELECT
+                CASE
+                    WHEN position('/' IN elem->>'file') = 0 THEN '.'
+                    ELSE left(elem->>'file', length(elem->>'file') - length(elem->>'file') + position('/' IN reverse(elem->>'file')) - 1)
+                END AS dir_path
+            FROM commits c2
+            CROSS JOIN LATERAL jsonb_array_elements(
+                CASE WHEN jsonb_typeof(c2.files) = 'array' THEN c2.files ELSE '[]'::jsonb END
+            ) AS elem
+            WHERE c2.project_id = $2
+              AND c2.game_id = $3
+              AND c2.timestamp >= $4
+              AND elem->>'file' IS NOT NULL
+              AND elem->>'file' != ''
+        ) paths
+    ) AS unique_dirs
+FROM commits c
+WHERE c.project_id = $2
+  AND c.game_id = $3
+  AND c.timestamp >= $4
+`
+
+type GetProjectGameActivityAggregatesParams struct {
+	WeekStart  time.Time   `json:"week_start"`
+	ProjectID  uuid.UUID   `json:"project_id"`
+	GameID     pgtype.UUID `json:"game_id"`
+	MonthStart time.Time   `json:"month_start"`
+}
+
+type GetProjectGameActivityAggregatesRow struct {
+	CommitsThisMonth int32 `json:"commits_this_month"`
+	CommitsThisWeek  int32 `json:"commits_this_week"`
+	FileTouchCount   int32 `json:"file_touch_count"`
+	UniqueDirs       int32 `json:"unique_dirs"`
+}
+
+func (q *Queries) GetProjectGameActivityAggregates(ctx context.Context, arg GetProjectGameActivityAggregatesParams) (GetProjectGameActivityAggregatesRow, error) {
+	row := q.db.QueryRow(ctx, getProjectGameActivityAggregates,
+		arg.WeekStart,
+		arg.ProjectID,
+		arg.GameID,
+		arg.MonthStart,
+	)
+	var i GetProjectGameActivityAggregatesRow
+	err := row.Scan(
+		&i.CommitsThisMonth,
+		&i.CommitsThisWeek,
+		&i.FileTouchCount,
+		&i.UniqueDirs,
+	)
+	return i, err
+}
+
 const getRecentCommits = `-- name: GetRecentCommits :many
 SELECT
     c.id,

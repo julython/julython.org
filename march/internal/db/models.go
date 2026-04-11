@@ -11,6 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AnalysisMetric struct {
+	ID         uuid.UUID `json:"id"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+	Level      int16     `json:"level"`
+	Score      int16     `json:"score"`
+	Data       JSONMap   `json:"data"`
+	Sha        string    `json:"sha"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+}
+
 type AuditLog struct {
 	ID          uuid.UUID   `json:"id"`
 	ModeratorID uuid.UUID   `json:"moderator_id"`
@@ -114,6 +126,7 @@ type Project struct {
 	IsActive    bool        `json:"is_active"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	IsPrivate   bool        `json:"is_private"`
 }
 
 type Report struct {

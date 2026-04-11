@@ -23,9 +23,9 @@ func (q *Queries) ActivateProject(ctx context.Context, id uuid.UUID) error {
 
 const createProject = `-- name: CreateProject :one
 
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
 `
 
 type CreateProjectParams struct {
@@ -40,6 +40,7 @@ type CreateProjectParams struct {
 	Forks       int32       `json:"forks"`
 	Watchers    int32       `json:"watchers"`
 	ParentUrl   pgtype.Text `json:"parent_url"`
+	IsPrivate   bool        `json:"is_private"`
 }
 
 // ============================================
@@ -58,6 +59,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.Forks,
 		arg.Watchers,
 		arg.ParentUrl,
+		arg.IsPrivate,
 	)
 	var i Project
 	err := row.Scan(
@@ -75,6 +77,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
@@ -88,8 +91,72 @@ func (q *Queries) DeactivateProject(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getAnalysisMetric = `-- name: GetAnalysisMetric :one
+SELECT id, project_id, metric_type, level, score, data, sha, updated_at, updated_by FROM analysis_metrics
+WHERE project_id = $1
+  AND metric_type = $2
+`
+
+type GetAnalysisMetricParams struct {
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+}
+
+func (q *Queries) GetAnalysisMetric(ctx context.Context, arg GetAnalysisMetricParams) (AnalysisMetric, error) {
+	row := q.db.QueryRow(ctx, getAnalysisMetric, arg.ProjectID, arg.MetricType)
+	var i AnalysisMetric
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.MetricType,
+		&i.Level,
+		&i.Score,
+		&i.Data,
+		&i.Sha,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+	)
+	return i, err
+}
+
+const getAnalysisMetricsByProject = `-- name: GetAnalysisMetricsByProject :many
+SELECT id, project_id, metric_type, level, score, data, sha, updated_at, updated_by FROM analysis_metrics
+WHERE project_id = $1
+ORDER BY metric_type
+`
+
+func (q *Queries) GetAnalysisMetricsByProject(ctx context.Context, projectID uuid.UUID) ([]AnalysisMetric, error) {
+	rows, err := q.db.Query(ctx, getAnalysisMetricsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AnalysisMetric
+	for rows.Next() {
+		var i AnalysisMetric
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.MetricType,
+			&i.Level,
+			&i.Score,
+			&i.Data,
+			&i.Sha,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects WHERE id = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE id = $1
 `
 
 func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
@@ -110,12 +177,13 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
 
 const getProjectByServiceAndRepoID = `-- name: GetProjectByServiceAndRepoID :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects WHERE service = $1 AND repo_id = $2
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE service = $1 AND repo_id = $2
 `
 
 type GetProjectByServiceAndRepoIDParams struct {
@@ -141,12 +209,13 @@ func (q *Queries) GetProjectByServiceAndRepoID(ctx context.Context, arg GetProje
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
 
 const getProjectBySlug = `-- name: GetProjectBySlug :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects WHERE slug = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE slug = $1
 `
 
 func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Project, error) {
@@ -167,12 +236,13 @@ func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Project, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
 
 const getProjectByURL = `-- name: GetProjectByURL :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects WHERE url = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE url = $1
 `
 
 func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, error) {
@@ -193,13 +263,28 @@ func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, err
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
 
+const getProjectTotalScore = `-- name: GetProjectTotalScore :one
+SELECT COALESCE(SUM(score * level), 0)::int AS total_score
+FROM analysis_metrics
+WHERE project_id = $1
+`
+
+func (q *Queries) GetProjectTotalScore(ctx context.Context, projectID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, getProjectTotalScore, projectID)
+	var total_score int32
+	err := row.Scan(&total_score)
+	return total_score, err
+}
+
 const listActiveProjects = `-- name: ListActiveProjects :many
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
 WHERE is_active = true
+  AND is_private = false
 ORDER BY id DESC
 LIMIT GREATEST($1, 1)
 `
@@ -228,6 +313,7 @@ func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsPrivate,
 		); err != nil {
 			return nil, err
 		}
@@ -240,8 +326,9 @@ func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}
 }
 
 const searchActiveProjects = `-- name: SearchActiveProjects :many
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at FROM projects
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
 WHERE is_active = true
+  AND is_private = false
   AND ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%')
   AND ($2::text IS NULL OR service = $2)
   AND ($3::uuid IS NULL OR id < $3::uuid)
@@ -285,6 +372,7 @@ func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProj
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsPrivate,
 		); err != nil {
 			return nil, err
 		}
@@ -296,9 +384,92 @@ func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProj
 	return items, nil
 }
 
+const setProjectIsPrivate = `-- name: SetProjectIsPrivate :exec
+UPDATE projects SET is_private = $1 WHERE id = $2
+`
+
+type SetProjectIsPrivateParams struct {
+	IsPrivate bool      `json:"is_private"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPrivateParams) error {
+	_, err := q.db.Exec(ctx, setProjectIsPrivate, arg.IsPrivate, arg.ID)
+	return err
+}
+
+const updateAnalysisMetricLevel = `-- name: UpdateAnalysisMetricLevel :exec
+UPDATE analysis_metrics SET
+  level      = $1,
+  updated_at = now(),
+  updated_by = $2
+WHERE project_id = $3
+  AND metric_type = $4
+`
+
+type UpdateAnalysisMetricLevelParams struct {
+	Level      int16     `json:"level"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+}
+
+// Called after AI grading for L2/L3 upgrades only.
+// Requires the metric to already be at L1 (enforced in the handler).
+func (q *Queries) UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error {
+	_, err := q.db.Exec(ctx, updateAnalysisMetricLevel,
+		arg.Level,
+		arg.UpdatedBy,
+		arg.ProjectID,
+		arg.MetricType,
+	)
+	return err
+}
+
+const upsertAnalysisMetric = `-- name: UpsertAnalysisMetric :exec
+INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
+VALUES ($1, $2, $3, CASE WHEN $4 > 0 THEN 1 ELSE 0 END, $4, $5, $6, $7)
+ON CONFLICT (project_id, metric_type) DO UPDATE SET
+  sha        = EXCLUDED.sha,
+  updated_at = now(),
+  updated_by = EXCLUDED.updated_by,
+  data       = EXCLUDED.data,
+  score      = EXCLUDED.score,
+  level      = CASE
+    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3 AI
+    WHEN EXCLUDED.score > 0          THEN 1                       -- L1 heuristic partial
+    ELSE                                  0                       -- score 0, no L1 bar
+  END
+`
+
+type UpsertAnalysisMetricParams struct {
+	ID         uuid.UUID `json:"id"`
+	ProjectID  uuid.UUID `json:"project_id"`
+	MetricType string    `json:"metric_type"`
+	Score      int16     `json:"score"`
+	Data       JSONMap   `json:"data"`
+	Sha        string    `json:"sha"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+}
+
+// Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
+// L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
+func (q *Queries) UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error {
+	_, err := q.db.Exec(ctx, upsertAnalysisMetric,
+		arg.ID,
+		arg.ProjectID,
+		arg.MetricType,
+		arg.Score,
+		arg.Data,
+		arg.Sha,
+		arg.UpdatedBy,
+	)
+	return err
+}
+
 const upsertProjectByRepoID = `-- name: UpsertProjectByRepoID :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (service, repo_id) WHERE repo_id IS NOT NULL
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -306,8 +477,9 @@ DO UPDATE SET
     slug = EXCLUDED.slug,
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
-    watchers = EXCLUDED.watchers
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at
+    watchers = EXCLUDED.watchers,
+    is_private = EXCLUDED.is_private
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
 `
 
 type UpsertProjectByRepoIDParams struct {
@@ -321,6 +493,7 @@ type UpsertProjectByRepoIDParams struct {
 	Forked      bool        `json:"forked"`
 	Forks       int32       `json:"forks"`
 	Watchers    int32       `json:"watchers"`
+	IsPrivate   bool        `json:"is_private"`
 }
 
 func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectByRepoIDParams) (Project, error) {
@@ -335,6 +508,7 @@ func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectBy
 		arg.Forked,
 		arg.Forks,
 		arg.Watchers,
+		arg.IsPrivate,
 	)
 	var i Project
 	err := row.Scan(
@@ -352,21 +526,23 @@ func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectBy
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }
 
 const upsertProjectBySlug = `-- name: UpsertProjectBySlug :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (slug)
 DO UPDATE SET
     url = EXCLUDED.url,
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
-    watchers = EXCLUDED.watchers
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at
+    watchers = EXCLUDED.watchers,
+    is_private = EXCLUDED.is_private
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
 `
 
 type UpsertProjectBySlugParams struct {
@@ -380,6 +556,7 @@ type UpsertProjectBySlugParams struct {
 	Forked      bool        `json:"forked"`
 	Forks       int32       `json:"forks"`
 	Watchers    int32       `json:"watchers"`
+	IsPrivate   bool        `json:"is_private"`
 }
 
 func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySlugParams) (Project, error) {
@@ -394,6 +571,7 @@ func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySl
 		arg.Forked,
 		arg.Forks,
 		arg.Watchers,
+		arg.IsPrivate,
 	)
 	var i Project
 	err := row.Scan(
@@ -411,6 +589,7 @@ func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySl
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPrivate,
 	)
 	return i, err
 }

@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"july/internal/components"
@@ -14,11 +17,30 @@ import (
 type ProjectHandler struct {
 	queries     *db.Queries
 	gameService *services.GameService
+	userService *services.UserService
+	l1Scanner   *services.L1Scanner
 }
 
-func NewProjectHandler(q *db.Queries, gs *services.GameService) *ProjectHandler {
-	return &ProjectHandler{queries: q, gameService: gs}
+func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) *ProjectHandler {
+	return &ProjectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
 }
+
+// Order matches metrics.Parse and the project detail board UI.
+var analysisBoardSpec = []struct {
+	key     string
+	i18nKey string
+}{
+	{"readme", "projects.MetricReadme"},
+	{"tests", "projects.MetricTests"},
+	{"ci", "projects.MetricCI"},
+	{"structure", "projects.MetricStructure"},
+	{"linting", "projects.MetricLinting"},
+	{"deps", "projects.MetricDeps"},
+	{"docs", "projects.MetricDocs"},
+	{"ai_ready", "projects.MetricAIReady"},
+}
+
+const analysisBoardMaxPts = 480
 
 const projectPageSize = 25
 
@@ -134,22 +156,120 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		Forked:      project.Forked,
 	}
 
-	// Get board stats for the active game (best-effort)
-	var boardStats *components.ProjectBoardStats
+	analysisRows, err := h.queries.GetAnalysisMetricsByProject(ctx, project.ID)
+	if err != nil {
+		http.Error(w, "failed to load analysis metrics", http.StatusInternalServerError)
+		return
+	}
+	levelByType := make(map[string]int16, len(analysisRows))
+	scoreByType := make(map[string]int16, len(analysisRows))
+	for _, row := range analysisRows {
+		levelByType[row.MetricType] = row.Level
+		scoreByType[row.MetricType] = row.Score
+	}
+
+	showMetricAI := false
+	if sess := UserFromContext(ctx); sess != nil {
+		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
+			if !project.IsPrivate && h.l1Scanner.IsConfigured() {
+				showMetricAI = true
+			}
+		}
+	}
+
+	tiles := make([]components.ProjectAnalysisTile, 0, len(analysisBoardSpec))
+	earned := 0
+	for _, spec := range analysisBoardSpec {
+		level := levelByType[spec.key]
+		if level < 0 {
+			level = 0
+		}
+		if level > 3 {
+			level = 3
+		}
+		score := scoreByType[spec.key]
+		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
+		earned += int(score) * int(level) * 2
+		tiles = append(tiles, components.ProjectAnalysisTile{
+			MetricKey:    spec.key,
+			Level:        level,
+			Score:        score,
+			I18nKey:      spec.i18nKey,
+			ShowMetricAI: showMetricAI,
+		})
+	}
+	shaDistinct := make(map[string]struct{})
+	var lastMetricAt time.Time
+	var haveMetricAt bool
+	for _, row := range analysisRows {
+		if row.Sha != "" {
+			shaDistinct[row.Sha] = struct{}{}
+		}
+		if !haveMetricAt || row.UpdatedAt.After(lastMetricAt) {
+			lastMetricAt = row.UpdatedAt
+			haveMetricAt = true
+		}
+	}
+	analysisBoard := components.ProjectAnalysisBoard{
+		Tiles:            tiles,
+		EarnedPts:        earned,
+		MaxPts:           analysisBoardMaxPts,
+		AnalysisRunCount: len(shaDistinct),
+	}
+	if haveMetricAt {
+		analysisBoard.LastAnalyzedAgo = timeAgo(lastMetricAt)
+	}
+	if sess := UserFromContext(ctx); sess != nil {
+		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
+			analysisBoard.RescanL1Slug = project.Slug
+			switch {
+			case project.IsPrivate:
+				analysisBoard.RescanL1Disabled = true
+				analysisBoard.RescanL1DisabledReason = "private"
+			case !h.l1Scanner.IsConfigured():
+				analysisBoard.RescanL1Disabled = true
+				analysisBoard.RescanL1DisabledReason = "no_token"
+			}
+		}
+	}
+
+	gameActivity := components.ProjectGameActivitySummary{
+		HasGame: false,
+	}
+
 	game, err := h.gameService.GetActiveOrLatestGame(ctx)
 	if err == nil {
-		board, err := h.queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+		gameActivity.HasGame = true
+		gid := db.UUID(game.ID)
+		now := time.Now().UTC()
+		monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		weekStart := now.Add(-7 * 24 * time.Hour)
+
+		agg, aggErr := h.queries.GetProjectGameActivityAggregates(ctx, db.GetProjectGameActivityAggregatesParams{
+			ProjectID:  project.ID,
+			GameID:     gid,
+			WeekStart:  weekStart,
+			MonthStart: monthStart,
+		})
+		if aggErr == nil {
+			gameActivity.CommitsThisMonth = int(agg.CommitsThisMonth)
+			gameActivity.CommitsThisWeek = int(agg.CommitsThisWeek)
+			gameActivity.FileTouchCount = int(agg.FileTouchCount)
+			gameActivity.UniqueDirs = int(agg.UniqueDirs)
+		}
+
+		board, bErr := h.queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
 			ProjectID: project.ID,
 			GameID:    game.ID,
 		})
-		if err == nil {
-			boardStats = &components.ProjectBoardStats{
-				Points:           int(board.Points),
-				PotentialPoints:  int(board.PotentialPoints),
-				VerifiedPoints:   int(board.VerifiedPoints),
+		if bErr == nil {
+			gameActivity.Board = &components.ProjectBoardStats{
 				CommitCount:      int(board.CommitCount),
 				ContributorCount: int(board.ContributorCount),
 			}
+		} else if !errors.Is(bErr, pgx.ErrNoRows) {
+			http.Error(w, "failed to load game board", http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -191,12 +311,13 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := components.ProjectDetailData{
-		Project:    entry,
-		BoardStats: boardStats,
-		Commits:    commitEntries,
-		Offset:     offset,
-		Limit:      limit,
-		HasMore:    hasMore,
+		Project:       entry,
+		AnalysisBoard: analysisBoard,
+		GameActivity:  gameActivity,
+		Commits:       commitEntries,
+		Offset:        offset,
+		Limit:         limit,
+		HasMore:       hasMore,
 	}
 
 	layout := components.LayoutData{

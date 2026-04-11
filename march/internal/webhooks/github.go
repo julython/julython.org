@@ -18,6 +18,7 @@ import (
 	"july/internal/db"
 	"july/internal/services"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 )
 
@@ -38,14 +39,16 @@ type GitHubPushEvent struct {
 }
 
 type GitHubRepo struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	FullName    string `json:"full_name"`
-	HTMLURL     string `json:"html_url"`
-	Description string `json:"description"`
-	Fork        bool   `json:"fork"`
-	ForksCount  int    `json:"forks_count"`
-	Watchers    int    `json:"watchers_count"`
+	ID            int64  `json:"id"`
+	Name          string `json:"name"`
+	FullName      string `json:"full_name"`
+	HTMLURL       string `json:"html_url"`
+	Description   string `json:"description"`
+	DefaultBranch string `json:"default_branch"`
+	Private       bool   `json:"private"`
+	Fork          bool   `json:"fork"`
+	ForksCount    int    `json:"forks_count"`
+	Watchers      int    `json:"watchers_count"`
 }
 
 type GitHubCommit struct {
@@ -74,13 +77,17 @@ type FileChange struct {
 
 type Handler struct {
 	queries     *db.Queries
+	pool        *pgxpool.Pool
 	gameService *services.GameService
+	l1Scanner   *services.L1Scanner
 }
 
-func NewHandler(queries *db.Queries, gameService *services.GameService) *Handler {
+func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, l1Scanner *services.L1Scanner) *Handler {
 	return &Handler{
 		queries:     queries,
+		pool:        pool,
 		gameService: gameService,
+		l1Scanner:   l1Scanner,
 	}
 }
 
@@ -139,16 +146,27 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	eventName := r.Header.Get("X-GitHub-Event")
+	if eventName != "" && eventName != "push" {
+		w.WriteHeader(http.StatusOK)
+		hookLog.Info().Str("event", eventName).Msg("ignoring non-push webhook")
+		json.NewEncoder(w).Encode(map[string]string{"status": "skipped", "reason": "not a push event"})
+		return
+	}
+
 	var event GitHubPushEvent
 	if err := json.Unmarshal(data, &event); err != nil {
 		hookLog.Error().Err(err).Msg("failed to parse webhook payload")
 		http.Error(w, "invalid payload", http.StatusBadRequest)
 		return
 	}
-	// Skip non-default branches
-	if !isDefaultBranch(event.Ref) {
+	// Skip pushes not targeting the repo default branch (see repository.default_branch in payload).
+	if !isPushToDefaultBranch(event.Ref, event.Repository) {
 		w.WriteHeader(http.StatusOK)
-		hookLog.Info().Msg("skipping push as it is on a branch")
+		hookLog.Info().
+			Str("ref", event.Ref).
+			Str("default_branch", event.Repository.DefaultBranch).
+			Msg("skipping push: not the repository default branch")
 		json.NewEncoder(w).Encode(map[string]string{"status": "skipped", "reason": "not default branch"})
 		return
 	}
@@ -195,8 +213,44 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		Int("skipped", result.Skipped).
 		Msg("processed webhook")
 
+	h.scheduleL1Scan(project)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)
+}
+
+func (h *Handler) scheduleL1Scan(project db.Project) {
+	if h.l1Scanner == nil || h.pool == nil {
+		log.Warn().Msg("L1 scan skipped: handler has no pool or scanner")
+		return
+	}
+	if !h.l1Scanner.IsConfigured() {
+		log.Warn().
+			Str("project", project.Slug).
+			Msg("L1 scan skipped: set GITHUB_TOKEN for server-side analysis (public repos)")
+		return
+	}
+	if project.IsPrivate {
+		log.Info().Str("project", project.Slug).Msg("L1 scan skipped: private repository")
+		return
+	}
+	proj := project
+	log.Info().Str("project", proj.Slug).Str("id", proj.ID.String()).Msg("L1 scan starting in background")
+	go func() {
+		start := time.Now()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error().Interface("panic", r).Str("project", proj.Slug).Msg("L1 scan panic")
+			}
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		if err := h.l1Scanner.RunL1Scan(ctx, proj, db.SystemUserID); err != nil {
+			log.Error().Err(err).Str("slug", proj.Slug).Dur("duration", time.Since(start)).Msg("L1 scan failed")
+			return
+		}
+		log.Info().Str("slug", proj.Slug).Dur("duration", time.Since(start)).Msg("L1 scan completed")
+	}()
 }
 
 func githubSlug(fullName string) string {
@@ -215,6 +269,7 @@ func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Projec
 		Forked:      repo.Fork,
 		Forks:       int32(repo.ForksCount),
 		Watchers:    int32(repo.Watchers),
+		IsPrivate:   repo.Private,
 	})
 }
 
@@ -413,8 +468,14 @@ func verifySignature(body []byte, signature, secret string) error {
 	return nil
 }
 
-func isDefaultBranch(ref string) bool {
-	return ref == "refs/heads/main" || ref == "refs/heads/master"
+// isPushToDefaultBranch reports whether ref is the push for the repo's default branch.
+// GitHub sets repository.default_branch (e.g. main, master, develop).
+func isPushToDefaultBranch(ref string, repo GitHubRepo) bool {
+	db := strings.TrimSpace(repo.DefaultBranch)
+	if db == "" {
+		return ref == "refs/heads/main" || ref == "refs/heads/master"
+	}
+	return ref == "refs/heads/"+db
 }
 
 func truncate(s string, max int) string {

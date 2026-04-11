@@ -57,6 +57,8 @@ type Querier interface {
 	FlagCommit(ctx context.Context, arg FlagCommitParams) error
 	GetActiveGame(ctx context.Context, now time.Time) (Game, error)
 	GetActiveGameAtTime(ctx context.Context, timestamp time.Time) (Game, error)
+	GetAnalysisMetric(ctx context.Context, arg GetAnalysisMetricParams) (AnalysisMetric, error)
+	GetAnalysisMetricsByProject(ctx context.Context, projectID uuid.UUID) ([]AnalysisMetric, error)
 	GetBoardByProjectAndGame(ctx context.Context, arg GetBoardByProjectAndGameParams) (Board, error)
 	GetCommitByHash(ctx context.Context, hash pgtype.Text) (Commit, error)
 	GetCommitByID(ctx context.Context, id uuid.UUID) (Commit, error)
@@ -73,6 +75,8 @@ type Querier interface {
 	// Languages
 	// ============================================
 	GetOrCreateLanguage(ctx context.Context, arg GetOrCreateLanguageParams) (Language, error)
+	// Returns just the identifier row so the handler can read data->>'password_hash'.
+	GetPasswordHash(ctx context.Context, value string) ([]byte, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)
@@ -80,7 +84,9 @@ type Querier interface {
 	GetProjectByServiceAndRepoID(ctx context.Context, arg GetProjectByServiceAndRepoIDParams) (Project, error)
 	GetProjectBySlug(ctx context.Context, slug string) (Project, error)
 	GetProjectByURL(ctx context.Context, url string) (Project, error)
+	GetProjectGameActivityAggregates(ctx context.Context, arg GetProjectGameActivityAggregatesParams) (GetProjectGameActivityAggregatesRow, error)
 	GetProjectLeaderboard(ctx context.Context, arg GetProjectLeaderboardParams) ([]GetProjectLeaderboardRow, error)
+	GetProjectTotalScore(ctx context.Context, projectID uuid.UUID) (int32, error)
 	GetRecentCommits(ctx context.Context, arg GetRecentCommitsParams) ([]GetRecentCommitsRow, error)
 	GetReportByID(ctx context.Context, id uuid.UUID) (Report, error)
 	GetTeamByID(ctx context.Context, id uuid.UUID) (Team, error)
@@ -89,6 +95,9 @@ type Querier interface {
 	GetTeamMember(ctx context.Context, arg GetTeamMemberParams) (TeamMember, error)
 	GetUnverifiedCommits(ctx context.Context, limitCount interface{}) ([]GetUnverifiedCommitsRow, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	// Looks up a user by email identifier so the handler can verify
+	// the bcrypt hash stored in data->>'password_hash'.
+	GetUserByPasswordIdentifier(ctx context.Context, value string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserIdentifier(ctx context.Context, value string) (UserIdentifier, error)
 	GetUserIdentifierByUserAndType(ctx context.Context, arg GetUserIdentifierByUserAndTypeParams) (UserIdentifier, error)
@@ -110,11 +119,18 @@ type Querier interface {
 	ReviewReport(ctx context.Context, arg ReviewReportParams) error
 	SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error)
 	SetCommitGame(ctx context.Context, arg SetCommitGameParams) error
+	SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPrivateParams) error
+	// Called after AI grading for L2/L3 upgrades only.
+	// Requires the metric to already be at L1 (enforced in the handler).
+	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserLastSeen(ctx context.Context, id uuid.UUID) error
+	// Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
+	// L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
+	UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error
 	// ============================================
 	// Boards (Project Scores)
 	// ============================================

@@ -14,7 +14,7 @@ SELECT * FROM languages WHERE name = @name;
 -- name: UpsertLanguageBoard :one
 INSERT INTO language_boards (id, game_id, language_id, points, commit_count)
 VALUES (@id, @game_id, @language_id, @points, @commit_count)
-ON CONFLICT ON CONSTRAINT uq_language_board
+ON CONFLICT ON CONSTRAINT uq_language_game
 DO UPDATE SET
     points = language_boards.points + EXCLUDED.points,
     commit_count = language_boards.commit_count + EXCLUDED.commit_count

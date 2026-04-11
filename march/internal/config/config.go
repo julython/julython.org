@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Env       string   `env:"JULY_ENV" envDefault:"development"`
-	ProjectID string   `env:"GOOGLE_CLOUD_PROJECT" envDefault:"julython-go"`
-	Server    Server   `envPrefix:"JULY_SERVER_"`
-	Database  Database `envPrefix:"JULY_DATABASE_"`
-	Session   Session  `envPrefix:"JULY_SESSION_"`
-	OAuth     OAuth    `envPrefix:"JULY_OAUTH_"`
-	Webhooks  Webhooks `envPrefix:"JULY_WEBHOOK_"`
+	Env         string   `env:"JULY_ENV" envDefault:"development"`
+	ProjectID   string   `env:"GOOGLE_CLOUD_PROJECT" envDefault:"julython-go"`
+	Server      Server   `envPrefix:"JULY_SERVER_"`
+	Database    Database `envPrefix:"JULY_DATABASE_"`
+	Session     Session  `envPrefix:"JULY_SESSION_"`
+	OAuth       OAuth    `envPrefix:"JULY_OAUTH_"`
+	Webhooks    Webhooks `envPrefix:"JULY_WEBHOOK_"`
+	GitHubToken string   `env:"GITHUB_TOKEN"` // public-repo L1 scans (optional)
 }
 
 func (c Config) IsProduction() bool  { return c.Env == "production" }
@@ -56,9 +57,10 @@ type Session struct {
 }
 
 type OAuth struct {
-	BaseURL string        `env:"BASE_URL" envDefault:"http://localhost:8000"`
-	GitHub  OAuthProvider `envPrefix:"GITHUB_"`
-	GitLab  OAuthProvider `envPrefix:"GITLAB_"`
+	BaseURL  string        `env:"BASE_URL" envDefault:"http://localhost:8000"`
+	GitHub   OAuthProvider `envPrefix:"GITHUB_"`
+	GitLab   OAuthProvider `envPrefix:"GITLAB_"`
+	Password OAuthProvider `envPrefix:"PASSWORD_"`
 }
 
 func (o OAuth) CallbackURL() string {
@@ -122,9 +124,11 @@ func (c Config) Log() {
 		Bool("oauth.gitlab.enabled", c.OAuth.GitLab.Enabled).
 		Str("oauth.gitlab.client_id", mask(c.OAuth.GitLab.ClientID)).
 		Str("oauth.gitlab.client_secret", mask(c.OAuth.GitLab.ClientSecret)).
+		Bool("oauth.password.enabled", c.OAuth.Password.Enabled).
 		// Webhooks
 		Str("webhooks.github", c.Webhooks.GitHub).
 		Str("webhooks.gitlab", c.Webhooks.GitLab).
 		Str("webhooks.bitbucket", c.Webhooks.BitBucket).
+		Str("github_token", mask(c.GitHubToken)).
 		Msg("config loaded")
 }

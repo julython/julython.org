@@ -95,3 +95,37 @@ LIMIT GREATEST(@limit_count, 1);
 UPDATE commits
 SET game_id = @game_id
 WHERE id = @id;
+
+-- name: GetProjectGameActivityAggregates :one
+SELECT
+    COUNT(*)::int AS commits_this_month,
+    COUNT(*) FILTER (WHERE c.timestamp >= @week_start)::int AS commits_this_week,
+    COALESCE(SUM(
+        CASE
+            WHEN jsonb_typeof(c.files) = 'array' THEN jsonb_array_length(c.files)
+            ELSE 0
+        END
+    ), 0)::int AS file_touch_count,
+    (
+        SELECT COUNT(DISTINCT dir_path)::int
+        FROM (
+            SELECT
+                CASE
+                    WHEN position('/' IN elem->>'file') = 0 THEN '.'
+                    ELSE left(elem->>'file', length(elem->>'file') - length(elem->>'file') + position('/' IN reverse(elem->>'file')) - 1)
+                END AS dir_path
+            FROM commits c2
+            CROSS JOIN LATERAL jsonb_array_elements(
+                CASE WHEN jsonb_typeof(c2.files) = 'array' THEN c2.files ELSE '[]'::jsonb END
+            ) AS elem
+            WHERE c2.project_id = @project_id
+              AND c2.game_id = @game_id
+              AND c2.timestamp >= @month_start
+              AND elem->>'file' IS NOT NULL
+              AND elem->>'file' != ''
+        ) paths
+    ) AS unique_dirs
+FROM commits c
+WHERE c.project_id = @project_id
+  AND c.game_id = @game_id
+  AND c.timestamp >= @month_start;

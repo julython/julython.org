@@ -38,6 +38,13 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// JSON and plain-text APIs under /api/ must not be replaced with HTML error pages
+		// (e.g. clients with no Accept header, or */* without text/html).
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			copyResponse(w, ew)
+			return
+		}
+
 		// Handle HTMX first to return partial html
 		if isHTMXRequest(r) {
 			data := components.LayoutData{

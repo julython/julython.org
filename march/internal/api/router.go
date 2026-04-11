@@ -22,7 +22,11 @@ import (
 	"july/web"
 )
 
-func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) http.Handler {
+// buildMux constructs the ServeMux and all dependencies.
+// Returns the mux and the two objects applyMiddleware needs.
+func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
+	*http.ServeMux, *services.SessionManager, *handlers.AuthHandler,
+) {
 	mux := http.NewServeMux()
 
 	// Session manager with postgres store
@@ -33,6 +37,7 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	queries := db.New(pool)
 	userSvc := services.MustNewUserService(queries, cfg.Database.EncKey)
 	gameSvc := services.NewGameService(queries)
+	l1Scanner := services.NewL1Scanner(queries, pool, cfg.GitHubToken)
 
 	// OAuth providers
 	providers := make(map[string]services.OAuthProvider)
@@ -50,6 +55,9 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 			cfg.OAuth.CallbackURL(),
 		)
 	}
+	if cfg.OAuth.Password.Enabled {
+		providers["password"] = services.NewPasswordOAuth(queries, cfg.OAuth.BaseURL)
+	}
 
 	enabled := make([]string, 0, len(providers))
 	for name := range providers {
@@ -64,8 +72,8 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
 	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
 	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
-	webhookHandler := webhooks.NewHandler(queries, gameSvc)
-	projectHandler := handlers.NewProjectHandler(queries, gameSvc)
+	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
+	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := handlers.NewBlogHandler()
 	helpHandler := handlers.NewHelpHandler()
@@ -78,13 +86,18 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 	mux.HandleFunc("GET /auth/session", authHandler.Session)
 	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
 
-	mux.HandleFunc("GET /{$}", homeHandler.Home) // anchored to root only
+	mux.HandleFunc("GET /{$}", homeHandler.Home)
 	mux.HandleFunc("GET /leaders", leaderboardHandler.Leaders)
 	mux.HandleFunc("GET /leaders/projects", leaderboardHandler.Projects)
 	mux.HandleFunc("GET /leaders/languages", leaderboardHandler.Languages)
 	mux.HandleFunc("GET /projects", projectHandler.List)
+	mux.HandleFunc("POST /projects/{slug}/analysis/l1", projectHandler.PostProjectRescanL1)
 	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
+
+	// Projects
+	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
+	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", projectHandler.GetProjectMetricLLMContext)
 
 	// Profiles
 	mux.HandleFunc("GET /profile", profileHandler.Overview)
@@ -117,17 +130,31 @@ func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) ht
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 
-	// Apply middleware stack (outermost = runs first on each request):
-	// LoggingMiddleware → RecoveryMiddleware → ErrorMiddleware → i18n → LoadAndSave → UserMiddleware → mux
-	var handler http.Handler = mux
-	handler = authHandler.UserMiddleware(handler)
-	handler = sessionMgr.LoadAndSave(handler)
-	handler = RecoveryMiddleware(handler)             // writes 500 into ErrorMiddleware's buffer
-	handler = ErrorMiddleware(handler)                // intercepts 4xx/5xx and renders pretty page
-	handler = LoggingMiddleware(logger, cfg)(handler) // injects logger + records access log
-	handler = i18n.Middleware(handler)
+	return mux, sessionMgr, authHandler
+}
 
-	return handler
+// applyMiddleware wraps a handler with the full middleware stack.
+// Order (outermost = runs first): LoggingMiddleware → i18n → ErrorMiddleware → RecoveryMiddleware → LoadAndSave → UserMiddleware → h
+func applyMiddleware(
+	h http.Handler,
+	sessionMgr *services.SessionManager,
+	authHandler *handlers.AuthHandler,
+	logger zerolog.Logger,
+	cfg *config.Config,
+) http.Handler {
+	h = authHandler.UserMiddleware(h)
+	h = sessionMgr.LoadAndSave(h)
+	h = RecoveryMiddleware(h)
+	h = ErrorMiddleware(h)
+	h = LoggingMiddleware(logger, cfg)(h)
+	h = i18n.Middleware(h)
+	return h
+}
+
+// NewRouter is the production entry point.
+func NewRouter(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) http.Handler {
+	mux, sessionMgr, authHandler := buildMux(pool, cfg, logger)
+	return applyMiddleware(mux, sessionMgr, authHandler, logger, cfg)
 }
 
 // LoggingMiddleware injects a request-scoped zerolog logger (with request ID)
@@ -177,9 +204,7 @@ func parseTraceHeader(h string) (traceID, spanID string) {
 	if h == "" {
 		return "", ""
 	}
-	// Split off the options ";o=1"
 	parts := strings.SplitN(h, ";", 2)
-	// Split trace/span
 	ids := strings.SplitN(parts[0], "/", 2)
 	traceID = ids[0]
 	if len(ids) == 2 {

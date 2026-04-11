@@ -1,189 +1,211 @@
-import type { Scorecard, ScoredCategory } from "./worker";
+// Server-backed analysis (L1) + browser LLM for metric reviews and general questions.
 import {
-  createSession, buildSystemPrompt, deleteCachedModels,
+  createSession, buildMinimalChatSystemPrompt, deleteCachedModels,
   getCachedModels, MODELS, DEFAULT_MODEL,
+  parseMetricAnalysisJSON,
   type LLMSession,
 } from "./llm";
+
+const LLM_MODEL_STORAGE_KEY = "july-llm-model";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 const mount = document.getElementById("analyzer");
 if (mount) {
-  const repoURL = mount.dataset.repoUrl;
-  const workerURL = mount.dataset.workerUrl;
   const llmWorkerURL = mount.dataset.llmWorkerUrl;
-  if (repoURL && workerURL && llmWorkerURL) {
-    mount.appendChild(buildUI(repoURL, workerURL, llmWorkerURL));
+  const projectID = mount.dataset.projectId?.trim() ?? "";
+  const repoURL = mount.dataset.repoUrl?.trim() ?? "";
+  const repoName = mount.dataset.repoName?.trim() ?? "";
+  const repoDescription = mount.dataset.repoDescription?.trim() ?? "";
+  if (llmWorkerURL && projectID && repoURL) {
+    mount.appendChild(buildUI({
+      repoURL,
+      repoName: repoName || repoURL,
+      repoDescription,
+      projectID,
+      llmWorkerURL,
+    }));
   }
 }
 
-// ── UI builder ────────────────────────────────────────────────────────────────
+const METRIC_LABELS: Record<string, string> = {
+  readme: "README",
+  tests: "Tests",
+  ci: "CI",
+  structure: "Structure",
+  linting: "Linting",
+  deps: "Dependencies",
+  docs: "Documentation",
+  ai_ready: "AI-ready",
+};
 
-function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTMLElement {
-  const { owner, repo } = parseRepoURL(repoURL);
+type UIConfig = {
+  repoURL: string;
+  repoName: string;
+  repoDescription: string;
+  projectID: string;
+  llmWorkerURL: string;
+};
 
-  const root = el("div", "mt-8 border border-white/10 rounded-xl bg-surface-light overflow-hidden");
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-  const header = el("div", "flex items-center justify-between px-5 py-4 border-b border-white/10");
-  const title = el("h2", "text-sm font-semibold text-white");
-  title.textContent = "Repo Analyzer";
-
-  const headerRight = el("div", "flex items-center gap-2");
-
-  const modelSelect = el("select",
-    "text-xs px-2 py-1 rounded-lg bg-surface border border-white/10 text-gray-300 " +
-    "focus:outline-none focus:border-july-500/50"
-  ) as HTMLSelectElement;
-  for (const m of MODELS) {
-    const opt = document.createElement("option");
-    opt.value = m.id;
-    opt.textContent = m.label;
-    if (m.id === DEFAULT_MODEL) opt.selected = true;
-    modelSelect.appendChild(opt);
+/** Model chooser lives in the Assistant panel header (#llm-model-select). */
+function getModelSelect(): HTMLSelectElement {
+  const el = document.getElementById("llm-model-select") as HTMLSelectElement | null;
+  if (!el) {
+    throw new Error("missing #llm-model-select (expected in Assistant header)");
   }
+  if (el.options.length === 0) {
+    for (const m of MODELS) {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.label;
+      el.appendChild(opt);
+    }
+    const saved = localStorage.getItem(LLM_MODEL_STORAGE_KEY);
+    if (saved && MODELS.some(m => m.id === saved)) {
+      el.value = saved;
+    } else {
+      el.value = DEFAULT_MODEL;
+    }
+  }
+  return el;
+}
 
-  const deleteBtn = el("button",
-    "text-xs px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 " +
-    "hover:bg-red-500/20 transition-colors hidden"
-  ) as HTMLButtonElement;
-  deleteBtn.title = "Remove downloaded model from browser cache";
+function getCacheClearButton(): HTMLButtonElement | null {
+  return document.getElementById("llm-cache-clear") as HTMLButtonElement | null;
+}
 
-  const analyzeBtn = el("button",
-    "px-4 py-1.5 rounded-lg text-sm font-medium bg-july-500/20 border border-july-500/40 " +
-    "text-july-300 hover:bg-july-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-  ) as HTMLButtonElement;
-  analyzeBtn.textContent = "Analyze & Report";
+function buildUI(cfg: UIConfig): HTMLElement {
+  const root = el("div", "flex flex-col flex-1 min-h-[280px]");
 
-  headerRight.append(modelSelect, deleteBtn, analyzeBtn);
-  header.append(title, headerRight);
+  const modelSelect = getModelSelect();
+  const deleteBtn = getCacheClearButton();
 
-  // ── Body ───────────────────────────────────────────────────────────────────
-  const body = el("div", "px-5 py-4 space-y-4");
-
-  // ── Chat ───────────────────────────────────────────────────────────────────
-  const chatWrap = el("div", "hidden border-t border-white/10 pt-4 mt-2 px-5 pb-4");
-  const chatLog = el("div", "space-y-2 mb-3 max-h-48 overflow-y-auto text-sm text-gray-300");
-  const chatRow = el("div", "flex gap-2");
+  const chatLog = el("div", "flex-1 min-h-[160px] max-h-80 overflow-y-auto px-4 py-3 space-y-2 text-sm text-gray-300");
+  const chatRow = el("div", "flex gap-2 px-4 pb-4 shrink-0");
   const chatInput = el("input",
     "flex-1 px-3 py-2 rounded-lg bg-surface border border-white/10 text-white text-sm " +
     "placeholder-gray-500 focus:outline-none focus:border-july-500/50"
   ) as HTMLInputElement;
-  chatInput.placeholder = "Ask about this repo…";
+  chatInput.placeholder = "Ask about this repository…";
   const chatBtn = el("button",
     "px-3 py-2 rounded-lg bg-july-500/20 border border-july-500/40 text-july-300 text-sm " +
-    "hover:bg-july-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+    "hover:bg-july-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
   ) as HTMLButtonElement;
-  chatBtn.textContent = "Ask";
+  chatBtn.textContent = "Send";
   chatRow.append(chatInput, chatBtn);
-  chatWrap.append(chatLog, chatRow);
 
-  root.append(header, body, chatWrap);
+  root.append(chatLog, chatRow);
 
-  // ── Cache helpers ──────────────────────────────────────────────────────────
+  let llmSession: LLMSession | null = null;
+
   const refreshDeleteBtn = async () => {
+    if (!deleteBtn) return;
     const cached = await getCachedModels();
     const hit = cached.find(c => c.modelId === modelSelect.value);
     if (hit) {
-      deleteBtn.textContent = `Delete model (${hit.sizeMB}MB)`;
+      deleteBtn.textContent = `Clear cache (${hit.sizeMB}MB)`;
       deleteBtn.classList.remove("hidden");
     } else {
       deleteBtn.classList.add("hidden");
     }
   };
-  refreshDeleteBtn();
-  modelSelect.addEventListener("change", refreshDeleteBtn);
+  void refreshDeleteBtn();
+  modelSelect.addEventListener("change", () => {
+    localStorage.setItem(LLM_MODEL_STORAGE_KEY, modelSelect.value);
+    llmSession?.destroy();
+    llmSession = null;
+    void refreshDeleteBtn();
+  });
 
-  deleteBtn.addEventListener("click", async () => {
+  deleteBtn?.addEventListener("click", async () => {
     const modelId = modelSelect.value;
     const rec = MODELS.find(m => m.id === modelId)!;
     if (!confirm(`Delete the cached "${rec.label}" model? You'll need to re-download it next time.`)) return;
     deleteBtn.disabled = true;
+    const prev = deleteBtn.textContent;
     deleteBtn.textContent = "Deleting…";
     await deleteCachedModels(modelId);
     await refreshDeleteBtn();
     deleteBtn.disabled = false;
+    deleteBtn.textContent = prev ?? "Clear model cache";
   });
 
-  // ── Download confirmation ──────────────────────────────────────────────────
-  const confirmDownload = async (modelId: string): Promise<boolean> => {
-    const cached = await getCachedModels();
-    if (cached.find(c => c.modelId === modelId)) return true;
-    const rec = MODELS.find(m => m.id === modelId)!;
-    return confirm(
-      `To chat about this repo, "${rec.label}" (~${rec.sizeMB}MB) will be downloaded ` +
-      `and cached in your browser.\n\nThis only happens once — subsequent uses load from cache.\n\nContinue?`
+  function appendWebLLMDownloadNotice(
+    info: { sizeMB: number; label: string },
+    insertBeforeRow: HTMLElement | null,
+  ) {
+    const row = el("div", "text-left");
+    const box = el(
+      "div",
+      "inline-block px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-left max-w-[min(100%,28rem)] shadow-sm",
     );
-  };
+    const title = el("p", "text-base font-semibold text-amber-100 mb-1.5");
+    title.textContent = "Browser model download";
+    const body = el("p", "text-sm text-gray-300 leading-relaxed");
+    body.innerHTML =
+      `About <strong>${info.sizeMB} MB</strong> ` +
+      `(<span class="text-gray-200">${escapeHtml(info.label)}</span>) will be downloaded once and cached in your browser. ` +
+      "Subsequent uses load from cache.";
+    box.append(title, body);
+    row.appendChild(box);
+    if (insertBeforeRow) chatLog.insertBefore(row, insertBeforeRow);
+    else chatLog.appendChild(row);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  let scorecard: Scorecard | null = null;
-  let repoFiles: Record<string, string> = {};
-  let llmSession: LLMSession | null = null;
+  async function getOrCreateLlmSession(systemPrompt: string): Promise<LLMSession | null> {
+    if (llmSession) {
+      llmSession.destroy();
+      llmSession = null;
+    }
+    const modelId = modelSelect.value;
+    const statusBubble = appendChat(chatLog, "ai", "");
+    const loadingRow = statusBubble.parentElement as HTMLElement;
+    setSpinner(statusBubble, "Checking for browser AI…");
+    try {
+      llmSession = await createSession(
+        systemPrompt,
+        modelId,
+        cfg.llmWorkerURL,
+        (msg) => { statusBubble.textContent = msg; },
+        (info) => { appendWebLLMDownloadNotice(info, loadingRow); },
+      );
+      statusBubble.closest("div")?.remove();
+      await refreshDeleteBtn();
+      return llmSession;
+    } catch (e) {
+      statusBubble.textContent = (e as Error).message;
+      return null;
+    }
+  }
 
-  // ── Analyze button ─────────────────────────────────────────────────────────
-  analyzeBtn.addEventListener("click", () => {
-    analyzeBtn.disabled = true;
-    analyzeBtn.textContent = "Analyzing…";
-    body.innerHTML = "";
-    chatWrap.classList.add("hidden");
-    scorecard = null;
+  function destroyLlmSession() {
     llmSession?.destroy();
     llmSession = null;
+  }
 
-    const worker = new Worker(workerURL, { type: "module" });
-    worker.addEventListener("message", (e: MessageEvent) => {
-      const { type, message, scorecard: sc } = e.data;
-      if (type === "progress") {
-        showProgress(body, message);
-      } else if (type === "result") {
-        scorecard = sc as Scorecard;
-        repoFiles = e.data.fileContents ?? {};
-        body.innerHTML = "";
-        body.appendChild(renderScorecard(scorecard));
-        chatWrap.classList.remove("hidden");
-        analyzeBtn.textContent = "Re-analyze";
-        analyzeBtn.disabled = false;
-        worker.terminate();
-      } else if (type === "error") {
-        showError(body, message);
-        analyzeBtn.textContent = "Retry";
-        analyzeBtn.disabled = false;
-        worker.terminate();
-      }
-    });
-    worker.postMessage({ type: "analyze", owner, repo });
-  });
-
-  // Reset session when model changes
-  modelSelect.addEventListener("change", () => {
-    llmSession?.destroy();
-    llmSession = null;
-  });
-
-  // ── Chat ───────────────────────────────────────────────────────────────────
   const sendChat = async () => {
     const q = chatInput.value.trim();
-    if (!q || !scorecard) return;
+    if (!q) return;
     chatInput.value = "";
     chatBtn.disabled = true;
     appendChat(chatLog, "you", q);
 
+    const systemPrompt = buildMinimalChatSystemPrompt(cfg.repoName, cfg.repoURL, cfg.repoDescription);
+
     if (!llmSession) {
       const modelId = modelSelect.value;
-      const ok = await confirmDownload(modelId);
-      if (!ok) { chatBtn.disabled = false; return; }
-
       const statusBubble = appendChat(chatLog, "ai", "");
-      setSpinner(statusBubble, "Loading model…");
+      const loadingRow = statusBubble.parentElement as HTMLElement;
+      setSpinner(statusBubble, "Checking for browser AI…");
       try {
         llmSession = await createSession(
-          buildSystemPrompt(scorecard.repo, scorecard.total, scorecard.categories, repoFiles),
+          systemPrompt,
           modelId,
-          llmWorkerURL,
+          cfg.llmWorkerURL,
           (msg) => { statusBubble.textContent = msg; },
+          (info) => { appendWebLLMDownloadNotice(info, loadingRow); },
         );
-        // Remove the status bubble entirely once loaded
         statusBubble.closest("div")?.remove();
         await refreshDeleteBtn();
       } catch (e) {
@@ -195,65 +217,155 @@ function buildUI(repoURL: string, workerURL: string, llmWorkerURL: string): HTML
 
     const bubble = appendChat(chatLog, "ai", "");
     setSpinner(bubble, "Thinking…");
-    await llmSession.prompt(q, (fullText) => { updateBubble(bubble, fullText); });
+    await llmSession!.prompt(q, (fullText) => { updateBubble(bubble, fullText); });
     chatBtn.disabled = false;
   };
 
   chatBtn.addEventListener("click", sendChat);
   chatInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendChat(); }
   });
+
+  if (cfg.projectID) {
+    document.addEventListener("click", (ev) => {
+      const t = ev.target as HTMLElement | null;
+      const btn = t?.closest?.(".metric-ai-btn") as HTMLButtonElement | null;
+      if (!btn || !document.body.contains(btn)) return;
+      void runMetricAIReview(btn.dataset.metricKey ?? "", cfg.projectID, {
+        chatLog,
+        getOrCreateLlmSession,
+        destroyLlmSession,
+      });
+    });
+  }
 
   return root;
 }
 
-// ── Scorecard renderer ────────────────────────────────────────────────────────
+type MetricAIAdapter = {
+  chatLog: HTMLElement;
+  getOrCreateLlmSession: (systemPrompt: string) => Promise<LLMSession | null>;
+  destroyLlmSession: () => void;
+};
 
-function renderScorecard(sc: Scorecard): HTMLElement {
-  const wrap = el("div", "space-y-4");
+async function runMetricAIReview(
+  metricKey: string,
+  projectID: string,
+  a: MetricAIAdapter,
+) {
+  if (!metricKey) return;
 
-  const totalRow = el("div", "flex items-center gap-4");
-  const badge = el("div", "text-4xl font-bold tabular-nums " + scoreColor(sc.total));
-  badge.textContent = String(sc.total);
-  const badgeSub = el("div", "text-xs text-gray-500 leading-tight");
-  badgeSub.innerHTML = "out of 100<br>overall score";
-  totalRow.append(badge, badgeSub);
-  wrap.appendChild(totalRow);
+  const label = METRIC_LABELS[metricKey] ?? metricKey;
+  appendChat(a.chatLog, "you", `AI review: ${label}`);
 
-  for (const cat of sc.categories) {
-    wrap.appendChild(renderCategory(cat));
+  const url = `/api/projects/${encodeURIComponent(projectID)}/analysis/metrics/${encodeURIComponent(metricKey)}/llm-context`;
+  let res: Response;
+  try {
+    res = await fetch(url, { credentials: "same-origin" });
+  } catch (e) {
+    appendChat(a.chatLog, "ai", `**Error:** ${(e as Error).message}`);
+    return;
   }
-  return wrap;
+  if (!res.ok) {
+    const raw = await res.text().catch(() => res.statusText);
+    appendChat(a.chatLog, "ai", formatMetricLLMHttpError(res.status, raw));
+    return;
+  }
+  const ctx = await res.json() as {
+    metricType: string;
+    repoName: string;
+    l1Score: number;
+    level: number;
+    sha: string;
+    systemPrompt: string;
+    userPrompt: string;
+  };
+
+  const userPrompt = typeof ctx.userPrompt === "string" ? ctx.userPrompt.trim() : "";
+  if (!userPrompt) {
+    appendChat(a.chatLog, "ai", "**Error:** Empty analysis context from the server.");
+    return;
+  }
+
+  const session = await a.getOrCreateLlmSession(ctx.systemPrompt);
+  if (!session) return;
+
+  const bubble = appendChat(a.chatLog, "ai", "");
+  setSpinner(bubble, "Analyzing metric…");
+  let raw = "";
+  try {
+    raw = await session.prompt(userPrompt, (full) => { updateBubble(bubble, full); });
+  } catch (e) {
+    bubble.textContent = `Error: ${(e as Error).message}`;
+    a.destroyLlmSession();
+    return;
+  }
+
+  const parsed = parseMetricAnalysisJSON(raw);
+  if (parsed) {
+    updateBubble(
+      bubble,
+      `**${label} — ${parsed.score}/10**\n\n${parsed.message}`,
+    );
+    if (ctx.level < 2 && ctx.sha) {
+      try {
+        const post = await fetch(`/api/projects/${encodeURIComponent(projectID)}/analysis`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sha: ctx.sha,
+            metricType: ctx.metricType,
+            level: 2,
+            data: { ai_review: parsed.message, ai_score: parsed.score },
+          }),
+        });
+        if (!post.ok) {
+          appendChat(a.chatLog, "ai", `_(Could not save AI tier: ${post.status})_`);
+        }
+      } catch {
+        appendChat(a.chatLog, "ai", "_(Could not save AI tier — network error)_");
+      }
+    }
+  } else {
+    updateBubble(bubble, raw || "(empty response)");
+  }
+
+  a.destroyLlmSession();
 }
 
-function renderCategory(cat: ScoredCategory): HTMLElement {
-  const pct = Math.round((cat.score / cat.max) * 100);
-  const wrap = el("div", "");
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-  const label = el("div", "flex justify-between text-xs mb-1");
-  const name = el("span", "text-gray-300 font-medium");
-  name.textContent = cat.name;
-  const pts = el("span", "text-gray-500");
-  pts.textContent = `${cat.score} / ${cat.max}`;
-  label.append(name, pts);
-
-  const track = el("div", "h-1.5 rounded-full bg-white/10 overflow-hidden");
-  const bar = el("div", "h-full rounded-full transition-all " + barColor(pct));
-  bar.style.width = `${pct}%`;
-  track.appendChild(bar);
-
-  const signals = el("ul", "mt-1.5 space-y-0.5");
-  for (const s of cat.signals) {
-    const li = el("li", "text-xs text-gray-500 flex items-center gap-1.5");
-    li.innerHTML = `<span class="text-green-500">✓</span> ${s}`;
-    signals.appendChild(li);
+/** Parses JSON error bodies from GET …/llm-context; falls back to plain text. */
+function formatMetricLLMHttpError(status: number, raw: string): string {
+  try {
+    const j = JSON.parse(raw) as {
+      error?: string;
+      message?: string;
+      metricHelpUrl?: string;
+      helpUrl?: string;
+    };
+    if (typeof j.message === "string" && j.message.trim()) {
+      let msg = j.message.trim();
+      const link = j.metricHelpUrl || j.helpUrl;
+      if (link) {
+        msg += `\n\n[Learn more](${link})`;
+      }
+      return msg;
+    }
+  } catch {
+    /* plain text body */
   }
-
-  wrap.append(label, track, signals);
-  return wrap;
+  return `**Error (${status}):** ${raw || "unknown"}`;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function setSpinner(bubble: HTMLElement, label: string) {
   bubble.innerHTML =
@@ -263,19 +375,6 @@ function setSpinner(bubble: HTMLElement, label: string) {
     `<span class="w-1 h-1 rounded-full bg-gray-500 animate-bounce [animation-delay:-0.15s]"></span>` +
     `<span class="w-1 h-1 rounded-full bg-gray-500 animate-bounce"></span>` +
     `</span>${label}</span>`;
-}
-
-function showProgress(container: HTMLElement, msg: string) {
-  const p = el("p", "text-sm text-gray-400 flex items-center gap-2");
-  p.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-july-400 animate-pulse"></span>${msg}`;
-  container.appendChild(p);
-}
-
-function showError(container: HTMLElement, msg: string) {
-  container.innerHTML = "";
-  const p = el("p", "text-sm text-red-400");
-  p.textContent = `Error: ${msg}`;
-  container.appendChild(p);
 }
 
 function appendChat(log: HTMLElement, who: "you" | "ai", text: string): HTMLElement {
@@ -311,6 +410,11 @@ function renderMarkdown(text: string): string {
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
     .replace(/^#{1,3} (.+)$/gm, "<strong class='block mt-2'>$1</strong>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, href: string) => {
+      const u = String(href).trim();
+      const safe = (/^\//.test(u) || /^https:\/\//.test(u)) ? u.replace(/"/g, "") : "#";
+      return `<a href="${safe}" class="text-july-400 hover:underline">${label}</a>`;
+    })
     .replace(/\n/g, "<br>");
 }
 
@@ -318,23 +422,4 @@ function el(tag: string, cls: string): HTMLElement {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   return e;
-}
-
-function scoreColor(n: number): string {
-  if (n >= 75) return "text-green-400";
-  if (n >= 50) return "text-july-400";
-  return "text-red-400";
-}
-
-function barColor(pct: number): string {
-  if (pct >= 75) return "bg-green-500";
-  if (pct >= 50) return "bg-july-500";
-  return "bg-red-500";
-}
-
-function parseRepoURL(url: string): { owner: string; repo: string } {
-  const clean = url.replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").trim();
-  const [owner, repo] = clean.split("/");
-  if (!owner || !repo) throw new Error(`Cannot parse repo from: ${url}`);
-  return { owner, repo };
 }

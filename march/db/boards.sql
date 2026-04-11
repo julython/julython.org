@@ -19,7 +19,7 @@ SELECT * FROM boards WHERE project_id = @project_id AND game_id = @game_id;
 SELECT b.*, p.name AS project_name, p.url AS project_url, p.slug
 FROM boards b
 JOIN projects p ON p.id = b.project_id
-WHERE b.game_id = @game_id AND p.is_active = true
+WHERE b.game_id = @game_id AND p.is_active = true AND p.is_private = false
 ORDER BY
     CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.potential_points END DESC,
     b.points DESC
