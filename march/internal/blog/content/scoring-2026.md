@@ -21,9 +21,13 @@ With our new scoring we attempt to address these issues by tracking the health o
 
 The best analogy for the period we're in: "Civil engineers and architects draw the plans for a new building, then hand it off to a team of workers who actually do the work." The key difference with AI is that labor is incredibly fast and cheap. The cost of writing greenfield software is racing toward zero, but the costs associated with maintaining it have not changed - and left unchecked, will only get worse.
 
-## Why Local LLMs Are the Key
+## Server scan vs. browser AI
 
-We care a lot about [your privacy](/privacy) and don't want to hand code and IP to "Big Tech". Julython has always been about open source, and that has not changed. AI is evolving rapidly and we hope that much of what currently requires cloud models will soon be possible locally. In fact, our scoring is based on how well a WebLLM model can analyze the code entirely in your browser. We will not download your code or store it on our servers. Julython is community-run and independent - we're doing this because we love it.
+We care a lot about [your privacy](/privacy) and don't want to hand code and IP to "Big Tech" for optional features. Julython has always been about open source, and that has not changed.
+
+**Level 1 heuristics are different from the AI buttons.** For **public** GitHub repositories, our **servers** fetch what they need from GitHub to run the checklist scan (that is how L1 works). We **do not** run that scan on **private** repositories. So yes — for public repos, analysis data is pulled server-side from GitHub; we are not claiming your tree never touches Julython infrastructure during L1.
+
+**Optional L2 / L3 metric reviews** (the **AI** buttons) run **in your browser**: we prefer **Chrome’s built-in AI** (Gemini Nano via the Prompt API) when available so you don’t have to download a large model; otherwise **WebLLM** (one-time download, cached in your browser) on WebGPU-capable browsers. The prompt is built from **L1 results** (scores, flags, and small snippets we already stored) — we are **not** uploading your full repository to Julython to run that model step; inference stays on your device. Julython is community-run and independent — we're doing this because we love it.
 
 ## How the Analysis Works
 
@@ -35,74 +39,32 @@ For **public** GitHub repositories, **Level 1** is **fast heuristic** scoring (p
 
 Each metric row’s **`data`** JSON stores both the scored checklist (boolean signals) and a small **`prompt_context`** object (paths and text snippets) so **L2/L3** grading in the browser can build prompts without re-downloading the whole repository.
 
-### Level 2 / Level 3 — WebLLM in the browser (optional)
+### Level 2 / Level 3 — browser AI (optional)
 
-For **L2** and **L3**, you run **WebLLM entirely in your browser** so your full codebase is not uploaded to Julython. **AI grading** (POST **`/api/projects/{projectID}/analysis`**) is allowed once that metric already has **heuristic L1** with **any** partial score **greater than zero** — you do **not** need a perfect 10/10 checklist before trying the model.
+For **L2** and **L3**, you run the model **in your browser** (Chrome built-in AI or WebLLM — see above). **AI grading** (POST **`/api/projects/{projectID}/analysis`**) is allowed once that metric already has **heuristic L1** with **any** partial score **greater than zero** — you do **not** need a perfect 10/10 checklist before trying the model. If L1 is still **0** for a metric, the UI explains why and links to [help](/help#analysis-metrics); improve the repo and **Rescan analysis (L1)** first.
 
-The **L2** pass is the step where the model either tells you what is still missing or marks the metric **done** for **L2** credit; **L3** is a stricter “excellent” tier when you want to go further.
+The **L2** pass is the step where the model gives feedback and a suggested score; **L3** is a stricter “excellent” tier when you want to go further.
 
 ```mermaid
 flowchart LR
     H[Heuristic_L1_partial]
-    AI[WebLLM_L2_or_L3]
+    AI[Browser_AI_L2_or_L3]
     H --> AI
 ```
 
 **Board points** combine **score** (0–10) and **level** (0–3) per metric so partial heuristics are not treated like a perfect tile: **points ≈ score × level × 2** per metric, capped at **60** per metric when score is 10 and level is 3. Across **8** metrics, a repo can earn up to **480** points; up to **3** repos per game → **1,440** points max per player.
 
-You don't have to use WebLLM. Using a small local model shows that meaningful analysis can happen without sending your code to us — and if a small model can summarize your project clearly, a large one will have no trouble at all.
+You don't have to use a downloaded WebLLM build — if Chrome’s built-in model is available, that’s enough for the **browser** review step. **L1** already used a public server-side scan; **L2/L3** inference stays local to your machine.
 
-### Example: Testing Metric Prompt
+### Example: What the browser sees (simplified)
 
-Here is how we generate a prompt to analyze testing at L2/L3:
+The server sends a **system** instruction (act as a concise code-quality coach) plus a **user** prompt built from the repo name, the L1 score, short “what good looks like” text for that metric, and either file snippets from **`prompt_context`** or a readable list of heuristic signals. The model is asked for actionable feedback and an updated **0–10** view. For saving **L2** tier data, the client parses a JSON object shaped like:
 
-```typescript
-const SYSTEM_PROMPT = `
-You are a testing expert grading a software repository.
-Respond with ONLY a JSON object. No explanation. No markdown.
-
-Grade the repository's test quality as L2 or L3:
-- L2: Has meaningful tests with reasonable coverage
-- L3: Excellent test suite, high coverage, well-structured
-
-{"grade": "L2" | "L3", "reason": "<one sentence>"}`;
-
-interface TestingContext {
-  coverage: {
-    lines: number; // percentage 0-100
-    branches: number;
-    functions: number;
-  };
-  sourceFiles: string[];
-  testFiles: string[];
-}
-
-function buildTestingPrompt(ctx: TestingContext): string {
-  const { coverage, sourceFiles, testFiles } = ctx;
-  const testRatio = (
-    testFiles.length / Math.max(sourceFiles.length, 1)
-  ).toFixed(2);
-
-  return `
-Coverage:
-    lines=${coverage.lines}%
-    branches=${coverage.branches}%
-    functions=${coverage.functions}%
-Test/source ratio: ${testRatio}
-
-Source: ${sourceFiles.join(", ")}
-Tests:  ${testFiles.join(", ")}
-
-Grade this test suite L2 or L3.`;
-}
-
-// Usage
-const prompt = buildTestingPrompt({
-  coverage: { lines: 78, branches: 61, functions: 82 },
-  sourceFiles: ["src/game.ts", "src/scorer.ts", "src/repo.ts"],
-  testFiles: ["tests/game_test.ts", "tests/scorer_test.ts"],
-});
+```json
+{ "score": 7, "message": "Short paragraph with concrete suggestions." }
 ```
+
+(Exact prompt text evolves in the app; the important part is **L1 evidence in → browser model → structured score + message out**.)
 
 ## The Metrics
 
