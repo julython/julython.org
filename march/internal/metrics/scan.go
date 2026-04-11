@@ -34,9 +34,10 @@ type L1ScanResult struct {
 	Owner      string
 	Repo       string
 	SHA        string
+	Language   string // from GitHub's primaryLanguage (Linguist)
 	Tree       []TreeEntry
-	Matches    []FileMatch            // classified files with content
-	ByCategory map[string][]FileMatch // category -> matches
+	Matches    []FileMatch
+	ByCategory map[string][]FileMatch
 }
 
 type Client struct {
@@ -52,26 +53,24 @@ func NewClient(token string) *Client {
 // 1. Fetch the full recursive tree to discover what exists
 // 2. Fetch content for files relevant to L1 scoring
 func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanResult, error) {
-	// --- Pass 1: recursive tree ---
-	sha, tree, err := c.fetchTree(ctx, owner, repo)
+	sha, language, tree, err := c.fetchTree(ctx, owner, repo)
 	if err != nil {
 		return nil, fmt.Errorf("pass 1 tree fetch: %w", err)
 	}
 
-	// classify which files we need content for
 	matches := classifyTree(tree)
 	if len(matches) == 0 {
 		return &L1ScanResult{
 			Owner:      owner,
 			Repo:       repo,
 			SHA:        sha,
+			Language:   language,
 			Tree:       tree,
 			Matches:    matches,
 			ByCategory: map[string][]FileMatch{},
 		}, nil
 	}
 
-	// collect unique paths (a file could match multiple categories)
 	paths := make([]string, 0, len(matches))
 	seen := make(map[string]bool)
 	for _, m := range matches {
@@ -81,13 +80,11 @@ func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanRe
 		}
 	}
 
-	// --- Pass 2: fetch file contents (batched GraphQL) ---
 	files, err := c.fetchFilesBatched(ctx, owner, repo, sha, paths)
 	if err != nil {
 		return nil, fmt.Errorf("pass 2 file fetch: %w", err)
 	}
 
-	// populate content on matches and build category index
 	byCategory := make(map[string][]FileMatch)
 	for i := range matches {
 		matches[i].Content = files[matches[i].Path]
@@ -100,6 +97,7 @@ func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanRe
 		Owner:      owner,
 		Repo:       repo,
 		SHA:        sha,
+		Language:   language,
 		Tree:       tree,
 		Matches:    matches,
 		ByCategory: byCategory,
@@ -107,16 +105,15 @@ func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanRe
 }
 
 // fetchTree gets the full recursive tree via the Git Trees API through GraphQL.
-func (c *Client) fetchTree(ctx context.Context, owner, repo string) (string, []TreeEntry, error) {
+func (c *Client) fetchTree(ctx context.Context, owner, repo string) (string, string, []TreeEntry, error) {
 	query := fmt.Sprintf(`query {
   repository(owner: %q, name: %q) {
+    primaryLanguage { name }
     defaultBranchRef {
       target {
         oid
         ... on Commit {
-          tree {
-            oid
-          }
+          tree { oid }
         }
       }
     }
@@ -125,12 +122,22 @@ func (c *Client) fetchTree(ctx context.Context, owner, repo string) (string, []T
 
 	resp, err := c.doGraphQL(ctx, query)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 
 	repoFields, err := extractRepo(resp)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
+	}
+
+	var language string
+	if raw, ok := repoFields["primaryLanguage"]; ok && string(raw) != "null" {
+		var pl struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal(raw, &pl); err == nil {
+			language = pl.Name
+		}
 	}
 
 	var branch struct {
@@ -142,22 +149,18 @@ func (c *Client) fetchTree(ctx context.Context, owner, repo string) (string, []T
 		} `json:"target"`
 	}
 	if err := json.Unmarshal(repoFields["defaultBranchRef"], &branch); err != nil {
-		return "", nil, fmt.Errorf("unmarshal branch: %w", err)
+		return "", "", nil, fmt.Errorf("unmarshal branch: %w", err)
 	}
 
-	commitSHA := branch.Target.OID
-	treeSHA := branch.Target.Tree.OID
-
-	// use REST for recursive tree — GraphQL doesn't support recursive natively
-	tree, truncated, err := c.fetchRecursiveTree(ctx, owner, repo, treeSHA)
+	tree, truncated, err := c.fetchRecursiveTree(ctx, owner, repo, branch.Target.Tree.OID)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 	if truncated {
-		return "", nil, fmt.Errorf("git tree response truncated (repo too large for single recursive tree)")
+		return "", "", nil, fmt.Errorf("git tree response truncated (repo too large)")
 	}
 
-	return commitSHA, tree, nil
+	return branch.Target.OID, language, tree, nil
 }
 
 const graphqlFileBatchSize = 28

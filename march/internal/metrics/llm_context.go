@@ -51,11 +51,16 @@ var metricAdvice = map[string]string{
 }
 
 // BuildMetricLLMUserContent assembles focused evidence for the browser LLM.
+// Language is read from data[LanguageKey] if present.
 func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName string, l1Score, level int16) string {
 	var b strings.Builder
 	title := MetricDisplayName(metricType)
+	language, _ := data[LanguageKey].(string)
 
 	b.WriteString(fmt.Sprintf("## Reviewing: %s — %s\n\n", repoName, title))
+	if language != "" {
+		b.WriteString(fmt.Sprintf("Primary language: **%s**\n", language))
+	}
 	b.WriteString(fmt.Sprintf("Current automated score: **%d/10**\n\n", l1Score))
 
 	// what good looks like for this category
@@ -100,6 +105,9 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 	b.WriteString("1. Briefly explain what this project is doing well\n")
 	b.WriteString("2. List 2-3 specific, actionable steps the maintainer could take today to improve\n")
 	b.WriteString("3. End with an updated score suggestion out of 10\n\n")
+	if language != "" {
+		b.WriteString(fmt.Sprintf("All suggestions must be appropriate for a %s project — use %s-specific tooling, conventions, and directory structures.\n", language, language))
+	}
 	b.WriteString("Keep it concise — aim for a short paragraph plus a few bullet points.")
 
 	return b.String()
@@ -109,7 +117,7 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 func formatHeuristicSignals(data map[string]any) string {
 	keys := make([]string, 0, len(data))
 	for k := range data {
-		if k == PromptContextKey {
+		if k == PromptContextKey || k == LanguageKey {
 			continue
 		}
 		keys = append(keys, k)

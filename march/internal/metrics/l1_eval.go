@@ -9,6 +9,9 @@ import (
 // PromptContextKey is stored alongside scored bool fields in analysis_metrics.data for L2/L3 prompts.
 const PromptContextKey = "prompt_context"
 
+// LanguageKey is stored in every metric's data so prompts can reference it.
+const LanguageKey = "language"
+
 // L1MetricResult is one tile's JSON payload and score for UpsertAnalysisMetric.
 type L1MetricResult struct {
 	Data  map[string]any
@@ -19,34 +22,49 @@ type L1MetricResult struct {
 func EvaluateL1(res *L1ScanResult) map[string]L1MetricResult {
 	by := res.ByCategory
 	paths := pathSetFromTree(res.Tree)
+	lang := res.Language
 
 	out := make(map[string]L1MetricResult, 8)
 
 	readme := evalReadme(by, paths)
+	setLanguage(readme.data, lang)
 	out["readme"] = L1MetricResult{Data: readme.data, Score: Score(readme.tile)}
 
 	tests := evalTests(by, paths, contentByPath(res))
+	setLanguage(tests.data, lang)
 	out["tests"] = L1MetricResult{Data: tests.data, Score: Score(tests.tile)}
 
 	ci := evalCI(by, paths)
+	setLanguage(ci.data, lang)
 	out["ci"] = L1MetricResult{Data: ci.data, Score: Score(ci.tile)}
 
 	structure := evalStructure(by, paths)
+	setLanguage(structure.data, lang)
 	out["structure"] = L1MetricResult{Data: structure.data, Score: Score(structure.tile)}
 
 	lint := evalLinting(by, paths)
+	setLanguage(lint.data, lang)
 	out["linting"] = L1MetricResult{Data: lint.data, Score: Score(lint.tile)}
 
 	deps := evalDeps(by, paths)
+	setLanguage(deps.data, lang)
 	out["deps"] = L1MetricResult{Data: deps.data, Score: Score(deps.tile)}
 
 	docs := evalDocs(by, paths)
+	setLanguage(docs.data, lang)
 	out["docs"] = L1MetricResult{Data: docs.data, Score: Score(docs.tile)}
 
 	ai := evalAIReady(by, paths)
+	setLanguage(ai.data, lang)
 	out["ai_ready"] = L1MetricResult{Data: ai.data, Score: Score(ai.tile)}
 
 	return out
+}
+
+func setLanguage(data map[string]any, lang string) {
+	if lang != "" {
+		data[LanguageKey] = lang
+	}
 }
 
 func pathSetFromTree(tree []TreeEntry) map[string]bool {

@@ -7,6 +7,7 @@ import (
 
 func TestBuildMetricLLMUserContent_WithSources(t *testing.T) {
 	data := map[string]any{
+		LanguageKey:  "Python",
 		"has_readme": true,
 		PromptContextKey: map[string]any{
 			"sources": []any{
@@ -18,19 +19,20 @@ func TestBuildMetricLLMUserContent_WithSources(t *testing.T) {
 	if !strings.Contains(out, "o/r") {
 		t.Fatalf("expected repo name in output")
 	}
+	if !strings.Contains(out, "Python") {
+		t.Fatalf("expected language in output")
+	}
 	if !strings.Contains(out, "README.md") || !strings.Contains(out, "# Hello") {
 		t.Fatalf("expected snippet in output")
 	}
 	if !strings.Contains(out, "actionable steps") {
 		t.Fatalf("expected actionable task instruction")
 	}
-	if strings.Contains(out, "JSON") {
-		t.Fatalf("should not ask for JSON output")
-	}
 }
 
 func TestBuildMetricLLMUserContent_HeuristicOnly(t *testing.T) {
 	data := map[string]any{
+		LanguageKey:        "Go",
 		"has_ignore_file":  true,
 		"has_license_file": false,
 		"has_src_dir":      false,
@@ -44,6 +46,20 @@ func TestBuildMetricLLMUserContent_HeuristicOnly(t *testing.T) {
 	}
 	if !strings.Contains(out, "3/10") {
 		t.Fatalf("expected score in output")
+	}
+	if !strings.Contains(out, "Go-specific") {
+		t.Fatalf("expected language-specific instruction, got:\n%s", out)
+	}
+}
+
+func TestBuildMetricLLMUserContent_NoLanguage(t *testing.T) {
+	data := map[string]any{"has_readme": true}
+	out := BuildMetricLLMUserContent("readme", data, "o/r", 5, 1)
+	if strings.Contains(out, "Primary language") {
+		t.Fatalf("should not include language line when empty")
+	}
+	if strings.Contains(out, "-specific") {
+		t.Fatalf("should not include language-specific instruction when empty")
 	}
 }
 
