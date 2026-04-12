@@ -80,7 +80,7 @@ function buildUI(cfg: UIConfig): HTMLElement {
   const modelSelect = getModelSelect();
   const deleteBtn = getCacheClearButton();
 
-  const chatLog = el("div", "flex-1 min-h-[160px] max-h-80 overflow-y-auto px-4 py-3 space-y-2 text-sm text-gray-300");
+  const chatLog = el("div", "flex-1 min-h-[160px] max-h-80 overflow-y-auto px-4 py-3 space-y-2 text-sm sm:text-base text-gray-300");
   const chatRow = el("div", "flex gap-2 px-4 pb-4 shrink-0");
   const chatInput = el("input",
     "flex-1 px-3 py-2 rounded-lg bg-surface border border-white/10 text-white text-sm " +
@@ -97,6 +97,15 @@ function buildUI(cfg: UIConfig): HTMLElement {
   root.append(chatLog, chatRow);
 
   let llmSession: LLMSession | null = null;
+
+  function appendBrowserAiIntro() {
+    appendChat(
+      chatLog,
+      "ai",
+      "Runs in your browser. The selected model downloads once and is cached for next time.",
+    );
+  }
+  appendBrowserAiIntro();
 
   const refreshDeleteBtn = async () => {
     if (!deleteBtn) return;
@@ -130,29 +139,6 @@ function buildUI(cfg: UIConfig): HTMLElement {
     deleteBtn.textContent = prev ?? "Clear model cache";
   });
 
-  function appendWebLLMDownloadNotice(
-    info: { sizeMB: number; label: string },
-    insertBeforeRow: HTMLElement | null,
-  ) {
-    const row = el("div", "text-left");
-    const box = el(
-      "div",
-      "inline-block px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-left max-w-[min(100%,28rem)] shadow-sm",
-    );
-    const title = el("p", "text-base font-semibold text-amber-100 mb-1.5");
-    title.textContent = "Browser model download";
-    const body = el("p", "text-sm text-gray-300 leading-relaxed");
-    body.innerHTML =
-      `About <strong>${info.sizeMB} MB</strong> ` +
-      `(<span class="text-gray-200">${escapeHtml(info.label)}</span>) will be downloaded once and cached in your browser. ` +
-      "Subsequent uses load from cache.";
-    box.append(title, body);
-    row.appendChild(box);
-    if (insertBeforeRow) chatLog.insertBefore(row, insertBeforeRow);
-    else chatLog.appendChild(row);
-    chatLog.scrollTop = chatLog.scrollHeight;
-  }
-
   async function getOrCreateLlmSession(systemPrompt: string): Promise<LLMSession | null> {
     if (llmSession) {
       llmSession.destroy();
@@ -160,7 +146,6 @@ function buildUI(cfg: UIConfig): HTMLElement {
     }
     const modelId = modelSelect.value;
     const statusBubble = appendChat(chatLog, "ai", "");
-    const loadingRow = statusBubble.parentElement as HTMLElement;
     setSpinner(statusBubble, "Checking for browser AI…");
     try {
       llmSession = await createSession(
@@ -168,7 +153,6 @@ function buildUI(cfg: UIConfig): HTMLElement {
         modelId,
         cfg.llmWorkerURL,
         (msg) => { statusBubble.textContent = msg; },
-        (info) => { appendWebLLMDownloadNotice(info, loadingRow); },
       );
       statusBubble.closest("div")?.remove();
       await refreshDeleteBtn();
@@ -196,7 +180,6 @@ function buildUI(cfg: UIConfig): HTMLElement {
     if (!llmSession) {
       const modelId = modelSelect.value;
       const statusBubble = appendChat(chatLog, "ai", "");
-      const loadingRow = statusBubble.parentElement as HTMLElement;
       setSpinner(statusBubble, "Checking for browser AI…");
       try {
         llmSession = await createSession(
@@ -204,7 +187,6 @@ function buildUI(cfg: UIConfig): HTMLElement {
           modelId,
           cfg.llmWorkerURL,
           (msg) => { statusBubble.textContent = msg; },
-          (info) => { appendWebLLMDownloadNotice(info, loadingRow); },
         );
         statusBubble.closest("div")?.remove();
         await refreshDeleteBtn();
@@ -226,12 +208,21 @@ function buildUI(cfg: UIConfig): HTMLElement {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendChat(); }
   });
 
+  function scrollToAssistantPanel() {
+    document.getElementById("project-assistant-panel")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   if (cfg.projectID) {
     document.addEventListener("click", (ev) => {
       const t = ev.target as HTMLElement | null;
-      const btn = t?.closest?.(".metric-ai-btn") as HTMLButtonElement | null;
-      if (!btn || !document.body.contains(btn)) return;
-      void runMetricAIReview(btn.dataset.metricKey ?? "", cfg.projectID, {
+      const tile = t?.closest?.(".metric-ai-tile") as HTMLButtonElement | null;
+      if (!tile || !document.body.contains(tile)) return;
+      scrollToAssistantPanel();
+      if (mount?.dataset.metricAiEnabled !== "true") return;
+      void runMetricAIReview(tile.dataset.metricKey ?? "", cfg.projectID, {
         chatLog,
         getOrCreateLlmSession,
         destroyLlmSession,
@@ -357,14 +348,6 @@ function formatMetricLLMHttpError(status: number, raw: string): string {
     /* plain text body */
   }
   return `**Error (${status}):** ${raw || "unknown"}`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 function setSpinner(bubble: HTMLElement, label: string) {
