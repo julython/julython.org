@@ -260,7 +260,7 @@ export function parseMetricAnalysisJSON(text: string): { score: number; message:
   }
 }
 
-/** General Q&A without a local clone — uses repo URL + optional description only. */
+/** System prompt for repo chat using URL and project description in the prompt. */
 export function buildMinimalChatSystemPrompt(
   repoDisplay: string,
   repoURL: string,

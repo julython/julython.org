@@ -39,18 +39,9 @@ func TestWriteHashed(t *testing.T) {
 
 	data := []byte("hello assetgen")
 
-	t.Run("dev fixed name", func(t *testing.T) {
-		name, err := writeHashed(data, "out", ".txt", true)
-		require.NoError(t, err)
-		require.Equal(t, "out.txt", name)
-		b, err := os.ReadFile(filepath.Join("web", "assets", "out.txt"))
-		require.NoError(t, err)
-		require.Equal(t, data, b)
-	})
-
-	t.Run("prod content hash", func(t *testing.T) {
+	t.Run("content hash", func(t *testing.T) {
 		wantHash := fmt.Sprintf("%x", sha256.Sum256(data))[:8]
-		name, err := writeHashed(data, "out", ".txt", false)
+		name, err := writeHashed(data, "out", ".txt")
 		require.NoError(t, err)
 		require.Equal(t, "out."+wantHash+".txt", name)
 		b, err := os.ReadFile(filepath.Join("web", "assets", name))
@@ -63,7 +54,7 @@ func TestWriteHashed(t *testing.T) {
 		stale := filepath.Join("web", "assets", "zap.aaaaaaaa.js")
 		require.NoError(t, os.WriteFile(stale, []byte("old"), 0o644))
 
-		_, err := writeHashed([]byte("newcontent"), "zap", ".js", false)
+		_, err := writeHashed([]byte("newcontent"), "zap", ".js")
 		require.NoError(t, err)
 		_, err = os.Stat(stale)
 		require.True(t, os.IsNotExist(err), "stale hashed file should be removed")
@@ -128,9 +119,9 @@ func TestBuildJS_trivialEntry(t *testing.T) {
 	alias, err := filepath.Abs(stub)
 	require.NoError(t, err)
 
-	name, err := buildJS("web/js/_assetgen_test_entry.ts", "trivial", true, alias)
+	name, err := buildJS("web/js/_assetgen_test_entry.ts", "trivial", alias)
 	require.NoError(t, err)
-	require.Equal(t, "trivial.js", name)
+	require.Regexp(t, `^trivial\.[0-9a-f]{8}\.js$`, name)
 
 	out := filepath.Join("web", "assets", name)
 	b, err := os.ReadFile(out)

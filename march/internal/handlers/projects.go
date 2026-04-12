@@ -191,11 +191,10 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
 		earned += int(score) * int(level) * 2
 		tiles = append(tiles, components.ProjectAnalysisTile{
-			MetricKey:    spec.key,
-			Level:        level,
-			Score:        score,
-			I18nKey:      spec.i18nKey,
-			ShowMetricAI: showMetricAI,
+			MetricKey: spec.key,
+			Level:     level,
+			Score:     score,
+			I18nKey:   spec.i18nKey,
 		})
 	}
 	shaDistinct := make(map[string]struct{})
@@ -211,10 +210,11 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	analysisBoard := components.ProjectAnalysisBoard{
-		Tiles:            tiles,
-		EarnedPts:        earned,
-		MaxPts:           analysisBoardMaxPts,
-		AnalysisRunCount: len(shaDistinct),
+		Tiles:             tiles,
+		EarnedPts:         earned,
+		MaxPts:            analysisBoardMaxPts,
+		AnalysisRunCount:  len(shaDistinct),
+		MetricAIEnabled:   showMetricAI,
 	}
 	if haveMetricAt {
 		analysisBoard.LastAnalyzedAgo = timeAgo(lastMetricAt)

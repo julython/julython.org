@@ -42,19 +42,19 @@ type ProjectGameActivitySummary struct {
 }
 
 type ProjectAnalysisTile struct {
-	MetricKey     string
-	Level         int16
-	Score         int16
-	I18nKey       string
-	ShowMetricAI  bool
+	MetricKey string
+	Level     int16
+	Score     int16
+	I18nKey   string
 }
 
 type ProjectAnalysisBoard struct {
-	Tiles                 []ProjectAnalysisTile
-	EarnedPts             int
-	MaxPts                int
-	LastAnalyzedAgo       string
-	AnalysisRunCount      int
+	Tiles                  []ProjectAnalysisTile
+	EarnedPts              int
+	MaxPts                 int
+	LastAnalyzedAgo        string
+	AnalysisRunCount       int
+	MetricAIEnabled        bool
 	RescanL1Slug           string
 	RescanL1Disabled       bool
 	RescanL1DisabledReason string
@@ -288,6 +288,17 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 								<p class="text-gray-400 mt-1">{ data.Project.Description }</p>
 							}
 							<p class="text-sm text-gray-600 mt-1">{ data.Project.Slug }</p>
+							<div class="md:hidden mt-2 text-xs sm:text-sm text-gray-400 leading-snug">
+								if data.AnalysisBoard.LastAnalyzedAgo != "" {
+									<span class="text-gray-500">{ i18n.T(ctx, "projects.LastAnalyzed") }</span>
+									<span class="text-gray-300 ml-1">{ data.AnalysisBoard.LastAnalyzedAgo }</span>
+									<span class="text-gray-600 ml-1">
+										({ fmt.Sprintf("%d", data.AnalysisBoard.AnalysisRunCount) } { i18n.T(ctx, "projects.AnalysesTotal") })
+									</span>
+								} else {
+									<span class="text-gray-500">{ i18n.T(ctx, "projects.NeverAnalyzed") }</span>
+								}
+							</div>
 						</div>
 						<div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center shrink-0">
 							<a
@@ -392,33 +403,37 @@ templ CommitRow(c CommitEntry) {
 
 templ analysisDash(level int16, dashIdx int) {
 	if level >= 3 {
-		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-green-400"></span>
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-green-400 lg:h-0.5 lg:max-w-[1rem]"></span>
 	} else if level <= 0 {
-		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-zinc-600"></span>
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600 lg:h-0.5 lg:max-w-[1rem]"></span>
 	} else if int16(dashIdx) <= level {
-		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-blue-400"></span>
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-blue-400 lg:h-0.5 lg:max-w-[1rem]"></span>
 	} else {
-		<span class="h-0.5 flex-1 max-w-[1.1rem] rounded-full bg-zinc-600/80"></span>
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600/80 lg:h-0.5 lg:max-w-[1rem]"></span>
 	}
 }
 
 templ analysisMetricTile(tile ProjectAnalysisTile) {
-	<div
+	<button
+		type="button"
 		class={
-			"rounded-md px-1.5 py-1.5 border transition-colors min-w-0",
+			"metric-ai-tile w-full max-w-full rounded-lg px-2.5 py-3 lg:px-1.5 lg:py-1.5 border transition-colors min-w-0 overflow-hidden text-left cursor-pointer",
+			"hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-july-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
 			templ.KV("border-green-500/45 bg-green-500/[0.07]", tile.Level >= 3),
 			templ.KV("border-blue-500/40 bg-blue-500/[0.06]", tile.Level >= 1 && tile.Level < 3),
 			templ.KV("border-white/10 bg-white/[0.02]", tile.Level < 1),
 		}
+		data-metric-key={ tile.MetricKey }
+		aria-label={ fmt.Sprintf("%s — %s", i18n.T(ctx, tile.I18nKey), i18n.T(ctx, "projects.OpenAssistantPanel")) }
 	>
-		<div class="flex gap-0.5 mb-1 justify-center">
+		<div class="flex gap-1 mb-1.5 justify-center shrink-0 lg:gap-0.5 lg:mb-1">
 			@analysisDash(tile.Level, 1)
 			@analysisDash(tile.Level, 2)
 			@analysisDash(tile.Level, 3)
 		</div>
 		<p
 			class={
-				"text-[10px] sm:text-[11px] font-medium text-center leading-tight tracking-tight",
+				"min-w-0 w-full truncate text-base sm:text-sm lg:text-[10px] font-semibold lg:font-medium text-center leading-tight lg:leading-none tracking-tight",
 				templ.KV("text-green-300", tile.Level >= 3),
 				templ.KV("text-blue-200", tile.Level >= 1 && tile.Level < 3),
 				templ.KV("text-gray-500", tile.Level < 1),
@@ -426,40 +441,30 @@ templ analysisMetricTile(tile ProjectAnalysisTile) {
 		>
 			{ i18n.T(ctx, tile.I18nKey) }
 		</p>
-		<p class="text-[9px] text-gray-600 text-center tabular-nums mt-0.5">{ fmt.Sprintf("%d/10", tile.Score) }</p>
-		if tile.ShowMetricAI {
-			<button
-				type="button"
-				class="metric-ai-btn mt-1 w-full text-[9px] font-medium py-0.5 rounded border border-july-500/30 text-july-300/90 hover:bg-july-500/15 transition-colors"
-				data-metric-key={ tile.MetricKey }
-			>
-				AI
-			</button>
-		}
-	</div>
+		<p class="min-w-0 w-full truncate text-sm sm:text-xs lg:text-[9px] text-gray-500 text-center tabular-nums mt-1 lg:mt-0.5 font-medium">{ fmt.Sprintf("%d/10", tile.Score) }</p>
+	</button>
 }
 
 templ projectChatPanel(data ProjectDetailData) {
-	<div class="rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full min-h-[420px]">
+	<div id="project-assistant-panel" class="scroll-mt-24 rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full min-h-[420px]">
 		<div class="px-3 sm:px-4 py-2.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-			<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase shrink-0">{ i18n.T(ctx, "projects.Assistant") }</h2>
+			<h2 class="text-sm font-semibold tracking-wide text-gray-400 uppercase shrink-0">{ i18n.T(ctx, "projects.Assistant") }</h2>
 			<div class="flex flex-wrap items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
 				<label for="llm-model-select" class="sr-only">{ i18n.T(ctx, "projects.BrowserModel") }</label>
 				<select
 					id="llm-model-select"
-					class="text-xs px-2 py-1.5 rounded-md bg-black/25 border border-white/10 text-gray-300 min-w-[10rem] max-w-[min(100vw-8rem,18rem)] focus:outline-none focus:border-july-500/50"
+					class="text-sm px-2 py-1.5 rounded-md bg-black/25 border border-white/10 text-gray-300 min-w-[10rem] max-w-[min(100vw-8rem,18rem)] focus:outline-none focus:border-july-500/50"
 				></select>
 				<button
 					type="button"
 					id="llm-cache-clear"
-					class="hidden text-xs px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0"
+					class="hidden text-sm px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0"
 					title={ i18n.T(ctx, "projects.ClearModelCache") }
 				>
 					{ i18n.T(ctx, "projects.ClearModelCache") }
 				</button>
 			</div>
 		</div>
-		<p class="px-4 pt-3 pb-1 text-[11px] text-gray-500 leading-snug">{ i18n.T(ctx, "projects.AssistantHint") }</p>
 		<div
 			id="analyzer"
 			class="flex flex-col flex-1 min-h-0"
@@ -468,6 +473,9 @@ templ projectChatPanel(data ProjectDetailData) {
 			data-llm-worker-url={ AssetLLMWorker }
 			data-repo-name={ githubRepoPath(data.Project.URL) }
 			data-repo-description={ data.Project.Description }
+			if data.AnalysisBoard.MetricAIEnabled {
+				data-metric-ai-enabled="true"
+			}
 		></div>
 		<script type="module" src={ AssetAnalyzer }></script>
 	</div>
@@ -476,7 +484,7 @@ templ projectChatPanel(data ProjectDetailData) {
 templ projectStatsBar(data ProjectDetailData) {
 	<div class="w-full border-y border-white/10 bg-black/25">
 		<div class="max-w-5xl mx-auto px-2 py-1.5 sm:px-3">
-			<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] sm:text-xs">
+			<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs sm:text-sm">
 				<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
 					<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
 					<span class="text-gray-200 tabular-nums font-medium">
@@ -484,7 +492,7 @@ templ projectStatsBar(data ProjectDetailData) {
 					</span>
 				</div>
 				if data.AnalysisBoard.LastAnalyzedAgo != "" {
-					<span class="text-gray-500">
+					<span class="hidden md:inline text-gray-500">
 						{ i18n.T(ctx, "projects.LastAnalyzed") }:
 						<span class="text-gray-300 ml-1">{ data.AnalysisBoard.LastAnalyzedAgo }</span>
 						<span class="text-gray-600 ml-1">
@@ -492,10 +500,10 @@ templ projectStatsBar(data ProjectDetailData) {
 						</span>
 					</span>
 				} else {
-					<span class="text-gray-600">{ i18n.T(ctx, "projects.NeverAnalyzed") }</span>
+					<span class="hidden md:inline text-gray-600">{ i18n.T(ctx, "projects.NeverAnalyzed") }</span>
 				}
 			</div>
-			<div class="mt-1 flex flex-wrap gap-x-5 gap-y-0.5 text-[11px] text-gray-400">
+			<div class="mt-1 flex flex-wrap gap-x-5 gap-y-0.5 text-xs sm:text-sm text-gray-400">
 				if !data.GameActivity.HasGame {
 					<span>{ i18n.T(ctx, "projects.NoGameData") }</span>
 				} else {
@@ -532,16 +540,19 @@ templ projectStatsBar(data ProjectDetailData) {
 templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 	<div class="rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full">
 		<div class="px-3 py-2 border-b border-white/10">
-			<h2 class="text-xs font-semibold tracking-wide text-gray-400 uppercase">{ i18n.T(ctx, "projects.AnalysisBoard") }</h2>
+			<h2 class="text-sm font-semibold tracking-wide text-gray-400 uppercase">{ i18n.T(ctx, "projects.AnalysisBoard") }</h2>
 		</div>
 		<div class="p-2.5 sm:p-3 space-y-3">
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+			if board.MetricAIEnabled {
+				<p class="text-xs sm:text-sm text-gray-500 leading-snug">{ i18n.T(ctx, "projects.SelectTileForAI") }</p>
+			}
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
 				for _, tile := range board.Tiles {
 					@analysisMetricTile(tile)
 				}
 			</div>
 			<div>
-				<div class="flex items-center justify-between text-[10px] sm:text-xs mb-1">
+				<div class="flex items-center justify-between text-xs sm:text-sm mb-1">
 					<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
 					<span class="text-gray-300 tabular-nums font-medium">
 						{ fmt.Sprintf("%d", board.EarnedPts) } / { fmt.Sprintf("%d", board.MaxPts) } pts
@@ -554,9 +565,9 @@ templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 					></div>
 				</div>
 			</div>
-			<div class="border-t border-white/10 pt-2.5">
-				<p class="text-gray-500 text-[10px] sm:text-xs mb-0.5">{ i18n.T(ctx, "projects.LastAnalyzed") }</p>
-				<p class="text-white text-xs leading-snug">
+			<div class="hidden md:block border-t border-white/10 pt-2.5">
+				<p class="text-gray-500 text-xs sm:text-sm mb-0.5">{ i18n.T(ctx, "projects.LastAnalyzed") }</p>
+				<p class="text-white text-sm leading-snug">
 					if board.LastAnalyzedAgo != "" {
 						{ board.LastAnalyzedAgo }
 						<span class="text-gray-500 font-normal">
@@ -581,7 +592,7 @@ templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 							title={ l1RescanTitle(ctx, board.RescanL1DisabledReason) }
 						}
 						class={
-							"w-full text-xs font-medium py-2 px-3 rounded-lg border transition-colors group disabled:opacity-60 disabled:cursor-not-allowed",
+							"w-full text-sm font-medium py-2 px-3 rounded-lg border transition-colors group disabled:opacity-60 disabled:cursor-not-allowed",
 							templ.KV("bg-july-500/15 border-july-500/35 text-july-200 hover:bg-july-500/25", !board.RescanL1Disabled),
 							templ.KV("bg-white/5 border-white/10 text-gray-500 cursor-not-allowed", board.RescanL1Disabled),
 						}

@@ -7,7 +7,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,15 +24,12 @@ const (
 )
 
 func main() {
-	dev := flag.Bool("dev", false, "dev mode: no hash, no minify")
-	flag.Parse()
-
 	webllmAlias, err := webLLMIndexAbs()
 	if err != nil {
 		fatalf("web-llm vendor: %v\n", err)
 	}
 
-	cssName, err := buildCSS(*dev)
+	cssName, err := buildCSS()
 	if err != nil {
 		fatalf("css build: %v\n", err)
 	}
@@ -48,12 +44,12 @@ func main() {
 		fatalf("mermaid: %v\n", err)
 	}
 
-	analyzerName, err := buildJS("web/js/analyzer.ts", "analyzer", *dev, webllmAlias)
+	analyzerName, err := buildJS("web/js/analyzer.ts", "analyzer", webllmAlias)
 	if err != nil {
 		fatalf("analyzer build: %v\n", err)
 	}
 
-	llmWorkerName, err := buildJS("web/js/llm-worker.ts", "llm-worker", *dev, webllmAlias)
+	llmWorkerName, err := buildJS("web/js/llm-worker.ts", "llm-worker", webllmAlias)
 	if err != nil {
 		fatalf("llm-worker build: %v\n", err)
 	}
@@ -74,17 +70,13 @@ func webLLMIndexAbs() (string, error) {
 	return filepath.Abs(webLLMVendorIndex)
 }
 
-func buildCSS(dev bool) (string, error) {
+func buildCSS() (string, error) {
 	if err := os.MkdirAll("tmp", 0o755); err != nil {
 		return "", err
 	}
 	tmp := "tmp/tailwind-out.css"
 
-	args := []string{"-i", inputCSS, "-o", tmp}
-	if !dev {
-		args = append(args, "--minify")
-	}
-	cmd := exec.Command(tailwindBin, args...)
+	cmd := exec.Command(tailwindBin, "-i", inputCSS, "-o", tmp, "--minify")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -96,19 +88,18 @@ func buildCSS(dev bool) (string, error) {
 		return "", err
 	}
 
-	return writeHashed(data, "tailwind", ".css", dev)
+	return writeHashed(data, "tailwind", ".css")
 }
 
 // buildJS bundles a TypeScript entry point with esbuild and writes the result
 // to web/assets/ with a content hash. Returns the hashed filename.
-func buildJS(entry, stem string, dev bool, webLLMAlias string) (string, error) {
-	minify := !dev
+func buildJS(entry, stem string, webLLMAlias string) (string, error) {
 	result := api.Build(api.BuildOptions{
 		EntryPoints:       []string{entry},
 		Bundle:            true,
-		MinifyWhitespace:  minify,
-		MinifyIdentifiers: minify,
-		MinifySyntax:      minify,
+		MinifyWhitespace:  true,
+		MinifyIdentifiers: true,
+		MinifySyntax:      true,
 		Format:            api.FormatESModule,
 		Target:            api.ES2020,
 		Platform:          api.PlatformBrowser,
@@ -138,30 +129,28 @@ func buildJS(entry, stem string, dev bool, webLLMAlias string) (string, error) {
 		return "", fmt.Errorf("esbuild produced no output for %s", entry)
 	}
 
-	return writeHashed(result.OutputFiles[0].Contents, stem, ".js", dev)
+	return writeHashed(result.OutputFiles[0].Contents, stem, ".js")
 }
 
 // writeHashed writes data to web/assets/{stem}.{hash}{ext} and removes stale
-// versions. In dev mode the filename is just {stem}{ext} with no hash.
-func writeHashed(data []byte, stem, ext string, dev bool) (string, error) {
+// hashed siblings for the same stem.
+func writeHashed(data []byte, stem, ext string) (string, error) {
 	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
 		return "", err
 	}
 
-	var name string
-	if dev {
-		name = stem + ext
-	} else {
-		hash := fmt.Sprintf("%x", sha256.Sum256(data))[:8]
-		name = fmt.Sprintf("%s.%s%s", stem, hash, ext)
+	hash := fmt.Sprintf("%x", sha256.Sum256(data))[:8]
+	name := fmt.Sprintf("%s.%s%s", stem, hash, ext)
 
-		// Remove stale hashed versions.
-		old, _ := filepath.Glob(filepath.Join(assetsDir, stem+".????????"+ext))
-		for _, f := range old {
-			if filepath.Base(f) != name {
-				_ = os.Remove(f)
-			}
+	// Remove stale hashed versions (and any accidental unhashed stem+ext).
+	old, _ := filepath.Glob(filepath.Join(assetsDir, stem+".????????"+ext))
+	for _, f := range old {
+		if filepath.Base(f) != name {
+			_ = os.Remove(f)
 		}
+	}
+	if err := os.Remove(filepath.Join(assetsDir, stem+ext)); err != nil && !os.IsNotExist(err) {
+		return "", err
 	}
 
 	dest := filepath.Join(assetsDir, name)
