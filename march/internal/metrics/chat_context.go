@@ -6,31 +6,65 @@ import (
 	"strings"
 )
 
-// ChatLLMSystemPrompt is used when the user is asking about the repo (quality, CI, tests, etc.).
-const ChatLLMSystemPrompt = `You are a helpful assistant for an open source repository. The user message may include a short excerpt from our automated scan—use it for project-specific answers when it fits the question.
+// ChatLLMSystemPromptGeneral is for greetings / casual messages (short).
+const ChatLLMSystemPromptGeneral = `You are a friendly assistant for developers. Keep replies brief and natural.`
 
-If the excerpt does not cover the question, say so briefly. Be concise. Use markdown (short headings, bullets).
+// ChatExpertSystemPrompt returns a short role-focused system prompt for the project assistant.
+func ChatExpertSystemPrompt(info ChatContextInfo) string {
+	if info.GeneralChat {
+		return ChatLLMSystemPromptGeneral
+	}
+	topic := expertTopicPhrase(info.TopicMetric)
+	if info.PrimaryLanguage != "" {
+		return fmt.Sprintf(
+			"You are an expert %s developer focused on %s. Give short, practical answers. Use markdown when helpful.",
+			info.PrimaryLanguage, topic,
+		)
+	}
+	return fmt.Sprintf(
+		"You are an expert in %s for open source projects. Give short, practical answers. Use markdown when helpful.",
+		topic,
+	)
+}
 
-When a primary language is stated, tailor suggestions (tools, idioms, layout) to that ecosystem.
+func expertTopicPhrase(metric string) string {
+	switch metric {
+	case "readme":
+		return "READMEs and project documentation"
+	case "tests":
+		return "automated testing"
+	case "ci":
+		return "CI/CD pipelines"
+	case "structure":
+		return "repository layout and project structure"
+	case "linting":
+		return "linting and code style"
+	case "deps":
+		return "dependencies and supply chain"
+	case "docs":
+		return "technical documentation"
+	case "ai_ready":
+		return "AI assistant and agent configuration"
+	default:
+		return "this repository area"
+	}
+}
 
-Do not paste or quote license text or long legal boilerplate—reference file paths when useful.`
-
-// ChatLLMSystemPromptGeneral is used for greetings and casual messages: do not treat the chat as a README review.
-const ChatLLMSystemPromptGeneral = `You are a friendly assistant chatting with a developer about their open source project.
-
-Respond naturally to what they said. If they only greet you or make small talk, keep it brief—do not evaluate the README, give scores, or summarize scan results unless they ask about the project or documentation.
-
-If they later ask how to improve something, you can draw on any background context in the message. When a primary language is stated, tailor suggestions to that ecosystem.`
-
-// ChatContextInfo describes how the chat prompt was built (for the user prompt text and optional UI).
+// ChatContextInfo describes how the chat prompt was built.
 type ChatContextInfo struct {
-	ContextMetric     string // metric key whose data is shown (e.g. readme, ci)
-	MatchedMetric     string // non-empty if a keyword matched the user's message
-	UsedDefaultReadme bool   // true when no keyword matched and README context is used
-	FallbackToReadme  bool   // true when a keyword matched but README data was used (no row for matched metric)
-	// GeneralChat is true for greetings / small talk—prompts must not read like a README quality review.
+	// TopicMetric is what the user is asking about (keyword match or "readme" by default).
+	TopicMetric string
+	// KeywordMatched is true when MatchMetricFromMessage found a topic.
+	KeywordMatched bool
+	// MatchedKeyword is the metric key when KeywordMatched (e.g. "ci").
+	MatchedKeyword string
+	// UsedDefaultTopic is true when no keyword matched and we default to README topic.
+	UsedDefaultTopic bool
+	// NoScanEvidence is true when we have no L1 snippets/heuristics for TopicMetric (answer generically).
+	NoScanEvidence bool
+	// GeneralChat is true for greetings / small talk.
 	GeneralChat bool
-	// PrimaryLanguage is the repo primary language from L1 (typically from README metric); used to tailor answers.
+	// PrimaryLanguage from L1 (usually README metric) when available.
 	PrimaryLanguage string
 }
 
@@ -46,23 +80,12 @@ func LanguageFromData(data map[string]any) string {
 	return strings.TrimSpace(v)
 }
 
-func appendChatPrimaryLanguageLine(b *strings.Builder, lang string) {
-	if lang == "" {
-		return
-	}
-	b.WriteString(fmt.Sprintf(
-		"Primary language (from scan): **%s** — use tooling, conventions, and examples appropriate for this stack.\n\n",
-		lang,
-	))
-}
-
 var (
 	reGenericChatOnly = regexp.MustCompile(`(?i)^\s*(hi|hello|hey|hiya|howdy|yo|sup|thanks|thank you|thx|ty|ok|okay|k|bye|goodbye|cya|later|good morning|good afternoon|good evening|gm|evening|morning)\b[!.?]*\s*$`)
 	reShortCasual      = regexp.MustCompile(`^(hi|hello|hey|hiya|thanks|thx|ty)\s+\w+([!.]?)$`)
 )
 
 // IsGenericChatMessage reports whether the message is casual small talk rather than a project question.
-// In that case we still may attach README scan data as optional background, but we must not frame the reply as a review.
 func IsGenericChatMessage(msg string) bool {
 	s := strings.TrimSpace(msg)
 	if s == "" {
@@ -78,16 +101,56 @@ func IsGenericChatMessage(msg string) bool {
 	return false
 }
 
-// ChatSystemPromptFor returns the system prompt for project chat (general vs repo-focused).
-func ChatSystemPromptFor(generalChat bool) string {
-	if generalChat {
-		return ChatLLMSystemPromptGeneral
+// metricFollowUpSuggestions gives concrete next questions the user can try (helps small models).
+func metricFollowUpSuggestions(metric string) []string {
+	switch metric {
+	case "ci":
+		return []string{
+			"How do I set up GitHub Actions for this repository?",
+			"How do I configure GitLab CI?",
+			"How do I add a CircleCI config?",
+		}
+	case "tests":
+		return []string{
+			"How should I structure unit tests here?",
+			"How do I run the test suite locally?",
+		}
+	case "readme":
+		return []string{
+			"What should this README include for new contributors?",
+			"How do I add install instructions?",
+		}
+	case "linting":
+		return []string{
+			"How do I set up ESLint / Ruff / golangci-lint for this stack?",
+			"How do I run the formatter in CI?",
+		}
+	case "deps":
+		return []string{
+			"How should I pin dependencies safely?",
+			"How do I enable Dependabot or Renovate?",
+		}
+	case "docs":
+		return []string{
+			"How do I add API docs for this project?",
+			"Should I use a docs/ site or wiki?",
+		}
+	case "structure":
+		return []string{
+			"What folder layout fits this language ecosystem?",
+			"Where should entry points and libraries live?",
+		}
+	case "ai_ready":
+		return []string{
+			"What should go in CLAUDE.md or AGENTS.md?",
+			"How do I document conventions for AI tools?",
+		}
+	default:
+		return nil
 	}
-	return ChatLLMSystemPrompt
 }
 
 // metricKeywordLists maps analysis metric keys to substrings / phrases (matched case-insensitively).
-// Longer phrases are scored higher; ambiguous short tokens use word-boundary checks in MatchMetricFromMessage.
 var metricKeywordLists = map[string][]string{
 	"readme": {"readme", "readme.md", "project description", "getting started", "introduction", "badge", "badges"},
 	"tests":  {"testing", "pytest", "jest", "mocha", "coverage", "unit test", "integration test", "tdd", "vitest", "cypress", "go test"},
@@ -109,7 +172,6 @@ var (
 )
 
 // MatchMetricFromMessage returns a metric key when the message appears to ask about that analysis area.
-// It returns ("", false) when no topic matches well—callers should default to README context.
 func MatchMetricFromMessage(msg string) (metric string, ok bool) {
 	lower := strings.ToLower(strings.TrimSpace(msg))
 	if lower == "" {
@@ -157,20 +219,44 @@ func MatchMetricFromMessage(msg string) (metric string, ok bool) {
 	return best, true
 }
 
-// BuildChatLLMUserContent builds the user message for browser chat: scan excerpt + original question.
-func BuildChatLLMUserContent(repoName string, info ChatContextInfo, data map[string]any, l1Score int16, userQuestion string) string {
+// ScanEvidenceNonEmpty returns true if data has prompt_context sources or heuristic flags besides language.
+func ScanEvidenceNonEmpty(data map[string]any) bool {
+	if data == nil {
+		return false
+	}
+	if pc, ok := data[PromptContextKey].(map[string]any); ok {
+		if sources, ok := pc["sources"].([]any); ok && len(sources) > 0 {
+			return true
+		}
+	}
+	for k := range data {
+		if k == PromptContextKey || k == LanguageKey {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// BuildChatLLMUserContent builds the user message: repo line, optional scan snippets, question, optional follow-ups.
+func BuildChatLLMUserContent(repoName string, info ChatContextInfo, data map[string]any, userQuestion string) string {
 	if data == nil {
 		data = map[string]any{}
 	}
 	var b strings.Builder
+
 	if info.GeneralChat {
-		b.WriteString(fmt.Sprintf("## Repository: %s\n\n", repoName))
-		appendChatPrimaryLanguageLine(&b, info.PrimaryLanguage)
-		b.WriteString("The user sent a casual or short message (not asking you to review or score the repository).\n\n")
-		b.WriteString("Reply briefly and naturally. Do **not** praise or critique the README, do **not** mention scan scores, and do **not** list what “good” looks like unless they ask about the project.\n\n")
-		b.WriteString("### Optional background (ignore unless they ask something project-related)\n\n")
-		writePromptEvidence(&b, data)
-		b.WriteString("### User message\n\n")
+		b.WriteString(fmt.Sprintf("Repository: **%s**\n\n", repoName))
+		if info.PrimaryLanguage != "" {
+			b.WriteString(fmt.Sprintf("Stack (from scan): **%s**\n\n", info.PrimaryLanguage))
+		}
+		b.WriteString("### Context\n\n")
+		if ScanEvidenceNonEmpty(data) {
+			writePromptEvidence(&b, data)
+		} else {
+			b.WriteString("_No scan excerpts attached._\n\n")
+		}
+		b.WriteString("### Message\n\n")
 		b.WriteString(strings.TrimSpace(userQuestion))
 		out := b.String()
 		if len(out) > maxMetricLLMUserBytes {
@@ -179,36 +265,33 @@ func BuildChatLLMUserContent(repoName string, info ChatContextInfo, data map[str
 		return out
 	}
 
-	title := MetricDisplayName(info.ContextMetric)
-	b.WriteString(fmt.Sprintf("## Repository: %s\n\n", repoName))
-	appendChatPrimaryLanguageLine(&b, info.PrimaryLanguage)
-
-	switch {
-	case info.FallbackToReadme && info.MatchedMetric != "":
-		b.WriteString(fmt.Sprintf(
-			"We matched your question to **%s**, but there is no stored scan for that area yet—using **README** context instead.\n\n",
-			MetricDisplayName(info.MatchedMetric),
-		))
-	case info.UsedDefaultReadme:
-		b.WriteString("**Context:** README (default — your message did not match a specific analysis area).\n\n")
-	default:
-		b.WriteString(fmt.Sprintf("**Context:** %s (matched from your message).\n\n", title))
+	b.WriteString(fmt.Sprintf("Repository: **%s**\n", repoName))
+	b.WriteString(fmt.Sprintf("Topic: **%s**", MetricDisplayName(info.TopicMetric)))
+	if info.UsedDefaultTopic {
+		b.WriteString(" _(default — question did not match a specific area)_")
 	}
+	b.WriteString("\n\n")
 
-	if advice, ok := metricAdvice[info.ContextMetric]; ok {
-		b.WriteString(fmt.Sprintf("What “good” looks like for %s: %s\n\n", title, advice))
-	}
-
-	if l1Score > 0 {
-		b.WriteString(fmt.Sprintf("Automated score for this area: **%d/10** (for context only).\n\n", l1Score))
+	if info.NoScanEvidence {
+		b.WriteString("### Context\n\n")
+		b.WriteString("_No files from our scan for this topic yet._ Give **general, stack-appropriate** guidance")
+		if info.PrimaryLanguage != "" {
+			b.WriteString(fmt.Sprintf(" for **%s**", info.PrimaryLanguage))
+		}
+		b.WriteString(". Keep it short.\n\n")
+		if ups := metricFollowUpSuggestions(info.TopicMetric); len(ups) > 0 {
+			b.WriteString("**Try asking next:**\n")
+			for _, u := range ups {
+				b.WriteString(fmt.Sprintf("- %s\n", u))
+			}
+			b.WriteString("\n")
+		}
 	} else {
-		b.WriteString("_(No score yet for this scan area — run **Rescan analysis (L1)** on the project page if needed.)_\n\n")
+		b.WriteString("### Context (from our scan)\n\n")
+		writePromptEvidence(&b, data)
 	}
 
-	b.WriteString("### Scan evidence\n\n")
-	writePromptEvidence(&b, data)
-
-	b.WriteString("### User question\n\n")
+	b.WriteString("### Question\n\n")
 	b.WriteString(strings.TrimSpace(userQuestion))
 
 	out := b.String()

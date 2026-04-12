@@ -476,15 +476,16 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 
 	matchedMetric, keywordOK := metrics.MatchMetricFromMessage(msg)
 	info := metrics.ChatContextInfo{
-		ContextMetric:     "readme",
-		UsedDefaultReadme: !keywordOK,
+		TopicMetric:      "readme",
+		UsedDefaultTopic: !keywordOK,
 	}
 	if keywordOK {
-		info.MatchedMetric = matchedMetric
+		info.KeywordMatched = true
+		info.MatchedKeyword = matchedMetric
+		info.TopicMetric = matchedMetric
 	}
 
 	var data map[string]any
-	var score int16
 
 	if keywordOK {
 		row, err1 := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
@@ -492,22 +493,18 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 			MetricType: matchedMetric,
 		})
 		if err1 == nil && row.Data != nil {
-			info.ContextMetric = matchedMetric
 			data = row.Data
-			score = row.Score
+			info.NoScanEvidence = false
 		} else {
-			info.FallbackToReadme = true
-			row2, err2 := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
+			// No L1 row for this topic: do not attach README file content as if it were CI/tests/etc.
+			data = map[string]any{}
+			info.NoScanEvidence = true
+			rowRm, errRm := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
 				ProjectID:  projectUUID,
 				MetricType: "readme",
 			})
-			if err2 == nil && row2.Data != nil {
-				info.ContextMetric = "readme"
-				data = row2.Data
-				score = row2.Score
-			} else {
-				info.ContextMetric = matchedMetric
-				data = map[string]any{}
+			if errRm == nil && rowRm.Data != nil {
+				info.PrimaryLanguage = metrics.LanguageFromData(rowRm.Data)
 			}
 		}
 	} else {
@@ -515,36 +512,37 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 			ProjectID:  projectUUID,
 			MetricType: "readme",
 		})
-		info.ContextMetric = "readme"
 		if errR == nil && row.Data != nil {
 			data = row.Data
-			score = row.Score
+			info.NoScanEvidence = false
 		} else {
 			data = map[string]any{}
+			info.NoScanEvidence = true
 		}
 	}
 
-	lang := metrics.LanguageFromData(data)
-	if lang == "" {
+	if info.PrimaryLanguage == "" {
+		info.PrimaryLanguage = metrics.LanguageFromData(data)
+	}
+	if info.PrimaryLanguage == "" {
 		rowRm, errRm := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
 			ProjectID:  projectUUID,
 			MetricType: "readme",
 		})
 		if errRm == nil && rowRm.Data != nil {
-			lang = metrics.LanguageFromData(rowRm.Data)
+			info.PrimaryLanguage = metrics.LanguageFromData(rowRm.Data)
 		}
 	}
-	info.PrimaryLanguage = lang
 
 	info.GeneralChat = metrics.IsGenericChatMessage(msg)
-	userPrompt := metrics.BuildChatLLMUserContent(repoFull, info, data, score, msg)
+	userPrompt := metrics.BuildChatLLMUserContent(repoFull, info, data, msg)
 	writeJSON(w, chatContextResponse{
-		SystemPrompt:      metrics.ChatSystemPromptFor(info.GeneralChat),
+		SystemPrompt:      metrics.ChatExpertSystemPrompt(info),
 		UserPrompt:        userPrompt,
-		MatchedMetric:     info.MatchedMetric,
-		ContextMetric:     info.ContextMetric,
-		UsedDefaultReadme: info.UsedDefaultReadme,
-		FallbackToReadme:  info.FallbackToReadme,
+		MatchedMetric:     info.MatchedKeyword,
+		ContextMetric:     info.TopicMetric,
+		UsedDefaultReadme: info.UsedDefaultTopic,
+		FallbackToReadme:  false,
 	})
 }
 

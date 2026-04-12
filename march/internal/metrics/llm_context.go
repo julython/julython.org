@@ -36,24 +36,8 @@ func MetricDisplayName(metricType string) string {
 	}
 }
 
-// MetricLLMSystemPrompt is the system instruction for browser-side LLM reviews (WebLLM ~4k context, Chrome Prompt API).
-const MetricLLMSystemPrompt = `You are a helpful code quality coach. Be concise and use markdown (short headings, bullets).
-
-Do not paste or quote license text, long legal boilerplate, or repeat large excerpts from the prompt—reference file paths when useful.
-
-The automated scan already produced a score; do not give a new numeric grade or argue about the number. Focus on what is missing or weak and concrete steps to improve.`
-
-// metricAdvice provides per-category context so the LLM knows what "good" looks like.
-var metricAdvice = map[string]string{
-	"readme":    `A good README clearly states what the project does, how to install it, and how to use it with code examples. Badges, screenshots, and a table of contents help for larger projects.`,
-	"tests":     `Good test coverage means tests exist for core functionality, edge cases are handled, and tests are organized and readable. Both unit and integration tests add value.`,
-	"ci":        `Good CI runs tests, linting, and builds automatically on push and PR. Matrix testing across OS/versions, caching, and security scanning are signs of maturity.`,
-	"structure": `Good project structure follows language conventions (e.g. cmd/internal for Go, src/ for JS/Python), has clear entry points, a proper .gitignore, a LICENSE file, and a build/task configuration.`,
-	"linting":   `Good linting setup includes a formatter, a linter with non-trivial rules, editor config, and ideally pre-commit hooks or CI enforcement.`,
-	"deps":      `Good dependency management means a lock file is committed, versions are pinned, the dependency count is reasonable, and automated update tooling (Dependabot/Renovate) is configured.`,
-	"docs":      `Good documentation goes beyond the README — a docs/ directory, generated doc site, quickstart guide, and API reference show a mature project.`,
-	"ai_ready":  `AI-ready projects include configuration files like CLAUDE.md, AGENTS.md, .cursorrules, or copilot-instructions.md that give AI tools context about the project's architecture, conventions, and boundaries.`,
-}
+// MetricLLMSystemPrompt is the system instruction for browser-side metric tile reviews.
+const MetricLLMSystemPrompt = `You are a concise code-quality coach. Use markdown bullets. The L1 score already reflects the scan—explain gaps and next steps; do not assign a new numeric grade.`
 
 // Limits for browser LLM user prompts (small context windows; old DB rows may still hold large snippets).
 const (
@@ -62,37 +46,28 @@ const (
 	maxEvidenceSnippetsTotalBytes = 2200
 )
 
-// BuildMetricLLMUserContent assembles focused evidence for the browser LLM.
+// BuildMetricLLMUserContent assembles focused evidence for the browser LLM (metric tile AI button).
 // Language is read from data[LanguageKey] if present.
 func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName string, l1Score, level int16) string {
 	var b strings.Builder
 	title := MetricDisplayName(metricType)
 	language, _ := data[LanguageKey].(string)
 
-	b.WriteString(fmt.Sprintf("## Reviewing: %s — %s\n\n", repoName, title))
+	b.WriteString(fmt.Sprintf("## %s — %s\n\n", repoName, title))
 	if language != "" {
-		b.WriteString(fmt.Sprintf("Primary language: **%s**\n", language))
+		b.WriteString(fmt.Sprintf("Language: **%s**\n", language))
 	}
-	b.WriteString(fmt.Sprintf("Context: this area already scored **%d/10** on our automated scan (that grade is final here). ", l1Score))
-	b.WriteString("Your job is to explain gaps and improvements—not to re-score.\n\n")
+	b.WriteString(fmt.Sprintf("L1 score: **%d/10** (reference only)\n\n", l1Score))
 
-	// what good looks like for this category
-	if advice, ok := metricAdvice[metricType]; ok {
-		b.WriteString(fmt.Sprintf("What good looks like: %s\n\n", advice))
-	}
-
-	// evidence section
-	b.WriteString("### What the scan found\n\n")
+	b.WriteString("### Evidence\n\n")
 	writePromptEvidence(&b, data)
 
-	b.WriteString("### What to write\n\n")
-	b.WriteString("In plain markdown, briefly cover:\n")
-	b.WriteString("1. What is missing or weakest compared to what “good” looks like for this area\n")
-	b.WriteString("2. A few concrete, actionable steps the maintainer could take\n\n")
+	b.WriteString("### Task\n\n")
+	b.WriteString("Briefly: strengths, gaps, 2–3 concrete improvements")
 	if language != "" {
-		b.WriteString(fmt.Sprintf("Tailor suggestions to a **%s** project (tooling, layout, conventions).\n\n", language))
+		b.WriteString(fmt.Sprintf(" (for **%s**)", language))
 	}
-	b.WriteString("Keep it short. Do not output JSON.")
+	b.WriteString(".")
 
 	out := b.String()
 	if len(out) > maxMetricLLMUserBytes {

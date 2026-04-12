@@ -38,16 +38,28 @@ func TestBuildChatLLMUserContent_IncludesQuestion(t *testing.T) {
 			},
 		},
 	}
-	info := ChatContextInfo{ContextMetric: "readme", UsedDefaultReadme: true, GeneralChat: false, PrimaryLanguage: "Go"}
-	out := BuildChatLLMUserContent("o/r", info, data, 5, "How do I improve the intro?")
+	info := ChatContextInfo{
+		TopicMetric: "readme", UsedDefaultTopic: true, GeneralChat: false, NoScanEvidence: false,
+	}
+	out := BuildChatLLMUserContent("o/r", info, data, "How do I improve the intro?")
 	if !strings.Contains(out, "How do I improve the intro?") {
 		t.Fatalf("missing question: %s", out)
 	}
 	if !strings.Contains(out, "default") {
-		t.Fatalf("expected default readme hint")
+		t.Fatalf("expected default topic hint: %s", out)
 	}
-	if !strings.Contains(out, "Primary language") || !strings.Contains(out, "Go") {
-		t.Fatalf("expected primary language line: %s", out)
+}
+
+func TestBuildChatLLMUserContent_NoScanEvidence_FollowUps(t *testing.T) {
+	info := ChatContextInfo{
+		TopicMetric: "ci", KeywordMatched: true, NoScanEvidence: true, PrimaryLanguage: "Python",
+	}
+	out := BuildChatLLMUserContent("o/r", info, map[string]any{}, "how do I setup ci")
+	if !strings.Contains(out, "No files from our scan") {
+		t.Fatalf("expected no-evidence line: %s", out)
+	}
+	if !strings.Contains(out, "Python") || !strings.Contains(out, "Try asking next") {
+		t.Fatalf("expected language + follow-ups: %s", out)
 	}
 }
 
@@ -60,6 +72,15 @@ func TestLanguageFromData(t *testing.T) {
 	}
 }
 
+func TestScanEvidenceNonEmpty(t *testing.T) {
+	if ScanEvidenceNonEmpty(nil) || ScanEvidenceNonEmpty(map[string]any{}) {
+		t.Fatal()
+	}
+	if !ScanEvidenceNonEmpty(map[string]any{"has_ci": true}) {
+		t.Fatal()
+	}
+}
+
 func TestIsGenericChatMessage(t *testing.T) {
 	if !IsGenericChatMessage("hello") || !IsGenericChatMessage("Hi!") || !IsGenericChatMessage("thanks") {
 		t.Fatal("expected generic")
@@ -69,7 +90,7 @@ func TestIsGenericChatMessage(t *testing.T) {
 	}
 }
 
-func TestBuildChatLLMUserContent_GeneralChat_NoReviewFraming(t *testing.T) {
+func TestBuildChatLLMUserContent_GeneralChat(t *testing.T) {
 	data := map[string]any{
 		PromptContextKey: map[string]any{
 			"sources": []any{
@@ -77,24 +98,23 @@ func TestBuildChatLLMUserContent_GeneralChat_NoReviewFraming(t *testing.T) {
 			},
 		},
 	}
-	info := ChatContextInfo{ContextMetric: "readme", UsedDefaultReadme: true, GeneralChat: true, PrimaryLanguage: "Python"}
-	out := BuildChatLLMUserContent("o/r", info, data, 9, "hello")
+	info := ChatContextInfo{TopicMetric: "readme", GeneralChat: true, PrimaryLanguage: "Python"}
+	out := BuildChatLLMUserContent("o/r", info, data, "hello")
 	if strings.Contains(out, "What “good” looks like") || strings.Contains(out, "Automated score") {
 		t.Fatalf("general chat should not include review framing: %s", out)
 	}
-	if !strings.Contains(out, "Optional background") || !strings.Contains(out, "hello") {
+	if !strings.Contains(out, "### Context") || !strings.Contains(out, "### Message") || !strings.Contains(out, "hello") {
 		t.Fatalf("expected general template: %s", out)
-	}
-	if !strings.Contains(out, "Python") {
-		t.Fatalf("expected primary language in general chat: %s", out)
 	}
 }
 
-func TestChatSystemPromptFor(t *testing.T) {
-	if ChatSystemPromptFor(true) != ChatLLMSystemPromptGeneral {
-		t.Fatal()
+func TestChatExpertSystemPrompt(t *testing.T) {
+	sp := ChatExpertSystemPrompt(ChatContextInfo{TopicMetric: "ci", PrimaryLanguage: "Python", GeneralChat: false})
+	if !strings.Contains(sp, "Python") || !strings.Contains(sp, "CI/CD") {
+		t.Fatalf("unexpected: %s", sp)
 	}
-	if ChatSystemPromptFor(false) != ChatLLMSystemPrompt {
-		t.Fatal()
+	sp2 := ChatExpertSystemPrompt(ChatContextInfo{GeneralChat: true})
+	if sp2 != ChatLLMSystemPromptGeneral {
+		t.Fatalf("got %q", sp2)
 	}
 }
