@@ -25,8 +25,8 @@ func TestBuildMetricLLMUserContent_WithSources(t *testing.T) {
 	if !strings.Contains(out, "README.md") || !strings.Contains(out, "# Hello") {
 		t.Fatalf("expected snippet in output")
 	}
-	if !strings.Contains(out, "actionable steps") {
-		t.Fatalf("expected actionable task instruction")
+	if !strings.Contains(out, "What to write") || !strings.Contains(out, "Do not output JSON") {
+		t.Fatalf("expected coaching task instructions")
 	}
 }
 
@@ -47,8 +47,37 @@ func TestBuildMetricLLMUserContent_HeuristicOnly(t *testing.T) {
 	if !strings.Contains(out, "3/10") {
 		t.Fatalf("expected score in output")
 	}
-	if !strings.Contains(out, "Go-specific") {
+	if !strings.Contains(out, "**Go**") || !strings.Contains(out, "Tailor suggestions") {
 		t.Fatalf("expected language-specific instruction, got:\n%s", out)
+	}
+}
+
+func TestBuildMetricLLMUserContent_PathOnlySource(t *testing.T) {
+	data := map[string]any{
+		PromptContextKey: map[string]any{
+			"sources": []any{
+				map[string]any{"path": "LICENSE", "snippet": ""},
+			},
+		},
+	}
+	out := BuildMetricLLMUserContent("structure", data, "o/r", 5, 1)
+	if !strings.Contains(out, "File present") {
+		t.Fatalf("expected path-only hint, got:\n%s", out)
+	}
+}
+
+func TestBuildMetricLLMUserContent_LegacyHugeSnippetTruncated(t *testing.T) {
+	huge := strings.Repeat("x", 50000)
+	data := map[string]any{
+		PromptContextKey: map[string]any{
+			"sources": []any{
+				map[string]any{"path": "README.md", "snippet": huge},
+			},
+		},
+	}
+	out := BuildMetricLLMUserContent("readme", data, "o/r", 5, 1)
+	if len(out) > maxMetricLLMUserBytes+50 {
+		t.Fatalf("expected user prompt capped, got len %d", len(out))
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 // MetricHelpAnchor returns the HTML fragment ID for per-metric help (/help#…).
@@ -35,8 +36,12 @@ func MetricDisplayName(metricType string) string {
 	}
 }
 
-// MetricLLMSystemPrompt is the system instruction for browser-side LLM reviews.
-const MetricLLMSystemPrompt = `You are a friendly code quality coach reviewing open source projects. Give concise, actionable feedback. Use markdown formatting for structure.`
+// MetricLLMSystemPrompt is the system instruction for browser-side LLM reviews (WebLLM ~4k context, Chrome Prompt API).
+const MetricLLMSystemPrompt = `You are a helpful code quality coach. Be concise and use markdown (short headings, bullets).
+
+Do not paste or quote license text, long legal boilerplate, or repeat large excerpts from the prompt—reference file paths when useful.
+
+The automated scan already produced a score; do not give a new numeric grade or argue about the number. Focus on what is missing or weak and concrete steps to improve.`
 
 // metricAdvice provides per-category context so the LLM knows what "good" looks like.
 var metricAdvice = map[string]string{
@@ -50,6 +55,13 @@ var metricAdvice = map[string]string{
 	"ai_ready":  `AI-ready projects include configuration files like CLAUDE.md, AGENTS.md, .cursorrules, or copilot-instructions.md that give AI tools context about the project's architecture, conventions, and boundaries.`,
 }
 
+// Limits for browser LLM user prompts (small context windows; old DB rows may still hold large snippets).
+const (
+	maxMetricLLMUserBytes     = 3400
+	maxEvidenceSnippetBytes     = 1000
+	maxEvidenceSnippetsTotalBytes = 2200
+)
+
 // BuildMetricLLMUserContent assembles focused evidence for the browser LLM.
 // Language is read from data[LanguageKey] if present.
 func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName string, l1Score, level int16) string {
@@ -61,7 +73,8 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 	if language != "" {
 		b.WriteString(fmt.Sprintf("Primary language: **%s**\n", language))
 	}
-	b.WriteString(fmt.Sprintf("Current automated score: **%d/10**\n\n", l1Score))
+	b.WriteString(fmt.Sprintf("Context: this area already scored **%d/10** on our automated scan (that grade is final here). ", l1Score))
+	b.WriteString("Your job is to explain gaps and improvements—not to re-score.\n\n")
 
 	// what good looks like for this category
 	if advice, ok := metricAdvice[metricType]; ok {
@@ -70,8 +83,28 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 
 	// evidence section
 	b.WriteString("### What the scan found\n\n")
+	writePromptEvidence(&b, data)
 
+	b.WriteString("### What to write\n\n")
+	b.WriteString("In plain markdown, briefly cover:\n")
+	b.WriteString("1. What is missing or weakest compared to what “good” looks like for this area\n")
+	b.WriteString("2. A few concrete, actionable steps the maintainer could take\n\n")
+	if language != "" {
+		b.WriteString(fmt.Sprintf("Tailor suggestions to a **%s** project (tooling, layout, conventions).\n\n", language))
+	}
+	b.WriteString("Keep it short. Do not output JSON.")
+
+	out := b.String()
+	if len(out) > maxMetricLLMUserBytes {
+		out = truncateUTF8(out, maxMetricLLMUserBytes)
+	}
+	return out
+}
+
+// writePromptEvidence appends file snippets and/or heuristic checklist lines from L1 data.
+func writePromptEvidence(b *strings.Builder, data map[string]any) {
 	hasSources := false
+	evidenceBudget := maxEvidenceSnippetsTotalBytes
 	if pc, ok := data[PromptContextKey].(map[string]any); ok {
 		if sources, ok := pc["sources"].([]any); ok && len(sources) > 0 {
 			hasSources = true
@@ -86,10 +119,20 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 					continue
 				}
 				b.WriteString(fmt.Sprintf("**%s**\n", path))
-				if snip != "" {
-					b.WriteString("```\n")
-					b.WriteString(snip)
-					b.WriteString("\n```\n\n")
+				if snip == "" {
+					b.WriteString("_File present — contents omitted._\n\n")
+					continue
+				}
+				snip = truncateUTF8(snip, maxEvidenceSnippetBytes)
+				if len(snip) > evidenceBudget {
+					snip = truncateUTF8(snip, evidenceBudget)
+				}
+				evidenceBudget -= len(snip)
+				b.WriteString("```\n")
+				b.WriteString(snip)
+				b.WriteString("\n```\n\n")
+				if evidenceBudget < 80 {
+					break
 				}
 			}
 		}
@@ -99,18 +142,20 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 		b.WriteString(formatHeuristicSignals(data))
 		b.WriteString("\n\n")
 	}
+}
 
-	b.WriteString("### Your task\n\n")
-	b.WriteString("Based on the evidence above:\n")
-	b.WriteString("1. Briefly explain what this project is doing well\n")
-	b.WriteString("2. List 2-3 specific, actionable steps the maintainer could take today to improve\n")
-	b.WriteString("3. End with an updated score suggestion out of 10\n\n")
-	if language != "" {
-		b.WriteString(fmt.Sprintf("All suggestions must be appropriate for a %s project — use %s-specific tooling, conventions, and directory structures.\n", language, language))
+func truncateUTF8(s string, maxBytes int) string {
+	if maxBytes <= 0 {
+		return ""
 	}
-	b.WriteString("Keep it concise — aim for a short paragraph plus a few bullet points.")
-
-	return b.String()
+	if len(s) <= maxBytes {
+		return s
+	}
+	s = s[:maxBytes]
+	for len(s) > 0 && !utf8.ValidString(s) {
+		s = s[:len(s)-1]
+	}
+	return s
 }
 
 // formatHeuristicSignals turns boolean/string flags into readable checkmarks.

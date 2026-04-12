@@ -458,8 +458,9 @@ templ projectChatPanel(data ProjectDetailData) {
 				<button
 					type="button"
 					id="llm-cache-clear"
-					class="hidden text-sm px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0"
-					title={ i18n.T(ctx, "projects.ClearModelCache") }
+					class="text-sm px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0"
+					title={ i18n.T(ctx, "projects.ClearModelCacheHint") }
+					data-clear-hint={ i18n.T(ctx, "projects.ClearModelCacheHint") }
 				>
 					{ i18n.T(ctx, "projects.ClearModelCache") }
 				</button>

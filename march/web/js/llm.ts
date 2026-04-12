@@ -241,25 +241,6 @@ export async function createSession(
   );
 }
 
-/** Parse {"score":N,"message":"..."} from model output (allows extra prose). */
-export function parseMetricAnalysisJSON(text: string): { score: number; message: string } | null {
-  const trimmed = text.trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start < 0 || end <= start) return null;
-  try {
-    const o = JSON.parse(trimmed.slice(start, end + 1)) as { score?: unknown; message?: unknown };
-    if (typeof o.message !== "string") return null;
-    const n = Number(o.score);
-    if (!Number.isFinite(n)) return null;
-    const score = Math.round(n);
-    if (score < 0 || score > 10) return null;
-    return { score, message: o.message };
-  } catch {
-    return null;
-  }
-}
-
 /** System prompt for repo chat using URL and project description in the prompt. */
 export function buildMinimalChatSystemPrompt(
   repoDisplay: string,
