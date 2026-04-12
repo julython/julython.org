@@ -1,8 +1,7 @@
 // Server-backed analysis (L1) + browser LLM for metric reviews and general questions.
 import {
-  createSession, buildMinimalChatSystemPrompt, deleteCachedModels,
+  createSession, deleteCachedModels,
   getCachedModels, MODELS, DEFAULT_MODEL,
-  parseMetricAnalysisJSON,
   type LLMSession,
 } from "./llm";
 
@@ -109,13 +108,17 @@ function buildUI(cfg: UIConfig): HTMLElement {
 
   const refreshDeleteBtn = async () => {
     if (!deleteBtn) return;
+    if (!deleteBtn.dataset.defaultLabel) {
+      deleteBtn.dataset.defaultLabel = deleteBtn.textContent.trim() || "Clear";
+    }
+    const hint = (deleteBtn.dataset.clearHint ?? "").trim();
     const cached = await getCachedModels();
-    const hit = cached.find(c => c.modelId === modelSelect.value);
+    const hit = cached.find((c) => c.modelId === modelSelect.value);
+    deleteBtn.textContent = deleteBtn.dataset.defaultLabel;
     if (hit) {
-      deleteBtn.textContent = `Clear cache (${hit.sizeMB}MB)`;
-      deleteBtn.classList.remove("hidden");
+      deleteBtn.title = hint ? `${hint} (${hit.sizeMB} MB on disk)` : `${hit.sizeMB} MB on disk`;
     } else {
-      deleteBtn.classList.add("hidden");
+      deleteBtn.title = hint;
     }
   };
   void refreshDeleteBtn();
@@ -131,12 +134,10 @@ function buildUI(cfg: UIConfig): HTMLElement {
     const rec = MODELS.find(m => m.id === modelId)!;
     if (!confirm(`Delete the cached "${rec.label}" model? You'll need to re-download it next time.`)) return;
     deleteBtn.disabled = true;
-    const prev = deleteBtn.textContent;
     deleteBtn.textContent = "Deleting…";
     await deleteCachedModels(modelId);
     await refreshDeleteBtn();
     deleteBtn.disabled = false;
-    deleteBtn.textContent = prev ?? "Clear model cache";
   });
 
   async function getOrCreateLlmSession(systemPrompt: string): Promise<LLMSession | null> {
@@ -175,31 +176,53 @@ function buildUI(cfg: UIConfig): HTMLElement {
     chatBtn.disabled = true;
     appendChat(chatLog, "you", q);
 
-    const systemPrompt = buildMinimalChatSystemPrompt(cfg.repoName, cfg.repoURL, cfg.repoDescription);
-
-    if (!llmSession) {
-      const modelId = modelSelect.value;
-      const statusBubble = appendChat(chatLog, "ai", "");
-      setSpinner(statusBubble, "Checking for browser AI…");
-      try {
-        llmSession = await createSession(
-          systemPrompt,
-          modelId,
-          cfg.llmWorkerURL,
-          (msg) => { statusBubble.textContent = msg; },
-        );
-        statusBubble.closest("div")?.remove();
-        await refreshDeleteBtn();
-      } catch (e) {
-        statusBubble.textContent = (e as Error).message;
+    let bundle: { systemPrompt: string; userPrompt: string };
+    try {
+      const res = await fetch(
+        `/api/projects/${encodeURIComponent(cfg.projectID)}/analysis/chat-context`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: q }),
+        },
+      );
+      if (!res.ok) {
+        const raw = await res.text().catch(() => res.statusText);
+        appendChat(chatLog, "ai", formatMetricLLMHttpError(res.status, raw));
         chatBtn.disabled = false;
         return;
       }
+      bundle = await res.json() as { systemPrompt: string; userPrompt: string };
+    } catch (e) {
+      appendChat(chatLog, "ai", `**Error:** ${(e as Error).message}`);
+      chatBtn.disabled = false;
+      return;
+    }
+
+    destroyLlmSession();
+
+    const modelId = modelSelect.value;
+    const statusBubble = appendChat(chatLog, "ai", "");
+    setSpinner(statusBubble, "Checking for browser AI…");
+    try {
+      llmSession = await createSession(
+        bundle.systemPrompt,
+        modelId,
+        cfg.llmWorkerURL,
+        (msg) => { statusBubble.textContent = msg; },
+      );
+      statusBubble.closest("div")?.remove();
+      await refreshDeleteBtn();
+    } catch (e) {
+      statusBubble.textContent = (e as Error).message;
+      chatBtn.disabled = false;
+      return;
     }
 
     const bubble = appendChat(chatLog, "ai", "");
     setSpinner(bubble, "Thinking…");
-    await llmSession!.prompt(q, (fullText) => { updateBubble(bubble, fullText); });
+    await llmSession!.prompt(bundle.userPrompt, (fullText) => { updateBubble(bubble, fullText); });
     chatBtn.disabled = false;
   };
 
@@ -263,11 +286,7 @@ async function runMetricAIReview(
     return;
   }
   const ctx = await res.json() as {
-    metricType: string;
     repoName: string;
-    l1Score: number;
-    level: number;
-    sha: string;
     systemPrompt: string;
     userPrompt: string;
   };
@@ -292,35 +311,12 @@ async function runMetricAIReview(
     return;
   }
 
-  const parsed = parseMetricAnalysisJSON(raw);
-  if (parsed) {
-    updateBubble(
-      bubble,
-      `**${label} — ${parsed.score}/10**\n\n${parsed.message}`,
-    );
-    if (ctx.level < 2 && ctx.sha) {
-      try {
-        const post = await fetch(`/api/projects/${encodeURIComponent(projectID)}/analysis`, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sha: ctx.sha,
-            metricType: ctx.metricType,
-            level: 2,
-            data: { ai_review: parsed.message, ai_score: parsed.score },
-          }),
-        });
-        if (!post.ok) {
-          appendChat(a.chatLog, "ai", `_(Could not save AI tier: ${post.status})_`);
-        }
-      } catch {
-        appendChat(a.chatLog, "ai", "_(Could not save AI tier — network error)_");
-      }
-    }
-  } else {
-    updateBubble(bubble, raw || "(empty response)");
-  }
+  updateBubble(
+    bubble,
+    raw.trim()
+      ? `**${label}**\n\n${raw.trim()}`
+      : "(empty response)",
+  );
 
   a.destroyLlmSession();
 }

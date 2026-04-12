@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// maxPromptContextBytes is the total cap for all snippet text stored in analysis_metrics.data
+// (prompt_context) and fed to browser LLMs. Keeps WebLLM (~4k context) and Chrome AI prompts usable.
+const maxPromptContextBytes = 3000
+
 // PromptContextKey is stored alongside scored bool fields in analysis_metrics.data for L2/L3 prompts.
 const PromptContextKey = "prompt_context"
 
@@ -125,7 +129,7 @@ func evalReadme(by map[string][]FileMatch, paths map[string]bool) readmeEval {
 	}
 	data, _ := structToMap(r)
 	src := promptSourcesForMetric([]sourceSpec{
-		{path: firstPath(by, "readme"), content: text, maxBytes: 8000},
+		{path: firstPath(by, "readme"), content: text, maxBytes: 2200},
 	})
 	addPromptContext(data, src)
 	return readmeEval{tile: r, data: data}
@@ -155,7 +159,7 @@ func evalTests(by map[string][]FileMatch, paths map[string]bool, content map[str
 			break
 		}
 		if m.Content != "" {
-			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 6000})
+			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1200})
 		}
 	}
 	addPromptContext(data, promptSourcesForMetric(specs))
@@ -196,11 +200,11 @@ func evalCI(by map[string][]FileMatch, paths map[string]bool) ciEval {
 	data, _ := structToMap(c)
 	var specs []sourceSpec
 	if yamlPath != "" && yamlText != "" {
-		specs = append(specs, sourceSpec{path: yamlPath, content: yamlText, maxBytes: 12000})
+		specs = append(specs, sourceSpec{path: yamlPath, content: yamlText, maxBytes: 1800})
 	} else {
 		for _, m := range by["ci"] {
 			if m.Content != "" {
-				specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 12000})
+				specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1800})
 				break
 			}
 		}
@@ -226,8 +230,9 @@ func evalStructure(by map[string][]FileMatch, paths map[string]bool) structureEv
 	}
 	data, _ := structToMap(s)
 	var specs []sourceSpec
-	if c := firstContent(by, "license"); c != "" {
-		specs = append(specs, sourceSpec{path: firstPath(by, "license"), content: c, maxBytes: 4000})
+	// Presence of LICENSE matters for scoring; full text is noise for small-context browser LLMs.
+	if p := firstPath(by, "license"); p != "" {
+		specs = append(specs, sourceSpec{path: p, content: "", maxBytes: 0})
 	}
 	addPromptContext(data, promptSourcesForMetric(specs))
 	return structureEval{tile: s, data: data}
@@ -250,7 +255,7 @@ func evalLinting(by map[string][]FileMatch, paths map[string]bool) lintEval {
 	var specs []sourceSpec
 	for _, m := range by["linting"] {
 		if m.Content != "" {
-			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 6000})
+			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1200})
 			if len(specs) >= 2 {
 				break
 			}
@@ -279,7 +284,7 @@ func evalDeps(by map[string][]FileMatch, paths map[string]bool) depsEval {
 	var specs []sourceSpec
 	for _, m := range by["dependencies"] {
 		if m.Content != "" {
-			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 8000})
+			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1500})
 			if len(specs) >= 2 {
 				break
 			}
@@ -310,7 +315,7 @@ func evalDocs(by map[string][]FileMatch, paths map[string]bool) docsEval {
 	var specs []sourceSpec
 	for _, m := range by["docs"] {
 		if m.Content != "" {
-			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 8000})
+			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1200})
 			if len(specs) >= 3 {
 				break
 			}
@@ -341,7 +346,7 @@ func evalAIReady(by map[string][]FileMatch, paths map[string]bool) aiEval {
 	var specs []sourceSpec
 	for _, m := range by["ai_readability"] {
 		if m.Content != "" {
-			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 8000})
+			specs = append(specs, sourceSpec{path: m.Path, content: m.Content, maxBytes: 1500})
 			if len(specs) >= 3 {
 				break
 			}
@@ -375,21 +380,35 @@ func promptSourcesForMetric(specs []sourceSpec) []map[string]string {
 	const maxSources = 5
 	var out []map[string]string
 	total := 0
-	const maxTotal = 48000
 	for _, s := range specs {
-		if s.path == "" || s.content == "" {
+		if s.path == "" {
+			continue
+		}
+		// Path-only: file matters for the metric but body is not useful in-context (e.g. LICENSE).
+		if s.content == "" {
+			out = append(out, map[string]string{"path": s.path, "snippet": ""})
+			if len(out) >= maxSources {
+				break
+			}
 			continue
 		}
 		max := s.maxBytes
 		if max <= 0 {
-			max = 8000
+			max = 2000
+		}
+		if max > 2200 {
+			max = 2200
 		}
 		sn := s.content
 		if len(sn) > max {
 			sn = sn[:max]
 		}
-		if total+len(sn) > maxTotal {
-			break
+		if total+len(sn) > maxPromptContextBytes {
+			remain := maxPromptContextBytes - total
+			if remain < 80 {
+				break
+			}
+			sn = sn[:remain]
 		}
 		out = append(out, map[string]string{"path": s.path, "snippet": sn})
 		total += len(sn)
