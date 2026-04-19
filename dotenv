@@ -1,12 +1,16 @@
-# project secrets (ask for these)
+# Database
+PROD_DATABASE_URL=postgres://july:july@localhost:5432/july?sslmode=disable
 
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
+# Server
+JULY_PORT=8080
 
-# Project settings for development
+# GitHub OAuth (for user login)
+JULY_GITHUB_CLIENT_ID=your_client_id
+JULY_GITHUB_CLIENT_SECRET=your_client_secret
+JULY_GITHUB_REDIRECT_URL=http://localhost:8080/auth/github/callback
 
-JSON_LOGGING=false
-IS_DEV=true
-IS_LOCAL=true
-DEBUG=true
-GITHUB_WEBHOOK_URL=http://localhost:8000/api/v1/github
+# Session secret
+JULY_SESSION_SECRET=change-me-in-production
+
+# Optional: Redis for sessions
+JULY_REDIS_URL=redis://localhost:6379
