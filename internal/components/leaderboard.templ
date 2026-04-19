@@ -200,8 +200,9 @@ templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardRow(entry ProjectLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)
-</td>
+		<td class="px-6 py-4">
+			@rankCell(entry.Rank)
+		</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", entry.Slug)) } class="group">
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.ProjectName }</span>
@@ -269,8 +270,9 @@ templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)
-</td>
+		<td class="px-6 py-4">
+			@rankCell(entry.Rank)
+		</td>
 		<td class="px-6 py-4">
 			<span class="font-medium text-white">{ entry.LanguageName }</span>
 		</td>
@@ -288,26 +290,23 @@ templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 // leaderboardTabs renders the Users / Projects / Languages nav.
 // active is one of: "users", "projects", "languages"
 templ leaderboardTabs(ctx context.Context, active string) {
-	<div class="flex gap-4 mb-6">
-		<a
-			href="/leaders"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "users"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "users") }
-		>
-			{ i18n.T(ctx, "Users") }
-		</a>
-		<a
-			href="/leaders/projects"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "projects"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "projects") }
-		>
-			{ i18n.T(ctx, "Projects") }
-		</a>
-		<a
-			href="/leaders/languages"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "languages"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "languages") }
-		>
-			{ i18n.T(ctx, "Languages") }
-		</a>
-	</div>
+	@Tabs(
+		Tab(TabProps{
+			Href:     "/leaders",
+			Label:    i18n.T(ctx, "Users"),
+			IsActive: active == "users",
+		}),
+		Tab(TabProps{
+			Href:     "/leaders/projects",
+			Label:    i18n.T(ctx, "Projects"),
+			IsActive: active == "projects",
+		}),
+		Tab(TabProps{
+			Href:     "/leaders/languages",
+			Label:    i18n.T(ctx, "Languages"),
+			IsActive: active == "languages",
+		}),
+	)
 }
 
 // rankCell renders the medal emoji or #N rank label.
