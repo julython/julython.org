@@ -1,95 +1,216 @@
-REQUIREMENTS		:= pyproject.toml
-SHELL				:= /bin/bash
-VIRTUAL_ENV			:= .venv
-PYTHON				:= $(shell command -v python3 || command -v python)
-app_name 			:= july
-git_sha				:= $(shell git rev-parse --short=8 HEAD)
-image				:= gcr.io/julython/julython:$(git_sha)
-
-# Setup the env
-export PYTHONPATH = ./
-
-# PHONY just means this target does not make any files
-.PHONY: setup clean test help
+git_sha  := $(shell git rev-parse --short=8 HEAD)
+image    := gcr.io/julython/julython-go:$(git_sha)
 
 default: help
 
-# Make sure the virtualenv exists, create it if not.
-$(VIRTUAL_ENV):
-	uv sync
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
 
-# Check for the existence/timestamp of .reqs-installed if the
-# file is missing or older than the pyproject.toml this will run pip
-$(VIRTUAL_ENV)/.reqs-installed: $(REQUIREMENTS)
-	uv sync
-	touch $(VIRTUAL_ENV)/.reqs-installed
+export TZ=UTC
 
-.env:
-	cp dotenv .env
+# ============================================
+# Platform detection (for Tailwind binary)
+# ============================================
 
-setup: .env $(VIRTUAL_ENV) $(VIRTUAL_ENV)/.reqs-installed ## Setup local environment
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_S),Darwin)
+    ifeq ($(UNAME_M),arm64)
+        TAILWIND_PLATFORM := macos-arm64
+    else
+        TAILWIND_PLATFORM := macos-x64
+    endif
+else
+    ifeq ($(UNAME_M),aarch64)
+        TAILWIND_PLATFORM := linux-arm64
+    else
+        TAILWIND_PLATFORM := linux-x64
+    endif
+endif
 
-deps: ## Make sure the docker deps are running
+TAILWIND_VERSION := 4.1.18
+HTMX_VERSION     := 2.0.8
+MERMAID_VERSION  := 11.4.1
+WEBLLM_VERSION   := 0.2.82
+TAILWIND_BIN     := bin/tailwindcss
+TAILWIND_URL     := https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TAILWIND_VERSION)/tailwindcss-$(TAILWIND_PLATFORM)
+HTMX_URL         := https://unpkg.com/htmx.org@$(HTMX_VERSION)/dist/htmx.min.js
+HTMX_DEST        := web/assets/htmx-$(HTMX_VERSION).min.js
+MERMAID_URL      := https://cdn.jsdelivr.net/npm/mermaid@$(MERMAID_VERSION)/dist/mermaid.min.js
+MERMAID_DEST     := web/assets/mermaid-$(MERMAID_VERSION).min.js
+WEBLLM_TGZ_URL    := https://registry.npmjs.org/@mlc-ai/web-llm/-/web-llm-$(WEBLLM_VERSION).tgz
+WEBLLM_VENDOR_DIR := web/vendor/mlc-web-llm
+WEBLLM_TGZ        := tmp/web-llm-$(WEBLLM_VERSION).tgz
+LOCALES_DIR      := internal/i18n/locales
+DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=disable
+
+# ============================================
+# Setup
+# ============================================
+
+setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+	go install github.com/a-h/templ/cmd/templ@v0.3.1001
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+	go install github.com/air-verse/air@v1.61.7
+	go install gotest.tools/gotestsum@v1.13.0
+	go mod tidy
+
+$(TAILWIND_BIN):
+	@mkdir -p bin
+	@echo "→ Downloading Tailwind CSS v$(TAILWIND_VERSION) ($(TAILWIND_PLATFORM))..."
+	@curl -fsSL $(TAILWIND_URL) -o $@
+	@chmod +x $@
+	@echo "✓ $(TAILWIND_BIN)"
+
+$(HTMX_DEST):
+	@mkdir -p web/assets
+	@echo "→ Downloading HTMX v$(HTMX_VERSION)..."
+	@curl -fsSL $(HTMX_URL) -o $@
+	@echo "✓ $(HTMX_DEST)"
+
+$(MERMAID_DEST):
+	@mkdir -p web/assets
+	@echo "→ Downloading Mermaid v$(MERMAID_VERSION)..."
+	@curl -fsSL $(MERMAID_URL) -o $@
+	@echo "✓ $(MERMAID_DEST)"
+
+# @mlc-ai/web-llm from npm (not committed; see web/vendor/ in .gitignore). Run make setup before make generate.
+$(WEBLLM_VENDOR_DIR)/lib/index.js:
+	@mkdir -p tmp web/vendor
+	@echo "→ Downloading @mlc-ai/web-llm v$(WEBLLM_VERSION)..."
+	@curl -fsSL $(WEBLLM_TGZ_URL) -o $(WEBLLM_TGZ)
+	@rm -rf $(WEBLLM_VENDOR_DIR)
+	@mkdir -p $(WEBLLM_VENDOR_DIR)
+	@tar -xzf $(WEBLLM_TGZ) -C $(WEBLLM_VENDOR_DIR) --strip-components=1 package
+	@echo "✓ $(WEBLLM_VENDOR_DIR)"
+
+compose-deps:  ## Run shared services
 	docker compose up -d postgres adminer
 
-up: dev  ## Alias: Run the service in docker
-dev: ## Run the service in docker
-	docker compose up api smee --build
+compose-up:  ## Run the shared services in docker
+	docker compose up api smee
 
-dev-ui: ## Run the ui in dev mode
-	pushd ui && npm i && npm run dev
+compose-down:  ## Stop the docker services
+	docker compose down
 
-test: deps ## Run pytests
-	$(VIRTUAL_ENV)/bin/pytest
+# ============================================
+# Development
+# ============================================
 
-test-failed: deps ## Re-Run pytest on tests that failed
-	$(VIRTUAL_ENV)/bin/pytest --lf
+dev: ## Run the site locally in dev mode
+	air -c .air.toml
 
-build:  ## Build the docker image
+run: generate  ## Run the site like in production
+	go run cmd/server/main.go
+
+compile: generate  ## Compile the source
+	go build -o bin/july ./cmd/server
+
+build: generate ## Build docker image
 	docker build . -t $(image)
 
-push:  ## Push the docker image
+push:  ## Push docker image
 	docker push $(image)
 
-deploy: ## deploy to gcloud
-	gcloud run deploy julython \
+deploy:  ## Deploy to gcloud
+	gcloud run deploy julython-go \
 		--image $(image) \
 		--platform managed \
 		--region us-central1 \
 		--allow-unauthenticated
 
-db_create: deps ## Create the initial database
-	$(VIRTUAL_ENV)/bin/python -m $(app_name) db create
+clean:  ## Clean up build artifacts (keeps vendored assets)
+	rm -rf tmp bin coverage.out
+	rm -f web/assets/tailwind*.css
+	rm -f internal/components/assets_gen.go
 
-migrate: deps  ## Upgrade the database by applying migrations
-	$(VIRTUAL_ENV)/bin/python -m $(app_name) db upgrade
+# ============================================
+# Code Generation
+# ============================================
 
-upgrade: migrate  ## Alias: Upgrade the database by applying migrations
+generate: sqlc templ tailwind  ## Generate sql, templ, and asset files
 
-downgrade: deps ## Downgrade the database to the previous revision
-	$(VIRTUAL_ENV)/bin/python -m $(app_name) db downgrade
+sqlc:  ## Generate sqlc files
+	sqlc generate
 
-prod-create:  ## Create DB in prod
-	docker compose run --build --rm prod db create
+templ:  ## Generate templ files
+	templ generate
 
-prod-upgrade:  ## Upgrade DB in prod
-	docker compose run --build --rm prod db upgrade
+tailwind:  ## Build Tailwind + asset manifest (needs make setup for web/vendor WebLLM)
+	go run ./cmd/assetgen
 
-prod-downgrade: ## Downgrade DB in prod
-	docker compose run --build --rm prod db downgrade
+# ============================================
+# Testing
+# ============================================
 
-prod-game:  ## Create a game in prod (`make prod-game args="--active --deactivate 2026-01-01")
-	docker compose run --build --rm prod addgame $(args)
+test-clean:
+	go clean -testcache
 
-game: deps  ## Create a game locally (`make game args="--active --deactivate 2026-01-01")
-	docker compose run --build --rm api addgame $(args)
+test:  ## Run the tests
+	gotestsum --format short -- -race ./...
 
-revision: deps ## Generate a new database migration script  (`make revision message="Message"`)
-	$(VIRTUAL_ENV)/bin/python -m $(app_name) db revision -m "$(message)"
+test-v: test-clean  ## Run the tests with verbose output
+	gotestsum --format short-verbose -- -race ./...
 
+test-dots:  ## Run the tests with dot output
+	gotestsum --format dots -- -race ./...
 
-help:
-	@@grep -h '^[a-zA-Z]' $(MAKEFILE_LIST) | awk -F ':.*?## ' 'NF==2 {printf "   %-20s%s\n", $$1, $$2}' | sort
+test-cover:  ## Run tests and generate coverage report
+	gotestsum --format testname -- -coverprofile=coverage.out -coverpkg=./internal/... ./...
+	go tool cover -func=coverage.out | grep -v 100.0
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
 
+test-watch:  ## Run the tests in watch mode
+	gotestsum --watch --format testname
 
-.PHONY: help up dev test
+# ============================================
+# Database Migrations
+# ============================================
+
+migrate-up:  ## Migrate the database up
+	migrate -path migrations -database "$(DATABASE_URL)" up
+
+migrate-down:  ## Migrate the database down
+	migrate -path migrations -database "$(DATABASE_URL)" down 1
+
+migrate-new:  ## New migration (make migrate-new name=description_here)
+	@if [ -z "$(name)" ]; then echo "Usage: make migrate-new name=description"; exit 1; fi
+	migrate create -ext sql -dir migrations -format "20060102" $(name)
+
+migrate-status:  ## Show the migration status
+	migrate -path migrations -database "$(DATABASE_URL)" version
+
+migrate-prod-up:  ## Migrate production up
+	migrate -path migrations -database "$(PROD_DATABASE_URL)" up
+
+migrate-prod-down:  ## Migrate production down
+	migrate -path migrations -database "$(PROD_DATABASE_URL)" down 1
+
+migrate-prod-status:  ## Show production status
+	migrate -path migrations -database "$(PROD_DATABASE_URL)" version
+
+# ============================================
+# i18n
+# ============================================
+
+i18n:  ## Sync missing i18n keys to locale files
+	go run ./cmd/i18nsync -locales=$(LOCALES_DIR)
+
+# ============================================
+# Help
+# ============================================
+
+help:  ## Help is on the way
+	@echo "Julython golang application"
+	@echo ""
+	@echo "Available Commands:"
+	@grep -h '^[a-zA-Z]' $(MAKEFILE_LIST) | awk -F ':.*?## ' 'NF==2 {printf "   %-20s%s\n", $$1, $$2}' | sort
+
+.PHONY: help setup dev run build push deploy test clean generate sqlc templ tailwind \
+        compose-up compose-down migrate-up migrate-down migrate-new migrate-status \
+        migrate-prod-up migrate-prod-down migrate-prod-status i18n test-v test-dots \
+        test-cover test-watch compile

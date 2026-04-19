@@ -1,45 +1,34 @@
-FROM node:22-alpine AS ui-build
-WORKDIR /ui
-COPY ui/package*.json ./
-RUN npm ci
-COPY ui/ ./
-RUN npm run build
+# Build stage
+FROM golang:1.26-alpine AS builder
 
-# Use a Python image with uv pre-installed
-FROM ghcr.io/astral-sh/uv:python3.14-trixie
-
-# Install the project into `/app`
 WORKDIR /app
 
-# Enable bytecode compilation
-ENV UV_COMPILE_BYTECODE=1
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
 
-# Copy from the cache instead of linking since it's a mounted volume
-ENV UV_LINK_MODE=copy
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Omit development dependencies
-ENV UV_NO_DEV=1
+# Copy source code
+COPY . .
 
-# Ensure installed tools can be executed out of the box
-ENV UV_TOOL_BIN_DIR=/usr/local/bin
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/july ./cmd/server
 
-COPY uv.lock pyproject.toml /
+# Production stage
+FROM alpine:3.20 AS prod
 
-# Install the project's dependencies using the lockfile and settings
-RUN uv sync --locked --no-install-project
+WORKDIR /app
 
-# Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
-COPY . /app
-RUN uv sync --locked
+# Install ca-certificates for HTTPS and tzdata for timezones
+RUN apk add --no-cache ca-certificates tzdata
 
-# Add UI
-COPY --from=ui-build /ui/dist ./static
+# Copy binary from builder
+COPY --from=builder /app/bin/july /app/bin/july
+COPY migrations /app/migrations
 
-# Place executables in the environment at the front of the path
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Expose the port and run the service
 EXPOSE 8000
-ENTRYPOINT ["python", "-m", "july"]
-CMD ["prod"]
+
+ENTRYPOINT ["/app/bin/july"]
+CMD ["serve"]

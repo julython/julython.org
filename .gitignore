@@ -1,18 +1,10 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-.coverage
-
-# Virtual environments
-.venv
-
-# Settings
+bin/*
+tmp/*
+web/vendor/
+coverage.*
 .env*
-
-# Node
-node_modules
-.tanstack/
+.claude
+web/assets/tailwind.*.css
+web/assets/analyzer.*.js
+web/assets/llm-worker.*.js
+internal/components/assets_gen.go

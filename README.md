@@ -16,7 +16,7 @@ For those on the leader board though you will have to push your commits to a pub
 
 ## Help
 
-This site is constaintly be tweaked and occasionally problems arise. If you run into errors or just have general questions hit us up:
+This site is constantly be tweaked and occasionally problems arise. If you run into errors or just have general questions hit us up:
 
 Follow us on twitter at `@julython <https://twitter.com/#!/julython>`\_.
 
@@ -24,9 +24,11 @@ Email us `help@julython.org <mailto:help@julython.org>`\_.
 
 ## Hacking
 
-This site was originally a Django website (preserved in `june`), we have since converted this to FastAPI and React (`july` and `ui` subfolders). If you want to get started make sure you have `uv` and `docker` installed:
+This site has evolved several times. It was originally a Django website, then converted to FastAPI and React (now preserved in the `legacy` and `pre-2026` branch). It has now been rewritten in **Go**.
 
-- https://docs.astral.sh/uv/getting-started/installation/
+If you want to get started make sure you have `Go` and `docker` installed:
+
+- https://go.dev/doc/install
 - https://www.docker.com/get-started/
 
 Next if you are on Windows please consider installing Linux as we will not support you ;) All the following commands require `make` which is a rather old technology but still highly useful.
