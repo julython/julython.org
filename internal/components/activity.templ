@@ -1,0 +1,59 @@
+package components
+
+type ActivityData struct {
+	Commits []RecentCommit
+}
+
+templ ActivityPage(layout LayoutData, data ActivityData) {
+	@Layout(layout) {
+		<main class="max-w-7xl mx-auto px-4 py-8">
+			<div class="flex items-center justify-between mb-8">
+				<h1 class="text-3xl font-bold text-july-400">Recent Activity</h1>
+			</div>
+			<div class="bg-surface rounded-xl border border-white/10 overflow-hidden">
+				if len(data.Commits) == 0 {
+					<div class="p-8 text-center text-gray-500">
+						<p>No recent activity found.</p>
+					</div>
+				} else {
+					<div class="divide-y divide-white/10">
+						for _, commit := range data.Commits {
+							@RecentActivityRow(commit)
+						}
+					</div>
+				}
+			</div>
+		</main>
+	}
+}
+
+templ RecentActivityRow(commit RecentCommit) {
+	<div class="p-4 hover:bg-surface-light/50 transition-colors group">
+		<div class="flex items-start gap-3">
+			if commit.AvatarURL != "" {
+				<img src="{commit.AvatarURL}" alt="" class="w-10 h-10 rounded-full flex-shrink-0"/>
+			} else {
+				<div class="w-10 h-10 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0">
+					{ string(commit.Username[0]) }
+				</div>
+			}
+			<div class="min-w-0 flex-1">
+				<p class="text-sm">
+					<a href="/user/{commit.Username}" class="font-medium text-white hover:text-july-400 transition-colors">
+						{ commit.Username }
+					</a>
+					<span class="text-gray-500">pushed to </span>
+					<a href="/projects/{commit.Project}" class="text-gray-300 hover:text-july-400 transition-colors">
+						{ commit.Project }
+					</a>
+				</p>
+				<p class="text-sm text-gray-500 truncate" title="{commit.Message}">
+					{ commit.Message }
+				</p>
+				<p class="text-xs text-gray-600 mt-1">
+					{ commit.TimeAgo }
+				</p>
+			</div>
+		</div>
+	</div>
+}
