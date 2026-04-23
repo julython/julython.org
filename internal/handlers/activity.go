@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -31,6 +32,19 @@ func (h *ActivityHandler) Activity(w http.ResponseWriter, r *http.Request) {
 	// Get active or latest game
 	game, err := h.gameService.GetActiveOrLatestGame(ctx)
 	if err != nil {
+		if errors.Is(err, services.ErrNoActiveGame) {
+			// No game yet - render empty activity page
+			layout := components.LayoutData{
+				Title:       "Recent Activity",
+				CurrentPath: "/activity",
+				User:        getUserFromContext(r),
+			}
+
+			components.ActivityPage(layout, components.ActivityData{
+				Commits: []components.RecentCommit{},
+			}).Render(ctx, w)
+			return
+		}
 		http.Error(w, "Game not found", http.StatusNotFound)
 		return
 	}
@@ -60,17 +74,17 @@ func (h *ActivityHandler) getRecentCommits(ctx context.Context, gameID uuid.UUID
 
 	commits := make([]components.RecentCommit, len(rows))
 	for i, row := range rows {
-		username := row.Author
+		username := row.Author.String
 		avatarURL := ""
 		if row.Username.Valid {
-			username = pgtype.Text{String: row.Username.String}
+			username = row.Username.String
 		}
 		if row.AvatarUrl.Valid {
 			avatarURL = row.AvatarUrl.String
 		}
 
 		commits[i] = components.RecentCommit{
-			Username:  username.String,
+			Username:  username,
 			AvatarURL: avatarURL,
 			Message:   row.Message,
 			Project:   row.ProjectSlug,
