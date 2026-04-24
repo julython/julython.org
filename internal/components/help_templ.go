@@ -242,7 +242,7 @@ func helpPage(user *UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-lg text-gray-300 leading-relaxed\">Points are awarded to the committer, the project, and optionally to the location the user has specified in his/her profile.</p><div class=\"grid grid-cols-1 sm:grid-cols-2 gap-6\"><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-2\">Commits</h3><p class=\"text-gray-400\">You can score points by committing to a project that has a")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-lg text-gray-300 leading-relaxed\">Points are awarded to the committer, the project, and optionally to the location the user has specified in their profile.</p><div class=\"grid grid-cols-1 sm:grid-cols-2 gap-6\"><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-2\">Commits</h3><p class=\"text-gray-400\">You can score points by committing to a project that has a")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

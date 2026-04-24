@@ -130,7 +130,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", entry.Username)) } class="flex items-center gap-3 group">
 				if entry.AvatarURL != "" {
-					<img src={ entry.AvatarURL } alt="" class="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"/>
+					<img src={ templ.SafeURL(entry.AvatarURL) } alt="" class="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"/>
 				} else {
 					<div class="w-10 h-10 rounded-full bg-gradient-to-br from-july-500 to-purple-600 flex items-center justify-center text-white font-bold">
 						{ string(entry.Username[0]) }
