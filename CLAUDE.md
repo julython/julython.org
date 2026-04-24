@@ -65,6 +65,15 @@ Authentication is handled via GitHub OAuth. For local development, you'll need t
 
 Tests are run using `gotestsum` with race detection enabled. The test suite includes unit tests for services and handlers.
 
+## Templ
+
+Templ conventions and patterns are documented in [`docs/templ-conventions.md`](docs/templ-conventions.md). Key points:
+- Use `templ.KV()` for conditional CSS classes
+- Use `templ.SafeURL()` for dynamic URLs
+- Avatar fallback: show first char in a colored circle
+- HTMX loading states: `htmx-idle` / `htmx-busy` span pattern
+- See the conventions doc for known inconsistencies to fix.
+
 ## Assets
 
 Static assets (CSS, JS, vendor libraries) are managed through:

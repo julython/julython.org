@@ -31,7 +31,7 @@ templ RecentActivityRow(commit RecentCommit) {
 	<div class="p-4 hover:bg-surface-light/50 transition-colors group">
 		<div class="flex items-start gap-3">
 			if commit.AvatarURL != "" {
-				<img src="{commit.AvatarURL}" alt="" class="w-10 h-10 rounded-full flex-shrink-0"/>
+				<img src={ templ.SafeURL(commit.AvatarURL) } alt="" class="w-10 h-10 rounded-full flex-shrink-0"/>
 			} else {
 				<div class="w-10 h-10 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0">
 					{ string(commit.Username[0]) }
