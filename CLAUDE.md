@@ -15,6 +15,7 @@ The codebase is a Go application with the following key components:
   - `api/` - HTTP router and middleware
   - `config/` - Configuration management
   - `db/` - Database interactions (using SQLC)
+  - `components/` - Templ components to render html
   - `handlers/` - HTTP request handlers
   - `services/` - Business logic services
   - `webhooks/` - GitHub webhook handling

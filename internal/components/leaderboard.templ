@@ -81,13 +81,7 @@ templ LeaderboardPage(layout LayoutData, data LeaderboardData) {
 
 templ LeaderboardTable(data LeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">🏆</span>
-			<p class="text-gray-400 mb-4">{ i18n.T(ctx, "NoParticipants") }</p>
-			<a href="/auth/login/github" class="inline-block px-6 py-3 bg-july-500 text-white rounded-lg font-medium hover:bg-july-600 transition-colors">
-				{ i18n.T(ctx, "BeTheFirst") }
-			</a>
-		</div>
+		@EmptyState("🏆", "NoParticipants")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -129,13 +123,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", entry.Username)) } class="flex items-center gap-3 group">
-				if entry.AvatarURL != "" {
-					<img src={ templ.SafeURL(entry.AvatarURL) } alt="" class="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"/>
-				} else {
-					<div class="w-10 h-10 rounded-full bg-gradient-to-br from-july-500 to-purple-600 flex items-center justify-center text-white font-bold">
-						{ string(entry.Username[0]) }
-					</div>
-				}
+				@AvatarFallback(entry.Username, entry.AvatarURL, AvatarLg)
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Username }</span>
 			</a>
 		</td>
@@ -167,10 +155,7 @@ templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">📦</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoProjects") }</p>
-		</div>
+			@EmptyState("📦", "NoProjects")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -243,10 +228,7 @@ templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">💻</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoLanguages") }</p>
-		</div>
+			@EmptyState("💻", "NoLanguages")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">

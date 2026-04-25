@@ -176,13 +176,7 @@ templ RecentActivity(commits []RecentCommit) {
 templ RecentCommitRow(commit RecentCommit) {
 	<div class="py-3 group">
 		<div class="flex items-start gap-3">
-			if commit.AvatarURL != "" {
-				<img src={ templ.SafeURL(commit.AvatarURL) } alt="" class="w-8 h-8 rounded-full flex-shrink-0"/>
-			} else {
-				<div class="w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0">
-					{ string(commit.Username[0]) }
-				</div>
-			}
+			@AvatarFallback(commit.Username, commit.AvatarURL, AvatarSm)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
