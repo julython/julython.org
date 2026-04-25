@@ -1,0 +1,17 @@
+# Build artifacts and binaries
+bin/
+tmp/
+coverage.out
+coverage.html
+*.exe
+*.out
+
+# Generated assets
+web/assets/
+# Node.js dependencies
+web/vendor/
+
+# Version control and IDE
+.git/
+.idea/
+.vscode/

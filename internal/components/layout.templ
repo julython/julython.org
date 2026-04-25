@@ -1,6 +1,9 @@
 package components
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/invopop/ctxi18n"
 	"github.com/invopop/ctxi18n/i18n"
 
@@ -58,6 +61,8 @@ templ Navbar(data LayoutData) {
 					onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
 					class="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors mr-2"
 					aria-label="Toggle menu"
+					aria-expanded="false"
+					aria-controls="mobile-menu"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -143,10 +148,12 @@ templ LanguageDropdown(data LayoutData) {
 			onclick="this.nextElementSibling.classList.toggle('hidden')"
 			class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
 			aria-label="Language"
+			aria-expanded="false"
+			aria-controls="language-dropdown"
 		>
 			@icons.GlobeIcon()
 		</button>
-		<div class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
+		<div id="language-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
 			<div class="px-4 py-2 text-xs text-gray-400 uppercase tracking-wider">{ i18n.T(ctx, "Language") }</div>
 			<a href="/set-language?lang=en" class={ "w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2", templ.KV("text-july-400 font-bold", lang == "en"), templ.KV("text-gray-300", lang != "en") }>
 				🇺🇸 English
@@ -166,6 +173,9 @@ templ UserMenu(user *UserInfo) {
 		<button
 			onclick="this.nextElementSibling.classList.toggle('hidden')"
 			class="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+			aria-label="User menu"
+			aria-expanded="false"
+			aria-controls="user-menu-dropdown"
 		>
 			if user.AvatarURL != "" {
 				<img src={ user.AvatarURL } alt="" class="w-8 h-8 rounded-full"/>
@@ -175,7 +185,7 @@ templ UserMenu(user *UserInfo) {
 				</div>
 			}
 		</button>
-		<div class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
+		<div id="user-menu-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-surface-light rounded-lg shadow-xl border border-white/10 py-2">
 			<a href="/profile" class="flex px-4 py-2 text-sm text-gray-300 hover:bg-white/10 items-center gap-2">
 				@icons.OverviewIcon()
 				<span>{ i18n.T(ctx, "profile.settings") }</span>
@@ -198,7 +208,7 @@ templ Footer() {
 			<div class="flex flex-col md:flex-row justify-between items-center gap-4">
 				<div class="flex items-center gap-2 text-gray-400">
 					@icons.JulythonLogo()
-					<span>© 2026 Julython</span>
+					<span>{ fmt.Sprintf("© %d Julython", time.Now().Year()) }</span>
 				</div>
 				<div class="flex items-center gap-6 text-sm text-gray-400">
 					<a href="/about" class="hover:text-white transition-colors">{ i18n.T(ctx, "About") }</a>

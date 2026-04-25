@@ -81,13 +81,7 @@ templ LeaderboardPage(layout LayoutData, data LeaderboardData) {
 
 templ LeaderboardTable(data LeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">🏆</span>
-			<p class="text-gray-400 mb-4">{ i18n.T(ctx, "NoParticipants") }</p>
-			<a href="/auth/login/github" class="inline-block px-6 py-3 bg-july-500 text-white rounded-lg font-medium hover:bg-july-600 transition-colors">
-				{ i18n.T(ctx, "BeTheFirst") }
-			</a>
-		</div>
+		@EmptyState("🏆", "NoParticipants")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -129,13 +123,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", entry.Username)) } class="flex items-center gap-3 group">
-				if entry.AvatarURL != "" {
-					<img src={ entry.AvatarURL } alt="" class="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"/>
-				} else {
-					<div class="w-10 h-10 rounded-full bg-gradient-to-br from-july-500 to-purple-600 flex items-center justify-center text-white font-bold">
-						{ string(entry.Username[0]) }
-					</div>
-				}
+				@AvatarFallback(entry.Username, entry.AvatarURL, AvatarLg)
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Username }</span>
 			</a>
 		</td>
@@ -167,10 +155,7 @@ templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">📦</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoProjects") }</p>
-		</div>
+			@EmptyState("📦", "NoProjects")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -200,8 +185,9 @@ templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardRow(entry ProjectLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)
-</td>
+		<td class="px-6 py-4">
+			@rankCell(entry.Rank)
+		</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", entry.Slug)) } class="group">
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.ProjectName }</span>
@@ -242,10 +228,7 @@ templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">💻</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoLanguages") }</p>
-		</div>
+			@EmptyState("💻", "NoLanguages")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -269,8 +252,9 @@ templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 	<tr class={ "border-b border-white/5 hover:bg-white/5 transition-colors", templ.KV("bg-july-500/10", entry.Rank <= 3) }>
-		<td class="px-6 py-4">@rankCell(entry.Rank)
-</td>
+		<td class="px-6 py-4">
+			@rankCell(entry.Rank)
+		</td>
 		<td class="px-6 py-4">
 			<span class="font-medium text-white">{ entry.LanguageName }</span>
 		</td>
@@ -288,26 +272,23 @@ templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 // leaderboardTabs renders the Users / Projects / Languages nav.
 // active is one of: "users", "projects", "languages"
 templ leaderboardTabs(ctx context.Context, active string) {
-	<div class="flex gap-4 mb-6">
-		<a
-			href="/leaders"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "users"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "users") }
-		>
-			{ i18n.T(ctx, "Users") }
-		</a>
-		<a
-			href="/leaders/projects"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "projects"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "projects") }
-		>
-			{ i18n.T(ctx, "Projects") }
-		</a>
-		<a
-			href="/leaders/languages"
-			class={ "px-4 py-2 rounded-lg font-medium", templ.KV("bg-july-500 text-white", active == "languages"), templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter transition-colors", active != "languages") }
-		>
-			{ i18n.T(ctx, "Languages") }
-		</a>
-	</div>
+	@Tabs(
+		Tab(TabProps{
+			Href:     "/leaders",
+			Label:    i18n.T(ctx, "Users"),
+			IsActive: active == "users",
+		}),
+		Tab(TabProps{
+			Href:     "/leaders/projects",
+			Label:    i18n.T(ctx, "Projects"),
+			IsActive: active == "projects",
+		}),
+		Tab(TabProps{
+			Href:     "/leaders/languages",
+			Label:    i18n.T(ctx, "Languages"),
+			IsActive: active == "languages",
+		}),
+	)
 }
 
 // rankCell renders the medal emoji or #N rank label.

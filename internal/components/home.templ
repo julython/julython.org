@@ -91,9 +91,13 @@ templ InfoCard(emoji, title, body string) {
 	</div>
 }
 
-// inlineLink builds a styled anchor tag for interpolation into translated strings.
+// inlineLink renders a styled inline anchor for use inside templ.Raw.
+// The text is escaped to prevent XSS; href is wrapped in SafeURL.
 func inlineLink(href, text string) string {
-	return fmt.Sprintf(`<a href="%s" class="text-july-400 hover:underline">%s</a>`, href, text)
+	return fmt.Sprintf(`<a href="%s" class="text-july-400 hover:underline">%s</a>`,
+		href,
+		templ.EscapeString(text),
+	)
 }
 
 templ StatsSection(data HomeData) {
@@ -172,13 +176,7 @@ templ RecentActivity(commits []RecentCommit) {
 templ RecentCommitRow(commit RecentCommit) {
 	<div class="py-3 group">
 		<div class="flex items-start gap-3">
-			if commit.AvatarURL != "" {
-				<img src={ commit.AvatarURL } alt="" class="w-8 h-8 rounded-full flex-shrink-0"/>
-			} else {
-				<div class="w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0">
-					{ string(commit.Username[0]) }
-				</div>
-			}
+			@AvatarFallback(commit.Username, commit.AvatarURL, AvatarSm)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
@@ -215,9 +213,3 @@ func truncateMessage(msg string, maxLen int) string {
 	return msg[:maxLen-3] + "..."
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}

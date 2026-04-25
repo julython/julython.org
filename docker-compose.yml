@@ -7,8 +7,6 @@ services:
       - docker-compose.env
     ports:
       - 8001:8000
-    networks:
-      - backend
     volumes:
       - go-mod-cache:/go/pkg/mod
 
@@ -21,8 +19,6 @@ services:
     env_file:
       - .env
       - docker-compose.env
-    networks:
-      - backend
     depends_on:
       db_create:
         condition: service_completed_successfully
@@ -33,8 +29,6 @@ services:
       - PGPASSWORD=postgres
     command: >
       sh -c "psql -h postgres -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'july'\" | grep -q 1 || psql -h postgres -U postgres -c 'CREATE DATABASE july'"
-    networks:
-      - backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,8 +49,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - backend
 
   adminer:
     container_name: adminer
@@ -65,8 +57,6 @@ services:
     - ADMINER_DESIGN='nette'
     ports:
     - 8080:8080
-    networks:
-      - backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,13 +64,6 @@ services:
   smee:
     image: node:22-alpine
     command: ["npx", "smee-client", "-u", "${GITHUB_WEBHOOK_URL}", "-t", "http://api:8000/api/v1/github"]
-    networks:
-      - backend
 
 volumes:
   go-mod-cache:
-
-networks:
-  backend:
-    external: true
-    name: backend

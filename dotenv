@@ -12,5 +12,9 @@ JULY_GITHUB_REDIRECT_URL=http://localhost:8080/auth/github/callback
 # Session secret
 JULY_SESSION_SECRET=change-me-in-production
 
+# Encryption key (required for database encryption)
+# Generate a 32-byte hex-encoded key: openssl rand -hex 32
+JULY_DATABASE_ENC_KEY=
+
 # Optional: Redis for sessions
 JULY_REDIS_URL=redis://localhost:6379

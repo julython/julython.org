@@ -1,0 +1,30 @@
+package components
+
+type TabProps struct {
+	Href     string
+	Label    string
+	IsActive bool
+}
+
+// Tab renders a single navigation link.
+templ Tab(props TabProps) {
+	<a
+		href={ props.Href }
+		class={
+			"px-4 py-2 rounded-lg font-medium transition-colors",
+			templ.KV("bg-july-500 text-white", props.IsActive),
+			templ.KV("bg-surface-light text-gray-300 hover:bg-surface-lighter", !props.IsActive),
+		}
+	>
+		{ props.Label }
+	</a>
+}
+
+// Tabs renders a wrapper for a collection of tab components.
+templ Tabs(children ...templ.Component) {
+	<div class="flex gap-4 mb-6">
+		for _, child := range children {
+			@child
+		}
+	</div>
+}

@@ -50,7 +50,10 @@ DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=dis
 # Setup
 # ============================================
 
-setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
+.env:
+	cp dotenv .env
+
+setup: .env $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 	go install github.com/a-h/templ/cmd/templ@v0.3.1001
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1

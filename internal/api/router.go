@@ -78,6 +78,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	blogHandler := handlers.NewBlogHandler()
 	helpHandler := handlers.NewHelpHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
+	activityHandler := handlers.NewActivityHandler(queries, gameSvc)
 
 	// Routes
 	mux.HandleFunc("GET /favicon.svg", handlers.FaviconHandler)
@@ -87,6 +88,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
 
 	mux.HandleFunc("GET /{$}", homeHandler.Home)
+	mux.HandleFunc("GET /activity", activityHandler.Activity)
 	mux.HandleFunc("GET /leaders", leaderboardHandler.Leaders)
 	mux.HandleFunc("GET /leaders/projects", leaderboardHandler.Projects)
 	mux.HandleFunc("GET /leaders/languages", leaderboardHandler.Languages)
