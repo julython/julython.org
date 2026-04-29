@@ -74,6 +74,9 @@ Templ conventions and patterns are documented in [`docs/templ-conventions.md`](d
 - Avatar fallback: show first char in a colored circle
 - HTMX loading states: `htmx-idle` / `htmx-busy` span pattern
 - See the conventions doc for known inconsistencies to fix.
+- **ABSOLUTELY NEVER use the `Edit` tool on `.templ` or `.go` files.** These files use tabs for indentation, and the `Edit` tool mangles tabs during transport, causing exact-match failures. This is a hard rule — no exceptions.
+- **Always use the `Write` tool (full-file rewrite) for `.templ` and `.go` files.** Always.
+- **Do not check if a file is tab-indented — just assume all `.templ` and `.go` files are tab-indented and use `Write` for all of them.**
 
 ## Assets
 
