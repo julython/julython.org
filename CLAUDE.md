@@ -22,19 +22,32 @@ Go application with:
 ## Key Commands
 
 ```bash
-make dev        # Dev server with hot reloading (air)
-make generate   # SQLC, Templ, and asset generation
-make test       # Run tests (gotestsum with race detection)
-make test-watch # Watch mode for tests
-make migrate-up # Run database migrations up
-make i18n       # Sync missing i18n keys
+make dev         # Dev server with hot reloading (air)
+make generate    # SQLC, Templ, and asset generation
+make test        # Run tests (gotestsum with race detection)
+make test-watch  # Watch mode for tests
+make migrate-up  # Run database migrations up
+make i18n        # Sync missing i18n keys
 ```
 
-## Templ
+## Migrations
+
+1. Start with a migration: `make migrate-new name=description`
+2. Update SQL queries in `internal/db/`
+3. Run `make sqlc` to regenerate Go types
+4. **Never edit generated SQLC Go files** — they will be overwritten
+
+## Frontend
 
 Conventions are documented in [`docs/templ-conventions.md`](docs/templ-conventions.md) — read that before editing `.templ` files.
 
 - **ABSOLUTELY NEVER use the `Edit` tool on `.templ` or `.go` files.** They use tabs and `Edit` mangles tabs during transport. Use `Write` (full-file rewrite) for all `.templ` and `.go` files.
+- UI components are `.templ` files — run `make templ` to regenerate Go code
+- Styling is Tailwind — run `make tailwind` to update assets
+
+## Localization
+
+- Add new strings to Go code first, then run `make i18n` to sync to `internal/i18n/locales`
 
 ## Local Development
 
