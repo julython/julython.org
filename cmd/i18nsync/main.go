@@ -214,6 +214,26 @@ func parseLocaleRaw(path string) (*localeRaw, error) {
 	return data, nil
 }
 
+// setNestedValue sets a value in a nested map structure using a dotted key
+// like "about.heading.lead", creating intermediate maps as needed.
+func setNestedValue(root map[string]any, key string, val any) {
+	parts := strings.Split(key, ".")
+	node := root
+	for i, p := range parts {
+		if i == len(parts)-1 {
+			node[p] = val
+			return
+		}
+		if next, ok := node[p].(map[string]any); ok {
+			node = next
+		} else {
+			next := make(map[string]any)
+			node[p] = next
+			node = next
+		}
+	}
+}
+
 // getNestedValue looks up a dotted key like "profile.title" in a nested map structure.
 func getNestedValue(root map[string]any, key string) any {
 	parts := strings.Split(key, ".")
@@ -365,15 +385,8 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 		existing.root[e.key] = resolveValue(e, translations, allowFallback)
 	}
 	for _, ns := range sortedNonEmpty(singularGrouped) {
-		nsMap := existing.root[ns]
-		if nsMap == nil {
-			nsMap = make(map[string]any)
-			existing.root[ns] = nsMap
-		}
-		if nsRoot, ok := nsMap.(map[string]any); ok {
-			for _, e := range singularGrouped[ns] {
-				nsRoot[e.key] = resolveValue(e, translations, allowFallback)
-			}
+		for _, e := range singularGrouped[ns] {
+			setNestedValue(existing.root, ns+"."+e.key, resolveValue(e, translations, allowFallback))
 		}
 	}
 

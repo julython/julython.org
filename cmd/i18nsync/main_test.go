@@ -553,6 +553,126 @@ func TestParseLocaleRaw_values(t *testing.T) {
 		}
 }
 
+func TestSyncFile_nestedKeys(t *testing.T) {
+	// Verify that nested keys of any depth are written as
+	// properly nested YAML instead of flat dotted keys.
+	t.Setenv("OLLAMA_API_URL", "http://localhost:1")
+
+	enYAML := `en:
+  Home: "Home"
+  about:
+    heading:
+      lead: "About Julython"
+      goals: "Goals"
+      chapter:
+        sub:
+          title: "Five level deep"
+    intro:
+      section:
+        deep: "Deep 4-level"
+      lead: "Lead 4-level"
+    lead: "Welcome to Julython"
+`
+	esYAML := `es:
+  Home: "Inicio"
+`
+	enDir := t.TempDir()
+	esDir := t.TempDir()
+	enPath := filepath.Join(enDir, "en.yaml")
+	esPath := filepath.Join(esDir, "es.yaml")
+
+	if err := os.WriteFile(enPath, []byte(enYAML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(esPath, []byte(esYAML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	source, err := parseLocaleRaw(enPath)
+	if err != nil {
+		t.Fatalf("parseLocaleRaw(en): %v", err)
+	}
+
+	keys := keySet{
+		singular: map[string]struct{}{
+				"Home":                       {},
+				"about.heading.lead":           {},
+				"about.heading.goals":          {},
+				"about.heading.chapter.sub.title": {},
+				"about.intro.lead":             {},
+				"about.intro.section.deep":     {},
+				"about.lead":                   {},
+			},
+		plural: map[string]struct{}{},
+	}
+
+	if err := syncFile(esPath, source, keys, false, true); err != nil {
+		t.Fatalf("syncFile: %v", err)
+	}
+
+	data, err := os.ReadFile(esPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(data)
+
+	// No flat dotted keys anywhere.
+	for _, bad := range []string{
+			"heading.lead:",
+			"chapter.sub.title:",
+			"intro.section.deep:",
+			"sub.title:",
+			"section.deep:",
+	} {
+		if strings.Contains(got, bad) {
+			t.Errorf("synced file has flat dotted key %q — should be nested", bad)
+			}
+	}
+
+	// All nesting levels present.
+	for _, want := range []string{
+			"heading:", "chapter:", "sub:", "title:",
+			"intro:", "section:", "deep:",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("synced file missing %q", want)
+				}
+	}
+
+	// Verify source locale exposes all nested keys.
+	for _, k := range []string{
+			"about.heading.lead",
+			"about.heading.goals",
+			"about.heading.chapter.sub.title",
+			"about.intro.lead",
+			"about.intro.section.deep",
+			"about.lead",
+	} {
+		if _, ok := source.singular[k]; !ok {
+			t.Errorf("source singular keys missing %q", k)
+				}
+	}
+
+	// Verify getNestedValue retrieves keys at all depths.
+	tests := []struct {
+		key, want string
+	}{
+			{"about.heading.lead", "About Julython"},
+			{"about.heading.goals", "Goals"},
+			{"about.heading.chapter.sub.title", "Five level deep"},
+			{"about.intro.lead", "Lead 4-level"},
+			{"about.intro.section.deep", "Deep 4-level"},
+			{"about.lead", "Welcome to Julython"},
+	}
+	for _, tc := range tests {
+		if v := getNestedValue(source.root, tc.key); v != tc.want {
+			t.Errorf("getNestedValue(root, %q) = %q, want %q", tc.key, v, tc.want)
+				}
+	}
+}
+
+
+
 func TestExtractKeys(t *testing.T) {
 	dir := t.TempDir()
 
