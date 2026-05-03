@@ -410,7 +410,7 @@ templ analysisMetricTile(tile ProjectAnalysisTile) {
 			templ.KV("border-white/10 bg-white/[0.02]", tile.Level < 1),
 		}
 		data-metric-key={ tile.MetricKey }
-		aria-label={ fmt.Sprintf("%s — %s", i18n.T(ctx, tile.I18nKey), i18n.T(ctx, "projects.OpenAssistantPanel")) }
+		aria-label={ fmt.Sprintf("%s — %s", tile.I18nKey, i18n.T(ctx, "projects.OpenAssistantPanel")) }
 	>
 		<div class="flex gap-1 mb-1.5 justify-center shrink-0 lg:gap-0.5 lg:mb-1">
 			@analysisDash(tile.Level, 1)
@@ -425,7 +425,7 @@ templ analysisMetricTile(tile ProjectAnalysisTile) {
 				templ.KV("text-gray-500", tile.Level < 1),
 			}
 		>
-			{ i18n.T(ctx, tile.I18nKey) }
+			{ tile.I18nKey }
 		</p>
 		<p class="min-w-0 w-full truncate text-sm sm:text-xs lg:text-[9px] text-gray-500 text-center tabular-nums mt-1 lg:mt-0.5 font-medium">{ fmt.Sprintf("%d/10", tile.Score) }</p>
 	</button>
