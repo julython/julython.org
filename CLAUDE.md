@@ -30,6 +30,10 @@ make migrate-up  # Run database migrations up
 make i18n        # Sync missing i18n keys
 ```
 
+## Critical Rules
+
+- **Always use `make test` to run tests.** Never use `go test` directly.
+
 ## Migrations
 
 1. Start with a migration: `make migrate-new name=description`
