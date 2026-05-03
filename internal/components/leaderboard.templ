@@ -155,7 +155,7 @@ templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 	if len(data.Entries) == 0 {
-			@EmptyState("📦", "NoProjects")
+		@EmptyState("📦", "NoProjects")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -228,7 +228,7 @@ templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 	if len(data.Entries) == 0 {
-			@EmptyState("💻", "NoLanguages")
+		@EmptyState("💻", "NoLanguages")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
