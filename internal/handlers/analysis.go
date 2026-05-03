@@ -125,7 +125,7 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		writeJSON(w, analysisResponse{
+		respondJSON(w, r, http.StatusOK, analysisResponse{
 			MetricType: p.MetricType,
 			Score:      existing.Score,
 			Level:      p.Level,
@@ -170,7 +170,7 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	writeJSON(w, analysisResponse{
+	respondJSON(w, r, http.StatusOK, analysisResponse{
 		MetricType: saved.MetricType,
 		Score:      saved.Score,
 		Level:      saved.Level,
@@ -255,10 +255,6 @@ func (h *ProjectHandler) PostProjectRescanL1(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, fmt.Sprintf("/projects/%s", slug), http.StatusSeeOther)
 }
 
-func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
-}
 
 type metricLLMContextResponse struct {
 	MetricType string `json:"metricType"`
@@ -282,10 +278,8 @@ type metricLLMErrorResponse struct {
 	MetricHelpURL string `json:"metricHelpUrl"`
 }
 
-func writeMetricLLMJSONError(w http.ResponseWriter, status int, body metricLLMErrorResponse) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+func writeMetricLLMJSONError(w http.ResponseWriter, r *http.Request, status int, body metricLLMErrorResponse) {
+	respondJSON(w, r, status, body)
 }
 
 // GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context
@@ -350,7 +344,7 @@ func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 		MetricType: metricType,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		writeMetricLLMJSONError(w, http.StatusBadRequest, metricLLMErrorResponse{
+		writeMetricLLMJSONError(w, r, http.StatusBadRequest, metricLLMErrorResponse{
 			Error:         "metric_no_analysis",
 			Message:       "There is no L1 analysis row for this metric yet. Run **Rescan analysis (L1)** on the project page first, then try again.",
 			MetricType:    metricType,
@@ -368,7 +362,7 @@ func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 	if row.Score <= 0 {
 		score := row.Score
 		name := metrics.MetricDisplayName(metricType)
-		writeMetricLLMJSONError(w, http.StatusBadRequest, metricLLMErrorResponse{
+		writeMetricLLMJSONError(w, r, http.StatusBadRequest, metricLLMErrorResponse{
 			Error:         "metric_l1_zero",
 			Message:       fmt.Sprintf("**%s** has an L1 score of %d/10. The browser AI review needs at least minimal evidence from the server scan (a non-zero score). Improve this area of the repository, then run **Rescan analysis (L1)** on the project page and try again.", name, row.Score),
 			MetricType:    metricType,
@@ -388,7 +382,7 @@ func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 	}
 
 	userPrompt := metrics.BuildMetricLLMUserContent(metricType, data, repoFull, row.Score, row.Level)
-	writeJSON(w, metricLLMContextResponse{
+	respondJSON(w, r, http.StatusOK, metricLLMContextResponse{
 		MetricType:   metricType,
 		RepoName:     repoFull,
 		L1Score:      row.Score,
@@ -536,7 +530,7 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 
 	info.GeneralChat = metrics.IsGenericChatMessage(msg)
 	userPrompt := metrics.BuildChatLLMUserContent(repoFull, info, data, msg)
-	writeJSON(w, chatContextResponse{
+	respondJSON(w, r, http.StatusOK, chatContextResponse{
 		SystemPrompt:      metrics.ChatExpertSystemPrompt(info),
 		UserPrompt:        userPrompt,
 		MatchedMetric:     info.MatchedKeyword,
