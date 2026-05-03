@@ -77,6 +77,23 @@ func TestResolveValue_fallback(t *testing.T) {
 	}
 }
 
+func TestResolveValue_fullKey(t *testing.T) {
+	// LLMs often return the full namespaced key even when the local key was requested.
+	translations := map[string]string{"profile.webhooksSubtitle": "Webhooks conectados"}
+
+	e := missingEntry{key: "webhooksSubtitle", fullKey: "profile.webhooksSubtitle"}
+	if got := resolveValue(e, translations, false); got != "Webhooks conectados" {
+		t.Errorf("resolveValue(fullKey) = %q, want %q", got, "Webhooks conectados")
+	}
+
+	// When fullKey is empty, local key should still work.
+	e2 := missingEntry{key: "Home", fullKey: ""}
+	translations2 := map[string]string{"Home": "Inicio"}
+	if got := resolveValue(e2, translations2, false); got != "Inicio" {
+		t.Errorf("resolveValue(empty fullKey) = %q, want %q", got, "Inicio")
+	}
+}
+
 func TestParseLocaleRaw(t *testing.T) {
 	yaml := `es:
   Home: "Inicio"

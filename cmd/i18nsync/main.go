@@ -47,8 +47,9 @@ func newKeySet() keySet {
 
 // missingEntry holds the English text for each missing key.
 type missingEntry struct {
-	key   string
-	value string
+	key     string // local key (e.g. "webhooksSubtitle")
+	fullKey string // full namespaced key (e.g. "profile.webhooksSubtitle")
+	value   string
 }
 
 // localeRaw holds the parsed root map and classified keys from a locale YAML file.
@@ -287,8 +288,9 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 			if srcVal := getNestedValue(sourceLocale.root, k); srcVal != nil {
 				srcStr, _ := srcVal.(string)
 				missingEntries = append(missingEntries, missingEntry{
-					key:   k,
-					value: srcStr,
+					key:     k,
+					fullKey: k,
+					value:   srcStr,
 				})
 			}
 		}
@@ -299,8 +301,9 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 			if srcVal := getNestedValue(sourceLocale.root, k); srcVal != nil {
 				srcStr, _ := srcVal.(string)
 				missingEntries = append(missingEntries, missingEntry{
-					key:   k,
-					value: srcStr,
+					key:     k,
+					fullKey: k,
+					value:   srcStr,
 				})
 			}
 		}
@@ -403,15 +406,23 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 // keyToLabel if no translation is available.
 func resolveValue(e missingEntry, translations map[string]string, allowFallback bool) string {
 	if translations != nil {
-		if t, ok := translations[e.key]; ok {
-			return t
-		}
-		// Case-insensitive lookup (LLMs often lowercase keys).
-		for k, t := range translations {
-			if strings.EqualFold(k, e.key) {
+			// Try local key first, then full namespaced key (LLMs may return either).
+		for _, key := range func() []string {
+				if e.fullKey != "" && e.fullKey != e.key {
+					return []string{e.key, e.fullKey}
+				}
+				return []string{e.key}
+			}() {
+			if t, ok := translations[key]; ok {
 				return t
+				}
+				// Case-insensitive lookup (LLMs often lowercase keys).
+			for k, t := range translations {
+				if strings.EqualFold(k, key) {
+					return t
+					}
+				}
 			}
-		}
 		if !allowFallback {
 			logf("error: key %q not in Ollama response and --allow-fallback not set — aborting", e.key)
 			os.Exit(1)

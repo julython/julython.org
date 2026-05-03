@@ -312,3 +312,42 @@ func TestTranslate_errorStatus_readsBody(t *testing.T) {
 		t.Errorf("expected error to contain body: %v", err)
 	}
 }
+
+func TestTranslate_success_fullKey(t *testing.T) {
+	// LLMs often return the full namespaced key (e.g. "profile.webhooksSubtitle")
+	// even when the local key was requested (e.g. "webhooksSubtitle").
+	want := map[string]string{
+		"profile.webhooksSubtitle": "Webhooks conectados",
+	}
+	resp := map[string]interface{}{
+			"choices": []map[string]interface{}{
+				{
+					"message": map[string]interface{}{
+						"role":    "assistant",
+						"content": mapToString(want),
+					},
+					"finish_reason": "stop",
+				},
+			},
+			"usage": map[string]int{},
+		}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := &OllamaClient{BaseURL: server.URL, Model: "test", HTTP: &http.Client{Timeout: 10 * time.Second}}
+	entries := []missingEntry{{key: "webhooksSubtitle", fullKey: "profile.webhooksSubtitle", value: "webhooks subtitle"}}
+	result, err := client.Translate(context.Background(), entries, "es")
+	if err != nil {
+		t.Fatalf("Translate() error: %v", err)
+	}
+	// The Translate function returns the raw map from Ollama, so we look up by fullKey.
+	if got, ok := result["profile.webhooksSubtitle"]; !ok {
+		t.Error("missing key profile.webhooksSubtitle")
+	} else if got != "Webhooks conectados" {
+		t.Errorf("profile.webhooksSubtitle = %q, want %q", got, "Webhooks conectados")
+	}
+}
