@@ -10,4 +10,3 @@ description: Fetch a GitHub issue and implement it, use when a user says "implem
 3. Plan implementation steps
 4. Implement, following project rules
 5. Write integration tests (real DB, no mocks)
-6. Post a summary comment on the issue
