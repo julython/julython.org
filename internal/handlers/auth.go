@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
-	"encoding/json"
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
@@ -175,8 +174,7 @@ func (h *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	respondJSON(w, r, http.StatusOK, user)
 }
 
 // Logout clears the session - GET /auth/logout
@@ -193,8 +191,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	// Return JSON for API calls, redirect for browser
 	if r.Header.Get("Accept") == "application/json" {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"ok":true}`))
+		respondJSON(w, r, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
