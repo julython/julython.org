@@ -1,0 +1,173 @@
+package components
+
+import (
+	"context"
+	"strings"
+
+	"github.com/invopop/ctxi18n/i18n"
+
+	"july/internal/components/icons"
+)
+
+// ============================================
+// Empty state card
+// ============================================
+
+// EmptyState renders a centered card for "no data" scenarios.
+// Accepts an emoji (rendered as raw text) and an i18n key for the message.
+templ EmptyState(emoji string, i18nKey string) {
+	<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
+		<span class="text-6xl mb-4 block">{ emoji }</span>
+		<p class="text-gray-400">{ i18n.T(ctx, i18nKey) }</p>
+	</div>
+}
+
+// ============================================
+// Avatar fallback
+// ============================================
+
+// AvatarSize controls the dimensions of AvatarFallback.
+type AvatarSize string
+
+const (
+	AvatarSm AvatarSize = "sm" // 24x24
+	AvatarMd AvatarSize = "md" // 32x32
+	AvatarLg AvatarSize = "lg" // 40x40
+)
+
+// AvatarFallback renders a user avatar: the image if URL is provided,
+// otherwise the first character of the username in a colored circle.
+templ AvatarFallback(username string, avatarURL string, size AvatarSize) {
+	if avatarURL != "" {
+		<img src={ templ.SafeURL(avatarURL) } alt="" class={ avatarSizeClass(size) }/>
+	} else {
+		<div class={ avatarCircleClass(size) }>
+			{ string(username[0]) }
+		</div>
+	}
+}
+
+func avatarSizeClass(size AvatarSize) string {
+	switch size {
+	case AvatarSm:
+		return "w-8 h-8 rounded-full flex-shrink-0"
+	case AvatarMd:
+		return "w-10 h-10 rounded-full flex-shrink-0"
+	case AvatarLg:
+		return "w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"
+	default:
+		return "w-8 h-8 rounded-full flex-shrink-0"
+	}
+}
+
+func avatarCircleClass(size AvatarSize) string {
+	switch size {
+	case AvatarSm:
+		return "w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
+	case AvatarMd:
+		return "w-10 h-10 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
+	case AvatarLg:
+		return "w-10 h-10 rounded-full bg-gradient-to-br from-july-500 to-purple-600 flex items-center justify-center text-white font-bold"
+	default:
+		return "w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
+	}
+}
+
+// ============================================
+// Section header
+// ============================================
+
+// SectionHeader renders a page/project section header with an optional subtitle.
+templ SectionHeader(title string, subtitle ...string) {
+	<header class="mb-8">
+		<h1 class="text-3xl font-bold text-white mb-2">{ title }</h1>
+		if len(subtitle) > 0 && subtitle[0] != "" {
+			<p class="text-gray-400">{ subtitle[0] }</p>
+		}
+	</header>
+}
+
+// ============================================
+// HTMX loading button
+// ============================================
+
+// HtmxPostButton renders a button with hx-post and idle/busy loading states.
+templ HtmxPostButton(
+	hxTarget string,
+	hxURL string,
+	idleIcon templ.Component,
+	idleLabel string,
+	busyLabel string,
+) {
+	<button
+		type="button"
+		hx-post={ hxURL }
+		hx-target={ hxTarget }
+		hx-swap="outerHTML"
+		hx-disabled-elt="this"
+		class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+	>
+		<span class="htmx-idle flex items-center gap-1.5">
+			@idleIcon
+			<span>{ idleLabel }</span>
+		</span>
+		<span class="htmx-busy items-center gap-1.5">
+			@icons.SpinnerIcon()
+			<span>{ busyLabel }</span>
+		</span>
+	</button>
+}
+
+// HtmxDeleteButton renders a button with hx-delete and idle/busy loading states.
+templ HtmxDeleteButton(
+	hxTarget string,
+	hxURL string,
+	idleIcon templ.Component,
+	idleLabel string,
+	busyLabel string,
+) {
+	<button
+		type="button"
+		hx-delete={ hxURL }
+		hx-target={ hxTarget }
+		hx-swap="outerHTML"
+		hx-disabled-elt="this"
+		class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+	>
+		<span class="htmx-idle flex items-center gap-1.5">
+			@idleIcon
+			<span>{ idleLabel }</span>
+		</span>
+		<span class="htmx-busy items-center gap-1.5">
+			@icons.SpinnerIcon()
+			<span>{ busyLabel }</span>
+		</span>
+	</button>
+}
+
+// ============================================
+// Service label (moved from projects.templ)
+// ============================================
+
+func serviceLabel(ctx context.Context, service string) string {
+	switch strings.ToLower(service) {
+	case "github":
+		return i18n.T(ctx, "ViewOnGitHub") + " ↗"
+	case "gitlab":
+		return i18n.T(ctx, "ViewOnGitLab") + " ↗"
+	default:
+		return i18n.T(ctx, "ViewOnService") + " ↗"
+	}
+}
+
+// ServiceLink renders a "View on X" external link button.
+templ ServiceLink(url, service string) {
+	<a
+		href={ templ.SafeURL(url) }
+		target="_blank"
+		rel="noopener noreferrer"
+		class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10 text-sm"
+	>
+		{ serviceLabel(ctx, service) }
+	</a>
+}

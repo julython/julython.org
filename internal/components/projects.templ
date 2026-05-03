@@ -191,13 +191,10 @@ templ serviceFilterPill(value, current, label string) {
 
 // ProjectListItems is the partial returned for both HTMX search/filter requests
 // and the infinite-scroll sentinel swap. It renders the cards plus a sentinel
-// div that triggers the next page load when scrolled into view.
 templ ProjectListItems(data ProjectListData) {
 	if len(data.Entries) == 0 {
-		<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-6xl mb-4 block">📦</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoProjects") }</p>
-		</div>
+		// div that triggers the next page load when scrolled into view.
+		@EmptyState("📦", "NoProjects")
 	} else {
 		<div class="grid gap-4">
 			for _, entry := range data.Entries {
@@ -244,7 +241,7 @@ templ ProjectCard(entry ProjectEntry) {
 					rel="noopener noreferrer"
 					class="text-xs px-3 py-1 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
 				>
-					{ serviceLabel(ctx, entry.Service) }
+					@ServiceLink(entry.URL, entry.Service)
 				</a>
 				<div class="flex items-center gap-3 text-xs text-gray-500">
 					<span title={ i18n.T(ctx, "Forks") }>⑂ { fmt.Sprintf("%d", entry.Forks) }</span>
@@ -301,34 +298,27 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 							</div>
 						</div>
 						<div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center shrink-0">
-							<a
-								href={ templ.SafeURL(data.Project.URL) }
-								target="_blank"
-								rel="noopener noreferrer"
-								class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
-							>
-								{ serviceLabel(ctx, data.Project.Service) }
-							</a>
+							@ServiceLink(data.Project.URL, data.Project.Service)
 						</div>
 					</div>
 				</header>
 			</div>
 			@projectStatsBar(data)
 			<div class="max-w-5xl mx-auto px-4 pb-12 pt-6">
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
-				<div class="min-w-0 flex lg:col-span-1">
-					@projectAnalysisBoard(data.AnalysisBoard)
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
+					<div class="min-w-0 flex lg:col-span-1">
+						@projectAnalysisBoard(data.AnalysisBoard)
+					</div>
+					<div class="min-w-0 flex lg:col-span-2">
+						@projectChatPanel(data)
+					</div>
 				</div>
-				<div class="min-w-0 flex lg:col-span-2">
-					@projectChatPanel(data)
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-xl font-semibold text-white">{ i18n.T(ctx, "RecentCommits") }</h2>
 				</div>
-			</div>
-			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-xl font-semibold text-white">{ i18n.T(ctx, "RecentCommits") }</h2>
-			</div>
-			<div id="commits">
-				@ProjectCommitList(data)
-			</div>
+				<div id="commits">
+					@ProjectCommitList(data)
+				</div>
 			</div>
 		</section>
 	}
@@ -336,10 +326,7 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 
 templ ProjectCommitList(data ProjectDetailData) {
 	if len(data.Commits) == 0 {
-		<div class="text-center py-12 bg-surface-light rounded-xl border border-white/10">
-			<span class="text-5xl mb-3 block">📭</span>
-			<p class="text-gray-400">{ i18n.T(ctx, "NoCommits") }</p>
-		</div>
+		@EmptyState("📭", "NoCommits")
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
 			for _, c := range data.Commits {
@@ -400,7 +387,6 @@ templ CommitRow(c CommitEntry) {
 // ============================================
 // Analysis board (project detail)
 // ============================================
-
 templ analysisDash(level int16, dashIdx int) {
 	if level >= 3 {
 		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-green-400 lg:h-0.5 lg:max-w-[1rem]"></span>
@@ -634,19 +620,4 @@ func githubRepoPath(url string) string {
 		return url
 	}
 	return u
-}
-
-// ============================================
-// Shared helpers
-// ============================================
-
-func serviceLabel(ctx context.Context, service string) string {
-	switch strings.ToLower(service) {
-	case "github":
-		return i18n.T(ctx, "ViewOnGitHub") + " ↗"
-	case "gitlab":
-		return i18n.T(ctx, "ViewOnGitLab") + " ↗"
-	default:
-		return i18n.T(ctx, "ViewOnService") + " ↗"
-	}
 }

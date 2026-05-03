@@ -3,7 +3,7 @@ tmp/*
 web/vendor/
 coverage.*
 .env*
-.claude
+.claude/settings.local.json
 web/assets/tailwind.*.css
 web/assets/analyzer.*.js
 web/assets/llm-worker.*.js

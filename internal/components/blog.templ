@@ -28,10 +28,7 @@ templ BlogListPage(layout LayoutData, posts []blog.Post) {
 				<p class="text-gray-400">{ i18n.T(ctx, "BlogSubtitle") }</p>
 			</header>
 			if len(posts) == 0 {
-				<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
-					<span class="text-6xl mb-4 block">✍️</span>
-					<p class="text-gray-400">{ i18n.T(ctx, "NoPosts") }</p>
-				</div>
+				@EmptyState("✍️", "NoPosts")
 			} else {
 				<div class="space-y-4">
 					for _, p := range posts {
