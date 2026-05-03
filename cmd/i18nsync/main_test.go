@@ -463,11 +463,11 @@ func TestScanFile(t *testing.T) {
 
 import "july/internal/i18n"
 
-func handler() {
-	_ = i18n.T("Home", "val")
-	_ = i18n.T("SignIn.SignIn", "val")
-	_ = i18n.N("ExtractCount", "one", "c1", "c2")
-	_ = i18n.T("About", "val")
+func handler(ctx context.Context) {
+	_ = i18n.T(ctx, "Home")
+	_ = i18n.T(ctx, "SignIn.SignIn")
+	_ = i18n.N(ctx, "ExtractCount", "one", "c1", "c2")
+	_ = i18n.T(ctx, "About")
 }
 `
 	if err := os.WriteFile(path, []byte(code), 0o644); err != nil {
@@ -562,9 +562,9 @@ func TestExtractKeys(t *testing.T) {
 
 import "julython/internal/i18n"
 
-func f() {
-	_ = i18n.T("ExtractKey1", "val")
-	_ = i18n.N("ExtractCount", "one", "c1", "c2")
+func f(ctx context.Context) {
+	_ = i18n.T(ctx, "ExtractKey1")
+	_ = i18n.N(ctx, "ExtractCount", "one", "c1", "c2")
 }
 `
 	if err := os.WriteFile(goFile, []byte(goCode), 0o644); err != nil {
@@ -577,8 +577,8 @@ func f() {
 
 import "julython/internal/i18n"
 
-func v() {
-	templ.Text(i18n.T("ExtractKey2", "val"))
+func v(ctx context.Context) {
+	templ.Text(i18n.T(ctx, "ExtractKey2"))
 }
 `
 	if err := os.WriteFile(templFile, []byte(templCode), 0o644); err != nil {

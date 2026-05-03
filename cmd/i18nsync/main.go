@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	tKeyRe = regexp.MustCompile(`i18n\.T\(\s*(?:"([^"]+)",|[^,]*,\s*"([^"]+)")`)
-	nKeyRe = regexp.MustCompile(`i18n\.N\(\s*(?:"([^"]+)",|[^,]*,\s*"([^"]+)")`)
+	tKeyRe = regexp.MustCompile(`i18n\.T\(\s*ctx\s*,\s*"([^"]+)"`)
+	nKeyRe = regexp.MustCompile(`i18n\.N\(\s*ctx\s*,\s*"([^"]+)"`)
 )
 
 type keySet struct {
@@ -135,20 +135,12 @@ func scanFile(path string, ks keySet) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		for _, m := range tKeyRe.FindAllStringSubmatch(line, -1) {
-			key := m[1]
-			if key == "" {
-				key = m[2]
+			ks.singular[m[1]] = struct{}{}
 			}
-			ks.singular[key] = struct{}{}
-		}
-		for _, m := range nKeyRe.FindAllStringSubmatch(line, -1) {
-			key := m[1]
-			if key == "" {
-				key = m[2]
+			for _, m := range nKeyRe.FindAllStringSubmatch(line, -1) {
+			ks.plural[m[1]] = struct{}{}
 			}
-			ks.plural[key] = struct{}{}
 		}
-	}
 	return scanner.Err()
 }
 
