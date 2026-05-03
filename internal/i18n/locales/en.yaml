@@ -81,24 +81,24 @@ en:
     WhatIsTitle: What is Julython?
     WhatsHappening: What's Happening?
     profile:
-        accountInfo: info
-        addWebhook: webhook
+        accountInfo: account info
+        addWebhook: add webhook
         added: added
         adding: adding
         displayName: name
         emails: emails
-        namePlaceholder: placeholder
+        namePlaceholder: your name
         noRepos: repos
-        noReposHint: repos hint
+        noReposHint: add a webook to get started
         overview: Overview
         removing: removing
         saveChanges: changes
         saveSuccess: success
         settings: Settings
-        title: title
+        title: Edit your settings
         username: username
         webhooks: Webhooks
-        webhooksSubtitle: subtitle
+        webhooksSubtitle: Connected webhooks
     projects:
         AllServices: all services
         AnalysesTotal: analyses total

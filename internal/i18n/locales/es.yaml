@@ -80,25 +80,7 @@ es:
     WhatIsBody: Durante los meses de enero y julio, animamos a desarrolladores de todos los niveles a trabajar en sus proyectos personales un poco cada día. Es una gran excusa para contribuir a las comunidades que sigues, o incluso sumergirte en un nuevo lenguaje por primera vez.
     WhatIsTitle: ¿Qué es Julython?
     WhatsHappening: ¿Qué Está Pasando?
-    profile:
-        accountInfo: info
-        addWebhook: webhook
-        added: added
-        adding: adding
-        displayName: name
-        emails: emails
-        namePlaceholder: placeholder
-        noRepos: repos
-        noReposHint: repos hint
-        overview: Overview
-        removing: removing
-        saveChanges: changes
-        saveSuccess: success
-        settings: Settings
-        title: title
-        username: username
-        webhooks: Webhooks
-        webhooksSubtitle: subtitle
+
     projects:
         AllServices: all services
         AnalysesTotal: análisis en total

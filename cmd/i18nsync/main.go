@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	tKeyRe = regexp.MustCompile(`i18n\.T\(\s*"([^"]+)"`)
-	nKeyRe = regexp.MustCompile(`i18n\.N\(\s*"([^"]+)"`)
+	tKeyRe = regexp.MustCompile(`i18n\.T\(\s*(?:"([^"]+)",|[^,]*,\s*"([^"]+)")`)
+	nKeyRe = regexp.MustCompile(`i18n\.N\(\s*(?:"([^"]+)",|[^,]*,\s*"([^"]+)")`)
 )
 
 type keySet struct {
@@ -113,8 +113,8 @@ func extractKeys(root string) (keySet, error) {
 		switch {
 		case ext == ".templ":
 			// scan templ source files
-		case ext == ".go" && !strings.HasSuffix(path, "_templ.go"):
-			// scan Go files, but skip templ-generated output
+		case ext == ".go" && !strings.HasSuffix(path, "_templ.go") && !strings.HasSuffix(path, "_test.go"):
+			// scan Go files, but skip templ-generated and test files
 		default:
 			return nil
 		}
@@ -134,10 +134,18 @@ func scanFile(path string, ks keySet) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		for _, m := range tKeyRe.FindAllStringSubmatch(line, -1) {
-			ks.singular[m[1]] = struct{}{}
+			key := m[1]
+			if key == "" {
+				key = m[2]
+			}
+			ks.singular[key] = struct{}{}
 		}
 		for _, m := range nKeyRe.FindAllStringSubmatch(line, -1) {
-			ks.plural[m[1]] = struct{}{}
+			key := m[1]
+			if key == "" {
+				key = m[2]
+			}
+			ks.plural[key] = struct{}{}
 		}
 	}
 	return scanner.Err()

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -14,9 +15,9 @@ import (
 
 // ollamaChatRequest is the request body for Ollama's /v1/chat/completions endpoint.
 type ollamaChatRequest struct {
-	Model    string              `json:"model"`
-	Messages []ollamaChatMessage `json:"messages"`
-	Stream   bool                `json:"stream"`
+	Model    string               `json:"model"`
+	Messages []ollamaChatMessage  `json:"messages"`
+	Stream   bool                 `json:"stream"`
 }
 
 // ollamaChatMessage represents a message in the chat request.
@@ -25,18 +26,18 @@ type ollamaChatMessage struct {
 	Content string `json:"content"`
 }
 
-// ollamaChatResponse is the response from Ollama's /v1/chat/completions endpoint.
+// ollamaChatResponse is the non-streamed response from Ollama's /v1/chat/completions endpoint.
 type ollamaChatResponse struct {
 	Choices []ollamaChoice        `json:"choices"`
-	Usage   ollamaUsage          `json:"usage"`
-	Error   *ollamaError         `json:"error,omitempty"`
+	Usage   ollamaUsage           `json:"usage"`
+	Error   *ollamaError          `json:"error,omitempty"`
 }
 
 // ollamaChoice represents a single choice in the v1 response.
 type ollamaChoice struct {
-	Index        int               `json:"index"`
-	Message      ollamaChatMessage `json:"message"`
-	FinishReason string            `json:"finish_reason"`
+	Index        int                 `json:"index"`
+	Message      ollamaChatMessage   `json:"message"`
+	FinishReason string              `json:"finish_reason"`
 }
 
 // ollamaUsage provides token usage statistics.
@@ -61,7 +62,7 @@ type OllamaClient struct {
 }
 
 // NewOllamaClient creates a client configured from environment variables.
-// Defaults: OLLAMA_API_URL=http://localhost:11434, I18N_MODEL=llama3.2.
+// Defaults: OLLAMA_API_URL=http://localhost:11434, I18N_MODEL=llama3.2:3b.
 func NewOllamaClient() *OllamaClient {
 	url := os.Getenv("OLLAMA_API_URL")
 	if url == "" {
@@ -132,9 +133,11 @@ JSON output:`, targetLang, pairs.String(), targetLang)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Ollama returned status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("Ollama returned status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
+	// Decode the non-streamed response.
 	var ollamaResp ollamaChatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
@@ -146,27 +149,37 @@ JSON output:`, targetLang, pairs.String(), targetLang)
 			ollamaResp.Error.Type, ollamaResp.Error.Code, ollamaResp.Error.Message)
 	}
 
-	// v1 returns choices array — take the first choice.
 	if len(ollamaResp.Choices) == 0 {
 		return nil, fmt.Errorf("Ollama returned empty choices")
 	}
 	content := ollamaResp.Choices[0].Message.Content
 	finishReason := ollamaResp.Choices[0].FinishReason
 
-	// Verbose feedback: token usage and finish reason.
+	// Strip markdown code fences if present.
+	jsonStr := content
+	jsonStr = strings.TrimPrefix(jsonStr, "```\n")
+	jsonStr = strings.TrimPrefix(jsonStr, "```json\n")
+	jsonStr = strings.TrimPrefix(jsonStr, "```JSON\n")
+	jsonStr = strings.TrimPrefix(jsonStr, "```json")
+	jsonStr = strings.TrimPrefix(jsonStr, "```JSON")
+	jsonStr = strings.TrimSuffix(jsonStr, "\n```")
+	jsonStr = strings.TrimSuffix(jsonStr, "```")
+	// Trim any surrounding whitespace.
+	jsonStr = strings.TrimSpace(jsonStr)
+
+	// Log raw content for debugging.
+	fmt.Printf("[i18nsync] Ollama raw response: %q\n", jsonStr)
+
+	// Parse the JSON object from the model's response.
+	var result map[string]string
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return nil, fmt.Errorf("parse translation JSON: %w", err)
+	}
+
 	fmt.Printf("[i18nsync] Ollama %s — prompt: %d tokens, completion: %d tokens, total: %d tokens, finish_reason: %s\n",
 		c.Model, ollamaResp.Usage.PromptTokens,
 		ollamaResp.Usage.CompletionTokens, ollamaResp.Usage.TotalTokens,
 		finishReason)
-
-	// Log raw content for debugging.
-	fmt.Printf("[i18nsync] Ollama raw response: %q\n", content)
-
-	// Parse the JSON object from the model's response.
-	var result map[string]string
-	if err := json.Unmarshal([]byte(content), &result); err != nil {
-		return nil, fmt.Errorf("parse translation JSON: %w", err)
-	}
 
 	return result, nil
 }

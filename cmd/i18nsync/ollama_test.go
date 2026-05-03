@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -60,8 +61,24 @@ func TestIsOllamaAvailable(t *testing.T) {
 
 func TestTranslate_success(t *testing.T) {
 	want := map[string]string{
-		"Home":    "Inicio",
-		"SignIn":  "Iniciar sesion",
+		"Home":     "Inicio",
+		"SignIn":   "Iniciar sesion",
+	}
+	resp := map[string]interface{}{
+		"choices": []map[string]interface{}{
+			{
+				"message": map[string]interface{}{
+					"role":    "assistant",
+					"content": mapToString(want),
+				},
+				"finish_reason": "stop",
+			},
+		},
+		"usage": map[string]int{
+			"prompt_tokens":       10,
+			"completion_tokens":   20,
+			"total_tokens":        30,
+		},
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,22 +89,6 @@ func TestTranslate_success(t *testing.T) {
 			t.Errorf("Content-Type = %q, want %q", got, "application/json")
 		}
 
-		resp := map[string]interface{}{
-			"choices": []map[string]interface{}{
-				{
-					"message": map[string]interface{}{
-						"role":    "assistant",
-						"content": mapToString(want),
-					},
-					"finish_reason": "stop",
-				},
-			},
-			"usage": map[string]int{
-				"prompt_tokens":      10,
-				"completion_tokens":  20,
-				"total_tokens":       30,
-			},
-		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}))
@@ -218,5 +219,96 @@ func TestTranslate_ollamaErrorField(t *testing.T) {
 	_, err := client.Translate(context.Background(), []missingEntry{{key: "Home"}}, "es")
 	if err == nil {
 		t.Fatal("expected error for ollama error field")
+	}
+}
+
+func TestTranslate_stripsMarkdownFences(t *testing.T) {
+	want := map[string]string{"Home": "Inicio"}
+	content := "```\n" + mapToString(want) + "\n```"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"choices": []map[string]interface{}{
+				{
+					"message": map[string]interface{}{
+						"role":    "assistant",
+						"content": content,
+					},
+					"finish_reason": "stop",
+				},
+			},
+			"usage": map[string]int{
+				"prompt_tokens":       5,
+				"completion_tokens":   10,
+				"total_tokens":        15,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := &OllamaClient{BaseURL: server.URL, Model: "test", HTTP: &http.Client{Timeout: 10 * time.Second}}
+	entries := []missingEntry{{key: "Home", value: "Hello"}}
+	result, err := client.Translate(context.Background(), entries, "es")
+	if err != nil {
+		t.Fatalf("Translate() error: %v", err)
+	}
+	if got, ok := result["Home"]; !ok {
+		t.Error("missing key Home")
+	} else if got != "Inicio" {
+		t.Errorf("Home = %q, want %q", got, "Inicio")
+	}
+}
+
+func TestTranslate_stripsMarkdownFencesUpper(t *testing.T) {
+	want := map[string]string{"Home": "Inicio"}
+	content := "```JSON\n" + mapToString(want) + "\n```"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"choices": []map[string]interface{}{
+				{
+					"message": map[string]interface{}{
+						"role":    "assistant",
+						"content": content,
+					},
+					"finish_reason": "stop",
+				},
+			},
+			"usage": map[string]int{},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := &OllamaClient{BaseURL: server.URL, Model: "test", HTTP: &http.Client{Timeout: 10 * time.Second}}
+	entries := []missingEntry{{key: "Home", value: "Hello"}}
+	result, err := client.Translate(context.Background(), entries, "es")
+	if err != nil {
+		t.Fatalf("Translate() error: %v", err)
+	}
+	if got, ok := result["Home"]; !ok {
+		t.Error("missing key Home")
+	} else if got != "Inicio" {
+		t.Errorf("Home = %q, want %q", got, "Inicio")
+	}
+}
+
+func TestTranslate_errorStatus_readsBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte(`{"error": {"message": "model not loaded"}}`))
+	}))
+	defer server.Close()
+
+	client := &OllamaClient{BaseURL: server.URL, Model: "test", HTTP: &http.Client{Timeout: 10 * time.Second}}
+	_, err := client.Translate(context.Background(), []missingEntry{{key: "Home"}}, "es")
+	if err == nil {
+		t.Fatal("expected error for 502 status")
+	}
+	if !strings.Contains(err.Error(), "model not loaded") {
+		t.Errorf("expected error to contain body: %v", err)
 	}
 }
