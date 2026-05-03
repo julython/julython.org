@@ -30,6 +30,14 @@ func NullUUID() pgtype.UUID {
 	return pgtype.UUID{}
 }
 
+// StringFromNull returns the string value of a nullable text field, or "" if null.
+func StringFromNull(t pgtype.Text) string {
+	if t.Valid {
+		return t.String
+	}
+	return ""
+}
+
 // GetCommitByHash looks up a commit by its hash string.
 func (q *Queries) GetCommitByHashStr(ctx context.Context, hash string) (Commit, error) {
 	return q.GetCommitByHash(ctx, Text(hash))
