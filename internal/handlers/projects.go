@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -26,19 +27,6 @@ func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.Use
 }
 
 // Order matches metrics.Parse and the project detail board UI.
-var analysisBoardSpec = []struct {
-	key     string
-	i18nKey string
-}{
-	{"readme", "projects.MetricReadme"},
-	{"tests", "projects.MetricTests"},
-	{"ci", "projects.MetricCI"},
-	{"structure", "projects.MetricStructure"},
-	{"linting", "projects.MetricLinting"},
-	{"deps", "projects.MetricDeps"},
-	{"docs", "projects.MetricDocs"},
-	{"ai_ready", "projects.MetricAIReady"},
-}
 
 const analysisBoardMaxPts = 480
 
@@ -177,6 +165,20 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var analysisBoardSpec = []struct {
+		key     string
+		i18nKey string
+	}{
+		{"readme", i18n.T(ctx, "projects.MetricReadme")},
+		{"tests", i18n.T(ctx, "projects.MetricTests")},
+		{"ci", i18n.T(ctx, "projects.MetricCI")},
+		{"structure", i18n.T(ctx, "projects.MetricStructure")},
+		{"linting", i18n.T(ctx, "projects.MetricLinting")},
+		{"deps", i18n.T(ctx, "projects.MetricDeps")},
+		{"docs", i18n.T(ctx, "projects.MetricDocs")},
+		{"ai_ready", i18n.T(ctx, "projects.MetricAIReady")},
+	}
+
 	tiles := make([]components.ProjectAnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
 	for _, spec := range analysisBoardSpec {
@@ -210,11 +212,11 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	analysisBoard := components.ProjectAnalysisBoard{
-		Tiles:             tiles,
-		EarnedPts:         earned,
-		MaxPts:            analysisBoardMaxPts,
-		AnalysisRunCount:  len(shaDistinct),
-		MetricAIEnabled:   showMetricAI,
+		Tiles:            tiles,
+		EarnedPts:        earned,
+		MaxPts:           analysisBoardMaxPts,
+		AnalysisRunCount: len(shaDistinct),
+		MetricAIEnabled:  showMetricAI,
 	}
 	if haveMetricAt {
 		analysisBoard.LastAnalyzedAgo = timeAgo(lastMetricAt)

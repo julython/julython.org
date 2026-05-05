@@ -9,9 +9,10 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/rs/zerolog/log"
 
+	"july/internal/db"
 	"july/internal/services"
 )
 
@@ -154,7 +155,7 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		ID:        user.ID,
 		Username:  user.Username,
 		Name:      user.Name,
-		AvatarURL: stringFromNull(user.AvatarUrl),
+		AvatarURL: db.StringFromNull(user.AvatarUrl),
 	})
 	h.session.Put(ctx, sessionKeyIdentityKey, oauthUser.Key())
 
@@ -241,13 +242,6 @@ func generateRandomString(n int) (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-func stringFromNull(t pgtype.Text) string {
-	if t.Valid {
-		return t.String
-	}
-	return ""
 }
 
 type userCtxKey struct{}

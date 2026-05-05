@@ -1,157 +1,136 @@
 pt:
-  Home: "Início"
-  Leaders: "Líderes"
-  Projects: "Projetos"
-  Blog: "Blog"
-  Help: "Ajuda"
-  SignIn: "Entrar"
-  SignOut: "Sair"
-  About: "Sobre"
-  Privacy: "Privacidade"
-
-  Theme: "Tema"
-  ToggleTheme: "Alternar escuro/claro"
-
-  HeroTagline: "Programe mais durante julho e janeiro. Acompanhe seus commits. Compita com amigos."
-
-  WhatIsTitle: "O que é Julython?"
-  WhatIsBody: >-
-    Durante os meses de janeiro e julho, encorajamos desenvolvedores de todos os
-    níveis a trabalhar em seus projetos pessoais um pouco a cada dia. É uma
-    ótima desculpa para contribuir com as comunidades que você segue, ou até
-    mesmo mergulhar em uma nova linguagem pela primeira vez.
-
-  RulesTitle: "Existem Regras?"
-  RulesBody: >-
-    Só há uma regra: se divertir! O objetivo é aprender algo novo ou terminar um
-    projeto que você começou. Se você compartilhar seu repositório ou commits
-    conosco, %{scoring_link} por cada commit ou novo projeto em que você trabalhar %{timing_link}.
-  TallyUpPoints: "somaremos pontos"
-  DuringTheMonth: "durante o mês"
-
-  JoinTitle: "Como Participar?"
-  JoinBody: >-
-    Você só precisa de um projeto para trabalhar que não seja seu trabalho regular.
-    Recomendamos escolher algo aberto, talvez no GitHub ou Bitbucket, para que outros
-    possam ver seu progresso. Depois %{webhook_link} para seu repositório, e
-    acompanharemos seu progresso junto com todos os outros.
-  AddAWebhook: "adicione um webhook"
-  CommitsDuring: "commits durante"
-  WhatsHappening: "O Que Está Acontecendo?"
-  NoRecentActivity: "Nenhuma atividade recente ainda. Seja o primeiro a fazer commit!"
-  ViewAllActivity: "Ver toda a atividade"
-
-  Leaderboard: "Classificação"
-  ProjectLeaderboard: "Classificação de Projetos"
-  LanguageLeaderboard: "Classificação de Linguagens"
-  Participants: "participantes"
-  Users: "Usuários"
-  Languages: "Linguagens"
-  Rank: "Posição"
-  Coder: "Programador"
-  Commits: "Commits"
-  Points: "Pontos"
-  Contributors: "Colaboradores"
-  Project: "Projeto"
-  Language: "Linguagem"
-  NoParticipants: "Ainda não há participantes neste jogo."
-  BeTheFirst: "Seja o primeiro a participar!"
-  NoProjects: "Ainda não há projetos neste jogo."
-  NoLanguages: "Ainda não há linguagens registradas."
-  NoCommits: "Ainda não há commits neste projeto."
-  TopProjectsShown: "Mostrando apenas os melhores projetos."
-  LoadMore: "Carregar mais"
-
-  ProjectsSubtitle: "Projetos participantes"
-  RecentCommits: "Commits Recentes"
-  Fork: "Fork"
-  Forks: "Forks"
-  Watchers: "Seguidores"
-  ViewOnGitHub: "Ver no GitHub"
-  ViewOnGitLab: "Ver no GitLab"
-  ViewOnService: "Ver no serviço"
-  Flagged: "Sinalizado"
-  Verified: "Verificado"
-
-  BackHome: "Voltar ao início"
-  Error404Title: "Página Não Encontrada"
-  Error404Body: "A página que você procura não existe ou foi movida."
-  Error401Title: "Login Necessário"
-  Error401Body: "Você precisa estar logado para ver esta página."
-  Error403Title: "Acesso Negado"
-  Error403Body: "Você não tem permissão para ver esta página."
-  Error500Title: "Algo Deu Errado"
-  Error500Body: "Estamos com problemas do nosso lado. Por favor tente novamente em um momento."
-
-  profile:
-    overview: "Overview"
-    webhooks: "Webhooks"
-    settings: "Settings"
-    accountInfo: "info"
-    addWebhook: "webhook"
-    added: "added"
-    adding: "adding"
-    displayName: "name"
-    emails: "emails"
-    namePlaceholder: "placeholder"
-    noRepos: "repos"
-    noReposHint: "repos hint"
-    removing: "removing"
-    saveChanges: "changes"
-    saveSuccess: "success"
-    title: "title"
-    username: "username"
-    webhooksSubtitle: "subtitle"
-
-  CommitCount:
-    one: "%{count} commit"
-    other: "%{count} commits"
-  PointCount:
-    one: "%{count} ponto"
-    other: "%{count} pontos"
-  CoderCount:
-    one: "%{count} programador participando"
-    other: "%{count} programadores participando"
-
-  LoadingMore: "loading more"
-  projects:
-    AllServices: "all services"
-    SearchProjects: "search projects"
-    AnalysisBoard: "Painel"
-    Assistant: "Assistente"
-    OpenAssistantPanel: "Abre o assistente"
-    SelectTileForAI: "Selecione um bloco para análise com IA"
-    BrowserModel: "Modelo LLM do navegador"
-    ClearModelCache: "Limpar"
-    ClearModelCacheHint: "Remove o modelo WebLLM transferido para o tamanho selecionado neste navegador (liberta espaço; será transferido de novo na próxima vez)."
-    MetricReadme: "README"
-    MetricTests: "Tests"
-    MetricCI: "CI"
-    MetricStructure: "Estrutura"
-    MetricLinting: "Lint"
-    MetricDeps: "Deps"
-    MetricDocs: "Docs"
-    MetricAIReady: "IA"
-    GameActivity: "Jogo e atividade"
-    GameCommits: "Commits (jogo)"
-    FilesAndLines: "Arquivos e linhas"
-    NoGameData: "Nenhum jogo Julython em andamento. Os totais aparecem quando um jogo estiver ativo."
-    CommitsThisMonth: "Commits neste mês"
-    ThisWeek: "esta semana"
-    LinesChanged: "Linhas alteradas"
-    LinesNotTracked: "Não registrado"
-    FilesTouched: "Arquivos tocados (este mês)"
-    UniqueDirs: "pastas distintas"
-    LastAnalyzed: "Última análise"
-    AnalysesTotal: "análises no total"
-    NeverAnalyzed: "Ainda não"
-    RescanL1: "Analisar de novo (L1)"
-    RescanL1Running: "Analisando…"
-    RescanL1DisabledPrivate: "Análise no servidor não está disponível para repositórios privados."
-    RescanL1DisabledNoToken: "O servidor não está configurado para análise do GitHub (GITHUB_TOKEN)."
-
-  Next: "next"
-  Previous: "previous"
-
-  BlogSubtitle: "blog subtitle"
-  NoPosts: "no posts"
+    About: Sobre
+    AddAWebhook: adicione um webhook
+    BackHome: Voltar ao início
+    BeTheFirst: Seja o primeiro a participar!
+    Blog: Blog
+    BlogSubtitle: blog subtitle
+    Coder: Programador
+    CoderCount:
+        one: '%{count} programador participando'
+        other: '%{count} programadores participando'
+    CommitCount:
+        one: '%{count} commit'
+        other: '%{count} commits'
+    Commits: Commits
+    CommitsDuring: commits durante
+    Contributors: Colaboradores
+    DuringTheMonth: durante o mês
+    Error401Body: Você precisa estar logado para ver esta página.
+    Error401Title: Login Necessário
+    Error403Body: Você não tem permissão para ver esta página.
+    Error403Title: Acesso Negado
+    Error404Body: A página que você procura não existe ou foi movida.
+    Error404Title: Página Não Encontrada
+    Error500Body: Estamos com problemas do nosso lado. Por favor tente novamente em um momento.
+    Error500Title: Algo Deu Errado
+    ExtractCount:
+        one: '%{count} extract count'
+        other: '%{count} extract counts'
+    Flagged: Sinalizado
+    Fork: Fork
+    Forks: Forks
+    Help: Ajuda
+    HeroTagline: Programe mais durante julho e janeiro. Acompanhe seus commits. Compita com amigos.
+    Home: Início
+    JoinBody: Você só precisa de um projeto para trabalhar que não seja seu trabalho regular. Recomendamos escolher algo aberto, talvez no GitHub ou Bitbucket, para que outros possam ver seu progresso. Depois %{webhook_link} para seu repositório, e acompanharemos seu progresso junto com todos os outros.
+    JoinTitle: Como Participar?
+    Language: Linguagem
+    LanguageLeaderboard: Classificação de Linguagens
+    Languages: Linguagens
+    Leaderboard: Classificação
+    Leaders: Líderes
+    LoadMore: Carregar mais
+    LoadingMore: loading more
+    Next: next
+    NoCommits: Ainda não há commits neste projeto.
+    NoLanguages: Ainda não há linguagens registradas.
+    NoParticipants: Ainda não há participantes neste jogo.
+    NoPosts: no posts
+    NoProjects: Ainda não há projetos neste jogo.
+    NoRecentActivity: Nenhuma atividade recente ainda. Seja o primeiro a fazer commit!
+    Participants: participantes
+    PointCount:
+        one: '%{count} ponto'
+        other: '%{count} pontos'
+    Points: Pontos
+    Previous: previous
+    Privacy: Privacidade
+    Project: Projeto
+    ProjectLeaderboard: Classificação de Projetos
+    Projects: Projetos
+    ProjectsSubtitle: Projetos participantes
+    Rank: Posição
+    RecentCommits: Commits Recentes
+    RulesBody: 'Só há uma regra: se divertir! O objetivo é aprender algo novo ou terminar um projeto que você começou. Se você compartilhar seu repositório ou commits conosco, %{scoring_link} por cada commit ou novo projeto em que você trabalhar %{timing_link}.'
+    RulesTitle: Existem Regras?
+    SignIn: Entrar
+    SignOut: Sair
+    TallyUpPoints: somaremos pontos
+    Theme: Tema
+    ToggleTheme: Alternar escuro/claro
+    TopProjectsShown: Mostrando apenas os melhores projetos.
+    Users: Usuários
+    Verified: Verificado
+    ViewAllActivity: Ver toda a atividade
+    ViewOnGitHub: Ver no GitHub
+    ViewOnGitLab: Ver no GitLab
+    ViewOnService: Ver no serviço
+    Watchers: Seguidores
+    WhatIsBody: Durante os meses de janeiro e julho, encorajamos desenvolvedores de todos os níveis a trabalhar em seus projetos pessoais um pouco a cada dia. É uma ótima desculpa para contribuir com as comunidades que você segue, ou até mesmo mergulhar em uma nova linguagem pela primeira vez.
+    WhatIsTitle: O que é Julython?
+    WhatsHappening: O Que Está Acontecendo?
+    profile:
+        accountInfo: info
+        addWebhook: webhook
+        added: added
+        adding: adding
+        displayName: name
+        emails: emails
+        namePlaceholder: placeholder
+        noRepos: repos
+        noReposHint: repos hint
+        overview: Overview
+        removing: removing
+        saveChanges: changes
+        saveSuccess: success
+        settings: Settings
+        title: title
+        username: username
+        webhooks: Webhooks
+        webhooksSubtitle: subtitle
+    projects:
+        AllServices: all services
+        AnalysesTotal: análises no total
+        AnalysisBoard: Painel
+        Assistant: Assistente
+        BrowserModel: Modelo LLM do navegador
+        ClearModelCache: Limpar
+        ClearModelCacheHint: Remove o modelo WebLLM transferido para o tamanho selecionado neste navegador (liberta espaço; será transferido de novo na próxima vez).
+        CommitsThisMonth: Commits neste mês
+        FilesAndLines: Arquivos e linhas
+        FilesTouched: Arquivos tocados (este mês)
+        GameActivity: Jogo e atividade
+        GameCommits: Commits (jogo)
+        LastAnalyzed: Última análise
+        LinesChanged: Linhas alteradas
+        LinesNotTracked: Não registrado
+        MetricAIReady: IA
+        MetricCI: CI
+        MetricDeps: Deps
+        MetricDocs: Docs
+        MetricLinting: Lint
+        MetricReadme: README
+        MetricStructure: Estrutura
+        MetricTests: Tests
+        NeverAnalyzed: Ainda não
+        NoGameData: Nenhum jogo Julython em andamento. Os totais aparecem quando um jogo estiver ativo.
+        OpenAssistantPanel: Abre o assistente
+        RescanL1: Analisar de novo (L1)
+        RescanL1DisabledNoToken: O servidor não está configurado para análise do GitHub (GITHUB_TOKEN).
+        RescanL1DisabledPrivate: Análise no servidor não está disponível para repositórios privados.
+        RescanL1Running: Analisando…
+        SearchProjects: search projects
+        SelectTileForAI: Selecione um bloco para análise com IA
+        ThisWeek: esta semana
+        UniqueDirs: pastas distintas
