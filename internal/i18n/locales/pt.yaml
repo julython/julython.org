@@ -4,7 +4,7 @@ pt:
     BackHome: Voltar ao início
     BeTheFirst: Seja o primeiro a participar!
     Blog: Blog
-    BlogSubtitle: blog subtitle
+    BlogSubtitle: subtítulo do blog
     Coder: Programador
     CoderCount:
         one: '%{count} programador participando'
@@ -25,8 +25,8 @@ pt:
     Error500Body: Estamos com problemas do nosso lado. Por favor tente novamente em um momento.
     Error500Title: Algo Deu Errado
     ExtractCount:
-        one: '%{count} extract count'
-        other: '%{count} extract counts'
+        one: '%{count} extração'
+        other: '%{count} extrações'
     Flagged: Sinalizado
     Fork: Fork
     Forks: Forks
@@ -41,12 +41,12 @@ pt:
     Leaderboard: Classificação
     Leaders: Líderes
     LoadMore: Carregar mais
-    LoadingMore: loading more
-    Next: next
+    LoadingMore: carregando mais
+    Next: próximo
     NoCommits: Ainda não há commits neste projeto.
     NoLanguages: Ainda não há linguagens registradas.
     NoParticipants: Ainda não há participantes neste jogo.
-    NoPosts: no posts
+    NoPosts: sem publicações
     NoProjects: Ainda não há projetos neste jogo.
     NoRecentActivity: Nenhuma atividade recente ainda. Seja o primeiro a fazer commit!
     Participants: participantes
@@ -54,7 +54,7 @@ pt:
         one: '%{count} ponto'
         other: '%{count} pontos'
     Points: Pontos
-    Previous: previous
+    Previous: anterior
     Privacy: Privacidade
     Project: Projeto
     ProjectLeaderboard: Classificação de Projetos
@@ -81,26 +81,26 @@ pt:
     WhatIsTitle: O que é Julython?
     WhatsHappening: O Que Está Acontecendo?
     profile:
-        accountInfo: info
-        addWebhook: webhook
-        added: added
-        adding: adding
-        displayName: name
-        emails: emails
-        namePlaceholder: placeholder
-        noRepos: repos
-        noReposHint: repos hint
-        overview: Overview
-        removing: removing
-        saveChanges: changes
-        saveSuccess: success
-        settings: Settings
-        title: title
-        username: username
+        accountInfo: informações da conta
+        addWebhook: adicionar webhook
+        added: adicionado
+        adding: adicionando
+        displayName: nome
+        emails: e-mails
+        namePlaceholder: seu nome
+        noRepos: repositórios
+        noReposHint: adicione um webhook para começar
+        overview: Visão geral
+        removing: removendo
+        saveChanges: alterações
+        saveSuccess: sucesso
+        settings: Configurações
+        title: Editar suas configurações
+        username: nome de usuário
         webhooks: Webhooks
-        webhooksSubtitle: subtitle
+        webhooksSubtitle: Webhooks conectados
     projects:
-        AllServices: all services
+        AllServices: todos os serviços
         AnalysesTotal: análises no total
         AnalysisBoard: Painel
         Assistant: Assistente
@@ -130,7 +130,7 @@ pt:
         RescanL1DisabledNoToken: O servidor não está configurado para análise do GitHub (GITHUB_TOKEN).
         RescanL1DisabledPrivate: Análise no servidor não está disponível para repositórios privados.
         RescanL1Running: Analisando…
-        SearchProjects: search projects
+        SearchProjects: buscar projetos
         SelectTileForAI: Selecione um bloco para análise com IA
         ThisWeek: esta semana
         UniqueDirs: pastas distintas

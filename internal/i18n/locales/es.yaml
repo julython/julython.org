@@ -4,7 +4,7 @@ es:
     BackHome: Volver al inicio
     BeTheFirst: ¡Sé el primero en unirte!
     Blog: Blog
-    BlogSubtitle: blog subtitle
+    BlogSubtitle: subtítulo del blog
     Coder: Programador
     CoderCount:
         one: '%{count} programador participando'
@@ -25,8 +25,8 @@ es:
     Error500Body: Tenemos problemas en nuestro lado. Por favor intenta de nuevo en un momento.
     Error500Title: Algo Salió Mal
     ExtractCount:
-        one: '%{count} extract count'
-        other: '%{count} extract counts'
+        one: '%{count} extracción'
+        other: '%{count} extracciones'
     Flagged: Marcado
     Fork: Fork
     Forks: Forks
@@ -41,12 +41,12 @@ es:
     Leaderboard: Tabla de Clasificación
     Leaders: Líderes
     LoadMore: Cargar más
-    LoadingMore: loading more
-    Next: next
+    LoadingMore: cargando más
+    Next: siguiente
     NoCommits: Aún no hay commits en este proyecto.
     NoLanguages: Aún no hay lenguajes registrados.
     NoParticipants: Aún no hay participantes en este juego.
-    NoPosts: no posts
+    NoPosts: sin publicaciones
     NoProjects: Aún no hay proyectos en este juego.
     NoRecentActivity: Aún no hay actividad reciente. ¡Sé el primero en hacer commit!
     Participants: participantes
@@ -54,7 +54,7 @@ es:
         one: '%{count} punto'
         other: '%{count} puntos'
     Points: Puntos
-    Previous: previous
+    Previous: anterior
     Privacy: Privacidad
     Project: Proyecto
     ProjectLeaderboard: Clasificación de Proyectos
@@ -83,8 +83,8 @@ es:
     profile:
         accountInfo: info de cuenta
         addWebhook: Agregar webhook
-        added: aggiunto
-        adding: aggiungendo
+        added: agregado
+        adding: agregando
         displayName: nombre
         emails: correos
         namePlaceholder: su nombre
@@ -99,7 +99,7 @@ es:
         webhooks: Webhooks
         webhooksSubtitle: Webhooks conectados
     projects:
-        AllServices: all services
+        AllServices: todos los servicios
         AnalysesTotal: análisis en total
         AnalysisBoard: Tablero
         Assistant: Asistente
@@ -129,7 +129,7 @@ es:
         RescanL1DisabledNoToken: El servidor no está configurado para análisis de GitHub (GITHUB_TOKEN).
         RescanL1DisabledPrivate: El análisis en servidor no está disponible para repositorios privados.
         RescanL1Running: Analizando…
-        SearchProjects: search projects
+        SearchProjects: buscar proyectos
         SelectTileForAI: Elige una ficha para el análisis con IA
         ThisWeek: esta semana
         UniqueDirs: carpetas distintas
