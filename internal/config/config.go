@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/rs/zerolog/log"
 )
@@ -80,6 +82,10 @@ type Webhooks struct {
 }
 
 func Load() (*Config, error) {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Info().Msg("Error loading .env file")
+	}
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("parsing config: %w", err)
@@ -108,6 +114,7 @@ func (c Config) Log() {
 		Int("database.port", c.Database.Port).
 		Str("database.user", c.Database.User).
 		Str("database.password", mask(c.Database.Password)).
+		Str("database.enc_key", mask(c.Database.EncKey)).
 		Str("database.name", c.Database.Name).
 		Str("database.sslmode", c.Database.SSLMode).
 		Int("database.max_conns", c.Database.MaxConns).

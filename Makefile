@@ -10,6 +10,8 @@ endif
 
 export TZ=UTC
 
+COMPOSE_CMD := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
+
 # ============================================
 # Platform detection (for Tailwind binary)
 # ============================================
@@ -50,8 +52,15 @@ DATABASE_URL     ?= postgres://postgres:postgres@localhost:5432/july?sslmode=dis
 # Setup
 # ============================================
 
+.env: dotenv
+	@if [ ! -f .env ]; then \
+		cp dotenv .env && \
+		echo "✓ Created .env from dotenv"; \
+	else \
+		echo "✓ .env already exists"; \
+	fi
 
-setup: $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
+setup: .env $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/lib/index.js ## Setup project, install dev tools, and vendor assets
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 	go install github.com/a-h/templ/cmd/templ@v0.3.1001
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
@@ -89,13 +98,13 @@ $(WEBLLM_VENDOR_DIR)/lib/index.js:
 	@echo "✓ $(WEBLLM_VENDOR_DIR)"
 
 compose-deps:  ## Run shared services
-	docker compose up -d postgres adminer
+	$(COMPOSE_CMD) up -d postgres adminer db_create
 
 compose-up:  ## Run the shared services in docker
-	docker compose up api smee
+	$(COMPOSE_CMD) up api smee
 
 compose-down:  ## Stop the docker services
-	docker compose down
+	$(COMPOSE_CMD) down
 
 # ============================================
 # Development
