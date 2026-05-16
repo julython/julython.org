@@ -21,7 +21,9 @@ jobs:
           cache: true
 
       - name: Setup project dependencies
-        run: make setup
+        run: |
+          make setup
+          make generate
 
       - name: Run tests with coverage
         run: make test-cover
