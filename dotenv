@@ -2,7 +2,7 @@
 PROD_DATABASE_URL=postgres://july:july@localhost:5432/july?sslmode=disable
 
 # Server
-JULY_PORT=8080
+JULY_SERVER_PORT=8000
 
 # GitHub OAuth (for user login)
 JULY_GITHUB_CLIENT_ID=your_client_id
@@ -14,7 +14,7 @@ JULY_SESSION_SECRET=change-me-in-production
 
 # Encryption key (required for database encryption)
 # Generate a 32-byte hex-encoded key: openssl rand -hex 32
-JULY_DATABASE_ENC_KEY=
+JULY_DATABASE_ENC_KEY=6aa08ddd5fde0da25b431cb471b43db5ae0ec158e9667635b41f670f0c751929
 
 # Optional: Redis for sessions
 JULY_REDIS_URL=redis://localhost:6379

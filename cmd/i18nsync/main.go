@@ -54,8 +54,8 @@ type missingEntry struct {
 
 // localeRaw holds the parsed root map and classified keys from a locale YAML file.
 type localeRaw struct {
-	code   string              // e.g. "es", "en"
-	root   map[string]any // the inner map under the locale key
+	code     string         // e.g. "es", "en"
+	root     map[string]any // the inner map under the locale key
 	singular map[string]struct{}
 	plural   map[string]struct{}
 }
@@ -136,11 +136,11 @@ func scanFile(path string, ks keySet) error {
 		line := scanner.Text()
 		for _, m := range tKeyRe.FindAllStringSubmatch(line, -1) {
 			ks.singular[m[1]] = struct{}{}
-			}
-			for _, m := range nKeyRe.FindAllStringSubmatch(line, -1) {
-			ks.plural[m[1]] = struct{}{}
-			}
 		}
+		for _, m := range nKeyRe.FindAllStringSubmatch(line, -1) {
+			ks.plural[m[1]] = struct{}{}
+		}
+	}
 	return scanner.Err()
 }
 
@@ -371,9 +371,9 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 	singularGrouped := map[string][]missingEntry{}
 	for _, e := range missingEntries {
 		if strings.Contains(e.key, ".") {
-	ns := strings.Split(e.key, ".")[0]
+			ns := strings.Split(e.key, ".")[0]
 			_, local, _ := strings.Cut(e.key, ".")
-		e.key = local
+			e.key = local
 			singularGrouped[ns] = append(singularGrouped[ns], e)
 		} else {
 			singularGrouped[""] = append(singularGrouped[""], e)
@@ -411,23 +411,23 @@ func syncFile(path string, sourceLocale *localeRaw, keys keySet, dryRun, allowFa
 // keyToLabel if no translation is available.
 func resolveValue(e missingEntry, translations map[string]string, allowFallback bool) string {
 	if translations != nil {
-			// Try local key first, then full namespaced key (LLMs may return either).
+		// Try local key first, then full namespaced key (LLMs may return either).
 		for _, key := range func() []string {
-				if e.fullKey != "" && e.fullKey != e.key {
-					return []string{e.key, e.fullKey}
-				}
-				return []string{e.key}
-			}() {
+			if e.fullKey != "" && e.fullKey != e.key {
+				return []string{e.key, e.fullKey}
+			}
+			return []string{e.key}
+		}() {
 			if t, ok := translations[key]; ok {
 				return t
-				}
-				// Case-insensitive lookup (LLMs often lowercase keys).
+			}
+			// Case-insensitive lookup (LLMs often lowercase keys).
 			for k, t := range translations {
 				if strings.EqualFold(k, key) {
 					return t
-					}
 				}
 			}
+		}
 		if !allowFallback {
 			logf("error: key %q not in Ollama response and --allow-fallback not set — aborting", e.key)
 			os.Exit(1)
