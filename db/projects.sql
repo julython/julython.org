@@ -72,6 +72,9 @@ UPDATE projects SET is_active = false WHERE id = @id;
 -- name: ActivateProject :exec
 UPDATE projects SET is_active = true WHERE id = @id;
 
+-- name: UpdateProjectService :one
+UPDATE projects SET service = @service WHERE id = @id RETURNING *;
+
 -- name: UpsertAnalysisMetric :exec
 -- Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
 -- L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.

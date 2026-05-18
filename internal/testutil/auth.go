@@ -19,13 +19,22 @@ import (
 
 func CreateUser(t *testing.T, env *TestEnv, username, name string) db.User {
 	t.Helper()
+	return createUserWithRole(t, env, username, name, "user")
+}
 
+// CreateAdminUser creates a user with role "admin", bypassing slug-based ownership checks.
+func CreateAdminUser(t *testing.T, env *TestEnv, username, name string) db.User {
+	t.Helper()
+	return createUserWithRole(t, env, username, name, "admin")
+}
+
+func createUserWithRole(t *testing.T, env *TestEnv, username, name, role string) db.User {
 	user, err := env.Queries.CreateUser(context.Background(), db.CreateUserParams{
 		ID:        db.NewID(),
 		Name:      name,
 		Username:  username,
 		AvatarUrl: db.Text(""),
-		Role:      "user",
+		Role:      role,
 	})
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)

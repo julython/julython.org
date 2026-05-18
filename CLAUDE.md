@@ -25,7 +25,7 @@ Go application with:
 make dev         # Dev server with hot reloading (air)
 make generate    # SQLC, Templ, and asset generation
 make test        # Run tests (gotestsum with race detection)
-make test-watch  # Watch mode for tests
+make test-cover  # Run tests with coverage report
 make migrate-up  # Run database migrations up
 make i18n        # Sync missing i18n keys
 ```

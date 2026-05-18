@@ -426,6 +426,38 @@ func (q *Queries) UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnaly
 	return err
 }
 
+const updateProjectService = `-- name: UpdateProjectService :one
+UPDATE projects SET service = $1 WHERE id = $2 RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
+`
+
+type UpdateProjectServiceParams struct {
+	Service string    `json:"service"`
+	ID      uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateProjectService(ctx context.Context, arg UpdateProjectServiceParams) (Project, error) {
+	row := q.db.QueryRow(ctx, updateProjectService, arg.Service, arg.ID)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.Name,
+		&i.Slug,
+		&i.Description,
+		&i.RepoID,
+		&i.Service,
+		&i.Forked,
+		&i.Forks,
+		&i.Watchers,
+		&i.ParentUrl,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.IsPrivate,
+	)
+	return i, err
+}
+
 const upsertAnalysisMetric = `-- name: UpsertAnalysisMetric :exec
 INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
 VALUES ($1, $2, $3, CASE WHEN $4 > 0 THEN 1 ELSE 0 END, $4, $5, $6, $7)
