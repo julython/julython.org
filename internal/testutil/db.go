@@ -97,6 +97,10 @@ func SetupSharedEnv() error {
 			setupErr = fmt.Errorf("failed to load config: %w", err)
 			return
 		}
+		// Clear GITHUB token so L1 scanner is not configured in tests.
+		// This prevents tests from hitting the real GitHub API when a token
+		// happens to exist in the environment.
+		cfg.GitHubToken = ""
 		sharedCfg = cfg
 	})
 

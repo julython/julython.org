@@ -124,6 +124,7 @@ type Querier interface {
 	// Requires the metric to already be at L1 (enforced in the handler).
 	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
+	UpdateProjectService(ctx context.Context, arg UpdateProjectServiceParams) (Project, error)
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

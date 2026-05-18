@@ -112,7 +112,9 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 			data = row.Data
 			info.NoScanEvidence = false
 		} else {
-			// No L1 row for this topic: do not attach README file content as if it were CI/tests/etc.
+			// No L1 row for this topic: fall back to readme and do not attach
+			// README file content as if it were CI/tests/etc.
+			info.TopicMetric = "readme"
 			data = map[string]any{}
 			info.NoScanEvidence = true
 			rowRm, errRm := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
