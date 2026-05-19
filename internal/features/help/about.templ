@@ -1,12 +1,14 @@
-package components
+package help
 
-templ AboutPage(layout LayoutData) {
-	@Layout(layout) {
+import "july/internal/components"
+
+templ AboutPage(layout components.LayoutData) {
+	@components.Layout(layout) {
 		@aboutPage(layout.User)
 	}
 }
 
-templ aboutPage(user *UserInfo) {
+templ aboutPage(user *components.UserInfo) {
 	<section class="max-w-3xl mx-auto px-4 py-12">
 		<article class="space-y-8">
 			@helpHeading("About Julython", "about")

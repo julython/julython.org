@@ -1,7 +1,9 @@
-package components
+package help
 
-templ PrivacyPage(layout LayoutData) {
-	@Layout(layout) {
+import "july/internal/components"
+
+templ PrivacyPage(layout components.LayoutData) {
+	@components.Layout(layout) {
 		@privacyPage()
 	}
 }

@@ -15,6 +15,8 @@ import (
 
 	"july/internal/config"
 	"july/internal/db"
+	"july/internal/features/blog"
+	"july/internal/features/help"
 	"july/internal/handlers"
 	"july/internal/i18n"
 	"july/internal/services"
@@ -75,8 +77,8 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
-	blogHandler := handlers.NewBlogHandler()
-	helpHandler := handlers.NewHelpHandler()
+	blogHandler := blog.NewHandler()
+	helpHandler := help.NewHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
 	activityHandler := handlers.NewActivityHandler(queries, gameSvc)
 
@@ -111,14 +113,10 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /profile/settings", profileHandler.Settings)
 	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
 
-	// Help
-	mux.HandleFunc("GET /help", helpHandler.Help)
-	mux.HandleFunc("GET /about", helpHandler.About)
-	mux.HandleFunc("GET /privacy", helpHandler.Privacy)
+		helpHandler.Register(mux)
 
 	// Blog
-	mux.HandleFunc("GET /blog", blogHandler.List)
-	mux.HandleFunc("GET /blog/{slug}", blogHandler.Detail)
+	blogHandler.Register(mux)
 
 	// Webhooks
 	mux.HandleFunc("GET /api/v1/gh/{path...}", proxyHandler.Proxy)

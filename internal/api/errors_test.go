@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -238,4 +239,160 @@ func TestGenerateRequestID(t *testing.T) {
 			ids[id] = true
 		}
 	})
+}
+
+func Test_errorWriter_Header(t *testing.T) {
+	type fields struct {
+		ResponseWriter http.ResponseWriter
+		buf            bytes.Buffer
+		status         int
+		headers        http.Header
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   http.Header
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ew := &errorWriter{
+				ResponseWriter: tt.fields.ResponseWriter,
+				buf:            tt.fields.buf,
+				status:         tt.fields.status,
+				headers:        tt.fields.headers,
+			}
+			if got := ew.Header(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("errorWriter.Header() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_errorWriter_WriteHeader(t *testing.T) {
+	type fields struct {
+		ResponseWriter http.ResponseWriter
+		buf            bytes.Buffer
+		status         int
+		headers        http.Header
+	}
+	type args struct {
+		code int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ew := &errorWriter{
+				ResponseWriter: tt.fields.ResponseWriter,
+				buf:            tt.fields.buf,
+				status:         tt.fields.status,
+				headers:        tt.fields.headers,
+			}
+			ew.WriteHeader(tt.args.code)
+		})
+	}
+}
+
+func Test_errorWriter_Write(t *testing.T) {
+	type fields struct {
+		ResponseWriter http.ResponseWriter
+		buf            bytes.Buffer
+		status         int
+		headers        http.Header
+	}
+	type args struct {
+		b []byte
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ew := &errorWriter{
+				ResponseWriter: tt.fields.ResponseWriter,
+				buf:            tt.fields.buf,
+				status:         tt.fields.status,
+				headers:        tt.fields.headers,
+			}
+			got, err := ew.Write(tt.args.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("errorWriter.Write() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("errorWriter.Write() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_copyResponse(t *testing.T) {
+	type args struct {
+		w  http.ResponseWriter
+		ew *errorWriter
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			copyResponse(tt.args.w, tt.args.ew)
+		})
+	}
+}
+
+func Test_isHTMLRequest(t *testing.T) {
+	type args struct {
+		r *http.Request
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isHTMLRequest(tt.args.r); got != tt.want {
+				t.Errorf("isHTMLRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isHTMXRequest(t *testing.T) {
+	type args struct {
+		r *http.Request
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isHTMXRequest(tt.args.r); got != tt.want {
+				t.Errorf("isHTMXRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

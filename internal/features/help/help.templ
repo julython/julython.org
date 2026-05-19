@@ -1,9 +1,10 @@
-package components
+package help
 
 import "github.com/invopop/ctxi18n/i18n"
+import "july/internal/components"
 
 // SignInGate renders children if the user is signed in, otherwise a sign-in link.
-templ SignInGate(user *UserInfo) {
+templ SignInGate(user *components.UserInfo) {
 	if user != nil {
 		{ children... }
 	} else {
@@ -17,13 +18,13 @@ templ helpHeading(text string, id string) {
 	<h2 id={ id } class="text-3xl font-bold text-purple-400 border-b border-purple-800 pb-3">{ text }</h2>
 }
 
-templ HelpPage(layout LayoutData) {
-	@Layout(layout) {
+templ HelpPage(layout components.LayoutData) {
+	@components.Layout(layout) {
 		@helpPage(layout.User)
 	}
 }
 
-templ helpPage(user *UserInfo) {
+templ helpPage(user *components.UserInfo) {
 	<section class="max-w-3xl mx-auto px-4 py-12">
 		<article class="space-y-8">
 			@helpHeading("Help me get started!", "get-started")
