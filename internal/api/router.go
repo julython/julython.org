@@ -15,6 +15,7 @@ import (
 
 	"july/internal/config"
 	"july/internal/db"
+	"july/internal/features/assets"
 	"july/internal/features/blog"
 	"july/internal/features/help"
 	"july/internal/handlers"
@@ -79,11 +80,11 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := blog.NewHandler()
 	helpHandler := help.NewHandler()
+	assetsHandler := assets.NewHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
 	activityHandler := handlers.NewActivityHandler(queries, gameSvc)
 
 	// Routes
-	mux.HandleFunc("GET /favicon.svg", handlers.FaviconHandler)
 	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
 	mux.HandleFunc("GET /auth/callback", authHandler.Callback)
 	mux.HandleFunc("GET /auth/session", authHandler.Session)
@@ -114,6 +115,9 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
 
 		helpHandler.Register(mux)
+
+	// Assets (favicon, etc.)
+	assetsHandler.Register(mux)
 
 	// Blog
 	blogHandler.Register(mux)
