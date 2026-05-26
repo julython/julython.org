@@ -11,6 +11,7 @@ import (
 
 	"july/internal/db"
 	"july/internal/metrics"
+	"july/internal/shared"
 )
 
 type analysisPayload struct {
@@ -120,7 +121,7 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		respondJSON(w, r, http.StatusOK, analysisResponse{
+		shared.RespondJSON(w, r, http.StatusOK, analysisResponse{
 			MetricType: p.MetricType,
 			Score:      existing.Score,
 			Level:      p.Level,
@@ -165,7 +166,7 @@ func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	respondJSON(w, r, http.StatusOK, analysisResponse{
+	shared.RespondJSON(w, r, http.StatusOK, analysisResponse{
 		MetricType: saved.MetricType,
 		Score:      saved.Score,
 		Level:      saved.Level,

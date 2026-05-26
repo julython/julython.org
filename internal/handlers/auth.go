@@ -14,6 +14,7 @@ import (
 
 	"july/internal/db"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 func init() {
@@ -175,7 +176,7 @@ func (h *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, r, http.StatusOK, user)
+	shared.RespondJSON(w, r, http.StatusOK, user)
 }
 
 // Logout clears the session - GET /auth/logout
@@ -192,7 +193,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	// Return JSON for API calls, redirect for browser
 	if r.Header.Get("Accept") == "application/json" {
-		respondJSON(w, r, http.StatusOK, map[string]bool{"ok": true})
+		shared.RespondJSON(w, r, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)

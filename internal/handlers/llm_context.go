@@ -12,6 +12,7 @@ import (
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 type metricLLMContextResponse struct {
@@ -37,7 +38,7 @@ type metricLLMErrorResponse struct {
 }
 
 func writeMetricLLMJSONError(w http.ResponseWriter, r *http.Request, status int, body metricLLMErrorResponse) {
-	respondJSON(w, r, status, body)
+	shared.RespondJSON(w, r, status, body)
 }
 
 // GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context
@@ -140,7 +141,7 @@ func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 	}
 
 	userPrompt := metrics.BuildMetricLLMUserContent(metricType, data, repoFull, row.Score, row.Level)
-	respondJSON(w, r, http.StatusOK, metricLLMContextResponse{
+	shared.RespondJSON(w, r, http.StatusOK, metricLLMContextResponse{
 		MetricType:   metricType,
 		RepoName:     repoFull,
 		L1Score:      row.Score,

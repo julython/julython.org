@@ -12,6 +12,7 @@ import (
 	"july/internal/components"
 	"july/internal/db"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 type HomeHandler struct {
@@ -124,7 +125,7 @@ func (h *HomeHandler) getRecentCommits(ctx context.Context, gameID uuid.UUID) []
 			AvatarURL: avatarURL,
 			Message:   row.Message,
 			Project:   row.ProjectSlug,
-			TimeAgo:   timeAgo(row.Timestamp),
+			TimeAgo:   shared.TimeAgo(row.Timestamp),
 		}
 	}
 

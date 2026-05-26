@@ -13,6 +13,7 @@ import (
 	"july/internal/components"
 	"july/internal/db"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 type ProjectHandler struct {
@@ -219,7 +220,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		MetricAIEnabled:  showMetricAI,
 	}
 	if haveMetricAt {
-		analysisBoard.LastAnalyzedAgo = timeAgo(lastMetricAt)
+		analysisBoard.LastAnalyzedAgo = shared.TimeAgo(lastMetricAt)
 	}
 	if sess := UserFromContext(ctx); sess != nil {
 		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {

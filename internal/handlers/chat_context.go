@@ -13,6 +13,7 @@ import (
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 type chatContextRequest struct {
@@ -154,7 +155,7 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 
 	info.GeneralChat = metrics.IsGenericChatMessage(msg)
 	userPrompt := metrics.BuildChatLLMUserContent(repoFull, info, data, msg)
-	respondJSON(w, r, http.StatusOK, chatContextResponse{
+	shared.RespondJSON(w, r, http.StatusOK, chatContextResponse{
 		SystemPrompt:      metrics.ChatExpertSystemPrompt(info),
 		UserPrompt:        userPrompt,
 		MatchedMetric:     info.MatchedKeyword,
