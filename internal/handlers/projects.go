@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"july/internal/components"
+	"july/internal/components/layout"
 	"july/internal/db"
 	"july/internal/services"
 	"july/internal/shared"
@@ -106,7 +107,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Projects",
 		CurrentPath: "/projects",
 		User:        getUserFromContext(r),
@@ -323,7 +324,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		HasMore:       hasMore,
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       project.Name,
 		CurrentPath: fmt.Sprintf("/projects/%s", slug),
 		User:        getUserFromContext(r),

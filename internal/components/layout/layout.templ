@@ -1,4 +1,4 @@
-package components
+package layout
 
 import (
 	"fmt"
@@ -8,23 +8,8 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 
 	"july/internal/components/icons"
+	"july/internal/shared"
 )
-
-type NavItem struct {
-	Label string
-	URL   string
-}
-
-type LayoutData struct {
-	Title       string
-	CurrentPath string
-	User        *UserInfo
-}
-
-type UserInfo struct {
-	Username  string
-	AvatarURL string
-}
 
 templ Layout(data LayoutData) {
 	{{ lang := ctxi18n.Locale(ctx).Code() }}
@@ -36,23 +21,23 @@ templ Layout(data LayoutData) {
 			<meta name="description" content="Julython — code more during July and January."/>
 			<title>{ data.Title } | Julython</title>
 			<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
-			<link rel="preload" href={ AssetTailwindCSS } as="style"/>
+			<link rel="preload" href={ shared.AssetTailwindCSS } as="style"/>
 			<link rel="preconnect" href="https://avatars.githubusercontent.com"/>
-			<link rel="stylesheet" href={ AssetTailwindCSS }/>
+			<link rel="stylesheet" href={ shared.AssetTailwindCSS }/>
 		</head>
 		<body class="text-gray-100">
-			@Navbar(data)
+			@navbar(data)
 			@HTMXErrorContainer()
 			<main>
 				{ children... }
 			</main>
 			@Footer()
-			<script src={ AssetHTMX }></script>
+			<script src={ shared.AssetHTMX }></script>
 		</body>
 	</html>
 }
 
-templ Navbar(data LayoutData) {
+templ navbar(data LayoutData) {
 	<nav class="bg-surface/80 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center h-16">

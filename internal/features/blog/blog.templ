@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/invopop/ctxi18n/i18n"
 	"io"
-	"july/internal/components"
+	"july/internal/components/layout"
+	"july/internal/shared"
 )
 
 // Unsafe renders a raw HTML string — used for goldmark output.
@@ -20,15 +21,15 @@ func Unsafe(html string) templ.Component {
 // ============================================
 // Blog list
 // ============================================
-templ BlogListPage(layout components.LayoutData, posts []Post) {
-	@components.Layout(layout) {
+templ BlogListPage(ld layout.LayoutData, posts []Post) {
+	@layout.Layout(ld) {
 		<section class="max-w-3xl mx-auto px-4 py-12">
 			<header class="mb-10">
 				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "Blog") }</h1>
 				<p class="text-gray-400">{ i18n.T(ctx, "BlogSubtitle") }</p>
 			</header>
 			if len(posts) == 0 {
-				@components.EmptyState("✍️", "NoPosts")
+				@layout.EmptyState("✍️", i18n.T(ctx, "NoPosts"))
 			} else {
 				<div class="space-y-4">
 					for _, p := range posts {
@@ -53,8 +54,8 @@ templ BlogListPage(layout components.LayoutData, posts []Post) {
 // ============================================
 // Blog post
 // ============================================
-templ BlogPostPage(layout components.LayoutData, post Post) {
-	@components.Layout(layout) {
+templ BlogPostPage(ld layout.LayoutData, post Post) {
+	@layout.Layout(ld) {
 		<article class="max-w-3xl mx-auto px-4 py-12">
 			<header class="mb-10">
 				<p class="text-sm text-gray-500 mb-3">{ post.Date.Format("January 2, 2006") }</p>
@@ -70,7 +71,7 @@ templ BlogPostPage(layout components.LayoutData, post Post) {
 		</article>
 		<!-- Mermaid loaded only when the post contains diagrams -->
 		if post.HasMermaid {
-			<script src={ components.AssetMermaid }></script>
+			<script src={ shared.AssetMermaid }></script>
 			<script>
 				mermaid.initialize({ startOnLoad: true, theme: 'dark' });
 			</script>

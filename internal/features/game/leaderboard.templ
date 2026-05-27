@@ -1,10 +1,13 @@
-package components
+package game
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/invopop/ctxi18n/i18n"
+	"july/internal/components/avatar"
+	"july/internal/components/layout"
+	"july/internal/components/tabs"
 )
 
 type LeaderboardEntry struct {
@@ -62,8 +65,8 @@ type LanguageLeaderboardData struct {
 // ============================================
 // User Leaderboard
 // ============================================
-templ LeaderboardPage(layout LayoutData, data LeaderboardData) {
-	@Layout(layout) {
+templ LeaderboardPage(ld layout.LayoutData, data LeaderboardData) {
+	@layout.Layout(ld) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
 			<header class="mb-8">
 				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "Leaderboard") }</h1>
@@ -81,7 +84,7 @@ templ LeaderboardPage(layout LayoutData, data LeaderboardData) {
 
 templ LeaderboardTable(data LeaderboardData) {
 	if len(data.Entries) == 0 {
-		@EmptyState("🏆", "NoParticipants")
+		@layout.EmptyState("🏆", i18n.T(ctx, "NoParticipants"))
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -123,7 +126,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		</td>
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", entry.Username)) } class="flex items-center gap-3 group">
-				@AvatarFallback(entry.Username, entry.AvatarURL, AvatarLg)
+				@avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg)
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Username }</span>
 			</a>
 		</td>
@@ -138,8 +141,8 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 // ============================================
 // Project Leaderboard
 // ============================================
-templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
-	@Layout(layout) {
+templ ProjectLeaderboardPage(ld layout.LayoutData, data ProjectLeaderboardData) {
+	@layout.Layout(ld) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
 			<header class="mb-8">
 				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "ProjectLeaderboard") }</h1>
@@ -155,7 +158,7 @@ templ ProjectLeaderboardPage(layout LayoutData, data ProjectLeaderboardData) {
 
 templ ProjectLeaderboardTable(data ProjectLeaderboardData) {
 	if len(data.Entries) == 0 {
-		@EmptyState("📦", "NoProjects")
+		@layout.EmptyState("📦", i18n.T(ctx, "NoProjects"))
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -211,8 +214,8 @@ templ ProjectLeaderboardRow(entry ProjectLeaderboardEntry) {
 // ============================================
 // Language Leaderboard
 // ============================================
-templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
-	@Layout(layout) {
+templ LanguageLeaderboardPage(ld layout.LayoutData, data LanguageLeaderboardData) {
+	@layout.Layout(ld) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
 			<header class="mb-8">
 				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "LanguageLeaderboard") }</h1>
@@ -228,7 +231,7 @@ templ LanguageLeaderboardPage(layout LayoutData, data LanguageLeaderboardData) {
 
 templ LanguageLeaderboardTable(data LanguageLeaderboardData) {
 	if len(data.Entries) == 0 {
-		@EmptyState("💻", "NoLanguages")
+		@layout.EmptyState("💻", i18n.T(ctx, "NoLanguages"))
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden">
 			<table class="w-full">
@@ -272,18 +275,18 @@ templ LanguageLeaderboardRow(entry LanguageLeaderboardEntry) {
 // leaderboardTabs renders the Users / Projects / Languages nav.
 // active is one of: "users", "projects", "languages"
 templ leaderboardTabs(ctx context.Context, active string) {
-	@Tabs(
-		Tab(TabProps{
+	@tabs.Tabs(
+		tabs.Tab(tabs.TabProps{
 			Href:     "/leaders",
 			Label:    i18n.T(ctx, "Users"),
 			IsActive: active == "users",
 		}),
-		Tab(TabProps{
+		tabs.Tab(tabs.TabProps{
 			Href:     "/leaders/projects",
 			Label:    i18n.T(ctx, "Projects"),
 			IsActive: active == "projects",
 		}),
-		Tab(TabProps{
+		tabs.Tab(tabs.TabProps{
 			Href:     "/leaders/languages",
 			Label:    i18n.T(ctx, "Languages"),
 			IsActive: active == "languages",

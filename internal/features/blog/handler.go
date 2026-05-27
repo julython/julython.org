@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"july/internal/components"
+	"july/internal/components/layout"
 	"july/internal/handlers"
 
 	"github.com/rs/zerolog/log"
@@ -35,7 +35,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Blog",
 		CurrentPath: "/blog",
 		User:        userInfoFromContext(r),
@@ -57,7 +57,7 @@ func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       post.Title,
 		CurrentPath: fmt.Sprintf("/blog/%s", slug),
 		User:        userInfoFromContext(r),
@@ -66,12 +66,12 @@ func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 	BlogPostPage(layout, post).Render(ctx, w)
 }
 
-func userInfoFromContext(r *http.Request) *components.UserInfo {
+func userInfoFromContext(r *http.Request) *layout.UserInfo {
 	u := handlers.UserFromContext(r.Context())
 	if u == nil {
 		return nil
 	}
-	return &components.UserInfo{
+	return &layout.UserInfo{
 		Username:  u.Username,
 		AvatarURL: u.AvatarURL,
 	}

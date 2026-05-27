@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -180,7 +182,12 @@ func truncateTables(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func runMigrations(connStr string) error {
-	m, err := migrate.New("file://../../migrations", connStr)
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return fmt.Errorf("could not determine caller location")
+	}
+	migrationsDir := filepath.Join(filepath.Dir(file), "..", "..", "migrations")
+	m, err := migrate.New("file://"+migrationsDir, connStr)
 	if err != nil {
 		return err
 	}

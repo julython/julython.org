@@ -9,6 +9,8 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 
 	"july/internal/components/icons"
+	"july/internal/components/layout"
+	"july/internal/shared"
 )
 
 // ============================================
@@ -125,8 +127,8 @@ func (d ProjectListData) listURL() string {
 	return "/projects?" + strings.Join(params, "&")
 }
 
-templ ProjectListPage(layout LayoutData, data ProjectListData) {
-	@Layout(layout) {
+templ ProjectListPage(ld layout.LayoutData, data ProjectListData) {
+	@layout.Layout(ld) {
 		<section class="max-w-5xl mx-auto px-4 py-12">
 			<header class="mb-8">
 				<h1 class="text-3xl font-bold text-white mb-2">{ i18n.T(ctx, "Projects") }</h1>
@@ -189,12 +191,35 @@ templ serviceFilterPill(value, current, label string) {
 	</label>
 }
 
+func serviceLabel(ctx context.Context, service string) string {
+	switch strings.ToLower(service) {
+	case "github":
+		return i18n.T(ctx, "ViewOnGitHub") + " ↗"
+	case "gitlab":
+		return i18n.T(ctx, "ViewOnGitLab") + " ↗"
+	default:
+		return i18n.T(ctx, "ViewOnService") + " ↗"
+	}
+}
+
+// ServiceLink renders a "View on X" external link button.
+templ ServiceLink(url, service string) {
+	<a
+		href={ templ.SafeURL(url) }
+		target="_blank"
+		rel="noopener noreferrer"
+		class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors border border-white/10 text-sm"
+	>
+		{ serviceLabel(ctx, service) }
+	</a>
+}
+
 // ProjectListItems is the partial returned for both HTMX search/filter requests
 // and the infinite-scroll sentinel swap. It renders the cards plus a sentinel
 templ ProjectListItems(data ProjectListData) {
 	if len(data.Entries) == 0 {
 		// div that triggers the next page load when scrolled into view.
-		@EmptyState("📦", "NoProjects")
+		@layout.EmptyState("📦", i18n.T(ctx, "NoProjects"))
 	} else {
 		<div class="grid gap-4">
 			for _, entry := range data.Entries {
@@ -259,8 +284,8 @@ type ProjectDetailData struct {
 	HasMore       bool
 }
 
-templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
-	@Layout(layout) {
+templ ProjectDetailPage(ld layout.LayoutData, data ProjectDetailData) {
+	@layout.Layout(ld) {
 		<section>
 			<div class="max-w-5xl mx-auto px-4 pt-12">
 				<header class="mb-8">
@@ -319,7 +344,7 @@ templ ProjectDetailPage(layout LayoutData, data ProjectDetailData) {
 
 templ ProjectCommitList(data ProjectDetailData) {
 	if len(data.Commits) == 0 {
-		@EmptyState("📭", "NoCommits")
+		@layout.EmptyState("📭", i18n.T(ctx, "NoCommits"))
 	} else {
 		<div class="bg-surface-light rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
 			for _, c := range data.Commits {
@@ -450,14 +475,14 @@ templ projectChatPanel(data ProjectDetailData) {
 			class="flex flex-col flex-1 min-h-0"
 			data-repo-url={ data.Project.URL }
 			data-project-id={ data.Project.ID }
-			data-llm-worker-url={ AssetLLMWorker }
+			data-llm-worker-url={ shared.AssetLLMWorker }
 			data-repo-name={ githubRepoPath(data.Project.URL) }
 			data-repo-description={ data.Project.Description }
 			if data.AnalysisBoard.MetricAIEnabled {
 				data-metric-ai-enabled="true"
 			}
 		></div>
-		<script type="module" src={ AssetAnalyzer }></script>
+		<script type="module" src={ shared.AssetAnalyzer }></script>
 	</div>
 }
 

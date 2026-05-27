@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/components"
+	"july/internal/components/layout"
 	"july/internal/services"
 )
 
@@ -313,8 +314,8 @@ func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) 
 // Helpers
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) layout(r *http.Request, title string) components.LayoutData {
-	return components.LayoutData{
+func (h *ProfileHandler) layout(r *http.Request, title string) layout.LayoutData {
+	return layout.LayoutData{
 		Title:       title,
 		CurrentPath: r.URL.Path,
 		User:        getUserFromContext(r),

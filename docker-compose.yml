@@ -6,7 +6,7 @@ services:
       - docker-compose.env
       - .env
     ports:
-      - 8001:8000
+      - 8000:8000
     volumes:
       - go-mod-cache:/go/pkg/mod
 

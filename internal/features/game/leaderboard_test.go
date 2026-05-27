@@ -1,4 +1,4 @@
-package handlers_test
+package game_test
 
 import (
 	"context"
@@ -79,6 +79,12 @@ func TestLeaderboard(t *testing.T) {
 		assert.True(t, strings.Contains(p1, "🥇"), "page 1 must show gold medal")
 		assert.False(t, strings.Contains(p2, "🥇"), "page 2 must not show gold medal")
 	})
+}
+
+func must200(t *testing.T, resp *http.Response) *http.Response {
+	t.Helper()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	return resp
 }
 
 func TestProjectLeaderboard(t *testing.T) {

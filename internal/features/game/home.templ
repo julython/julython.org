@@ -1,31 +1,15 @@
-package components
+package game
 
 import (
+	"context"
 	"fmt"
+	"io"
 
 	"github.com/invopop/ctxi18n/i18n"
+	"july/internal/components/avatar"
 	"july/internal/components/icons"
+	"july/internal/components/layout"
 )
-
-type GameStats struct {
-	Name          string
-	TotalCommits  int
-	TotalUsers    int
-	TotalProjects int
-}
-
-type DayCommits struct {
-	Day   int
-	Count int
-}
-
-type RecentCommit struct {
-	Username  string
-	AvatarURL string
-	Message   string
-	Project   string
-	TimeAgo   string
-}
 
 type HomeData struct {
 	Game          GameStats
@@ -34,8 +18,8 @@ type HomeData struct {
 	MaxDayCommits int
 }
 
-templ HomePage(layout LayoutData, data HomeData) {
-	@Layout(layout) {
+templ HomePage(ld layout.LayoutData, data HomeData) {
+	@layout.Layout(ld) {
 		@Hero(data.Game)
 		@InfoCards()
 		@StatsSection(data)
@@ -86,7 +70,7 @@ templ InfoCard(emoji, title, body string) {
 			<h3 class="text-lg font-semibold text-july-400">{ title }</h3>
 		</div>
 		<p class="text-gray-400 leading-relaxed">
-			@templ.Raw(body)
+			@Unsafe(body)
 		</p>
 	</div>
 }
@@ -98,6 +82,14 @@ func inlineLink(href, text string) string {
 		href,
 		templ.EscapeString(text),
 	)
+}
+
+// Unsafe renders raw HTML string as a templ.Component.
+func Unsafe(html string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, html)
+		return err
+	})
 }
 
 templ StatsSection(data HomeData) {
@@ -176,7 +168,7 @@ templ RecentActivity(commits []RecentCommit) {
 templ RecentCommitRow(commit RecentCommit) {
 	<div class="py-3 group">
 		<div class="flex items-start gap-3">
-			@AvatarFallback(commit.Username, commit.AvatarURL, AvatarSm)
+			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, AvatarSizeSm)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href={ templ.SafeURL(fmt.Sprintf("/user/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
@@ -195,6 +187,8 @@ templ RecentCommitRow(commit RecentCommit) {
 		</div>
 	</div>
 }
+
+const AvatarSizeSm = "sm"
 
 func formatNumber(n int) string {
 	if n >= 1000000 {

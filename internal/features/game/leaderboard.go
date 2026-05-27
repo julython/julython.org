@@ -1,4 +1,4 @@
-package handlers
+package game
 
 import (
 	"net/http"
@@ -6,24 +6,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"july/internal/components"
+	"july/internal/components/layout"
 	"july/internal/db"
-	"july/internal/services"
 )
 
-type LeaderboardHandler struct {
-	queries     *db.Queries
-	gameService *services.GameService
-}
-
-func NewLeaderboardHandler(q *db.Queries, gs *services.GameService) *LeaderboardHandler {
-	return &LeaderboardHandler{
-		queries:     q,
-		gameService: gs,
-	}
-}
-
-func (h *LeaderboardHandler) Leaders(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Leaders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -55,13 +42,13 @@ func (h *LeaderboardHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 		rows = rows[:limit]
 	}
 
-	entries := make([]components.LeaderboardEntry, len(rows))
+	entries := make([]LeaderboardEntry, len(rows))
 	for i, row := range rows {
 		avatarURL := ""
 		if row.AvatarUrl.Valid {
 			avatarURL = row.AvatarUrl.String
 		}
-		entries[i] = components.LeaderboardEntry{
+		entries[i] = LeaderboardEntry{
 			Rank:         offset + i + 1,
 			UserID:       row.UserID.String(),
 			Username:     row.Username,
@@ -72,13 +59,13 @@ func (h *LeaderboardHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	gameStats := components.GameStats{
+	gameStats := GameStats{
 		Name:         game.Name,
 		TotalCommits: int(stats.TotalCommits),
 		TotalUsers:   int(stats.UniqueUsers),
 	}
 
-	data := components.LeaderboardData{
+	data := LeaderboardData{
 		Game:       gameStats,
 		Entries:    entries,
 		Offset:     offset,
@@ -87,20 +74,20 @@ func (h *LeaderboardHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 		TotalUsers: int(stats.UniqueUsers),
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Leaderboard",
 		CurrentPath: "/leaders",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		components.LeaderboardTable(data).Render(ctx, w)
+		LeaderboardTable(data).Render(ctx, w)
 	} else {
-		components.LeaderboardPage(layout, data).Render(ctx, w)
+		LeaderboardPage(layout, data).Render(ctx, w)
 	}
 }
 
-func (h *LeaderboardHandler) Projects(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -125,9 +112,9 @@ func (h *LeaderboardHandler) Projects(w http.ResponseWriter, r *http.Request) {
 		rows = rows[:limit]
 	}
 
-	entries := make([]components.ProjectLeaderboardEntry, len(rows))
+	entries := make([]ProjectLeaderboardEntry, len(rows))
 	for i, row := range rows {
-		entries[i] = components.ProjectLeaderboardEntry{
+		entries[i] = ProjectLeaderboardEntry{
 			Rank:             i + 1,
 			ProjectID:        row.ProjectID.String(),
 			ProjectName:      row.ProjectName,
@@ -141,26 +128,26 @@ func (h *LeaderboardHandler) Projects(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := components.ProjectLeaderboardData{
-		Game:    components.GameStats{Name: game.Name},
+	data := ProjectLeaderboardData{
+		Game:    GameStats{Name: game.Name},
 		Entries: entries,
 		HasMore: hasMore,
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Project Leaderboard",
 		CurrentPath: "/leaders/projects",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		components.ProjectLeaderboardTable(data).Render(ctx, w)
+		ProjectLeaderboardTable(data).Render(ctx, w)
 	} else {
-		components.ProjectLeaderboardPage(layout, data).Render(ctx, w)
+		ProjectLeaderboardPage(layout, data).Render(ctx, w)
 	}
 }
 
-func (h *LeaderboardHandler) Languages(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Languages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -185,9 +172,9 @@ func (h *LeaderboardHandler) Languages(w http.ResponseWriter, r *http.Request) {
 		rows = rows[:limit]
 	}
 
-	entries := make([]components.LanguageLeaderboardEntry, len(rows))
+	entries := make([]LanguageLeaderboardEntry, len(rows))
 	for i, row := range rows {
-		entries[i] = components.LanguageLeaderboardEntry{
+		entries[i] = LanguageLeaderboardEntry{
 			Rank:         i + 1,
 			LanguageID:   row.LanguageID.String(),
 			LanguageName: row.LanguageName,
@@ -196,60 +183,60 @@ func (h *LeaderboardHandler) Languages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := components.LanguageLeaderboardData{
-		Game:    components.GameStats{Name: game.Name},
+	data := LanguageLeaderboardData{
+		Game:    GameStats{Name: game.Name},
 		Entries: entries,
 		HasMore: hasMore,
 	}
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Language Leaderboard",
 		CurrentPath: "/leaders/languages",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		components.LanguageLeaderboardTable(data).Render(ctx, w)
+		LanguageLeaderboardTable(data).Render(ctx, w)
 	} else {
-		components.LanguageLeaderboardPage(layout, data).Render(ctx, w)
+		LanguageLeaderboardPage(layout, data).Render(ctx, w)
 	}
 }
 
-func (h *LeaderboardHandler) renderEmptyLeaderboard(w http.ResponseWriter, r *http.Request) {
-	data := components.LeaderboardData{
-		Game:    components.GameStats{Name: "Julython"},
-		Entries: []components.LeaderboardEntry{},
+func (h *Handler) renderEmptyLeaderboard(w http.ResponseWriter, r *http.Request) {
+	data := LeaderboardData{
+		Game:    GameStats{Name: "Julython"},
+		Entries: []LeaderboardEntry{},
 	}
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Leaderboard",
 		CurrentPath: "/leaders",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
-	components.LeaderboardPage(layout, data).Render(r.Context(), w)
+	LeaderboardPage(layout, data).Render(r.Context(), w)
 }
 
-func (h *LeaderboardHandler) renderEmptyProjectLeaderboard(w http.ResponseWriter, r *http.Request) {
-	data := components.ProjectLeaderboardData{
-		Game:    components.GameStats{Name: "Julython"},
-		Entries: []components.ProjectLeaderboardEntry{},
+func (h *Handler) renderEmptyProjectLeaderboard(w http.ResponseWriter, r *http.Request) {
+	data := ProjectLeaderboardData{
+		Game:    GameStats{Name: "Julython"},
+		Entries: []ProjectLeaderboardEntry{},
 	}
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Project Leaderboard",
 		CurrentPath: "/leaders/projects",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
-	components.ProjectLeaderboardPage(layout, data).Render(r.Context(), w)
+	ProjectLeaderboardPage(layout, data).Render(r.Context(), w)
 }
 
-func (h *LeaderboardHandler) renderEmptyLanguageLeaderboard(w http.ResponseWriter, r *http.Request) {
-	data := components.LanguageLeaderboardData{
-		Game:    components.GameStats{Name: "Julython"},
-		Entries: []components.LanguageLeaderboardEntry{},
+func (h *Handler) renderEmptyLanguageLeaderboard(w http.ResponseWriter, r *http.Request) {
+	data := LanguageLeaderboardData{
+		Game:    GameStats{Name: "Julython"},
+		Entries: []LanguageLeaderboardEntry{},
 	}
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Language Leaderboard",
 		CurrentPath: "/leaders/languages",
-		User:        getUserFromContext(r),
+		User:        userInfoFromContext(r),
 	}
-	components.LanguageLeaderboardPage(layout, data).Render(r.Context(), w)
+	LanguageLeaderboardPage(layout, data).Render(r.Context(), w)
 }

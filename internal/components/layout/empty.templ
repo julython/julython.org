@@ -1,0 +1,14 @@
+package layout
+
+// ============================================
+// Empty state card
+// ============================================
+
+// EmptyState renders a centered card for "no data" scenarios.
+// Accepts an emoji (rendered as raw text) and an i18n key for the message.
+templ EmptyState(emoji string, title string) {
+	<div class="text-center py-16 bg-surface-light rounded-xl border border-white/10">
+		<span class="text-6xl mb-4 block">{ emoji }</span>
+		<p class="text-gray-400">{ title }</p>
+	</div>
+}

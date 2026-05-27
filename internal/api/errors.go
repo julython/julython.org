@@ -2,7 +2,7 @@ package api
 
 import (
 	"bytes"
-	"july/internal/components"
+	"july/internal/components/layout"
 	"net/http"
 	"strings"
 )
@@ -47,7 +47,7 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 
 		// Handle HTMX first to return partial html
 		if isHTMXRequest(r) {
-			data := components.LayoutData{
+			data := layout.LayoutData{
 				Title:       http.StatusText(ew.status),
 				CurrentPath: r.URL.Path,
 			}
@@ -55,7 +55,7 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("HX-Retarget", "#htmx-error")
 			w.Header().Set("HX-Reswap", "innerHTML")
 			w.WriteHeader(http.StatusOK)
-			components.ErrorFragment(data, ew.status).Render(r.Context(), w)
+			layout.ErrorFragment(data, ew.status).Render(r.Context(), w)
 			return
 		}
 
@@ -65,7 +65,7 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		data := components.LayoutData{
+		data := layout.LayoutData{
 			Title:       http.StatusText(ew.status),
 			CurrentPath: r.URL.Path,
 		}
@@ -77,12 +77,12 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("HX-Retarget", "#htmx-error")
 			w.Header().Set("HX-Reswap", "innerHTML")
 			w.WriteHeader(http.StatusOK)
-			components.ErrorFragment(data, ew.status).Render(r.Context(), w)
+			layout.ErrorFragment(data, ew.status).Render(r.Context(), w)
 			return
 		}
 
 		w.WriteHeader(ew.status)
-		components.ErrorPage(data, ew.status).Render(r.Context(), w)
+		layout.ErrorPage(data, ew.status).Render(r.Context(), w)
 	})
 }
 

@@ -1,11 +1,16 @@
-package components
+package game
+
+import (
+	"july/internal/components/avatar"
+	"july/internal/components/layout"
+)
 
 type ActivityData struct {
 	Commits []RecentCommit
 }
 
-templ ActivityPage(layout LayoutData, data ActivityData) {
-	@Layout(layout) {
+templ ActivityPage(ld layout.LayoutData, data ActivityData) {
+	@layout.Layout(ld) {
 		<main class="max-w-7xl mx-auto px-4 py-8">
 			<div class="flex items-center justify-between mb-8">
 				<h1 class="text-3xl font-bold text-july-400">Recent Activity</h1>
@@ -31,7 +36,7 @@ templ ActivityPage(layout LayoutData, data ActivityData) {
 templ RecentActivityRow(commit RecentCommit) {
 	<div class="p-4 hover:bg-surface-light/50 transition-colors group">
 		<div class="flex items-start gap-3">
-			@AvatarFallback(commit.Username, commit.AvatarURL, AvatarMd)
+			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, avatar.AvatarMd)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href="/user/{commit.Username}" class="font-medium text-white hover:text-july-400 transition-colors">

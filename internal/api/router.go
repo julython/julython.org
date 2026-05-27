@@ -17,6 +17,7 @@ import (
 	"july/internal/db"
 	"july/internal/features/assets"
 	"july/internal/features/blog"
+	"july/internal/features/game"
 	"july/internal/features/help"
 	"july/internal/handlers"
 	"july/internal/i18n"
@@ -73,8 +74,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
-	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
-	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
+	gameHandler := game.NewHandler(queries, gameSvc)
 	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
@@ -82,7 +82,6 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	helpHandler := help.NewHandler()
 	assetsHandler := assets.NewHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
-	activityHandler := handlers.NewActivityHandler(queries, gameSvc)
 
 	// Routes
 	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
@@ -90,11 +89,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /auth/session", authHandler.Session)
 	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
 
-	mux.HandleFunc("GET /{$}", homeHandler.Home)
-	mux.HandleFunc("GET /activity", activityHandler.Activity)
-	mux.HandleFunc("GET /leaders", leaderboardHandler.Leaders)
-	mux.HandleFunc("GET /leaders/projects", leaderboardHandler.Projects)
-	mux.HandleFunc("GET /leaders/languages", leaderboardHandler.Languages)
+	gameHandler.Register(mux)
 	mux.HandleFunc("GET /projects", projectHandler.List)
 	mux.HandleFunc("POST /projects/{slug}/analysis/l1", projectHandler.PostProjectRescanL1)
 	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
@@ -114,7 +109,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /profile/settings", profileHandler.Settings)
 	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
 
-		helpHandler.Register(mux)
+	helpHandler.Register(mux)
 
 	// Assets (favicon, etc.)
 	assetsHandler.Register(mux)

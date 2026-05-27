@@ -5,6 +5,7 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 
 	"july/internal/components/icons"
+	"july/internal/components/layout"
 	"july/internal/services"
 )
 
@@ -19,8 +20,8 @@ const (
 // ============================================
 // Shared profile shell
 // ============================================
-templ ProfileShell(layout LayoutData, section ProfileSection, content templ.Component) {
-	@Layout(layout) {
+templ ProfileShell(ld layout.LayoutData, section ProfileSection, content templ.Component) {
+	@layout.Layout(ld) {
 		<div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
 			// Mobile: stacked. Desktop: sidebar + content side by side.
 			<div class="flex flex-col md:flex-row gap-6 md:gap-8">
@@ -74,8 +75,8 @@ type OverviewData struct {
 	Emails    []string
 }
 
-templ OverviewPage(layout LayoutData, data OverviewData) {
-	@ProfileShell(layout, SectionOverview, overviewContent(data))
+templ OverviewPage(ld layout.LayoutData, data OverviewData) {
+	@ProfileShell(ld, SectionOverview, overviewContent(data))
 }
 
 templ overviewContent(data OverviewData) {
@@ -129,8 +130,8 @@ type SettingsData struct {
 	Error   string
 }
 
-templ SettingsPage(layout LayoutData, data SettingsData) {
-	@ProfileShell(layout, SectionSettings, settingsContent(data))
+templ SettingsPage(ld layout.LayoutData, data SettingsData) {
+	@ProfileShell(ld, SectionSettings, settingsContent(data))
 }
 
 templ settingsContent(data SettingsData) {
@@ -148,8 +149,8 @@ templ settingsContent(data SettingsData) {
 // ============================================
 // Webhooks
 // ============================================
-templ WebhooksPage(layout LayoutData, page int) {
-	@ProfileShell(layout, SectionWebhooks, webhooksContent(page))
+templ WebhooksPage(ld layout.LayoutData, page int) {
+	@ProfileShell(ld, SectionWebhooks, webhooksContent(page))
 }
 
 templ webhooksContent(page int) {

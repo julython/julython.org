@@ -1,4 +1,4 @@
-package handlers_test
+package game_test
 
 import (
 	"context"

@@ -3,7 +3,7 @@ package help
 import (
 	"net/http"
 
-	"july/internal/components"
+	"july/internal/components/layout"
 	"july/internal/handlers"
 )
 
@@ -25,7 +25,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 func (h *Handler) Help(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Help",
 		CurrentPath: "/help",
 		User:        userInfoFromContext(r),
@@ -37,7 +37,7 @@ func (h *Handler) Help(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "About",
 		CurrentPath: "/about",
 		User:        userInfoFromContext(r),
@@ -49,7 +49,7 @@ func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Privacy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	layout := components.LayoutData{
+	layout := layout.LayoutData{
 		Title:       "Privacy",
 		CurrentPath: "/privacy",
 		User:        userInfoFromContext(r),
@@ -58,12 +58,12 @@ func (h *Handler) Privacy(w http.ResponseWriter, r *http.Request) {
 	PrivacyPage(layout).Render(ctx, w)
 }
 
-func userInfoFromContext(r *http.Request) *components.UserInfo {
+func userInfoFromContext(r *http.Request) *layout.UserInfo {
 	u := handlers.UserFromContext(r.Context())
 	if u == nil {
 		return nil
 	}
-	return &components.UserInfo{
+	return &layout.UserInfo{
 		Username:  u.Username,
 		AvatarURL: u.AvatarURL,
 	}
