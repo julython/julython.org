@@ -1,4 +1,4 @@
-package handlers
+package projects
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/db"
 )
 
@@ -42,7 +43,7 @@ func (h *ProjectHandler) PostProjectRescanL1(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	slug := r.PathValue("slug")
 
-	sessionUser := UserFromContext(ctx)
+	sessionUser := auth.UserFromContext(ctx)
 	if sessionUser == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

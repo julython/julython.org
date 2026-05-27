@@ -9,9 +9,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/components/layout"
 	"july/internal/db"
-	"july/internal/handlers"
 	"july/internal/services"
 )
 
@@ -128,7 +128,7 @@ func (h *Handler) renderEmptyHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func userInfoFromContext(r *http.Request) *layout.UserInfo {
-	u := handlers.UserFromContext(r.Context())
+	u := auth.UserFromContext(r.Context())
 	if u == nil {
 		return nil
 	}

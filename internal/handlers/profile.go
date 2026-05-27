@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/components"
 	"july/internal/components/layout"
 	"july/internal/services"
@@ -40,7 +41,7 @@ func NewProfileHandler(
 
 func (h *ProfileHandler) Overview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Redirect(w, r, "/auth/login/github", http.StatusFound)
 		return
@@ -64,7 +65,7 @@ func (h *ProfileHandler) Overview(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProfileHandler) Webhooks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if UserFromContext(ctx) == nil {
+	if auth.UserFromContext(ctx) == nil {
 		http.Redirect(w, r, "/auth/login/github", http.StatusFound)
 		return
 	}
@@ -86,7 +87,7 @@ const webhookReposPerPage = 10
 
 func (h *ProfileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -140,7 +141,7 @@ func (h *ProfileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProfileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -198,7 +199,7 @@ func (h *ProfileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProfileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -253,7 +254,7 @@ func (h *ProfileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProfileHandler) Settings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Redirect(w, r, "/auth/login/github", http.StatusFound)
 		return
@@ -269,7 +270,7 @@ func (h *ProfileHandler) Settings(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	sess := UserFromContext(ctx)
+	sess := auth.UserFromContext(ctx)
 	if sess == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

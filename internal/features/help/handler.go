@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"july/internal/components/layout"
-	"july/internal/handlers"
 )
 
 // Handler handles help, about, and privacy page HTTP requests.
@@ -28,7 +27,7 @@ func (h *Handler) Help(w http.ResponseWriter, r *http.Request) {
 	layout := layout.LayoutData{
 		Title:       "Help",
 		CurrentPath: "/help",
-		User:        userInfoFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	HelpPage(layout).Render(ctx, w)
@@ -40,7 +39,7 @@ func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
 	layout := layout.LayoutData{
 		Title:       "About",
 		CurrentPath: "/about",
-		User:        userInfoFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	AboutPage(layout).Render(ctx, w)
@@ -52,19 +51,8 @@ func (h *Handler) Privacy(w http.ResponseWriter, r *http.Request) {
 	layout := layout.LayoutData{
 		Title:       "Privacy",
 		CurrentPath: "/privacy",
-		User:        userInfoFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	PrivacyPage(layout).Render(ctx, w)
-}
-
-func userInfoFromContext(r *http.Request) *layout.UserInfo {
-	u := handlers.UserFromContext(r.Context())
-	if u == nil {
-		return nil
-	}
-	return &layout.UserInfo{
-		Username:  u.Username,
-		AvatarURL: u.AvatarURL,
-	}
 }

@@ -13,12 +13,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/config"
 	"july/internal/db"
 	"july/internal/features/assets"
 	"july/internal/features/blog"
 	"july/internal/features/game"
 	"july/internal/features/help"
+	"july/internal/features/projects"
 	"july/internal/handlers"
 	"july/internal/i18n"
 	"july/internal/services"
@@ -29,7 +31,7 @@ import (
 // buildMux constructs the ServeMux and all dependencies.
 // Returns the mux and the two objects applyMiddleware needs.
 func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
-	*http.ServeMux, *services.SessionManager, *handlers.AuthHandler,
+	*http.ServeMux, *services.SessionManager, *auth.AuthHandler,
 ) {
 	mux := http.NewServeMux()
 
@@ -73,10 +75,10 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 		Msg("oauth configured")
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
+	authHandler := auth.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
 	gameHandler := game.NewHandler(queries, gameSvc)
 	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
-	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
+	projectHandler := projects.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
 	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := blog.NewHandler()
 	helpHandler := help.NewHandler()
@@ -138,7 +140,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 func applyMiddleware(
 	h http.Handler,
 	sessionMgr *services.SessionManager,
-	authHandler *handlers.AuthHandler,
+	authHandler *auth.AuthHandler,
 	logger zerolog.Logger,
 	cfg *config.Config,
 ) http.Handler {

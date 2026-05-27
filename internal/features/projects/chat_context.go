@@ -1,4 +1,4 @@
-package handlers
+package projects
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
@@ -35,7 +36,7 @@ func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
 
-	sessionUser := UserFromContext(ctx)
+	sessionUser := auth.UserFromContext(ctx)
 	if sessionUser == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

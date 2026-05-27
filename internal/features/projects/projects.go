@@ -1,4 +1,4 @@
-package handlers
+package projects
 
 import (
 	"errors"
@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"july/internal/auth"
 	"july/internal/components"
 	"july/internal/components/layout"
 	"july/internal/db"
@@ -110,7 +111,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	layout := layout.LayoutData{
 		Title:       "Projects",
 		CurrentPath: "/projects",
-		User:        getUserFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 	components.ProjectListPage(layout, data).Render(ctx, w)
 }
@@ -159,7 +160,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	showMetricAI := false
-	if sess := UserFromContext(ctx); sess != nil {
+	if sess := auth.UserFromContext(ctx); sess != nil {
 		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
 			if !project.IsPrivate && h.l1Scanner.IsConfigured() {
 				showMetricAI = true
@@ -223,7 +224,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	if haveMetricAt {
 		analysisBoard.LastAnalyzedAgo = shared.TimeAgo(lastMetricAt)
 	}
-	if sess := UserFromContext(ctx); sess != nil {
+	if sess := auth.UserFromContext(ctx); sess != nil {
 		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
 			analysisBoard.RescanL1Slug = project.Slug
 			switch {
@@ -327,7 +328,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	layout := layout.LayoutData{
 		Title:       project.Name,
 		CurrentPath: fmt.Sprintf("/projects/%s", slug),
-		User:        getUserFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	if r.Header.Get("HX-Request") == "true" {

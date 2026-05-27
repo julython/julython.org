@@ -9,6 +9,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/services"
 )
 
@@ -56,7 +57,7 @@ func (h *GitHubProxyHandler) Proxy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)
 
-	user := UserFromContext(ctx)
+	user := auth.UserFromContext(ctx)
 	if user == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return

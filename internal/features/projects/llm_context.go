@@ -1,4 +1,4 @@
-package handlers
+package projects
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
@@ -48,7 +49,7 @@ func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 	projectID := r.PathValue("projectID")
 	metricType := r.PathValue("metricType")
 
-	sessionUser := UserFromContext(ctx)
+	sessionUser := auth.UserFromContext(ctx)
 	if sessionUser == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
