@@ -235,14 +235,7 @@ templ ProjectCard(entry ProjectEntry) {
 				<p class="text-xs text-gray-600 mt-2">{ entry.Slug }</p>
 			</a>
 			<div class="shrink-0 flex flex-col items-end gap-2">
-				<a
-					href={ templ.SafeURL(entry.URL) }
-					target="_blank"
-					rel="noopener noreferrer"
-					class="text-xs px-3 py-1 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
-				>
-					@ServiceLink(entry.URL, entry.Service)
-				</a>
+				@ServiceLink(entry.URL, entry.Service)
 				<div class="flex items-center gap-3 text-xs text-gray-500">
 					<span title={ i18n.T(ctx, "Forks") }>⑂ { fmt.Sprintf("%d", entry.Forks) }</span>
 					<span title={ i18n.T(ctx, "Watchers") }>👁 { fmt.Sprintf("%d", entry.Watchers) }</span>

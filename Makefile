@@ -100,10 +100,10 @@ $(WEBLLM_VENDOR_DIR)/lib/index.js:
 compose-deps:  ## Run shared services
 	$(COMPOSE_CMD) up -d postgres adminer db_create
 
-compose-up:  ## Run the shared services in docker
-	$(COMPOSE_CMD) up api smee
+up:  ## Run the shared services in docker
+	$(COMPOSE_CMD) up api smee --build
 
-compose-down:  ## Stop the docker services
+down:  ## Stop the docker services
 	$(COMPOSE_CMD) down
 
 # ============================================
