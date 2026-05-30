@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"july/internal/auth"
-	"july/internal/components"
 	"july/internal/components/layout"
 	"july/internal/db"
 	"july/internal/services"
@@ -27,6 +26,16 @@ type ProjectHandler struct {
 
 func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) *ProjectHandler {
 	return &ProjectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
+}
+
+// Register mounts all project routes on the given mux.
+func (h *ProjectHandler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /projects", h.List)
+	mux.HandleFunc("GET /projects/{slug}", h.Detail)
+	mux.HandleFunc("POST /projects/{slug}/analysis/l1", h.PostProjectRescanL1)
+	mux.HandleFunc("POST /api/projects/{projectID}/analysis", h.PostProjectAnalysis)
+	mux.HandleFunc("POST /api/projects/{projectID}/analysis/chat-context", h.PostProjectChatContext)
+	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", h.GetProjectMetricLLMContext)
 }
 
 // Order matches metrics.Parse and the project detail board UI.
@@ -70,13 +79,13 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		projects = projects[:projectPageSize]
 	}
 
-	entries := make([]components.ProjectEntry, len(projects))
+	entries := make([]ProjectEntry, len(projects))
 	for i, p := range projects {
 		desc := ""
 		if p.Description.Valid {
 			desc = p.Description.String
 		}
-		entries[i] = components.ProjectEntry{
+		entries[i] = ProjectEntry{
 			ID:          p.ID.String(),
 			Name:        p.Name,
 			Slug:        p.Slug,
@@ -95,7 +104,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		nextCursor = entries[len(entries)-1].ID
 	}
 
-	data := components.ProjectListData{
+	data := ProjectListData{
 		Entries:    entries,
 		Search:     search,
 		Service:    service,
@@ -104,7 +113,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		components.ProjectListItems(data).Render(ctx, w)
+		ProjectListItems(data).Render(ctx, w)
 		return
 	}
 
@@ -113,7 +122,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		CurrentPath: "/projects",
 		User:        layout.UserInfoFromContext(r),
 	}
-	components.ProjectListPage(layout, data).Render(ctx, w)
+	ProjectListPage(layout, data).Render(ctx, w)
 }
 
 func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +144,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		desc = project.Description.String
 	}
 
-	entry := components.ProjectEntry{
+	entry := ProjectEntry{
 		ID:          project.ID.String(),
 		Name:        project.Name,
 		Slug:        project.Slug,
@@ -182,7 +191,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		{"ai_ready", i18n.T(ctx, "projects.MetricAIReady")},
 	}
 
-	tiles := make([]components.ProjectAnalysisTile, 0, len(analysisBoardSpec))
+	tiles := make([]ProjectAnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
 	for _, spec := range analysisBoardSpec {
 		level := levelByType[spec.key]
@@ -195,7 +204,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		score := scoreByType[spec.key]
 		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
 		earned += int(score) * int(level) * 2
-		tiles = append(tiles, components.ProjectAnalysisTile{
+		tiles = append(tiles, ProjectAnalysisTile{
 			MetricKey: spec.key,
 			Level:     level,
 			Score:     score,
@@ -214,7 +223,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 			haveMetricAt = true
 		}
 	}
-	analysisBoard := components.ProjectAnalysisBoard{
+	analysisBoard := ProjectAnalysisBoard{
 		Tiles:            tiles,
 		EarnedPts:        earned,
 		MaxPts:           analysisBoardMaxPts,
@@ -238,7 +247,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	gameActivity := components.ProjectGameActivitySummary{
+	gameActivity := ProjectGameActivitySummary{
 		HasGame: false,
 	}
 
@@ -268,7 +277,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 			GameID:    game.ID,
 		})
 		if bErr == nil {
-			gameActivity.Board = &components.ProjectBoardStats{
+			gameActivity.Board = &ProjectBoardStats{
 				CommitCount:      int(board.CommitCount),
 				ContributorCount: int(board.ContributorCount),
 			}
@@ -294,14 +303,14 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		commits = commits[:limit]
 	}
 
-	commitEntries := make([]components.CommitEntry, len(commits))
+	commitEntries := make([]CommitEntry, len(commits))
 	for i, c := range commits {
 
 		flagReason := ""
 		if c.FlagReason.Valid {
 			flagReason = c.FlagReason.String
 		}
-		commitEntries[i] = components.CommitEntry{
+		commitEntries[i] = CommitEntry{
 			ID:         c.ID.String(),
 			Hash:       c.Hash.String,
 			Message:    c.Message,
@@ -315,7 +324,7 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := components.ProjectDetailData{
+	data := ProjectDetailData{
 		Project:       entry,
 		AnalysisBoard: analysisBoard,
 		GameActivity:  gameActivity,
@@ -332,8 +341,8 @@ func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		components.ProjectCommitList(data).Render(ctx, w)
+		ProjectCommitList(data).Render(ctx, w)
 		return
 	}
-	components.ProjectDetailPage(layout, data).Render(ctx, w)
+	ProjectDetailPage(layout, data).Render(ctx, w)
 }

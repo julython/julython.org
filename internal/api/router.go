@@ -86,16 +86,20 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	assetsHandler := assets.NewHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
 
-	// Routes
+	// Auth Routes
 	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
 	mux.HandleFunc("GET /auth/callback", authHandler.Callback)
 	mux.HandleFunc("GET /auth/session", authHandler.Session)
 	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
-
-	gameHandler.Register(mux)
-	projectHandler.Register(mux)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
+	// Game Routes
+	gameHandler.Register(mux)
+
+	// Project routes
+	projectHandler.Register(mux)
+
+	// Help routes
 	helpHandler.Register(mux)
 
 	// Profiles
