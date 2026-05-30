@@ -44,7 +44,7 @@ func writeMetricLLMJSONError(w http.ResponseWriter, r *http.Request, status int,
 
 // GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context
 // Returns a compact, metric-focused prompt bundle for browser-side WebLLM (after server L1 exists).
-func (h *ProjectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
 	metricType := r.PathValue("metricType")

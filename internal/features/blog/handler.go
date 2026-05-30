@@ -9,21 +9,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Handler handles blog-related HTTP requests.
-type Handler struct{}
-
-// NewHandler creates a new blog handler.
-func NewHandler() *Handler {
-	return &Handler{}
-}
-
 // Register mounts blog routes on the given mux.
-func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /blog", h.List)
-	mux.HandleFunc("GET /blog/{slug}", h.Detail)
+func Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /blog", List)
+	mux.HandleFunc("GET /blog/{slug}", Detail)
 }
 
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+func List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)
 
@@ -43,7 +35,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	BlogListPage(layout, posts).Render(ctx, w)
 }
 
-func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
+func Detail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)
 

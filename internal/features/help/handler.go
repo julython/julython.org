@@ -6,22 +6,14 @@ import (
 	"july/internal/components/layout"
 )
 
-// Handler handles help, about, and privacy page HTTP requests.
-type Handler struct{}
-
-// NewHandler creates a new help handler.
-func NewHandler() *Handler {
-	return &Handler{}
-}
-
 // Register mounts help, about, and privacy routes on the given mux.
-func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /help", h.Help)
-	mux.HandleFunc("GET /about", h.About)
-	mux.HandleFunc("GET /privacy", h.Privacy)
+func Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /help", Help)
+	mux.HandleFunc("GET /about", About)
+	mux.HandleFunc("GET /privacy", Privacy)
 }
 
-func (h *Handler) Help(w http.ResponseWriter, r *http.Request) {
+func Help(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	layout := layout.LayoutData{
@@ -33,7 +25,7 @@ func (h *Handler) Help(w http.ResponseWriter, r *http.Request) {
 	HelpPage(layout).Render(ctx, w)
 }
 
-func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
+func About(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	layout := layout.LayoutData{
@@ -45,7 +37,7 @@ func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
 	AboutPage(layout).Render(ctx, w)
 }
 
-func (h *Handler) Privacy(w http.ResponseWriter, r *http.Request) {
+func Privacy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	layout := layout.LayoutData{

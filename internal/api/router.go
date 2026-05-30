@@ -77,14 +77,8 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 
 	// Handlers
 	authHandler := auth.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
-	gameHandler := game.NewHandler(queries, gameSvc)
-	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
-	projectHandler := projects.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
-	profileHandler := profile.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
-	blogHandler := blog.NewHandler()
-	helpHandler := help.NewHandler()
-	assetsHandler := assets.NewHandler()
 	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
+	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 
 	// Auth Routes
 	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
@@ -94,22 +88,22 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
 	// Game Routes
-	gameHandler.Register(mux)
+	game.Register(mux, queries, gameSvc)
 
 	// Project routes
-	projectHandler.Register(mux)
+	projects.Register(mux, queries, gameSvc, userSvc, l1Scanner)
 
 	// Help routes
-	helpHandler.Register(mux)
+	help.Register(mux)
 
 	// Profiles
-	profileHandler.Register(mux)
+	profile.Register(mux, userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 
 	// Assets (favicon, etc.)
-	assetsHandler.Register(mux)
+	assets.Register(mux)
 
 	// Blog
-	blogHandler.Register(mux)
+	blog.Register(mux)
 
 	// Webhooks
 	mux.HandleFunc("GET /api/v1/gh/{path...}", proxyHandler.Proxy)

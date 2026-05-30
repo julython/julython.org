@@ -32,7 +32,7 @@ type chatContextResponse struct {
 
 // POST /api/projects/{projectID}/analysis/chat-context
 // Returns system + user prompts for the browser assistant: keyword-matched metric scan data, or README by default.
-func (h *ProjectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
 

@@ -15,7 +15,7 @@ import (
 	"july/internal/shared"
 )
 
-func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) Activity(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(r.Context())
 
@@ -55,7 +55,7 @@ func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
 	}).Render(ctx, w)
 }
 
-func (h *Handler) getRecentCommits(ctx context.Context, gameID uuid.UUID, limit int) []RecentCommit {
+func (h *gameHandler) getRecentCommits(ctx context.Context, gameID uuid.UUID, limit int) []RecentCommit {
 	rows, err := h.queries.GetRecentCommits(ctx, db.GetRecentCommitsParams{
 		GameID:     pgtype.UUID{Bytes: gameID, Valid: true},
 		LimitCount: limit,

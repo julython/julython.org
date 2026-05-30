@@ -21,7 +21,7 @@ var (
 )
 
 // performL1Scan runs server-side L1 (push webhook and manual rescan use this path).
-func (h *ProjectHandler) performL1Scan(ctx context.Context, project db.Project, updatedBy uuid.UUID) error {
+func (h *projectHandler) performL1Scan(ctx context.Context, project db.Project, updatedBy uuid.UUID) error {
 	if project.IsPrivate {
 		return errL1PrivateRepo
 	}
@@ -39,7 +39,7 @@ func (h *ProjectHandler) performL1Scan(ctx context.Context, project db.Project, 
 
 // POST /projects/{slug}/analysis/l1
 // HTMX-triggered L1 rescan from the project page; redirects back on success.
-func (h *ProjectHandler) PostProjectRescanL1(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) PostProjectRescanL1(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	slug := r.PathValue("slug")
 

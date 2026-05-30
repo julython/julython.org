@@ -31,7 +31,7 @@ type analysisResponse struct {
 // POST /api/projects/{projectID}/analysis
 // Level 0/1: scores the tile and upserts the metric row (heuristic L1 when score > 0).
 // Level 2/3: records an AI-graded level up; requires existing heuristic row with score > 0.
-func (h *ProjectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
 

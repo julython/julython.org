@@ -10,7 +10,7 @@ import (
 	"july/internal/db"
 )
 
-func (h *Handler) Leaders(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -87,7 +87,7 @@ func (h *Handler) Leaders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) Projects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -147,7 +147,7 @@ func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Languages(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) Languages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := 25
@@ -202,7 +202,7 @@ func (h *Handler) Languages(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) renderEmptyLeaderboard(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) renderEmptyLeaderboard(w http.ResponseWriter, r *http.Request) {
 	data := LeaderboardData{
 		Game:    GameStats{Name: "Julython"},
 		Entries: []LeaderboardEntry{},
@@ -215,7 +215,7 @@ func (h *Handler) renderEmptyLeaderboard(w http.ResponseWriter, r *http.Request)
 	LeaderboardPage(layout, data).Render(r.Context(), w)
 }
 
-func (h *Handler) renderEmptyProjectLeaderboard(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) renderEmptyProjectLeaderboard(w http.ResponseWriter, r *http.Request) {
 	data := ProjectLeaderboardData{
 		Game:    GameStats{Name: "Julython"},
 		Entries: []ProjectLeaderboardEntry{},
@@ -228,7 +228,7 @@ func (h *Handler) renderEmptyProjectLeaderboard(w http.ResponseWriter, r *http.R
 	ProjectLeaderboardPage(layout, data).Render(r.Context(), w)
 }
 
-func (h *Handler) renderEmptyLanguageLeaderboard(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) renderEmptyLanguageLeaderboard(w http.ResponseWriter, r *http.Request) {
 	data := LanguageLeaderboardData{
 		Game:    GameStats{Name: "Julython"},
 		Entries: []LanguageLeaderboardEntry{},

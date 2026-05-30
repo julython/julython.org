@@ -16,26 +16,15 @@ import (
 	"july/internal/services"
 )
 
-type ProfileHandler struct {
+type profileHandler struct {
 	users      *services.UserService
 	session    *scs.SessionManager
 	webhookURL string // e.g. "https://julython.org/webhooks/github"
 }
 
-func NewProfileHandler(
-	users *services.UserService,
-	session *scs.SessionManager,
-	webhookURL string,
-) *ProfileHandler {
-	return &ProfileHandler{
-		users:      users,
-		session:    session,
-		webhookURL: webhookURL,
-	}
-}
-
 // Register mounts all profile routes on the given mux.
-func (h *ProfileHandler) Register(mux *http.ServeMux) {
+func Register(mux *http.ServeMux, users *services.UserService, session *scs.SessionManager, webhookURL string) {
+	h := &profileHandler{users: users, session: session, webhookURL: webhookURL}
 	mux.HandleFunc("GET /profile", h.Overview)
 	mux.HandleFunc("GET /profile/webhooks", h.Webhooks)
 	mux.HandleFunc("GET /profile/webhooks/repos", h.WebhookRepos)
@@ -49,7 +38,7 @@ func (h *ProfileHandler) Register(mux *http.ServeMux) {
 // Overview
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) Overview(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) Overview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -73,7 +62,7 @@ func (h *ProfileHandler) Overview(w http.ResponseWriter, r *http.Request) {
 // Webhooks — page shell
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) Webhooks(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) Webhooks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if auth.UserFromContext(ctx) == nil {
 		http.Redirect(w, r, "/auth/login/github", http.StatusFound)
@@ -95,7 +84,7 @@ func (h *ProfileHandler) Webhooks(w http.ResponseWriter, r *http.Request) {
 
 const webhookReposPerPage = 10
 
-func (h *ProfileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -149,7 +138,7 @@ func (h *ProfileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
 // Webhooks — add
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -207,7 +196,7 @@ func (h *ProfileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
 // Webhooks — delete
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -262,7 +251,7 @@ func (h *ProfileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 // Settings — GET
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) Settings(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) Settings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -278,7 +267,7 @@ func (h *ProfileHandler) Settings(w http.ResponseWriter, r *http.Request) {
 // Settings — POST (works plain or via HTMX)
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+func (h *profileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sess := auth.UserFromContext(ctx)
 	if sess == nil {
@@ -324,7 +313,7 @@ func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) 
 // Helpers
 // -----------------------------------------------------------------------
 
-func (h *ProfileHandler) layout(r *http.Request, title string) layout.LayoutData {
+func (h *profileHandler) layout(r *http.Request, title string) layout.LayoutData {
 	return layout.LayoutData{
 		Title:       title,
 		CurrentPath: r.URL.Path,

@@ -15,19 +15,14 @@ import (
 	"july/internal/services"
 )
 
-// Handler handles home page HTTP requests.
-type Handler struct {
+type gameHandler struct {
 	queries     *db.Queries
 	gameService *services.GameService
 }
 
-// NewHandler creates a new home handler.
-func NewHandler(q *db.Queries, gs *services.GameService) *Handler {
-	return &Handler{queries: q, gameService: gs}
-}
-
-// Register mounts home routes on the given mux.
-func (h *Handler) Register(mux *http.ServeMux) {
+// Register mounts home/routes on the given mux.
+func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
+	h := &gameHandler{queries: q, gameService: gs}
 	mux.HandleFunc("GET /{$}", h.Home)
 	mux.HandleFunc("GET /activity", h.Activity)
 	mux.HandleFunc("GET /leaders", h.Leaders)
@@ -35,7 +30,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /leaders/languages", h.Languages)
 }
 
-func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) Home(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(r.Context())
 
@@ -76,7 +71,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	HomePage(layout, data).Render(ctx, w)
 }
 
-func (h *Handler) getDailyCommits(ctx context.Context, gameID uuid.UUID, _ time.Time) ([]DayCommits, int) {
+func (h *gameHandler) getDailyCommits(ctx context.Context, gameID uuid.UUID, _ time.Time) ([]DayCommits, int) {
 	days := make([]DayCommits, 31)
 	maxCount := 0
 
@@ -105,7 +100,7 @@ func (h *Handler) getDailyCommits(ctx context.Context, gameID uuid.UUID, _ time.
 	return days, maxCount
 }
 
-func (h *Handler) renderEmptyHome(w http.ResponseWriter, r *http.Request) {
+func (h *gameHandler) renderEmptyHome(w http.ResponseWriter, r *http.Request) {
 	days := make([]DayCommits, 31)
 	for i := 0; i < 31; i++ {
 		days[i] = DayCommits{Day: i + 1, Count: 0}

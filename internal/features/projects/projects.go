@@ -17,19 +17,16 @@ import (
 	"july/internal/shared"
 )
 
-type ProjectHandler struct {
+type projectHandler struct {
 	queries     *db.Queries
 	gameService *services.GameService
 	userService *services.UserService
 	l1Scanner   *services.L1Scanner
 }
 
-func NewProjectHandler(q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) *ProjectHandler {
-	return &ProjectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
-}
-
 // Register mounts all project routes on the given mux.
-func (h *ProjectHandler) Register(mux *http.ServeMux) {
+func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) {
+	h := &projectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
 	mux.HandleFunc("GET /projects", h.List)
 	mux.HandleFunc("GET /projects/{slug}", h.Detail)
 	mux.HandleFunc("POST /projects/{slug}/analysis/l1", h.PostProjectRescanL1)
@@ -44,7 +41,7 @@ const analysisBoardMaxPts = 480
 
 const projectPageSize = 25
 
-func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 
@@ -125,7 +122,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	ProjectListPage(layout, data).Render(ctx, w)
 }
 
-func (h *ProjectHandler) Detail(w http.ResponseWriter, r *http.Request) {
+func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	slug := r.PathValue("slug")
