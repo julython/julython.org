@@ -1,4 +1,4 @@
-package handlers
+package profile
 
 import (
 	"encoding/json"
@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/auth"
-	"july/internal/components"
 	"july/internal/components/layout"
 	"july/internal/services"
 )
@@ -35,6 +34,17 @@ func NewProfileHandler(
 	}
 }
 
+// Register mounts all profile routes on the given mux.
+func (h *ProfileHandler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /profile", h.Overview)
+	mux.HandleFunc("GET /profile/webhooks", h.Webhooks)
+	mux.HandleFunc("GET /profile/webhooks/repos", h.WebhookRepos)
+	mux.HandleFunc("POST /profile/webhooks/{repoID}/hooks", h.AddWebhook)
+	mux.HandleFunc("DELETE /profile/webhooks/{repoID}/hooks/{hookID}", h.DeleteWebhook)
+	mux.HandleFunc("GET /profile/settings", h.Settings)
+	mux.HandleFunc("POST /profile/settings", h.UpdateSettings)
+}
+
 // -----------------------------------------------------------------------
 // Overview
 // -----------------------------------------------------------------------
@@ -50,13 +60,13 @@ func (h *ProfileHandler) Overview(w http.ResponseWriter, r *http.Request) {
 	emails, _ := h.users.GetVerifiedEmails(ctx, sess.ID)
 
 	layout := h.layout(r, "Profile")
-	data := components.OverviewData{
+	data := OverviewData{
 		Username:  sess.Username,
 		Name:      sess.Name,
 		AvatarURL: sess.AvatarURL,
 		Emails:    emails,
 	}
-	components.OverviewPage(layout, data).Render(ctx, w)
+	OverviewPage(layout, data).Render(ctx, w)
 }
 
 // -----------------------------------------------------------------------
@@ -76,7 +86,7 @@ func (h *ProfileHandler) Webhooks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	components.WebhooksPage(h.layout(r, "Webhooks"), page).Render(ctx, w)
+	WebhooksPage(h.layout(r, "Webhooks"), page).Render(ctx, w)
 }
 
 // -----------------------------------------------------------------------
@@ -132,7 +142,7 @@ func (h *ProfileHandler) WebhookRepos(w http.ResponseWriter, r *http.Request) {
 		repos[i] = rw
 	}
 
-	components.WebhookRepoList(repos, h.webhookURL, page, hasMore).Render(ctx, w)
+	WebhookRepoList(repos, h.webhookURL, page, hasMore).Render(ctx, w)
 }
 
 // -----------------------------------------------------------------------
@@ -184,7 +194,7 @@ func (h *ProfileHandler) AddWebhook(w http.ResponseWriter, r *http.Request) {
 				HasWebhook: true,
 				WebhookID:  wh.ID,
 			}
-			components.WebhookRepoRow(rw, h.webhookURL).Render(ctx, w)
+			WebhookRepoRow(rw, h.webhookURL).Render(ctx, w)
 			return
 		}
 	}
@@ -241,7 +251,7 @@ func (h *ProfileHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		rw := services.RepoWithWebhook{GitHubRepo: gr}
-		components.WebhookRepoRow(rw, h.webhookURL).Render(ctx, w)
+		WebhookRepoRow(rw, h.webhookURL).Render(ctx, w)
 		return
 	}
 
@@ -259,7 +269,7 @@ func (h *ProfileHandler) Settings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/auth/login/github", http.StatusFound)
 		return
 	}
-	components.SettingsPage(h.layout(r, "Settings"), components.SettingsData{
+	SettingsPage(h.layout(r, "Settings"), SettingsData{
 		Name: sess.Name,
 	}).Render(ctx, w)
 }
@@ -279,7 +289,7 @@ func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) 
 	// Support both form-encoded and JSON bodies.
 	name, errMsg := settingsNameFromRequest(r)
 
-	data := components.SettingsData{Name: name}
+	data := SettingsData{Name: name}
 
 	if errMsg != "" {
 		data.Error = errMsg
@@ -293,7 +303,6 @@ func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) 
 			data.Error = "Failed to save. Please try again."
 		} else {
 			sess.Name = name
-			sess.Name = name
 			// persist back to the session store
 			h.session.Put(ctx, "user_name", name)
 			data.Success = true
@@ -304,11 +313,11 @@ func (h *ProfileHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) 
 	if isHTMX {
 		// Return just the form fragment so HTMX can swap it.
 		w.Header().Set("Content-Type", "text/html")
-		components.SettingsFormFragment(data).Render(ctx, w)
+		SettingsFormFragment(data).Render(ctx, w)
 		return
 	}
 
-	components.SettingsPage(h.layout(r, "Settings"), data).Render(ctx, w)
+	SettingsPage(h.layout(r, "Settings"), data).Render(ctx, w)
 }
 
 // -----------------------------------------------------------------------
@@ -319,7 +328,7 @@ func (h *ProfileHandler) layout(r *http.Request, title string) layout.LayoutData
 	return layout.LayoutData{
 		Title:       title,
 		CurrentPath: r.URL.Path,
-		User:        getUserFromContext(r),
+		User:        layout.UserInfoFromContext(r),
 	}
 }
 

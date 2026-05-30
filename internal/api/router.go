@@ -20,6 +20,7 @@ import (
 	"july/internal/features/blog"
 	"july/internal/features/game"
 	"july/internal/features/help"
+	"july/internal/features/profile"
 	"july/internal/features/projects"
 	"july/internal/handlers"
 	"july/internal/i18n"
@@ -79,7 +80,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	gameHandler := game.NewHandler(queries, gameSvc)
 	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 	projectHandler := projects.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
-	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
+	profileHandler := profile.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 	blogHandler := blog.NewHandler()
 	helpHandler := help.NewHandler()
 	assetsHandler := assets.NewHandler()
@@ -92,26 +93,13 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
 
 	gameHandler.Register(mux)
-	mux.HandleFunc("GET /projects", projectHandler.List)
-	mux.HandleFunc("POST /projects/{slug}/analysis/l1", projectHandler.PostProjectRescanL1)
-	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
+	projectHandler.Register(mux)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
-	// Projects
-	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
-	mux.HandleFunc("POST /api/projects/{projectID}/analysis/chat-context", projectHandler.PostProjectChatContext)
-	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", projectHandler.GetProjectMetricLLMContext)
+	helpHandler.Register(mux)
 
 	// Profiles
-	mux.HandleFunc("GET /profile", profileHandler.Overview)
-	mux.HandleFunc("GET /profile/webhooks", profileHandler.Webhooks)
-	mux.HandleFunc("GET /profile/webhooks/repos", profileHandler.WebhookRepos)
-	mux.HandleFunc("POST /profile/webhooks/{repoID}/hooks", profileHandler.AddWebhook)
-	mux.HandleFunc("DELETE /profile/webhooks/{repoID}/hooks/{hookID}", profileHandler.DeleteWebhook)
-	mux.HandleFunc("GET /profile/settings", profileHandler.Settings)
-	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
-
-	helpHandler.Register(mux)
+	profileHandler.Register(mux)
 
 	// Assets (favicon, etc.)
 	assetsHandler.Register(mux)

@@ -1,0 +1,54 @@
+package profile
+
+import (
+	"github.com/invopop/ctxi18n/i18n"
+	"july/internal/components/icons"
+	"july/internal/components/layout"
+)
+
+// ============================================
+// Shared profile shell
+// ============================================
+templ ProfileShell(ld layout.LayoutData, section ProfileSection, content templ.Component) {
+	@layout.Layout(ld) {
+		<div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+			// Mobile: stacked. Desktop: sidebar + content side by side.
+			<div class="flex flex-col md:flex-row gap-6 md:gap-8">
+				@profileSidebar(section)
+				<main class="flex-1 min-w-0">
+					@content
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ profileSidebar(active ProfileSection) {
+	<aside class="md:w-48 md:shrink-0">
+		// Desktop: sticky vertical nav with label.
+		// Mobile: horizontal scrolling tab strip, label hidden.
+		<p class="hidden md:block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 px-3">
+			{ i18n.T(ctx, "profile.title") }
+		</p>
+		<nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible md:sticky md:top-24 pb-1 md:pb-0">
+			@profileNavItem("/profile", SectionOverview, active, icons.OverviewIcon(), "profile.overview")
+			@profileNavItem("/profile/webhooks", SectionWebhooks, active, icons.WebhookIcon(), "profile.webhooks")
+			@profileNavItem("/profile/settings", SectionSettings, active, icons.SettingsIcon(), "profile.settings")
+		</nav>
+	</aside>
+}
+
+templ profileNavItem(href string, section ProfileSection, active ProfileSection, icon templ.Component, label string) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={
+			"flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap",
+			"md:w-full",
+			templ.KV("bg-white/10 text-white font-medium", section == active),
+			templ.KV("text-gray-400 hover:text-white hover:bg-white/5", section != active),
+		}
+	>
+		@icon
+		{ i18n.T(ctx, label) }
+	</a>
+}
