@@ -12,7 +12,7 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	t.Run("encrypt and decrypt same value", func(t *testing.T) {
 		plaintext := "hello, world"
-		ciphertext, err := encrypt(key, plaintext)
+		ciphertext, err := Encrypt(key, plaintext)
 		require.NoError(t, err)
 		require.NotEmpty(t, ciphertext)
 		require.NotEqual(t, plaintext, ciphertext)
@@ -24,9 +24,9 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	t.Run("encrypt produces different ciphertext each time", func(t *testing.T) {
 		plaintext := "same value"
-		c1, err := encrypt(key, plaintext)
+		c1, err := Encrypt(key, plaintext)
 		require.NoError(t, err)
-		c2, err := encrypt(key, plaintext)
+		c2, err := Encrypt(key, plaintext)
 		require.NoError(t, err)
 		// GCM with random nonce should produce different ciphertexts
 		assert.NotEqual(t, c1, c2)
@@ -34,8 +34,8 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	t.Run("decrypted value matches after multiple encryptions", func(t *testing.T) {
 		plaintext := "encrypted multiple times"
-		c1, _ := encrypt(key, plaintext)
-		c2, _ := encrypt(key, plaintext)
+		c1, _ := Encrypt(key, plaintext)
+		c2, _ := Encrypt(key, plaintext)
 
 		d1, err := decrypt(key, c1)
 		require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestEncryptDecrypt(t *testing.T) {
 func TestEncryptDecryptLargeInput(t *testing.T) {
 	key := []byte("0123456789abcdef")
 	plaintext := string(make([]byte, 10000))
-	ciphertext, err := encrypt(key, plaintext)
+	ciphertext, err := Encrypt(key, plaintext)
 	require.NoError(t, err)
 	decrypted, err := decrypt(key, ciphertext)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestEncryptDecryptLargeInput(t *testing.T) {
 func TestEncryptDecryptEmptyString(t *testing.T) {
 	key := []byte("0123456789abcdef")
 	plaintext := ""
-	ciphertext, err := encrypt(key, plaintext)
+	ciphertext, err := Encrypt(key, plaintext)
 	require.NoError(t, err)
 	decrypted, err := decrypt(key, ciphertext)
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func TestEncryptDecryptEmptyString(t *testing.T) {
 func TestEncryptDecryptUnicode(t *testing.T) {
 	key := []byte("0123456789abcdef")
 	plaintext := "hello 世界 🌍"
-	ciphertext, err := encrypt(key, plaintext)
+	ciphertext, err := Encrypt(key, plaintext)
 	require.NoError(t, err)
 	decrypted, err := decrypt(key, ciphertext)
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestEncryptWithDifferentKeys(t *testing.T) {
 	key2 := []byte("fedcba9876543210")
 	plaintext := "secret"
 
-	ciphertext, err := encrypt(key1, plaintext)
+	ciphertext, err := Encrypt(key1, plaintext)
 	require.NoError(t, err)
 
 	// Decrypt with wrong key should fail
@@ -108,7 +108,7 @@ func TestDecryptTooShort(t *testing.T) {
 func TestDecryptTamperedCiphertext(t *testing.T) {
 	key := []byte("0123456789abcdef")
 	plaintext := "original"
-	ciphertext, err := encrypt(key, plaintext)
+	ciphertext, err := Encrypt(key, plaintext)
 	require.NoError(t, err)
 
 	// Tamper with ciphertext by flipping a character

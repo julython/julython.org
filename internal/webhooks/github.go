@@ -91,6 +91,12 @@ func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.G
 	}
 }
 
+// Register mounts the GitHub webhook route on the given mux.
+func Register(mux *http.ServeMux, queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, l1Scanner *services.L1Scanner) {
+	h := NewHandler(queries, pool, gameService, l1Scanner)
+	mux.HandleFunc("POST /api/v1/github", h.HandleGitHubWebhook)
+}
+
 func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)

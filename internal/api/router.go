@@ -13,19 +13,26 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/config"
 	"july/internal/db"
-	"july/internal/handlers"
+	"july/internal/features/assets"
+	"july/internal/features/blog"
+	"july/internal/features/game"
+	"july/internal/features/help"
+	"july/internal/features/profile"
+	"july/internal/features/projects"
+	"july/internal/features/proxy"
+	"july/internal/webhooks"
 	"july/internal/i18n"
 	"july/internal/services"
-	"july/internal/webhooks"
 	"july/web"
 )
 
 // buildMux constructs the ServeMux and all dependencies.
 // Returns the mux and the two objects applyMiddleware needs.
 func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
-	*http.ServeMux, *services.SessionManager, *handlers.AuthHandler,
+	*http.ServeMux, *services.SessionManager, *auth.AuthHandler,
 ) {
 	mux := http.NewServeMux()
 
@@ -69,60 +76,35 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 		Msg("oauth configured")
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
-	homeHandler := handlers.NewHomeHandler(queries, gameSvc)
-	leaderboardHandler := handlers.NewLeaderboardHandler(queries, gameSvc)
-	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
-	projectHandler := handlers.NewProjectHandler(queries, gameSvc, userSvc, l1Scanner)
-	profileHandler := handlers.NewProfileHandler(userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
-	blogHandler := handlers.NewBlogHandler()
-	helpHandler := handlers.NewHelpHandler()
-	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
-	activityHandler := handlers.NewActivityHandler(queries, gameSvc)
+	authHandler := auth.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
 
-	// Routes
-	mux.HandleFunc("GET /favicon.svg", handlers.FaviconHandler)
-	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
-	mux.HandleFunc("GET /auth/callback", authHandler.Callback)
-	mux.HandleFunc("GET /auth/session", authHandler.Session)
-	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
-
-	mux.HandleFunc("GET /{$}", homeHandler.Home)
-	mux.HandleFunc("GET /activity", activityHandler.Activity)
-	mux.HandleFunc("GET /leaders", leaderboardHandler.Leaders)
-	mux.HandleFunc("GET /leaders/projects", leaderboardHandler.Projects)
-	mux.HandleFunc("GET /leaders/languages", leaderboardHandler.Languages)
-	mux.HandleFunc("GET /projects", projectHandler.List)
-	mux.HandleFunc("POST /projects/{slug}/analysis/l1", projectHandler.PostProjectRescanL1)
-	mux.HandleFunc("GET /projects/{slug}", projectHandler.Detail)
+	// Auth Routes
+	auth.Register(mux, authHandler)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
-	// Projects
-	mux.HandleFunc("POST /api/projects/{projectID}/analysis", projectHandler.PostProjectAnalysis)
-	mux.HandleFunc("POST /api/projects/{projectID}/analysis/chat-context", projectHandler.PostProjectChatContext)
-	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", projectHandler.GetProjectMetricLLMContext)
+	// Game Routes
+	game.Register(mux, queries, gameSvc)
+
+	// Project routes
+	projects.Register(mux, queries, gameSvc, userSvc, l1Scanner)
+
+	// Help routes
+	help.Register(mux)
 
 	// Profiles
-	mux.HandleFunc("GET /profile", profileHandler.Overview)
-	mux.HandleFunc("GET /profile/webhooks", profileHandler.Webhooks)
-	mux.HandleFunc("GET /profile/webhooks/repos", profileHandler.WebhookRepos)
-	mux.HandleFunc("POST /profile/webhooks/{repoID}/hooks", profileHandler.AddWebhook)
-	mux.HandleFunc("DELETE /profile/webhooks/{repoID}/hooks/{hookID}", profileHandler.DeleteWebhook)
-	mux.HandleFunc("GET /profile/settings", profileHandler.Settings)
-	mux.HandleFunc("POST /profile/settings", profileHandler.UpdateSettings)
+	profile.Register(mux, userSvc, sessionMgr.SessionManager, cfg.Webhooks.GitHub)
 
-	// Help
-	mux.HandleFunc("GET /help", helpHandler.Help)
-	mux.HandleFunc("GET /about", helpHandler.About)
-	mux.HandleFunc("GET /privacy", helpHandler.Privacy)
+	// Assets (favicon, etc.)
+	assets.Register(mux)
 
 	// Blog
-	mux.HandleFunc("GET /blog", blogHandler.List)
-	mux.HandleFunc("GET /blog/{slug}", blogHandler.Detail)
+	blog.Register(mux)
+
+	// Proxy
+	proxy.Register(mux, userSvc, sessionMgr.SessionManager)
 
 	// Webhooks
-	mux.HandleFunc("GET /api/v1/gh/{path...}", proxyHandler.Proxy)
-	mux.HandleFunc("POST /api/v1/github", webhookHandler.HandleGitHubWebhook)
+	webhooks.Register(mux, queries, pool, gameSvc, l1Scanner)
 
 	// Static files
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", web.AssetsHandler()))
@@ -141,7 +123,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 func applyMiddleware(
 	h http.Handler,
 	sessionMgr *services.SessionManager,
-	authHandler *handlers.AuthHandler,
+	authHandler *auth.AuthHandler,
 	logger zerolog.Logger,
 	cfg *config.Config,
 ) http.Handler {

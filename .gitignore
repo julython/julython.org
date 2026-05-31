@@ -7,4 +7,4 @@ coverage.*
 web/assets/tailwind.*.css
 web/assets/analyzer.*.js
 web/assets/llm-worker.*.js
-internal/components/assets_gen.go
+internal/shared/assets_gen.go

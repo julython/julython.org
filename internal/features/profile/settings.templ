@@ -1,0 +1,25 @@
+package profile
+
+import (
+	"github.com/invopop/ctxi18n/i18n"
+	"july/internal/components/layout"
+)
+
+// ============================================
+// Settings
+// ============================================
+templ SettingsPage(ld layout.LayoutData, data SettingsData) {
+	@ProfileShell(ld, SectionSettings, settingsContent(data))
+}
+
+templ settingsContent(data SettingsData) {
+	<div class="space-y-6">
+		<h1 class="text-2xl font-bold text-white">{ i18n.T(ctx, "profile.settings") }</h1>
+		<div class="bg-surface-light rounded-xl border border-white/10 p-6">
+			<h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-6">
+				{ i18n.T(ctx, "profile.title") }
+			</h2>
+			@SettingsFormFragment(data)
+		</div>
+	</div>
+}
