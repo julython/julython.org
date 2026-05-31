@@ -1,4 +1,4 @@
-package handlers
+package proxy
 
 import (
 	"io"
@@ -32,28 +32,27 @@ var forwardedRateLimitHeaders = []string{
 	"X-RateLimit-Resource",
 }
 
-type GitHubProxyHandler struct {
+type handler struct {
 	userSvc *services.UserService
 	sm      *scs.SessionManager
 	client  *http.Client
 }
 
-func NewGitHubProxyHandler(userSvc *services.UserService, sm *scs.SessionManager) *GitHubProxyHandler {
-	return &GitHubProxyHandler{
+// Register mounts all proxy routes on the given mux.
+func Register(mux *http.ServeMux, userSvc *services.UserService, session *scs.SessionManager) {
+	h := &handler{
 		userSvc: userSvc,
-		sm:      sm,
+		sm:      session,
 		client:  &http.Client{Timeout: 30 * time.Second},
 	}
+	mux.HandleFunc("GET /api/v1/gh/{path...}", h.Proxy)
 }
 
 // Proxy forwards GET requests to the GitHub API, injecting the logged-in
 // user's OAuth token so we don't hit the unauthenticated rate limit (60 req/hr)
 // at the server level. The token scope only covers public repos, which is fine
 // for Majordomo's use case.
-//
-// Route: GET /api/v1/gh/{path...}
-// Example: GET /api/v1/gh/repos/python/cpython/git/trees/main?recursive=1
-func (h *GitHubProxyHandler) Proxy(w http.ResponseWriter, r *http.Request) {
+func (h *handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := log.Ctx(ctx)
 

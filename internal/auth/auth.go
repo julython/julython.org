@@ -58,6 +58,14 @@ func NewAuthHandler(
 	}
 }
 
+// Register mounts all auth routes on the given mux.
+func Register(mux *http.ServeMux, h *AuthHandler) {
+	mux.HandleFunc("GET /auth/login/{provider}", h.Login)
+	mux.HandleFunc("GET /auth/callback", h.Callback)
+	mux.HandleFunc("GET /auth/session", h.Session)
+	mux.HandleFunc("GET /auth/logout", h.Logout)
+}
+
 // Login initiates the OAuth flow - GET /auth/login/{provider}
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

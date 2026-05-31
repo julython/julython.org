@@ -22,10 +22,10 @@ import (
 	"july/internal/features/help"
 	"july/internal/features/profile"
 	"july/internal/features/projects"
-	"july/internal/handlers"
+	"july/internal/features/proxy"
+	"july/internal/webhooks"
 	"july/internal/i18n"
 	"july/internal/services"
-	"july/internal/webhooks"
 	"july/web"
 )
 
@@ -77,14 +77,9 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 
 	// Handlers
 	authHandler := auth.NewAuthHandler(userSvc, gameSvc, sessionMgr.SessionManager, providers)
-	proxyHandler := handlers.NewGitHubProxyHandler(userSvc, sessionMgr.SessionManager)
-	webhookHandler := webhooks.NewHandler(queries, pool, gameSvc, l1Scanner)
 
 	// Auth Routes
-	mux.HandleFunc("GET /auth/login/{provider}", authHandler.Login)
-	mux.HandleFunc("GET /auth/callback", authHandler.Callback)
-	mux.HandleFunc("GET /auth/session", authHandler.Session)
-	mux.HandleFunc("GET /auth/logout", authHandler.Logout)
+	auth.Register(mux, authHandler)
 	mux.HandleFunc("GET /set-language", i18n.SetLanguage)
 
 	// Game Routes
@@ -105,9 +100,11 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	// Blog
 	blog.Register(mux)
 
+	// Proxy
+	proxy.Register(mux, userSvc, sessionMgr.SessionManager)
+
 	// Webhooks
-	mux.HandleFunc("GET /api/v1/gh/{path...}", proxyHandler.Proxy)
-	mux.HandleFunc("POST /api/v1/github", webhookHandler.HandleGitHubWebhook)
+	webhooks.Register(mux, queries, pool, gameSvc, l1Scanner)
 
 	// Static files
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", web.AssetsHandler()))
