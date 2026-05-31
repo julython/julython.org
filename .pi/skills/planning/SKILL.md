@@ -4,7 +4,8 @@ description: >
   Planning mode for breaking down features/fixes into implementable tasks.
   Activated by phrases like "plan this", "let's plan", "let me plan", "planning mode",
   or "create a plan". Builds a structured plan in .pi/plans/ and executes it via
-  github-issues skill to create linked parent-child issues.
+  github-issues skill to create a milestone (epic), parent feature issue, and
+  child task issues all under that milestone.
 ---
 
 # Planning Skill
@@ -53,22 +54,32 @@ Revise until the user says "looks good."
 
 ### 4. Execute to GitHub
 
-When the plan is complete, use the **github-issues** skill to:
+When the plan is complete, decide: **is this a single story or multi-story feature?**
 
-1. **Create a parent issue** for the overall feature/story
-   - Label: `planning:planned` and `planning:feature` (or `bug`/`chore`)
-   - Milestone: if relevant
-   - Body: summary + link to plan file
+**Single-story plans** (1-3 simple tasks, no complex dependencies):
+- Create one issue labeled `planning:task`
+- Assign to an existing milestone if relevant, otherwise leave unassigned
+- Body: include full task details (description, files to change, dependencies, complexity, notes)
+- No milestone needed unless there are multiple related plans sharing one
 
-2. **Create child issues** for each task
-   - Each task = one child issue (sub-issue)
+**Multi-story features** (4+ tasks, or tasks with dependencies):
+- **Ensure milestone exists** (the "epic" — no separate parent issue needed)
+  - List existing milestones: `gh api repos/julython/julython.org/milestones --state open --jq '.[] | {number, title}'`
+  - If it doesn't exist, create it: `gh api repos/julython/julython.org/milestones -X POST -d '{"title":"<plan-name>","state":"open"}'`
+  - If it does exist, update its description: `gh api repos/julython/julython.org/milestones/{number} -X PATCH -f "title=<name>" -f "description=<goal+scope>"`
+  - The milestone is the epic — its description contains the feature summary
+  - The milestone name should be kebab-case, matching the plan name
+
+2. **Create task issues** for each task
+   - Each task = one issue
    - Label: `planning:task`
-   - Body: include the task details + link back to parent
-   - Reference parent issue in the body
+   - For multi-story: assign to the created milestone (by name)
+   - Body: include the task details (description, files to change, dependencies, complexity, notes)
+   - Reference other tasks by number in the body if needed
 
-3. **Link all issues** via cross-references
+3. **Link all issues** via cross-references (parent task references children, children reference parent)
 
-4. **Update the plan file** with the GitHub issue numbers
+4. **Update the plan file** with the milestone info and issue numbers
 
 ### 5. Track Progress
 
@@ -85,7 +96,9 @@ name: <slug-name>
 status: active  # active | planning | ready | done
 created: <YYYY-MM-DD>
 modified: <YYYY-MM-DD>
-github_parent_issue: <number or empty>
+github_milestone: <number or empty>
+github_milestone_title: <milestone name>
+github_issue: <number or empty>  # for single-story plans
 ---
 
 # <Feature Name>
@@ -124,6 +137,7 @@ One-paragraph description of what this achieves and why.
 - **Complexity:** Medium
 - **Notes:** ...
 ```
+
 
 ## Task Sizing Rules
 
@@ -167,6 +181,34 @@ Agent goes through discovery, builds a plan like:
 ```
 
 Then executes to GitHub:
-- Parent issue: "Feature: OAuth login" → #42
-- Child issues: #43, #44, #45, #46, #47
-- All cross-referenced to #42
+- Milestone: "oauth-login" (created/updated with feature description)
+- Task issues: #43, #44, #45, #46, #47 (all assigned to milestone, labeled `planning:task`)
+- All cross-referenced, all grouped under the milestone
+- The milestone description serves as the epic summary (no separate parent issue needed)
+
+### Single-story plan
+
+User: "Let's plan adding a canonical-tag command to git-get"
+
+Agent discovers it's a simple one-off task, builds a plan:
+
+```markdown
+---
+name: canonical-tag
+status: active
+created: 2026-05-31
+github_issue: 150
+---
+
+## Task 1: Add canonical-tag command
+- **Status:** `pending`
+- **Description:** Make git-get output canonical repo paths (strip .git suffix, resolve redirects)
+- **Files:** `cmd/git-get/canonical.go`, `internal/git/resolve.go`
+- **Dependencies:** None
+- **Complexity:** Low
+```
+
+Then executes to GitHub:
+- One issue: #150 labeled `planning:task`
+- Body: includes full description, files to change, complexity, notes
+- No milestone needed (single story, no related work)
