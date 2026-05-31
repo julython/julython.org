@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,8 +29,10 @@ import (
 	"july/internal/api"
 	"july/internal/config"
 	"july/internal/db"
-	"july/internal/i18n"
+
 	"july/internal/services"
+	"july/internal/i18n"
+	"github.com/google/uuid"
 )
 
 var (
@@ -38,6 +41,7 @@ var (
 	setupOnce       sync.Once
 	setupErr        error
 	sharedCfg       *config.Config
+	sharedEncKey    []byte
 )
 
 type TestEnv struct {
@@ -104,6 +108,12 @@ func SetupSharedEnv() error {
 		// happens to exist in the environment.
 		cfg.GitHubToken = ""
 		sharedCfg = cfg
+		key, err := hex.DecodeString(cfg.Database.EncKey)
+		if err != nil {
+			setupErr = fmt.Errorf("invalid ENC_KEY: %w", err)
+			return
+		}
+		sharedEncKey = key
 	})
 
 	return setupErr
@@ -230,4 +240,39 @@ func LoggerForTest(t *testing.T) zerolog.Logger {
 	t.Helper()
 	return zerolog.New(zerolog.ConsoleWriter{Out: zerolog.NewTestWriter(t)}).
 		With().Timestamp().Logger()
+}
+
+// CreateGitHubToken creates a GitHub OAuth identifier with an encrypted
+// access_token. The token is stored in user_identifiers.data so that
+// services.UserService.GetOAuthToken can decrypt it.
+//
+// Usage in tests:
+//
+//	user := testutil.CreateUser(t, env, "ghuser", "GH User")
+//	testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+//	testutil.CreateGitHubToken(t, env, user.ID, "gh_token_here")
+//	testutil.CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
+//	env.LoginAs(t, "test@example.com")
+//
+// The handler can then call users.GetOAuthToken(ctx, user.ID, "github")
+// and get back "gh_token_here".
+func CreateGitHubToken(t *testing.T, env *TestEnv, userID uuid.UUID, token string) {
+	t.Helper()
+
+	key := "github:12345" // matches the GitHub identifier value
+	enc, err := services.Encrypt(sharedEncKey, token)
+	require.NoError(t, err, "encrypt GitHub token")
+
+	data, err := json.Marshal(map[string]any{
+		"access_token": enc,
+	})
+	require.NoError(t, err)
+
+	_, err = env.Queries.UpsertUserIdentifier(context.Background(), db.UpsertUserIdentifierParams{
+		Value:  key,
+		Type:   "github",
+		UserID: userID,
+		Data:   data,
+	})
+	require.NoError(t, err, "create GitHub identifier with token")
 }

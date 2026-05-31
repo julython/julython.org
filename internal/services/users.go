@@ -253,7 +253,7 @@ func (s *UserService) encryptTokenData(data map[string]any) (map[string]any, err
 		if !isPlaintextToken(raw) {
 			continue
 		}
-		enc, err := encrypt(s.encryptionKey, raw)
+		enc, err := Encrypt(s.encryptionKey, raw)
 		if err != nil {
 			return nil, fmt.Errorf("encrypt %s: %w", field, err)
 		}
