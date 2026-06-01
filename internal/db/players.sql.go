@@ -13,8 +13,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const assignBoards = `-- name: AssignBoards :one
+
+UPDATE players
+    SET board_1_id = COALESCE($1, board_1_id),
+        board_2_id = COALESCE($2, board_2_id),
+        board_3_id = COALESCE($3, board_3_id)
+WHERE id = $4
+RETURNING id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id
+`
+
+type AssignBoardsParams struct {
+	Board1ID pgtype.UUID `json:"board_1_id"`
+	Board2ID pgtype.UUID `json:"board_2_id"`
+	Board3ID pgtype.UUID `json:"board_3_id"`
+	PlayerID uuid.UUID   `json:"player_id"`
+}
+
+// ============================================
+// Player Boards (up to 3 active boards)
+// ============================================
+// Update a player's up-to-3 board slots.  NULL arguments leave existing
+// columns untouched, so callers can update 1, 2, or all 3 boards in one
+// query without re-reading the player row first.
+func (q *Queries) AssignBoards(ctx context.Context, arg AssignBoardsParams) (Player, error) {
+	row := q.db.QueryRow(ctx, assignBoards,
+		arg.Board1ID,
+		arg.Board2ID,
+		arg.Board3ID,
+		arg.PlayerID,
+	)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.UserID,
+		&i.Points,
+		&i.PotentialPoints,
+		&i.VerifiedPoints,
+		&i.CommitCount,
+		&i.ProjectCount,
+		&i.AnalysisStatus,
+		&i.LastAnalyzedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
+	)
+	return i, err
+}
+
 const getLeaderboard = `-- name: GetLeaderboard :many
-SELECT p.id, p.game_id, p.user_id, p.points, p.potential_points, p.verified_points, p.commit_count, p.project_count, p.analysis_status, p.last_analyzed_at, p.created_at, p.updated_at, u.name, u.username, u.avatar_url
+SELECT p.id, p.game_id, p.user_id, p.points, p.potential_points, p.verified_points, p.commit_count, p.project_count, p.analysis_status, p.last_analyzed_at, p.created_at, p.updated_at, p.board_1_id, p.board_2_id, p.board_3_id, u.name, u.username, u.avatar_url
 FROM players p
 JOIN users u ON u.id = p.user_id
 WHERE p.game_id = $1 AND u.is_active = true
@@ -43,6 +94,9 @@ type GetLeaderboardRow struct {
 	LastAnalyzedAt  pgtype.Timestamptz `json:"last_analyzed_at"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
+	Board1ID        pgtype.UUID        `json:"board_1_id"`
+	Board2ID        pgtype.UUID        `json:"board_2_id"`
+	Board3ID        pgtype.UUID        `json:"board_3_id"`
 	Name            string             `json:"name"`
 	Username        string             `json:"username"`
 	AvatarUrl       pgtype.Text        `json:"avatar_url"`
@@ -70,6 +124,9 @@ func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) 
 			&i.LastAnalyzedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Board1ID,
+			&i.Board2ID,
+			&i.Board3ID,
 			&i.Name,
 			&i.Username,
 			&i.AvatarUrl,
@@ -84,8 +141,29 @@ func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) 
 	return items, nil
 }
 
+const getPlayerBoardIds = `-- name: GetPlayerBoardIds :one
+SELECT p.board_1_id, p.board_2_id, p.board_3_id
+FROM players p
+WHERE p.id = $1
+`
+
+type GetPlayerBoardIdsRow struct {
+	Board1ID pgtype.UUID `json:"board_1_id"`
+	Board2ID pgtype.UUID `json:"board_2_id"`
+	Board3ID pgtype.UUID `json:"board_3_id"`
+}
+
+// Return the 3 board IDs for a player.  Callers can join boards on
+// these IDs when displaying the leaderboard.
+func (q *Queries) GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (GetPlayerBoardIdsRow, error) {
+	row := q.db.QueryRow(ctx, getPlayerBoardIds, playerID)
+	var i GetPlayerBoardIdsRow
+	err := row.Scan(&i.Board1ID, &i.Board2ID, &i.Board3ID)
+	return i, err
+}
+
 const getPlayerByID = `-- name: GetPlayerByID :one
-SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at FROM players WHERE id = $1
+SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id FROM players WHERE id = $1
 `
 
 func (q *Queries) GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error) {
@@ -104,12 +182,15 @@ func (q *Queries) GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, erro
 		&i.LastAnalyzedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
 	)
 	return i, err
 }
 
 const getPlayerByUserAndGame = `-- name: GetPlayerByUserAndGame :one
-SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at FROM players WHERE user_id = $1 AND game_id = $2
+SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id FROM players WHERE user_id = $1 AND game_id = $2
 `
 
 type GetPlayerByUserAndGameParams struct {
@@ -133,6 +214,9 @@ func (q *Queries) GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUse
 		&i.LastAnalyzedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
 	)
 	return i, err
 }
@@ -161,6 +245,58 @@ func (q *Queries) GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (i
 	var rank int32
 	err := row.Scan(&rank)
 	return rank, err
+}
+
+const listPlayersWithBoards = `-- name: ListPlayersWithBoards :many
+SELECT
+    p.id, u.name, u.username, u.avatar_url,
+    COALESCE(board_total.total, 0) AS board_total
+FROM players p
+JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
+LEFT JOIN LATERAL (
+    SELECT COALESCE(SUM(b.points), 0) AS total
+    FROM boards b
+    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
+) AS board_total ON true
+ORDER BY board_total DESC
+`
+
+type ListPlayersWithBoardsRow struct {
+	ID         uuid.UUID   `json:"id"`
+	Name       string      `json:"name"`
+	Username   string      `json:"username"`
+	AvatarUrl  pgtype.Text `json:"avatar_url"`
+	BoardTotal interface{} `json:"board_total"`
+}
+
+// Leaderboard with per-player board totals computed via lateral join.
+// Projects board_N_id columns directly from players so the lateral
+// subquery can reference them (PostgreSQL cannot see through a
+// subquery boundary into the base table from within LATERAL).
+func (q *Queries) ListPlayersWithBoards(ctx context.Context, gameID uuid.UUID) ([]ListPlayersWithBoardsRow, error) {
+	rows, err := q.db.Query(ctx, listPlayersWithBoards, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayersWithBoardsRow
+	for rows.Next() {
+		var i ListPlayersWithBoardsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Username,
+			&i.AvatarUrl,
+			&i.BoardTotal,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updatePlayerAnalysis = `-- name: UpdatePlayerAnalysis :exec
@@ -192,7 +328,7 @@ DO UPDATE SET
     potential_points = EXCLUDED.potential_points,
     commit_count = EXCLUDED.commit_count,
     project_count = EXCLUDED.project_count
-RETURNING id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at
+RETURNING id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id
 `
 
 type UpsertPlayerParams struct {
@@ -232,6 +368,9 @@ func (q *Queries) UpsertPlayer(ctx context.Context, arg UpsertPlayerParams) (Pla
 		&i.LastAnalyzedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
 	)
 	return i, err
 }

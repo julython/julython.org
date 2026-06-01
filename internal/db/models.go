@@ -109,6 +109,9 @@ type Player struct {
 	LastAnalyzedAt  pgtype.Timestamptz `json:"last_analyzed_at"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
+	Board1ID        pgtype.UUID        `json:"board_1_id"`
+	Board2ID        pgtype.UUID        `json:"board_2_id"`
+	Board3ID        pgtype.UUID        `json:"board_3_id"`
 }
 
 type Project struct {

@@ -16,6 +16,13 @@ type Querier interface {
 	ActivateGame(ctx context.Context, id uuid.UUID) error
 	ActivateProject(ctx context.Context, id uuid.UUID) error
 	AddTeamMember(ctx context.Context, arg AddTeamMemberParams) (TeamMember, error)
+	// ============================================
+	// Player Boards (up to 3 active boards)
+	// ============================================
+	// Update a player's up-to-3 board slots.  NULL arguments leave existing
+	// columns untouched, so callers can update 1, 2, or all 3 boards in one
+	// query without re-reading the player row first.
+	AssignBoards(ctx context.Context, arg AssignBoardsParams) (Player, error)
 	ClaimOrphanCommits(ctx context.Context, arg ClaimOrphanCommitsParams) (int64, error)
 	CountUserCommitsForGame(ctx context.Context, arg CountUserCommitsForGameParams) (CountUserCommitsForGameRow, error)
 	// ============================================
@@ -77,6 +84,9 @@ type Querier interface {
 	GetOrCreateLanguage(ctx context.Context, arg GetOrCreateLanguageParams) (Language, error)
 	// Returns just the identifier row so the handler can read data->>'password_hash'.
 	GetPasswordHash(ctx context.Context, value string) ([]byte, error)
+	// Return the 3 board IDs for a player.  Callers can join boards on
+	// these IDs when displaying the leaderboard.
+	GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (GetPlayerBoardIdsRow, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)
@@ -110,6 +120,11 @@ type Querier interface {
 	ListBannedUsers(ctx context.Context, limitCount int32) ([]User, error)
 	ListGames(ctx context.Context, arg ListGamesParams) ([]Game, error)
 	ListPendingReports(ctx context.Context, limitCount int32) ([]ListPendingReportsRow, error)
+	// Leaderboard with per-player board totals computed via lateral join.
+	// Projects board_N_id columns directly from players so the lateral
+	// subquery can reference them (PostgreSQL cannot see through a
+	// subquery boundary into the base table from within LATERAL).
+	ListPlayersWithBoards(ctx context.Context, gameID uuid.UUID) ([]ListPlayersWithBoardsRow, error)
 	ListPublicTeams(ctx context.Context, arg ListPublicTeamsParams) ([]Team, error)
 	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]ListTeamMembersRow, error)
 	ListUserTeams(ctx context.Context, userID uuid.UUID) ([]ListUserTeamsRow, error)
