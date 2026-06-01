@@ -296,13 +296,14 @@ templ leaderboardTabs(ctx context.Context, active string) {
 
 // rankCell renders the medal emoji or #N rank label.
 templ rankCell(rank int) {
-	if rank == 1 {
-		<span class="text-2xl" title="1st Place">🥇</span>
-	} else if rank == 2 {
-		<span class="text-2xl" title="2nd Place">🥈</span>
-	} else if rank == 3 {
-		<span class="text-2xl" title="3rd Place">🥉</span>
-	} else {
-		<span class="text-gray-500 font-medium">{ fmt.Sprintf("#%d", rank) }</span>
+	switch rank {
+		case 1:
+			<span class="text-2xl" title="1st Place">🥇</span>
+		case 2:
+			<span class="text-2xl" title="2nd Place">🥈</span>
+		case 3:
+			<span class="text-2xl" title="3rd Place">🥉</span>
+		default:
+			<span class="text-gray-500 font-medium">{ fmt.Sprintf("#%d", rank) }</span>
 	}
 }
