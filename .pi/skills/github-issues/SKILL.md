@@ -294,10 +294,11 @@ When the user says "work on milestone X" or "continue milestone X":
    gh issue view 42
    ```
 
-4. **Close it when done**:
-   ```bash
-   gh issue close 42
-   ```
+4. **Create a pull request instead of closing the issue**.
+   **NEVER close an issue before a PR is created.**
+   Only close issues when a PR has been merged and resolves the issue.
+   When implementing a fix: create a branch, implement changes, then create a PR
+   and link it to the issue. The issue stays open until the PR is merged.
 
 ### Full workflow example
 
@@ -315,9 +316,22 @@ gh issue list --repo julython/julython.org --milestone "player-boards" \
 gh issue view 180
 # (agent reads the issue, understands what to implement)
 
-# Step 3: User finishes, agent closes
-gh issue close 180
+# Step 3: Create a branch, implement, then create a PR (do NOT close)
+git checkout -b 180-add-owner-field
+git add .
+git commit -m "feat: add owner field to projects"
+git push -u origin 180-add-owner-field
+# Then create the PR via gh pr create, linking to #180
 ```
+
+### IMPORTANT: Issue lifecycle rules
+- **Never close an issue before a PR exists.** Always create a PR first.
+- Only close issues when a PR is merged, or explicitly when the user asks you to.
+- If you are implementing work from an issue, always create a branch and PR.
+- Use `gh issue close` only when explicitly told to close, and only after
+  confirming a PR exists or has been merged.
+- **Always include `Closes: #<num>` in commit messages** for the issue you are working on.
+  GitHub will auto-close the issue when the PR with that commit is merged.
 
 ### Reference GitHub docs
 - `gh issue --help` — full CLI reference

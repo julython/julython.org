@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -224,4 +226,106 @@ func TestGameService_ClaimOrphanCommits(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), claimed)
 	})
+}
+
+func TestGameService_AddCommit(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+	svc := services.NewGameService(env.Queries)
+	ctx := context.Background()
+
+	t.Run("scores commits for public projects", func(t *testing.T) {
+		// Create a public project (owner: "scorer")
+		project := testutil.CreateProject(t, env, "scorer-scoring", "https://github.com/scorer/scoring")
+		game := testutil.CreateActiveGame(t, env)
+
+		// Insert a raw commit linked to this project
+		commitID := uuid.New()
+		_, err := env.Pool.Exec(ctx, `
+			INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp)
+			VALUES ($1, 'pub-hash-001', $2, 'Scorer', 'scorer@test.com', 'Public commit', 'http://test', now())
+		`, commitID, project.ID)
+		require.NoError(t, err)
+
+		commit, err := env.Queries.GetCommitByID(ctx, commitID)
+		require.NoError(t, err)
+
+		err = svc.AddCommit(ctx, commit)
+		require.NoError(t, err)
+
+		// The commit should now have a game_id (scored)
+		updated, err := env.Queries.GetCommitByID(ctx, commitID)
+		require.NoError(t, err)
+		assert.True(t, updated.GameID.Valid)
+		gameID, err := uuid.FromBytes(updated.GameID.Bytes[:])
+		require.NoError(t, err)
+		assert.Equal(t, game.ID, gameID)
+
+		// Verify board was created
+		board, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project.ID,
+			GameID:    game.ID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(1), board.CommitCount)
+	})
+
+	t.Run("skores commits for private projects", func(t *testing.T) {
+		// Create a private project
+		project := testutil.CreateProject(t, env, "priv-skip-scoring", "https://github.com/skipper/skip-project")
+		game := testutil.CreateActiveGame(t, env)
+
+		// Mark project as private
+		err := env.Queries.SetProjectIsPrivate(ctx, db.SetProjectIsPrivateParams{
+			ID:        project.ID,
+			IsPrivate: true,
+		})
+		require.NoError(t, err)
+
+		// Insert a raw commit linked to this project
+		commitID := uuid.New()
+		_, err = env.Pool.Exec(ctx, `
+			INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp)
+			VALUES ($1, 'priv-skip-001', $2, 'Skipper', 'skipper@test.com', 'Private commit', 'http://test', now())
+		`, commitID, project.ID)
+		require.NoError(t, err)
+
+		commit, err := env.Queries.GetCommitByID(ctx, commitID)
+		require.NoError(t, err)
+
+		err = svc.AddCommit(ctx, commit)
+		require.NoError(t, err)
+
+		// The commit should NOT have a game_id (no scoring for private)
+		updated, err := env.Queries.GetCommitByID(ctx, commitID)
+		require.NoError(t, err)
+		assert.False(t, updated.GameID.Valid)
+
+		// Verify no board was created
+		_, err = env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project.ID,
+			GameID:    game.ID,
+		})
+		assert.ErrorIs(t, err, pgx.ErrNoRows)
+	})
+
+	t.Run("returns nil when no active game", func(t *testing.T) {
+		// Deactivate all games
+		_ = env.Queries.DeactivateAllGames(ctx)
+
+		project := testutil.CreateProject(t, env, "nogame-project", "https://github.com/nogame/project")
+		commitID := uuid.New()
+		_, err := env.Pool.Exec(ctx, `
+			INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp)
+			VALUES ($1, 'nogame-001', $2, 'NoGame', 'nogame@test.com', 'No game commit', 'http://test', now())
+		`, commitID, project.ID)
+		require.NoError(t, err)
+
+		commit, err := env.Queries.GetCommitByID(ctx, commitID)
+		require.NoError(t, err)
+
+		// Should not error even with no active game
+		err = svc.AddCommit(ctx, commit)
+		require.NoError(t, err)
+	})
+
 }

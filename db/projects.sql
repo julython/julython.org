@@ -3,13 +3,13 @@
 -- ============================================
 
 -- name: CreateProject :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @parent_url, @is_private)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private, owner)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @parent_url, @is_private, @owner)
 RETURNING *;
 
 -- name: UpsertProjectByRepoID :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private, owner)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private, @owner)
 ON CONFLICT (service, repo_id) WHERE repo_id IS NOT NULL
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -18,12 +18,13 @@ DO UPDATE SET
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
     watchers = EXCLUDED.watchers,
-    is_private = EXCLUDED.is_private
+    is_private = EXCLUDED.is_private,
+    owner = EXCLUDED.owner
 RETURNING *;
 
 -- name: UpsertProjectBySlug :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
-VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private, owner)
+VALUES (@id, @url, @name, @slug, @description, @repo_id, @service, @forked, @forks, @watchers, @is_private, @owner)
 ON CONFLICT (slug)
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -31,7 +32,8 @@ DO UPDATE SET
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
     watchers = EXCLUDED.watchers,
-    is_private = EXCLUDED.is_private
+    is_private = EXCLUDED.is_private,
+    owner = EXCLUDED.owner
 RETURNING *;
 
 -- name: GetProjectByID :one

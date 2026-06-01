@@ -42,6 +42,7 @@ type GitHubRepo struct {
 	ID            int64  `json:"id"`
 	Name          string `json:"name"`
 	FullName      string `json:"full_name"`
+	Owner         GitHubOwner `json:"owner"`
 	HTMLURL       string `json:"html_url"`
 	Description   string `json:"description"`
 	DefaultBranch string `json:"default_branch"`
@@ -49,6 +50,10 @@ type GitHubRepo struct {
 	Fork          bool   `json:"fork"`
 	ForksCount    int    `json:"forks_count"`
 	Watchers      int    `json:"watchers_count"`
+}
+
+type GitHubOwner struct {
+	Login string `json:"login"`
 }
 
 type GitHubCommit struct {
@@ -264,6 +269,7 @@ func githubSlug(fullName string) string {
 }
 
 func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Project, error) {
+	owner := repo.Owner.Login
 	return h.queries.UpsertProjectByRepoID(ctx, db.UpsertProjectByRepoIDParams{
 		ID:          db.NewID(),
 		Url:         repo.HTMLURL,
@@ -276,6 +282,7 @@ func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Projec
 		Forks:       int32(repo.ForksCount),
 		Watchers:    int32(repo.Watchers),
 		IsPrivate:   repo.Private,
+		Owner:       owner,
 	})
 }
 
