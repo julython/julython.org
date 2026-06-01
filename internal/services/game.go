@@ -141,6 +141,8 @@ func (s *GameService) GetActiveOrLatestGame(ctx context.Context) (db.Game, error
 }
 
 // AddCommit processes a commit and updates game scores.
+// Only public projects contribute to game scoring; private repos
+// are still analysed but excluded from the game.
 func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 	logger := log.Ctx(ctx).
 		With().
@@ -158,6 +160,17 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 		return err
 	}
 	logger.Debug().Msgf("Adding commit to game: %s", game.Name)
+
+	// Only public projects contribute to game scoring.
+	project, err := s.queries.GetProjectByID(ctx, commit.ProjectID)
+	if err != nil {
+		logger.Debug().Str("project_id", commit.ProjectID.String()).Msg("project not found, skipping scoring")
+		return nil
+	}
+	if project.IsPrivate {
+		logger.Debug().Str("project", project.Slug).Msg("skipping scoring for private project")
+		return nil
+	}
 
 	if err := s.queries.SetCommitGame(ctx, db.SetCommitGameParams{
 		ID:     commit.ID,

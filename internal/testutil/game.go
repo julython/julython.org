@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,26 @@ import (
 	"july/internal/db"
 	"july/internal/webhooks"
 )
+
+// ownerFromRepoURL extracts the owner from a GitHub-style repo URL.
+func ownerFromRepoURL(repoURL string) string {
+	// Handle https://github.com/owner/repo
+	const githubPrefix = "https://github.com/"
+	const gitPrefix = "git@github.com:"
+	if strings.HasPrefix(repoURL, githubPrefix) {
+		rest := strings.TrimPrefix(repoURL, githubPrefix)
+		if slash := strings.Index(rest, "/"); slash >= 0 {
+			return strings.SplitN(rest, "/", 2)[0]
+		}
+	}
+	if strings.HasPrefix(repoURL, gitPrefix) {
+		rest := strings.TrimPrefix(repoURL, gitPrefix)
+		if slash := strings.Index(rest, "/"); slash >= 0 {
+			return strings.SplitN(rest, "/", 2)[0]
+		}
+	}
+	return ""
+}
 
 func CreateProject(t *testing.T, env *TestEnv, slug, repoURL string) db.Project {
 	t.Helper()
@@ -31,6 +52,7 @@ func CreateProject(t *testing.T, env *TestEnv, slug, repoURL string) db.Project 
 		Watchers:    0,
 		ParentUrl:   db.NullText(),
 		IsPrivate:   false,
+		Owner:       ownerFromRepoURL(repoURL),
 	})
 	if err != nil {
 		t.Fatalf("failed to create project: %v", err)
@@ -59,6 +81,7 @@ func CreateProjectWithRepoID(t *testing.T, env *TestEnv, name, slug, repoURL str
 		Watchers:    0,
 		ParentUrl:   db.NullText(),
 		IsPrivate:   false,
+		Owner:       ownerFromRepoURL(repoURL),
 	})
 	if err != nil {
 		t.Fatalf("failed to create project: %v", err)

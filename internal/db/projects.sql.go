@@ -23,9 +23,9 @@ func (q *Queries) ActivateProject(ctx context.Context, id uuid.UUID) error {
 
 const createProject = `-- name: CreateProject :one
 
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_private, owner)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner
 `
 
 type CreateProjectParams struct {
@@ -41,6 +41,7 @@ type CreateProjectParams struct {
 	Watchers    int32       `json:"watchers"`
 	ParentUrl   pgtype.Text `json:"parent_url"`
 	IsPrivate   bool        `json:"is_private"`
+	Owner       string      `json:"owner"`
 }
 
 // ============================================
@@ -60,6 +61,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.Watchers,
 		arg.ParentUrl,
 		arg.IsPrivate,
+		arg.Owner,
 	)
 	var i Project
 	err := row.Scan(
@@ -78,6 +80,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
@@ -156,7 +159,7 @@ func (q *Queries) GetAnalysisMetricsByProject(ctx context.Context, projectID uui
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE id = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects WHERE id = $1
 `
 
 func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error) {
@@ -178,12 +181,13 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
 
 const getProjectByServiceAndRepoID = `-- name: GetProjectByServiceAndRepoID :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE service = $1 AND repo_id = $2
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects WHERE service = $1 AND repo_id = $2
 `
 
 type GetProjectByServiceAndRepoIDParams struct {
@@ -210,12 +214,13 @@ func (q *Queries) GetProjectByServiceAndRepoID(ctx context.Context, arg GetProje
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
 
 const getProjectBySlug = `-- name: GetProjectBySlug :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE slug = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects WHERE slug = $1
 `
 
 func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Project, error) {
@@ -237,12 +242,13 @@ func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Project, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
 
 const getProjectByURL = `-- name: GetProjectByURL :one
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects WHERE url = $1
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects WHERE url = $1
 `
 
 func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, error) {
@@ -264,6 +270,7 @@ func (q *Queries) GetProjectByURL(ctx context.Context, url string) (Project, err
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
@@ -282,7 +289,7 @@ func (q *Queries) GetProjectTotalScore(ctx context.Context, projectID uuid.UUID)
 }
 
 const listActiveProjects = `-- name: ListActiveProjects :many
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects
 WHERE is_active = true
   AND is_private = false
 ORDER BY id DESC
@@ -314,6 +321,7 @@ func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.IsPrivate,
+			&i.Owner,
 		); err != nil {
 			return nil, err
 		}
@@ -326,7 +334,7 @@ func (q *Queries) ListActiveProjects(ctx context.Context, limitCount interface{}
 }
 
 const searchActiveProjects = `-- name: SearchActiveProjects :many
-SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private FROM projects
+SELECT id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner FROM projects
 WHERE is_active = true
   AND is_private = false
   AND ($1::text IS NULL OR name ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%')
@@ -373,6 +381,7 @@ func (q *Queries) SearchActiveProjects(ctx context.Context, arg SearchActiveProj
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.IsPrivate,
+			&i.Owner,
 		); err != nil {
 			return nil, err
 		}
@@ -427,7 +436,7 @@ func (q *Queries) UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnaly
 }
 
 const updateProjectService = `-- name: UpdateProjectService :one
-UPDATE projects SET service = $1 WHERE id = $2 RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
+UPDATE projects SET service = $1 WHERE id = $2 RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner
 `
 
 type UpdateProjectServiceParams struct {
@@ -454,6 +463,7 @@ func (q *Queries) UpdateProjectService(ctx context.Context, arg UpdateProjectSer
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
@@ -500,8 +510,8 @@ func (q *Queries) UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMe
 }
 
 const upsertProjectByRepoID = `-- name: UpsertProjectByRepoID :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private, owner)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (service, repo_id) WHERE repo_id IS NOT NULL
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -510,8 +520,9 @@ DO UPDATE SET
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
     watchers = EXCLUDED.watchers,
-    is_private = EXCLUDED.is_private
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
+    is_private = EXCLUDED.is_private,
+    owner = EXCLUDED.owner
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner
 `
 
 type UpsertProjectByRepoIDParams struct {
@@ -526,6 +537,7 @@ type UpsertProjectByRepoIDParams struct {
 	Forks       int32       `json:"forks"`
 	Watchers    int32       `json:"watchers"`
 	IsPrivate   bool        `json:"is_private"`
+	Owner       string      `json:"owner"`
 }
 
 func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectByRepoIDParams) (Project, error) {
@@ -541,6 +553,7 @@ func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectBy
 		arg.Forks,
 		arg.Watchers,
 		arg.IsPrivate,
+		arg.Owner,
 	)
 	var i Project
 	err := row.Scan(
@@ -559,13 +572,14 @@ func (q *Queries) UpsertProjectByRepoID(ctx context.Context, arg UpsertProjectBy
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }
 
 const upsertProjectBySlug = `-- name: UpsertProjectBySlug :one
-INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+INSERT INTO projects (id, url, name, slug, description, repo_id, service, forked, forks, watchers, is_private, owner)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (slug)
 DO UPDATE SET
     url = EXCLUDED.url,
@@ -573,8 +587,9 @@ DO UPDATE SET
     description = EXCLUDED.description,
     forks = EXCLUDED.forks,
     watchers = EXCLUDED.watchers,
-    is_private = EXCLUDED.is_private
-RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private
+    is_private = EXCLUDED.is_private,
+    owner = EXCLUDED.owner
+RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner
 `
 
 type UpsertProjectBySlugParams struct {
@@ -589,6 +604,7 @@ type UpsertProjectBySlugParams struct {
 	Forks       int32       `json:"forks"`
 	Watchers    int32       `json:"watchers"`
 	IsPrivate   bool        `json:"is_private"`
+	Owner       string      `json:"owner"`
 }
 
 func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySlugParams) (Project, error) {
@@ -604,6 +620,7 @@ func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySl
 		arg.Forks,
 		arg.Watchers,
 		arg.IsPrivate,
+		arg.Owner,
 	)
 	var i Project
 	err := row.Scan(
@@ -622,6 +639,7 @@ func (q *Queries) UpsertProjectBySlug(ctx context.Context, arg UpsertProjectBySl
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.IsPrivate,
+		&i.Owner,
 	)
 	return i, err
 }

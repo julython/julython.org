@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -217,6 +218,97 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.False(t, project.Forked)
 		assert.Equal(t, int32(5), project.Forks)
 		assert.Equal(t, int32(10), project.Watchers)
+	})
+
+	t.Run("sets owner from webhook payload", func(t *testing.T) {
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       99999,
+				Name:     "owner-repo",
+				FullName: "eve/owner-repo",
+				HTMLURL:  "https://github.com/eve/owner-repo",
+				Owner:    webhooks.GitHubOwner{Login: "eve"},
+			},
+			Commits: []webhooks.GitHubCommit{
+				{ID: "owner-hash-001", Message: "Add owner", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Name: "Eve", Email: "eve@test.com"}},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-eve-owner-repo")
+		require.NoError(t, err)
+		assert.Equal(t, "eve", project.Owner)
+	})
+
+	t.Run("sets owner from nested owner object", func(t *testing.T) {
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:          11111,
+				Name:        "org-repo",
+				FullName:    "acme-org/org-repo",
+				HTMLURL:     "https://github.com/acme-org/org-repo",
+				Description: "An organization repository",
+				Fork:        false,
+				ForksCount:  3,
+				Watchers:    5,
+				Owner: webhooks.GitHubOwner{Login: "acme-org"},
+			},
+			Commits: []webhooks.GitHubCommit{
+				{ID: "org-hash-001", Message: "Add organization repo", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "org@test.com"}},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-acme-org-org-repo")
+		require.NoError(t, err)
+		assert.Equal(t, "acme-org", project.Owner)
+	})
+
+	t.Run("private project creates commit but no game scoring", func(t *testing.T) {
+		// Create an active game so scoring would normally happen
+		game := testutil.CreateActiveGame(t, env)
+
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       22222,
+				Name:     "private-repo",
+				FullName: "frank/private-repo",
+				HTMLURL:  "https://github.com/frank/private-repo",
+				Private:  true, // Mark as private
+				Owner:    webhooks.GitHubOwner{Login: "frank"},
+			},
+			Commits: []webhooks.GitHubCommit{
+				{ID: "priv-hash-001", Message: "Private repo commit", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "frank@test.com"}},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+
+		// Verify the project is marked as private
+		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-frank-private-repo")
+		require.NoError(t, err)
+		assert.True(t, project.IsPrivate)
+		assert.Equal(t, "frank", project.Owner)
+
+		// Verify the commit exists but has no game_id (no scoring for private)
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "priv-hash-001")
+		require.NoError(t, err)
+		assert.False(t, commit.GameID.Valid)
+		// Verify no board was created for this private project
+		_, err = env.Queries.GetBoardByProjectAndGame(t.Context(), db.GetBoardByProjectAndGameParams{
+			ProjectID: project.ID,
+			GameID:    game.ID,
+		})
+		assert.ErrorIs(t, err, pgx.ErrNoRows)
 	})
 
 	t.Run("adds commit to the active game", func(t *testing.T) {
