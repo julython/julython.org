@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	"july/internal/auth"
 	"july/internal/components/layout"
@@ -35,7 +34,7 @@ type boardInfo struct {
 	ProjectSlug    string
 }
 
-type playerData struct {
+type PlayerData struct {
 	Username  string
 	Name      string
 	AvatarURL string
@@ -105,7 +104,7 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := playerData{
+	data := PlayerData{
 		Username:  u.Username,
 		Name:      u.Name,
 		AvatarURL: u.AvatarUrl.String,
@@ -166,40 +165,20 @@ func (h *handler) SwapBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse request body
-	var body swapRequest
+	var body SwapRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Build pgtype.UUID values (valid or null)
-	var b1, b2, b3 pgtype.UUID
-	if body.Board1ID != nil {
-		b1 = db.UUID(*body.Board1ID)
-	}
-	if body.Board2ID != nil {
-		b2 = db.UUID(*body.Board2ID)
-	}
-	if body.Board3ID != nil {
-		b3 = db.UUID(*body.Board3ID)
-	}
-
-	// Validate ownership: each non-null board must be owned by the player.
-	// A board is owned if it's for this game and the project's owner matches.
-	validateBoards := []uuid.UUID{}
-	if body.Board1ID != nil {
-		validateBoards = append(validateBoards, *body.Board1ID)
-	}
-	if body.Board2ID != nil {
-		validateBoards = append(validateBoards, *body.Board2ID)
-	}
-	if body.Board3ID != nil {
-		validateBoards = append(validateBoards, *body.Board3ID)
-	}
-
-	if len(validateBoards) > 0 {
+	// Validate ownership and build params in a single loop.
+	params := db.AssignBoardsParams{PlayerID: player.ID}
+	for i, idPtr := range []*uuid.UUID{body.Board1ID, body.Board2ID, body.Board3ID} {
+		if idPtr == nil {
+			continue
+		}
 		owned, err := h.queries.ValidateBoardOwnership(ctx, db.ValidateBoardOwnershipParams{
-			BoardID: validateBoards[0],
+			BoardID: *idPtr,
 			GameID:  game.ID,
 			Owner:   u.Username,
 		})
@@ -207,37 +186,17 @@ func (h *handler) SwapBoard(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Board not owned by player", http.StatusForbidden)
 			return
 		}
-		if len(validateBoards) > 1 {
-			owned, err = h.queries.ValidateBoardOwnership(ctx, db.ValidateBoardOwnershipParams{
-				BoardID: validateBoards[1],
-				GameID:  game.ID,
-				Owner:   u.Username,
-			})
-			if err != nil || owned.ID == uuid.Nil {
-				http.Error(w, "Board not owned by player", http.StatusForbidden)
-				return
-			}
-		}
-		if len(validateBoards) > 2 {
-			owned, err = h.queries.ValidateBoardOwnership(ctx, db.ValidateBoardOwnershipParams{
-				BoardID: validateBoards[2],
-				GameID:  game.ID,
-				Owner:   u.Username,
-			})
-			if err != nil || owned.ID == uuid.Nil {
-				http.Error(w, "Board not owned by player", http.StatusForbidden)
-				return
-			}
+		switch i {
+		case 0:
+			params.Board1ID = db.UUID(*idPtr)
+		case 1:
+			params.Board2ID = db.UUID(*idPtr)
+		case 2:
+			params.Board3ID = db.UUID(*idPtr)
 		}
 	}
 
-	// Swap: update only non-null positions via COALESCE
-	if _, err := h.queries.AssignBoards(ctx, db.AssignBoardsParams{
-		Board1ID: b1,
-		Board2ID: b2,
-		Board3ID: b3,
-		PlayerID: player.ID,
-	}); err != nil {
+	if _, err := h.queries.AssignBoards(ctx, params); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -299,13 +258,13 @@ func (h *handler) renderPlayerBoardFragment(w http.ResponseWriter, r *http.Reque
 	h.renderPlayerBoard(w, r, username, player, rows)
 }
 
-type swapRequest struct {
+type SwapRequest struct {
 	Board1ID *uuid.UUID `json:"board_1"`
 	Board2ID *uuid.UUID `json:"board_2"`
 	Board3ID *uuid.UUID `json:"board_3"`
 }
 
-func (h *handler) renderPage(w http.ResponseWriter, r *http.Request, username string, data *playerData) {
+func (h *handler) renderPage(w http.ResponseWriter, r *http.Request, username string, data *PlayerData) {
 	ctx := r.Context()
 
 	ld := layout.LayoutData{
