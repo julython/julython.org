@@ -118,7 +118,7 @@ func RecentActivityRow(commit RecentCommit) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"min-w-0 flex-1\"><p class=\"text-sm\"><a href=\"/user/{commit.Username}\" class=\"font-medium text-white hover:text-july-400 transition-colors\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"min-w-0 flex-1\"><p class=\"text-sm\"><a href=\"/player/{commit.Username}\" class=\"font-medium text-white hover:text-july-400 transition-colors\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -12,6 +12,9 @@ DO UPDATE SET
     commit_count = boards.commit_count + EXCLUDED.commit_count
 RETURNING *;
 
+-- name: GetBoardByIDsAndGame :many
+SELECT * FROM boards WHERE id = ANY(@board_ids::uuid[]) AND game_id = @game_id;
+
 -- name: GetBoardByProjectAndGame :one
 SELECT * FROM boards WHERE project_id = @project_id AND game_id = @game_id;
 

@@ -1,0 +1,61 @@
+package players
+
+import (
+	"july/internal/components/layout"
+)
+
+// PlayersData is the template data for a player page.
+type PlayersData struct {
+	Username  string
+	Name      string
+	AvatarURL string
+	Boards    []boardInfo
+}
+
+templ PlayersPage(ld layout.LayoutData, data PlayersData) {
+	@layout.Layout(ld) {
+		<main class="max-w-7xl mx-auto px-4 py-8">
+			<div class="flex items-center gap-4 mb-8">
+				<span class="text-3xl font-bold text-july-400">{data.Username}</span>
+			</div>
+			if len(data.Boards) == 0 {
+				<div class="text-center py-16 bg-surface rounded-xl border border-white/10">
+					<span class="text-6xl mb-4 block">📋</span>
+					<p class="text-gray-400">No boards yet.</p>
+				</div>
+			} else {
+				@PlayersList(data)
+			}
+		</main>
+	}
+}
+
+templ PlayersList(data PlayersData) {
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		for _, b := range data.Boards {
+			@BoardCard(b)
+		}
+	</div>
+}
+
+templ BoardCard(b boardInfo) {
+	<div class="bg-surface rounded-xl border border-white/10 overflow-hidden">
+		<div class="p-6">
+			<h3 class="text-lg font-semibold text-july-300 mb-2">
+				<a href={"/projects/" + b.ProjectSlug} class="hover:text-july-400">
+					{b.ProjectName}
+				</a>
+			</h3>
+			<div class="space-y-2 text-sm text-gray-400">
+				<div class="flex justify-between">
+					<span>Points</span>
+					<span>{b.Points}</span>
+				</div>
+				<div class="flex justify-between">
+					<span>Verified</span>
+					<span>{b.VerifiedPoints}</span>
+				</div>
+			</div>
+		</div>
+	</div>
+}

@@ -12,6 +12,46 @@ import (
 	"github.com/google/uuid"
 )
 
+const getBoardByIDsAndGame = `-- name: GetBoardByIDsAndGame :many
+SELECT id, game_id, project_id, points, potential_points, verified_points, commit_count, contributor_count, created_at, updated_at FROM boards WHERE id = ANY($1::uuid[]) AND game_id = $2
+`
+
+type GetBoardByIDsAndGameParams struct {
+	BoardIds []uuid.UUID `json:"board_ids"`
+	GameID   uuid.UUID   `json:"game_id"`
+}
+
+func (q *Queries) GetBoardByIDsAndGame(ctx context.Context, arg GetBoardByIDsAndGameParams) ([]Board, error) {
+	rows, err := q.db.Query(ctx, getBoardByIDsAndGame, arg.BoardIds, arg.GameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Board
+	for rows.Next() {
+		var i Board
+		if err := rows.Scan(
+			&i.ID,
+			&i.GameID,
+			&i.ProjectID,
+			&i.Points,
+			&i.PotentialPoints,
+			&i.VerifiedPoints,
+			&i.CommitCount,
+			&i.ContributorCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getBoardByProjectAndGame = `-- name: GetBoardByProjectAndGame :one
 SELECT id, game_id, project_id, points, potential_points, verified_points, commit_count, contributor_count, created_at, updated_at FROM boards WHERE project_id = $1 AND game_id = $2
 `
