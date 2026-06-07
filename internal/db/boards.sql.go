@@ -193,3 +193,32 @@ func (q *Queries) UpsertBoard(ctx context.Context, arg UpsertBoardParams) (Board
 	)
 	return i, err
 }
+
+const validateBoardOwnership = `-- name: ValidateBoardOwnership :one
+SELECT b.id, b.project_id
+FROM boards b
+JOIN projects p ON p.id = b.project_id
+WHERE b.id = $1
+  AND b.game_id = $2
+  AND p.is_private = false
+  AND p.owner = $3
+LIMIT 1
+`
+
+type ValidateBoardOwnershipParams struct {
+	BoardID uuid.UUID `json:"board_id"`
+	GameID  uuid.UUID `json:"game_id"`
+	Owner   string    `json:"owner"`
+}
+
+type ValidateBoardOwnershipRow struct {
+	ID        uuid.UUID `json:"id"`
+	ProjectID uuid.UUID `json:"project_id"`
+}
+
+func (q *Queries) ValidateBoardOwnership(ctx context.Context, arg ValidateBoardOwnershipParams) (ValidateBoardOwnershipRow, error) {
+	row := q.db.QueryRow(ctx, validateBoardOwnership, arg.BoardID, arg.GameID, arg.Owner)
+	var i ValidateBoardOwnershipRow
+	err := row.Scan(&i.ID, &i.ProjectID)
+	return i, err
+}

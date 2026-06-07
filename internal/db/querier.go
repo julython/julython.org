@@ -164,6 +164,7 @@ type Querier interface {
 	// User Identifiers
 	// ============================================
 	UpsertUserIdentifier(ctx context.Context, arg UpsertUserIdentifierParams) (UserIdentifier, error)
+	ValidateBoardOwnership(ctx context.Context, arg ValidateBoardOwnershipParams) (ValidateBoardOwnershipRow, error)
 	VerifyCommit(ctx context.Context, id uuid.UUID) error
 }
 
