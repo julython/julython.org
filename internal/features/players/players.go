@@ -1,4 +1,4 @@
-package boards
+package players
 
 import (
 	"errors"
@@ -119,7 +119,7 @@ func renderPage(w http.ResponseWriter, r *http.Request, username string, data *p
 		CurrentPath: "/player/" + username,
 	}
 
-	pd := BoardsData{
+	pd := PlayersData{
 		Username: username,
 	}
 	if data != nil {
@@ -130,8 +130,8 @@ func renderPage(w http.ResponseWriter, r *http.Request, username string, data *p
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		BoardsList(pd).Render(ctx, w)
+		PlayersList(pd).Render(ctx, w)
 	} else {
-		BoardsPage(ld, pd).Render(ctx, w)
+		PlayersPage(ld, pd).Render(ctx, w)
 	}
 }

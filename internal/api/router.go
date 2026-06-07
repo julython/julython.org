@@ -16,7 +16,7 @@ import (
 	"july/internal/auth"
 	"july/internal/config"
 	"july/internal/db"
-	"july/internal/features/boards"
+	"july/internal/features/players"
 	"july/internal/features/assets"
 	"july/internal/features/blog"
 	"july/internal/features/game"
@@ -86,8 +86,8 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config, logger zerolog.Logger) (
 	// Game Routes
 	game.Register(mux, queries, gameSvc)
 
-	// Boards (per-user project boards)
-	boards.Register(mux, queries, gameSvc)
+	// Players (per-user player boards)
+	players.Register(mux, queries, gameSvc)
 
 	// Project routes
 	projects.Register(mux, queries, gameSvc, userSvc, l1Scanner)

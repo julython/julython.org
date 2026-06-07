@@ -1,18 +1,18 @@
-package boards
+package players
 
 import (
 	"july/internal/components/layout"
 )
 
-// BoardsData is the template data type.
-type BoardsData struct {
+// PlayersData is the template data for a player page.
+type PlayersData struct {
 	Username  string
 	Name      string
 	AvatarURL string
 	Boards    []boardInfo
 }
 
-templ BoardsPage(ld layout.LayoutData, data BoardsData) {
+templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 	@layout.Layout(ld) {
 		<main class="max-w-7xl mx-auto px-4 py-8">
 			<div class="flex items-center gap-4 mb-8">
@@ -24,13 +24,13 @@ templ BoardsPage(ld layout.LayoutData, data BoardsData) {
 					<p class="text-gray-400">No boards yet.</p>
 				</div>
 			} else {
-				@BoardsList(data)
+				@PlayersList(data)
 			}
 		</main>
 	}
 }
 
-templ BoardsList(data BoardsData) {
+templ PlayersList(data PlayersData) {
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 		for _, b := range data.Boards {
 			@BoardCard(b)

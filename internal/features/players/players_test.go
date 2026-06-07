@@ -1,4 +1,4 @@
-package boards_test
+package players_test
 
 import (
 	"context"
