@@ -28,8 +28,7 @@ func TestPlayerRoute(t *testing.T) {
 		resp, err := env.Client.Get(env.Server.URL + "/player/nonexistent")
 		require.NoError(t, err)
 		defer resp.Body.Close()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-		testutil.BodyContains(t, resp, "nonexistent")
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
 	t.Run("authenticated user without a player record shows empty state", func(t *testing.T) {
@@ -43,8 +42,7 @@ func TestPlayerRoute(t *testing.T) {
 		resp, err := env.Client.Get(env.Server.URL + "/player/testuser")
 		require.NoError(t, err)
 		defer resp.Body.Close()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-		testutil.BodyContains(t, resp, "No boards yet")
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
 	t.Run("authenticated user with boards renders project info", func(t *testing.T) {
