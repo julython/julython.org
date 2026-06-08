@@ -25,8 +25,8 @@ SELECT * FROM players WHERE user_id = @user_id AND game_id = @game_id;
 -- (one per board), with user columns repeated across rows.
 SELECT
     u.username, u.name, u.avatar_url,
-    b.id, b.points, b.verified_points, b.commit_count,
-    b.project_name, b.slug
+    b.id, COALESCE(b.points, 0), COALESCE(b.verified_points, 0), COALESCE(b.commit_count, 0),
+    COALESCE(b.project_name, ''), COALESCE(b.slug, '')
 FROM players p
 JOIN users u ON u.id = p.user_id
   AND p.game_id = @game_id
@@ -38,7 +38,8 @@ LEFT JOIN LATERAL (
     FROM boards
     JOIN projects ON projects.id = boards.project_id
     WHERE boards.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
-) b ON true;
+) b ON true
+WHERE b.id IS NOT NULL;
 
 -- name: UpdatePlayerAnalysis :exec
 UPDATE players SET
