@@ -294,11 +294,23 @@ When the user says "work on milestone X" or "continue milestone X":
    gh issue view 42
    ```
 
-4. **Create a pull request instead of closing the issue**.
+4. **Create a new branch with the ticket number**:
+   ```bash
+   git checkout -b 42-short-description
+   ```
+   The branch name should start with the issue number followed by a descriptive suffix (kebab-case).
+
+5. **Wait for user confirmation before implementing**.
+   Present a summary of what you plan to do and wait for explicit approval before making changes.
+   Do NOT proceed with implementation until the user confirms.
+
+6. **After user approval, implement changes and commit**:
+   - Write a clear commit message with a summary of what was done.
+   - Append `Closes: #<num>` (replace `<num>` with the issue number) to the commit message.
+   - Push the branch and create a PR linking to the issue.
    **NEVER close an issue before a PR is created.**
    Only close issues when a PR has been merged and resolves the issue.
-   When implementing a fix: create a branch, implement changes, then create a PR
-   and link it to the issue. The issue stays open until the PR is merged.
+   The issue stays open until the PR is merged.
 
 ### Full workflow example
 
@@ -314,12 +326,18 @@ gh issue list --repo julython/julython.org --milestone "player-boards" \
 
 # Step 2: User picks #180, agent views it
 gh issue view 180
-# (agent reads the issue, understands what to implement)
 
-# Step 3: Create a branch, implement, then create a PR (do NOT close)
+# Step 3: Create branch with ticket number
 git checkout -b 180-add-owner-field
+
+# Step 4: WAIT for user confirmation — present plan and get approval
+# (Do NOT implement changes until user says go)
+
+# Step 5: After confirmation, implement changes and commit
+# Include a summary of what was done, append `Closes: #180`
 git add .
-git commit -m "feat: add owner field to projects"
+git commit -m "feat: add owner field to projects and enforce public-only
+\nCloses: #180"
 git push -u origin 180-add-owner-field
 # Then create the PR via gh pr create, linking to #180
 ```

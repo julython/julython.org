@@ -71,7 +71,7 @@ Give logged-in users a personalized view of 3 projects they're "playing" during 
   - `board_3_id` (uuid, nullable, FK → boards)
   This replaces the `user_boards` concept — the player's active boards are 3 columns on the existing `Player` table. No separate table needed.
   Add SQLC queries: read 3 boards for a player, swap board position (update one of the 3 FKs), list all players with their 3 active boards.
-- **Files to change:** `migrations/<timestamp>_add_player_boards.up.sql`, `migrations/<timestamp>_add_player_boards.down.sql`, `internal/db/queries.sql`, regenerate with `make sqlc`
+- **Files to change:** `migrations/<timestamp>_add_player_boards.up.sql`, `migrations/<timestamp>_add_player_boards.down.sql`, `internal/db/queries/`, regenerate with `make sqlc`
 - **Dependencies:** Task 0.5
 - **Complexity:** Low
 - **Notes:** The `Player` model (in `models.go`) gets 3 new fields: `Board1ID`, `Board2ID`, `Board3ID` (all `pgtype.UUID{Valid: false}` initially). On board assignment, `AssignBoards` updates the appropriate column. `SwapBoard` updates the FK directly. Simple, no JOIN needed.
