@@ -167,7 +167,7 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 		Username: username,
 	})
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed boat")
+		logger.Error().Err(err).Msg("Failed to find player")
 		return
 	}
 
