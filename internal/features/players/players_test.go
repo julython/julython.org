@@ -45,6 +45,35 @@ func TestPlayerRoute(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
+	t.Run("authenticated user with no boards renders empty state", func(t *testing.T) {
+		ctx := context.Background()
+		env := testutil.SetupTestEnv(t)
+
+		user := testutil.CreateUser(t, env, "testuser", "Test User")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		testutil.CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
+
+		game := testutil.CreateActiveGame(t, env)
+
+		// Create a player with no boards assigned
+		_, err := env.Queries.UpsertPlayer(ctx, db.UpsertPlayerParams{
+			ID:          db.NewID(),
+			GameID:      game.ID,
+			UserID:      user.ID,
+			Points:      0,
+			CommitCount: 0,
+		})
+		require.NoError(t, err)
+
+		env.LoginAs(t, "test@example.com")
+
+		resp, err := env.Client.Get(env.Server.URL + "/player/testuser")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		testutil.BodyContains(t, resp, "No boards yet")
+	})
+
 	t.Run("authenticated user with boards renders project info", func(t *testing.T) {
 		ctx := context.Background()
 		env := testutil.SetupTestEnv(t)

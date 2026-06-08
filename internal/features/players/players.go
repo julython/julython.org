@@ -171,6 +171,11 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 		return
 	}
 
+	if len(rows) == 0 {
+		h.renderNoBoards(w, r, username)
+		return
+	}
+
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
 		CurrentPath: "/player/" + username,
@@ -193,7 +198,26 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 		})
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
+		PlayersList(pd).Render(ctx, w)
+	} else {
+		PlayersPage(ld, pd).Render(ctx, w)
+	}
+}
+
+func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, username string) {
+	ctx := r.Context()
+
+	ld := layout.LayoutData{
+		Title:       "Player: " + username,
+		CurrentPath: "/player/" + username,
+	}
+
+	pd := PlayersData{
+		Username: username,
+	}
+
+	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
 		PlayersList(pd).Render(ctx, w)
 	} else {
 		PlayersPage(ld, pd).Render(ctx, w)
