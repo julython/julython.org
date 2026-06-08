@@ -247,6 +247,75 @@ func (q *Queries) GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (i
 	return rank, err
 }
 
+const getPlayerWithBoards = `-- name: GetPlayerWithBoards :many
+SELECT
+    u.username, u.name, u.avatar_url,
+    b.id, b.points, b.verified_points, b.commit_count,
+    b.project_name, b.slug
+FROM players p
+JOIN users u ON u.id = p.user_id
+  AND p.game_id = $1
+  AND u.username = $2
+  AND u.is_active = true
+LEFT JOIN LATERAL (
+    SELECT boards.id, boards.points, boards.verified_points, boards.commit_count,
+           projects.name AS project_name, projects.slug
+    FROM boards
+    JOIN projects ON projects.id = boards.project_id
+    WHERE boards.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
+) b ON true
+`
+
+type GetPlayerWithBoardsParams struct {
+	GameID   uuid.UUID `json:"game_id"`
+	Username string    `json:"username"`
+}
+
+type GetPlayerWithBoardsRow struct {
+	Username       string      `json:"username"`
+	Name           string      `json:"name"`
+	AvatarUrl      pgtype.Text `json:"avatar_url"`
+	ID             uuid.UUID   `json:"id"`
+	Points         int32       `json:"points"`
+	VerifiedPoints int32       `json:"verified_points"`
+	CommitCount    int32       `json:"commit_count"`
+	ProjectName    string      `json:"project_name"`
+	Slug           string      `json:"slug"`
+}
+
+// Fetches a single player's info along with their up-to-3 boards and
+// project details in one query via a lateral join.  Returns 0-3 rows
+// (one per board), with user columns repeated across rows.
+func (q *Queries) GetPlayerWithBoards(ctx context.Context, arg GetPlayerWithBoardsParams) ([]GetPlayerWithBoardsRow, error) {
+	rows, err := q.db.Query(ctx, getPlayerWithBoards, arg.GameID, arg.Username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPlayerWithBoardsRow
+	for rows.Next() {
+		var i GetPlayerWithBoardsRow
+		if err := rows.Scan(
+			&i.Username,
+			&i.Name,
+			&i.AvatarUrl,
+			&i.ID,
+			&i.Points,
+			&i.VerifiedPoints,
+			&i.CommitCount,
+			&i.ProjectName,
+			&i.Slug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPlayersWithBoards = `-- name: ListPlayersWithBoards :many
 SELECT
     p.id, u.name, u.username, u.avatar_url,

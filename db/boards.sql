@@ -27,3 +27,13 @@ ORDER BY
     CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.potential_points END DESC,
     b.points DESC
 LIMIT @limit_count;
+
+-- name: ValidateBoardOwnership :one
+SELECT b.id, b.project_id
+FROM boards b
+JOIN projects p ON p.id = b.project_id
+WHERE b.id = @board_id
+  AND b.game_id = @game_id
+  AND p.is_private = false
+  AND p.owner = @owner
+LIMIT 1;

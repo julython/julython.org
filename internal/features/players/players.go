@@ -1,12 +1,15 @@
 package players
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 
+	"july/internal/auth"
 	"july/internal/components/layout"
 	"july/internal/db"
 	"july/internal/services"
@@ -15,6 +18,7 @@ import (
 func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
 	h := &handler{queries: q, gameService: gs}
 	mux.HandleFunc("GET /player/{username}", h.Player)
+	mux.HandleFunc("POST /player/{username}", h.Update)
 }
 
 type handler struct {
@@ -31,17 +35,24 @@ type boardInfo struct {
 	ProjectSlug    string
 }
 
-type playerData struct {
-	Username string
-	Name     string
+type PlayerData struct {
+	Username  string
+	Name      string
 	AvatarURL string
-	Boards   []boardInfo
+	Boards    []boardInfo
 }
 
+type UpdateRequest struct {
+	Board1ID *uuid.UUID `json:"board_1"`
+	Board2ID *uuid.UUID `json:"board_2"`
+	Board3ID *uuid.UUID `json:"board_3"`
+}
+
+// Player handles GET /player/{username}.
 func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := log.Ctx(r.Context())
 
-	// Get the requested username
 	username := r.PathValue("username")
 	if username == "" {
 		http.NotFound(w, r)
@@ -50,18 +61,56 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 
 	game, err := h.gameService.GetActiveOrLatestGame(ctx)
 	if err != nil {
-		renderPage(w, r, username, nil)
+		logger.Info().Msg("Active game not found")
+		http.NotFound(w, r)
 		return
 	}
 
-	// Get the player for the requested user
-	u, _ := h.queries.GetUserByUsername(ctx, username)
+	h.renderPlayerData(w, r, game.ID, username)
+}
+
+// Update handles POST /player/{username} — the HTMX endpoint
+// to swap boards on the player page. Only the player can update their own boards.
+func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	username := r.PathValue("username")
+	if username == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Auth: must be logged in
+	sessionUser := auth.UserFromContext(ctx)
+	if sessionUser == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	game, err := h.gameService.GetActiveOrLatestGame(ctx)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Auth: only the player can swap their own boards
+	u, err := h.queries.GetUserByUsername(ctx, username)
+	if err != nil {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+	if u.ID != sessionUser.ID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Assign the selected boards
 	player, err := h.queries.GetPlayerByUserAndGame(ctx, db.GetPlayerByUserAndGameParams{
 		UserID: u.ID,
 		GameID: game.ID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		renderPage(w, r, username, nil)
+		http.Error(w, "Player not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
@@ -69,50 +118,58 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rows []boardInfo
-	var boardIDs []uuid.UUID
-	if player.Board1ID.Valid {
-		boardIDs = append(boardIDs, player.Board1ID.Bytes)
-	}
-	if player.Board2ID.Valid {
-		boardIDs = append(boardIDs, player.Board2ID.Bytes)
-	}
-	if player.Board3ID.Valid {
-		boardIDs = append(boardIDs, player.Board3ID.Bytes)
+	var body UpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
 	}
 
-	if len(boardIDs) > 0 {
-		boardRows, err := h.queries.GetBoardByIDsAndGame(ctx, db.GetBoardByIDsAndGameParams{
-			BoardIds: boardIDs,
-			GameID:   game.ID,
+	params := db.AssignBoardsParams{PlayerID: player.ID}
+	for i, idPtr := range []*uuid.UUID{body.Board1ID, body.Board2ID, body.Board3ID} {
+		if idPtr == nil {
+			continue
+		}
+		owned, err := h.queries.ValidateBoardOwnership(ctx, db.ValidateBoardOwnershipParams{
+			BoardID: *idPtr,
+			GameID:  game.ID,
+			Owner:   u.Username,
 		})
-		if err == nil {
-			for _, b := range boardRows {
-				project, _ := h.queries.GetProjectByID(ctx, b.ProjectID)
-				rows = append(rows, boardInfo{
-					ID:             b.ID,
-					Points:         b.Points,
-					VerifiedPoints: b.VerifiedPoints,
-					CommitCount:    b.CommitCount,
-					ProjectName:    project.Name,
-					ProjectSlug:    project.Slug,
-				})
-			}
+		if err != nil || owned.ID == uuid.Nil {
+			http.Error(w, "Board not owned by player", http.StatusForbidden)
+			return
+		}
+		switch i {
+		case 0:
+			params.Board1ID = db.UUID(*idPtr)
+		case 1:
+			params.Board2ID = db.UUID(*idPtr)
+		case 2:
+			params.Board3ID = db.UUID(*idPtr)
 		}
 	}
 
-	data := playerData{
-		Username:  u.Username,
-		Name:      u.Name,
-		AvatarURL: u.AvatarUrl.String,
-		Boards:    rows,
+	if _, err := h.queries.AssignBoards(ctx, params); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
-	renderPage(w, r, username, &data)
+	h.renderPlayerData(w, r, game.ID, username)
 }
 
-func renderPage(w http.ResponseWriter, r *http.Request, username string, data *playerData) {
+// renderPlayerData fetches a player's boards and renders the response.
+// It handles both full-page and HTMX fragment responses.
+func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameID uuid.UUID, username string) {
 	ctx := r.Context()
+	logger := log.Ctx(r.Context())
+
+	rows, err := h.queries.GetPlayerWithBoards(ctx, db.GetPlayerWithBoardsParams{
+		GameID:   gameID,
+		Username: username,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to find player")
+		return
+	}
 
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
@@ -120,13 +177,20 @@ func renderPage(w http.ResponseWriter, r *http.Request, username string, data *p
 	}
 
 	pd := PlayersData{
-		Username: username,
+		Username:  rows[0].Username,
+		Name:      rows[0].Name,
+		AvatarURL: rows[0].AvatarUrl.String,
+		Boards:    make([]boardInfo, 0, len(rows)),
 	}
-	if data != nil {
-		pd.Username = data.Username
-		pd.Name = data.Name
-		pd.AvatarURL = data.AvatarURL
-		pd.Boards = data.Boards
+	for _, r := range rows {
+		pd.Boards = append(pd.Boards, boardInfo{
+			ID:             r.ID,
+			Points:         r.Points,
+			VerifiedPoints: r.VerifiedPoints,
+			CommitCount:    r.CommitCount,
+			ProjectName:    r.ProjectName,
+			ProjectSlug:    r.Slug,
+		})
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
