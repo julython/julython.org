@@ -305,8 +305,10 @@ When the user says "work on milestone X" or "continue milestone X":
    Do NOT proceed with implementation until the user confirms.
 
 6. **After user approval, implement changes and commit**:
-   - Write a clear commit message with a summary of what was done.
-   - Append `Closes: #<num>` (replace `<num>` with the issue number) to the commit message.
+   - Write a commit message following the standard format:
+     - **Subject line:** short description under 50 characters (use the imperative mood, e.g. `refactor: move SQL queries to internal/db/queries`). Prefix with `feat:`, `fix:`, `chore:`, `refactor:`, etc. as appropriate.
+     - **Body (optional):** blank line after the subject, then bullet points in [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) describing what was done and why.
+     - **Footer:** append `Closes: #<num>` (replace `<num>` with the issue number) — this auto-closes the issue when merged.
    - Push the branch and create a PR linking to the issue.
    **NEVER close an issue before a PR is created.**
    Only close issues when a PR has been merged and resolves the issue.
@@ -334,10 +336,16 @@ git checkout -b 180-add-owner-field
 # (Do NOT implement changes until user says go)
 
 # Step 5: After confirmation, implement changes and commit
-# Include a summary of what was done, append `Closes: #180`
+# Subject line under 50 chars, then body bullets (GFM), then closing footer
 git add .
 git commit -m "feat: add owner field to projects and enforce public-only
-\nCloses: #180"
+
+- Add owner field to Project model
+- Enforce public-only access for owner field
+- Regenerate SQLC queries
+- Update documentation references
+
+Closes: #180"
 git push -u origin 180-add-owner-field
 # Then create the PR via gh pr create, linking to #180
 ```
