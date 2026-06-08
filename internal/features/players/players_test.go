@@ -112,12 +112,10 @@ func TestPlayerRoute(t *testing.T) {
 	})
 }
 
-// ── Swap endpoint tests ──────────────────────────────────────────────
-
-func TestSwapBoard(t *testing.T) {
+func TestUpdatePlayer(t *testing.T) {
 	t.Run("unauthenticated request returns 401", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
-		resp, err := env.Client.Post(env.Server.URL+"/player/testuser/swap", "application/json", nil)
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/json", nil)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -172,7 +170,7 @@ func TestSwapBoard(t *testing.T) {
 			"board_3": nil,
 		}
 		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/owner/swap", "application/json", bytes.NewReader(body))
+		resp, err := env.Client.Post(env.Server.URL+"/player/owner", "application/json", bytes.NewReader(body))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -218,7 +216,7 @@ func TestSwapBoard(t *testing.T) {
 			"board_3": nil,
 		}
 		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/testuser/swap", "application/json", bytes.NewReader(body))
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/json", bytes.NewReader(body))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -280,7 +278,7 @@ func TestSwapBoard(t *testing.T) {
 			"board_3": boards[1].ID.String(),
 		}
 		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/testuser/swap", "application/json", bytes.NewReader(body))
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/json", bytes.NewReader(body))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)

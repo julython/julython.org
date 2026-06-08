@@ -91,6 +91,10 @@ type Querier interface {
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)
+	// Fetches a single player's info along with their up-to-3 boards and
+	// project details in one query via a lateral join.  Returns 0-3 rows
+	// (one per board), with user columns repeated across rows.
+	GetPlayerWithBoards(ctx context.Context, arg GetPlayerWithBoardsParams) ([]GetPlayerWithBoardsRow, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
 	GetProjectByServiceAndRepoID(ctx context.Context, arg GetProjectByServiceAndRepoIDParams) (Project, error)
 	GetProjectBySlug(ctx context.Context, slug string) (Project, error)

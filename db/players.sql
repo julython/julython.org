@@ -19,6 +19,27 @@ SELECT * FROM players WHERE id = @id;
 -- name: GetPlayerByUserAndGame :one
 SELECT * FROM players WHERE user_id = @user_id AND game_id = @game_id;
 
+-- name: GetPlayerWithBoards :many
+-- Fetches a single player's info along with their up-to-3 boards and
+-- project details in one query via a lateral join.  Returns 0-3 rows
+-- (one per board), with user columns repeated across rows.
+SELECT
+    u.username, u.name, u.avatar_url,
+    b.id, b.points, b.verified_points, b.commit_count,
+    b.project_name, b.slug
+FROM players p
+JOIN users u ON u.id = p.user_id
+  AND p.game_id = @game_id
+  AND u.username = @username
+  AND u.is_active = true
+LEFT JOIN LATERAL (
+    SELECT boards.id, boards.points, boards.verified_points, boards.commit_count,
+           projects.name AS project_name, projects.slug
+    FROM boards
+    JOIN projects ON projects.id = boards.project_id
+    WHERE boards.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
+) b ON true;
+
 -- name: UpdatePlayerAnalysis :exec
 UPDATE players SET
     verified_points = @verified_points,

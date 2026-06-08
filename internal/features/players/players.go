@@ -17,7 +17,7 @@ import (
 func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
 	h := &handler{queries: q, gameService: gs}
 	mux.HandleFunc("GET /player/{username}", h.Player)
-	mux.HandleFunc("POST /player/{username}/swap", h.SwapBoard)
+	mux.HandleFunc("POST /player/{username}", h.Update)
 }
 
 type handler struct {
@@ -57,66 +57,44 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the player for the requested user
-	u, _ := h.queries.GetUserByUsername(ctx, username)
-	player, err := h.queries.GetPlayerByUserAndGame(ctx, db.GetPlayerByUserAndGameParams{
-		UserID: u.ID,
-		GameID: game.ID,
+	// Fetch player + boards + projects in a single query.
+	rows, err := h.queries.GetPlayerWithBoards(ctx, db.GetPlayerWithBoardsParams{
+		GameID:   game.ID,
+		Username: username,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		h.renderPage(w, r, username, nil)
-		return
-	}
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	var rows []boardInfo
-	var boardIDs []uuid.UUID
-	if player.Board1ID.Valid {
-		boardIDs = append(boardIDs, player.Board1ID.Bytes)
-	}
-	if player.Board2ID.Valid {
-		boardIDs = append(boardIDs, player.Board2ID.Bytes)
-	}
-	if player.Board3ID.Valid {
-		boardIDs = append(boardIDs, player.Board3ID.Bytes)
-	}
-
-	if len(boardIDs) > 0 {
-		boardRows, err := h.queries.GetBoardByIDsAndGame(ctx, db.GetBoardByIDsAndGameParams{
-			BoardIds: boardIDs,
-			GameID:   game.ID,
-		})
-		if err == nil {
-			for _, b := range boardRows {
-				project, _ := h.queries.GetProjectByID(ctx, b.ProjectID)
-				rows = append(rows, boardInfo{
-					ID:             b.ID,
-					Points:         b.Points,
-					VerifiedPoints: b.VerifiedPoints,
-					CommitCount:    b.CommitCount,
-					ProjectName:    project.Name,
-					ProjectSlug:    project.Slug,
-				})
-			}
-		}
+	if len(rows) == 0 {
+		h.renderPage(w, r, username, nil)
+		return
 	}
 
 	data := PlayerData{
-		Username:  u.Username,
-		Name:      u.Name,
-		AvatarURL: u.AvatarUrl.String,
-		Boards:    rows,
+		Username:  rows[0].Username,
+		Name:      rows[0].Name,
+		AvatarURL: rows[0].AvatarUrl.String,
+		Boards:    make([]boardInfo, 0, len(rows)),
+	}
+	for _, r := range rows {
+		data.Boards = append(data.Boards, boardInfo{
+			ID:             r.ID,
+			Points:         r.Points,
+			VerifiedPoints: r.VerifiedPoints,
+			CommitCount:    r.CommitCount,
+			ProjectName:    r.ProjectName,
+			ProjectSlug:    r.Slug,
+		})
 	}
 
 	h.renderPage(w, r, username, &data)
 }
 
-// SwapBoard handles POST /player/{username}/swap — the HTMX endpoint
-// to swap boards on the player page. Only the player can swap their own boards.
-func (h *handler) SwapBoard(w http.ResponseWriter, r *http.Request) {
+// Update handles POST /player/{username} — the HTMX endpoint
+// to Update boards on the player page. Only the player can Update their own boards.
+func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	username := r.PathValue("username")
@@ -145,7 +123,7 @@ func (h *handler) SwapBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auth check: only the player can swap their own boards
+	// Auth check: only the player can Update their own boards
 	if u.ID != sessionUser.ID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -165,7 +143,7 @@ func (h *handler) SwapBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse request body
-	var body SwapRequest
+	var body UpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -258,7 +236,7 @@ func (h *handler) renderPlayerBoardFragment(w http.ResponseWriter, r *http.Reque
 	h.renderPlayerBoard(w, r, username, player, rows)
 }
 
-type SwapRequest struct {
+type UpdateRequest struct {
 	Board1ID *uuid.UUID `json:"board_1"`
 	Board2ID *uuid.UUID `json:"board_2"`
 	Board3ID *uuid.UUID `json:"board_3"`
