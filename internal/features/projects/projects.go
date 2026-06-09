@@ -37,7 +37,11 @@ func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService, us *s
 
 // Order matches metrics.Parse and the project detail board UI.
 
+// AnalysisBoardMaxPts is the maximum possible score across all analysis tiles.
 const analysisBoardMaxPts = 480
+
+// AnalysisBoardMaxPts exports the max score value.
+func AnalysisBoardMaxPts() int { return analysisBoardMaxPts }
 
 const projectPageSize = 25
 

@@ -64,6 +64,28 @@ func (q *Queries) AssignBoards(ctx context.Context, arg AssignBoardsParams) (Pla
 	return i, err
 }
 
+const getBoardByID = `-- name: GetBoardByID :one
+SELECT id, game_id, project_id, points, potential_points, verified_points, commit_count, contributor_count, created_at, updated_at FROM boards WHERE id = $1
+`
+
+func (q *Queries) GetBoardByID(ctx context.Context, id uuid.UUID) (Board, error) {
+	row := q.db.QueryRow(ctx, getBoardByID, id)
+	var i Board
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.ProjectID,
+		&i.Points,
+		&i.PotentialPoints,
+		&i.VerifiedPoints,
+		&i.CommitCount,
+		&i.ContributorCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getLeaderboard = `-- name: GetLeaderboard :many
 SELECT p.id, p.game_id, p.user_id, p.points, p.potential_points, p.verified_points, p.commit_count, p.project_count, p.analysis_status, p.last_analyzed_at, p.created_at, p.updated_at, p.board_1_id, p.board_2_id, p.board_3_id, u.name, u.username, u.avatar_url
 FROM players p
@@ -250,7 +272,7 @@ func (q *Queries) GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (i
 const getPlayerWithBoards = `-- name: GetPlayerWithBoards :many
 SELECT
     u.username, u.name, u.avatar_url,
-    b.id, COALESCE(b.points, 0), COALESCE(b.verified_points, 0), COALESCE(b.commit_count, 0),
+    b.id, b.project_id, COALESCE(b.points, 0), COALESCE(b.verified_points, 0), COALESCE(b.commit_count, 0),
     COALESCE(b.project_name, ''), COALESCE(b.slug, '')
 FROM players p
 JOIN users u ON u.id = p.user_id
@@ -258,7 +280,7 @@ JOIN users u ON u.id = p.user_id
   AND u.username = $2
   AND u.is_active = true
 LEFT JOIN LATERAL (
-    SELECT boards.id, boards.points, boards.verified_points, boards.commit_count,
+    SELECT boards.id, boards.project_id, boards.points, boards.verified_points, boards.commit_count,
            projects.name AS project_name, projects.slug
     FROM boards
     JOIN projects ON projects.id = boards.project_id
@@ -277,6 +299,7 @@ type GetPlayerWithBoardsRow struct {
 	Name           string      `json:"name"`
 	AvatarUrl      pgtype.Text `json:"avatar_url"`
 	ID             uuid.UUID   `json:"id"`
+	ProjectID      uuid.UUID   `json:"project_id"`
 	Points         int32       `json:"points"`
 	VerifiedPoints int32       `json:"verified_points"`
 	CommitCount    int32       `json:"commit_count"`
@@ -301,6 +324,7 @@ func (q *Queries) GetPlayerWithBoards(ctx context.Context, arg GetPlayerWithBoar
 			&i.Name,
 			&i.AvatarUrl,
 			&i.ID,
+			&i.ProjectID,
 			&i.Points,
 			&i.VerifiedPoints,
 			&i.CommitCount,

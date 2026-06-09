@@ -12,18 +12,20 @@ import (
 	"july/internal/auth"
 	"july/internal/components/layout"
 	"july/internal/db"
+	"july/internal/features/projects"
 	"july/internal/services"
 )
 
 func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
-	h := &handler{queries: q, gameService: gs}
+	h := &handler{queries: q, gameService: gs, projectService: projects.NewProjectService(q)}
 	mux.HandleFunc("GET /player/{username}", h.Player)
 	mux.HandleFunc("POST /player/{username}", h.Update)
 }
 
 type handler struct {
-	queries     *db.Queries
-	gameService *services.GameService
+	queries        *db.Queries
+	gameService    *services.GameService
+	projectService *projects.ProjectService
 }
 
 type boardInfo struct {
@@ -33,6 +35,22 @@ type boardInfo struct {
 	CommitCount    int32
 	ProjectName    string
 	ProjectSlug    string
+
+	// Analysis data (populated by projectService).
+	// Converted from projects.ProjectAnalysisTile to analysis.Tile for templ use.
+	AnalysisTiles     []projects.ProjectAnalysisTile
+	AnalysisEarnedPts int
+	AnalysisMaxPts    int
+	LastAnalyzedAgo   string
+	AnalysisRunCount  int
+
+	// Game activity (populated by projectService)
+	HasGame          bool
+	Board            *projects.ProjectBoardStats
+	CommitsThisMonth int
+	CommitsThisWeek  int
+	FileTouchCount   int
+	UniqueDirs       int
 }
 
 type PlayerData struct {
@@ -179,6 +197,7 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
 		CurrentPath: "/player/" + username,
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	pd := PlayersData{
@@ -196,6 +215,31 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 			ProjectName:    r.ProjectName,
 			ProjectSlug:    r.Slug,
 		})
+		// Fetch analysis and game activity for this project.
+		if projData, projErr := h.projectService.BuildProjectBoardInfo(ctx, r.ProjectID, gameID); projErr == nil {
+			bd := &pd.Boards[len(pd.Boards)-1]
+			// Convert projects.ProjectAnalysisTile to analysis.Tile for templ rendering.
+			tiles := make([]projects.ProjectAnalysisTile, 0, len(projData.AnalysisBoard.Tiles))
+			for _, t := range projData.AnalysisBoard.Tiles {
+				tiles = append(tiles, projects.ProjectAnalysisTile{
+					MetricKey: t.MetricKey,
+					Level:     t.Level,
+					Score:     t.Score,
+					I18nKey:   t.I18nKey,
+				})
+			}
+			bd.AnalysisTiles = tiles
+			bd.AnalysisEarnedPts = projData.AnalysisBoard.EarnedPts
+			bd.AnalysisMaxPts = projData.AnalysisBoard.MaxPts
+			bd.LastAnalyzedAgo = projData.AnalysisBoard.LastAnalyzedAgo
+			bd.AnalysisRunCount = projData.AnalysisBoard.AnalysisRunCount
+			bd.HasGame = projData.GameActivity.HasGame
+			bd.Board = projData.GameActivity.Board
+			bd.CommitsThisMonth = projData.GameActivity.CommitsThisMonth
+			bd.CommitsThisWeek = projData.GameActivity.CommitsThisWeek
+			bd.FileTouchCount = projData.GameActivity.FileTouchCount
+			bd.UniqueDirs = projData.GameActivity.UniqueDirs
+		}
 	}
 
 	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
@@ -211,6 +255,7 @@ func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, usernam
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
 		CurrentPath: "/player/" + username,
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	pd := PlayersData{

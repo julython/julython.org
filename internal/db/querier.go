@@ -66,6 +66,7 @@ type Querier interface {
 	GetActiveGameAtTime(ctx context.Context, timestamp time.Time) (Game, error)
 	GetAnalysisMetric(ctx context.Context, arg GetAnalysisMetricParams) (AnalysisMetric, error)
 	GetAnalysisMetricsByProject(ctx context.Context, projectID uuid.UUID) ([]AnalysisMetric, error)
+	GetBoardByID(ctx context.Context, id uuid.UUID) (Board, error)
 	GetBoardByIDsAndGame(ctx context.Context, arg GetBoardByIDsAndGameParams) ([]Board, error)
 	GetBoardByProjectAndGame(ctx context.Context, arg GetBoardByProjectAndGameParams) (Board, error)
 	GetCommitByHash(ctx context.Context, hash pgtype.Text) (Commit, error)
