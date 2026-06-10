@@ -9,6 +9,7 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/rs/zerolog/log"
 
 	"july/internal/auth"
 	"july/internal/components/analysis"
@@ -40,11 +41,13 @@ const projectPageSize = 25
 
 func (h *projectHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 	q := r.URL.Query()
 
 	search := q.Get("search")
 	service := q.Get("service")
 	cursorStr := q.Get("cursor")
+	logger.Info().Str("search", search).Str("service", service).Str("cursor", cursorStr).Msg("GET /projects")
 
 	params := db.SearchActiveProjectsParams{
 		LimitCount: int32(projectPageSize + 1),
@@ -64,9 +67,11 @@ func (h *projectHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	projects, err := h.queries.SearchActiveProjects(ctx, params)
 	if err != nil {
+		logger.Error().Err(err).Msg("SearchActiveProjects failed")
 		http.Error(w, "failed to load projects", http.StatusInternalServerError)
 		return
 	}
+	logger.Info().Int("count", len(projects)).Msg("SearchActiveProjects returned")
 
 	hasMore := len(projects) > projectPageSize
 	if hasMore {
@@ -107,20 +112,31 @@ func (h *projectHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		ProjectListItems(data).Render(ctx, w)
+		logger.Info().Bool("htmx", true).Int("entries", len(entries)).Msg("Rendering ProjectListItems")
+		if err := ProjectListItems(data).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("ProjectListItems render failed")
+			http.Error(w, "render failed", http.StatusInternalServerError)
+			return
+		}
 		return
 	}
 
+	logger.Info().Bool("htmx", false).Int("entries", len(entries)).Msg("Rendering ProjectListPage")
 	layout := layout.LayoutData{
 		Title:       "Projects",
 		CurrentPath: "/projects",
 		User:        layout.UserInfoFromContext(r),
 	}
-	ProjectListPage(layout, data).Render(ctx, w)
+	if err := ProjectListPage(layout, data).Render(ctx, w); err != nil {
+		logger.Error().Err(err).Msg("ProjectListPage render failed")
+		http.Error(w, "render failed", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 
 	slug := r.PathValue("slug")
 
@@ -152,6 +168,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 	analysisRows, err := h.queries.GetAnalysisMetricsByProject(ctx, project.ID)
 	if err != nil {
+		logger.Error().Err(err).Msg("GetAnalysisMetricsByProject failed")
 		http.Error(w, "failed to load analysis metrics", http.StatusInternalServerError)
 		return
 	}
@@ -276,6 +293,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 				ContributorCount: int(board.ContributorCount),
 			}
 		} else if !errors.Is(bErr, pgx.ErrNoRows) {
+			logger.Error().Err(bErr).Msg("GetBoardByProjectAndGame failed")
 			http.Error(w, "failed to load game board", http.StatusInternalServerError)
 			return
 		}
@@ -288,6 +306,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		LimitCount:  int32(limit + 1),
 	})
 	if err != nil {
+		logger.Error().Err(err).Msg("GetCommitsByProject failed")
 		http.Error(w, "failed to load commits", http.StatusInternalServerError)
 		return
 	}
@@ -335,8 +354,15 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		ProjectCommitList(data).Render(ctx, w)
+		if err := ProjectCommitList(data).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("ProjectCommitList render failed")
+			http.Error(w, "render failed", http.StatusInternalServerError)
+			return
+		}
 		return
 	}
-	ProjectDetailPage(layout, data).Render(ctx, w)
+	if err := ProjectDetailPage(layout, data).Render(ctx, w); err != nil {
+		logger.Error().Err(err).Msg("ProjectDetailPage render failed")
+		http.Error(w, "render failed", http.StatusInternalServerError)
+	}
 }

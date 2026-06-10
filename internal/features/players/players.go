@@ -91,6 +91,7 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 // to swap boards on the player page. Only the player can update their own boards.
 func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 
 	username := r.PathValue("username")
 	if username == "" {
@@ -107,6 +108,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	game, err := h.gameService.GetActiveOrLatestGame(ctx)
 	if err != nil {
+		logger.Error().Err(err).Msg("GetActiveOrLatestGame failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -132,6 +134,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		logger.Error().Err(err).Msg("GetPlayerByUserAndGame failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -167,6 +170,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := h.queries.AssignBoards(ctx, params); err != nil {
+		logger.Error().Err(err).Msg("AssignBoards failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -233,14 +237,19 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 	}
 
 	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
-		PlayersList(pd).Render(ctx, w)
+		if err := PlayersList(pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersList render failed")
+		}
 	} else {
-		PlayersPage(ld, pd).Render(ctx, w)
+		if err := PlayersPage(ld, pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersPage render failed")
+		}
 	}
 }
 
 func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, username string) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
@@ -253,8 +262,12 @@ func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, usernam
 	}
 
 	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
-		PlayersList(pd).Render(ctx, w)
+		if err := PlayersList(pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersList render failed")
+		}
 	} else {
-		PlayersPage(ld, pd).Render(ctx, w)
+		if err := PlayersPage(ld, pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersPage render failed")
+		}
 	}
 }
