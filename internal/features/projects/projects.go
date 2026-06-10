@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"july/internal/auth"
+	"july/internal/components/analysis"
 	"july/internal/components/layout"
 	"july/internal/db"
 	"july/internal/services"
@@ -34,14 +35,6 @@ func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService, us *s
 	mux.HandleFunc("POST /api/projects/{projectID}/analysis/chat-context", h.PostProjectChatContext)
 	mux.HandleFunc("GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context", h.GetProjectMetricLLMContext)
 }
-
-// Order matches metrics.Parse and the project detail board UI.
-
-// AnalysisBoardMaxPts is the maximum possible score across all analysis tiles.
-const analysisBoardMaxPts = 480
-
-// AnalysisBoardMaxPts exports the max score value.
-func AnalysisBoardMaxPts() int { return analysisBoardMaxPts }
 
 const projectPageSize = 25
 
@@ -192,7 +185,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		{"ai_ready", i18n.T(ctx, "projects.MetricAIReady")},
 	}
 
-	tiles := make([]ProjectAnalysisTile, 0, len(analysisBoardSpec))
+	tiles := make([]analysis.AnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
 	for _, spec := range analysisBoardSpec {
 		level := levelByType[spec.key]
@@ -205,7 +198,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		score := scoreByType[spec.key]
 		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
 		earned += int(score) * int(level) * 2
-		tiles = append(tiles, ProjectAnalysisTile{
+		tiles = append(tiles, analysis.AnalysisTile{
 			MetricKey: spec.key,
 			Level:     level,
 			Score:     score,
@@ -227,7 +220,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	analysisBoard := ProjectAnalysisBoard{
 		Tiles:            tiles,
 		EarnedPts:        earned,
-		MaxPts:           analysisBoardMaxPts,
+		MaxPts:           analysis.AnalysisBoardMaxPts,
 		AnalysisRunCount: len(shaDistinct),
 		MetricAIEnabled:  showMetricAI,
 	}
@@ -278,7 +271,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 			GameID:    game.ID,
 		})
 		if bErr == nil {
-			gameActivity.Board = &ProjectBoardStats{
+			gameActivity.Board = &analysis.BoardStats{
 				CommitCount:      int(board.CommitCount),
 				ContributorCount: int(board.ContributorCount),
 			}

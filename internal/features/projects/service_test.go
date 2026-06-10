@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"july/internal/components/analysis"
 	"july/internal/db"
 	"july/internal/features/projects"
 	"july/internal/testutil"
@@ -60,8 +61,8 @@ func TestBuildAnalysisBoard(t *testing.T) {
 		require.NoError(t, err)
 
 		// Find readme tile
-		var readmeTile *projects.ProjectAnalysisTile
-		var testsTile *projects.ProjectAnalysisTile
+		var readmeTile *analysis.AnalysisTile
+		var testsTile *analysis.AnalysisTile
 		for i := range board.Tiles {
 			switch board.Tiles[i].MetricKey {
 			case "readme":

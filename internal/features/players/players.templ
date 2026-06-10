@@ -5,8 +5,8 @@ import (
 
 	"github.com/invopop/ctxi18n/i18n"
 
+	"july/internal/components/analysis"
 	"july/internal/components/layout"
-	"july/internal/features/projects"
 )
 
 // PlayersData is the template data for a player page.
@@ -15,13 +15,6 @@ type PlayersData struct {
 	Name      string
 	AvatarURL string
 	Boards    []boardInfo
-}
-
-func progressPct(earned, maxPts int) int {
-	if maxPts <= 0 {
-		return 0
-	}
-	return (earned * 100) / maxPts
 }
 
 templ PlayersPage(ld layout.LayoutData, data PlayersData) {
@@ -76,11 +69,11 @@ templ BoardCard(b boardInfo) {
 			</h3>
 			<!-- Analysis tiles (if any analysis data exists) -->
 			if len(b.AnalysisTiles) > 0 {
-				@projects.Grid(b.AnalysisTiles)
+				@analysis.Grid(b.AnalysisTiles)
 			}
 			<!-- Scoring bar (if analysis data exists) -->
 			if b.AnalysisMaxPts > 0 {
-				@projects.ScoringBar(b.AnalysisEarnedPts, b.AnalysisMaxPts)
+				@analysis.ScoringBar(b.AnalysisEarnedPts, b.AnalysisMaxPts)
 			}
 			<!-- Verified/total points -->
 			<div class="space-y-1.5 text-sm text-gray-400">

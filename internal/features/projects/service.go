@@ -9,6 +9,7 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jackc/pgx/v5"
 
+	"july/internal/components/analysis"
 	"july/internal/db"
 	"july/internal/shared"
 )
@@ -54,7 +55,7 @@ func (s *ProjectService) BuildAnalysisBoard(ctx context.Context, projectID uuid.
 		scoreByType[row.MetricType] = row.Score
 	}
 
-	tiles := make([]ProjectAnalysisTile, 0, len(analysisBoardSpec))
+	tiles := make([]analysis.AnalysisTile, 0, len(analysisBoardSpec))
 	earned := 0
 	for _, spec := range analysisBoardSpec {
 		level := levelByType[spec.key]
@@ -67,7 +68,7 @@ func (s *ProjectService) BuildAnalysisBoard(ctx context.Context, projectID uuid.
 		score := scoreByType[spec.key]
 		// Points align score (0–10) with level (0–3): max 10*3*2 = 60 per metric.
 		earned += int(score) * int(level) * 2
-		tiles = append(tiles, ProjectAnalysisTile{
+		tiles = append(tiles, analysis.AnalysisTile{
 			MetricKey: spec.key,
 			Level:     level,
 			Score:     score,
@@ -91,7 +92,7 @@ func (s *ProjectService) BuildAnalysisBoard(ctx context.Context, projectID uuid.
 	board := ProjectAnalysisBoard{
 		Tiles:            tiles,
 		EarnedPts:        earned,
-		MaxPts:           analysisBoardMaxPts,
+		MaxPts:           analysis.AnalysisBoardMaxPts,
 		AnalysisRunCount: len(shaDistinct),
 	}
 	if haveMetricAt {
@@ -133,7 +134,7 @@ func (s *ProjectService) GameActivitySummary(ctx context.Context, projectID, gam
 		GameID:    gameID,
 	})
 	if bErr == nil {
-		result.Board = &ProjectBoardStats{
+		result.Board = &analysis.BoardStats{
 			CommitCount:      int(board.CommitCount),
 			ContributorCount: int(board.ContributorCount),
 		}

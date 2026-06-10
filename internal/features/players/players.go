@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/auth"
+	"july/internal/components/analysis"
 	"july/internal/components/layout"
 	"july/internal/db"
 	"july/internal/features/projects"
@@ -37,8 +38,7 @@ type boardInfo struct {
 	ProjectSlug    string
 
 	// Analysis data (populated by projectService).
-	// Converted from projects.ProjectAnalysisTile to analysis.Tile for templ use.
-	AnalysisTiles     []projects.ProjectAnalysisTile
+	AnalysisTiles     []analysis.AnalysisTile
 	AnalysisEarnedPts int
 	AnalysisMaxPts    int
 	LastAnalyzedAgo   string
@@ -46,7 +46,7 @@ type boardInfo struct {
 
 	// Game activity (populated by projectService)
 	HasGame          bool
-	Board            *projects.ProjectBoardStats
+	Board            *analysis.BoardStats
 	CommitsThisMonth int
 	CommitsThisWeek  int
 	FileTouchCount   int
@@ -218,17 +218,7 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 		// Fetch analysis and game activity for this project.
 		if projData, projErr := h.projectService.BuildProjectBoardInfo(ctx, r.ProjectID, gameID); projErr == nil {
 			bd := &pd.Boards[len(pd.Boards)-1]
-			// Convert projects.ProjectAnalysisTile to analysis.Tile for templ rendering.
-			tiles := make([]projects.ProjectAnalysisTile, 0, len(projData.AnalysisBoard.Tiles))
-			for _, t := range projData.AnalysisBoard.Tiles {
-				tiles = append(tiles, projects.ProjectAnalysisTile{
-					MetricKey: t.MetricKey,
-					Level:     t.Level,
-					Score:     t.Score,
-					I18nKey:   t.I18nKey,
-				})
-			}
-			bd.AnalysisTiles = tiles
+			bd.AnalysisTiles = projData.AnalysisBoard.Tiles
 			bd.AnalysisEarnedPts = projData.AnalysisBoard.EarnedPts
 			bd.AnalysisMaxPts = projData.AnalysisBoard.MaxPts
 			bd.LastAnalyzedAgo = projData.AnalysisBoard.LastAnalyzedAgo

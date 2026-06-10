@@ -1,4 +1,4 @@
-package projects
+package analysis
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ templ Dash(level int16, dashIdx int) {
 }
 
 // MetricTile renders a single metric tile for the analysis grid.
-templ MetricTile(tile ProjectAnalysisTile) {
+templ MetricTile(tile AnalysisTile) {
 	<button
 		type="button"
 		class={
@@ -53,7 +53,7 @@ templ MetricTile(tile ProjectAnalysisTile) {
 }
 
 // Grid renders a grid of metric tiles (4 columns on desktop, 2 on mobile).
-templ Grid(tiles []ProjectAnalysisTile) {
+templ Grid(tiles []AnalysisTile) {
 	<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
 		for _, tile := range tiles {
 			@MetricTile(tile)
