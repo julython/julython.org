@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"july/internal/components/analysis"
 )
 
 // ============================================
@@ -22,29 +24,17 @@ type ProjectEntry struct {
 	Forked      bool
 }
 
-type ProjectBoardStats struct {
-	CommitCount      int
-	ContributorCount int
-}
-
 type ProjectGameActivitySummary struct {
 	HasGame          bool
-	Board            *ProjectBoardStats
+	Board            *analysis.BoardStats
 	CommitsThisMonth int
 	CommitsThisWeek  int
 	FileTouchCount   int
 	UniqueDirs       int
 }
 
-type ProjectAnalysisTile struct {
-	MetricKey string
-	Level     int16
-	Score     int16
-	I18nKey   string
-}
-
 type ProjectAnalysisBoard struct {
-	Tiles                  []ProjectAnalysisTile
+	Tiles                  []analysis.AnalysisTile
 	EarnedPts              int
 	MaxPts                 int
 	LastAnalyzedAgo        string
@@ -53,13 +43,6 @@ type ProjectAnalysisBoard struct {
 	RescanL1Slug           string
 	RescanL1Disabled       bool
 	RescanL1DisabledReason string
-}
-
-func (b ProjectAnalysisBoard) ProgressPct() int {
-	if b.MaxPts <= 0 {
-		return 0
-	}
-	return (b.EarnedPts * 100) / b.MaxPts
 }
 
 type CommitEntry struct {

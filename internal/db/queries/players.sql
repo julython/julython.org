@@ -25,7 +25,7 @@ SELECT * FROM players WHERE user_id = @user_id AND game_id = @game_id;
 -- (one per board), with user columns repeated across rows.
 SELECT
     u.username, u.name, u.avatar_url,
-    b.id, COALESCE(b.points, 0), COALESCE(b.verified_points, 0), COALESCE(b.commit_count, 0),
+    b.id, b.project_id, COALESCE(b.points, 0), COALESCE(b.verified_points, 0), COALESCE(b.commit_count, 0),
     COALESCE(b.project_name, ''), COALESCE(b.slug, '')
 FROM players p
 JOIN users u ON u.id = p.user_id
@@ -33,7 +33,7 @@ JOIN users u ON u.id = p.user_id
   AND u.username = @username
   AND u.is_active = true
 LEFT JOIN LATERAL (
-    SELECT boards.id, boards.points, boards.verified_points, boards.commit_count,
+    SELECT boards.id, boards.project_id, boards.points, boards.verified_points, boards.commit_count,
            projects.name AS project_name, projects.slug
     FROM boards
     JOIN projects ON projects.id = boards.project_id
@@ -92,6 +92,9 @@ RETURNING *;
 SELECT p.board_1_id, p.board_2_id, p.board_3_id
 FROM players p
 WHERE p.id = @player_id;
+
+-- name: GetBoardByID :one
+SELECT * FROM boards WHERE id = @id;
 
 -- name: ListPlayersWithBoards :many
 -- Leaderboard with per-player board totals computed via lateral join.

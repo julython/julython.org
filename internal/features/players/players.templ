@@ -1,6 +1,11 @@
 package players
 
 import (
+	"fmt"
+
+	"github.com/invopop/ctxi18n/i18n"
+
+	"july/internal/components/analysis"
 	"july/internal/components/layout"
 )
 
@@ -16,18 +21,32 @@ templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 	@layout.Layout(ld) {
 		<main class="max-w-7xl mx-auto px-4 py-8">
 			<div class="flex items-center gap-4 mb-8">
-				<span class="text-3xl font-bold text-july-400">{data.Username}</span>
+				<span class="text-3xl font-bold text-july-400">{ data.Username }</span>
 			</div>
 			if len(data.Boards) == 0 {
-				<div class="text-center py-16 bg-surface rounded-xl border border-white/10">
-					<span class="text-6xl mb-4 block">📋</span>
-					<p class="text-gray-400">No boards yet.</p>
-				</div>
+				@noBoardsState()
 			} else {
 				@PlayersList(data)
 			}
 		</main>
 	}
+}
+
+// noBoardsState shows the onboarding state when a player has no boards linked.
+templ noBoardsState() {
+	<div class="text-center py-16 bg-surface rounded-xl border border-white/10">
+		<span class="text-6xl mb-4 block">📋</span>
+		<p class="text-gray-400 mb-4">{ i18n.T(ctx, "players.NoBoards") }</p>
+		<p class="text-sm text-gray-500 max-w-md mx-auto">
+			{ i18n.T(ctx, "players.NoBoardsHint") }
+			<a
+				href="/profile/webhooks"
+				class="text-july-400 hover:text-july-300 underline underline-offset-2"
+			>
+				{ i18n.T(ctx, "profile.webhooks") }
+			</a>
+		</p>
+	</div>
 }
 
 templ PlayersList(data PlayersData) {
@@ -38,24 +57,72 @@ templ PlayersList(data PlayersData) {
 	</div>
 }
 
+// BoardCard renders a single board card with analysis tiles, scoring, and activity.
 templ BoardCard(b boardInfo) {
 	<div class="bg-surface rounded-xl border border-white/10 overflow-hidden">
-		<div class="p-6">
-			<h3 class="text-lg font-semibold text-july-300 mb-2">
-				<a href={"/projects/" + b.ProjectSlug} class="hover:text-july-400">
-					{b.ProjectName}
+		<div class="p-5 space-y-4">
+			<!-- Project header -->
+			<h3 class="text-lg font-semibold text-july-300">
+				<a href={ "/projects/" + b.ProjectSlug } class="hover:text-july-400">
+					{ b.ProjectName }
 				</a>
 			</h3>
-			<div class="space-y-2 text-sm text-gray-400">
+			<!-- Analysis tiles (if any analysis data exists) -->
+			if len(b.AnalysisTiles) > 0 {
+				@analysis.Grid(b.AnalysisTiles)
+			}
+			<!-- Scoring bar (if analysis data exists) -->
+			if b.AnalysisMaxPts > 0 {
+				@analysis.ScoringBar(b.AnalysisEarnedPts, b.AnalysisMaxPts)
+			}
+			<!-- Verified/total points -->
+			<div class="space-y-1.5 text-sm text-gray-400">
 				<div class="flex justify-between">
 					<span>Points</span>
-					<span>{b.Points}</span>
+					<span class="text-gray-200">{ b.Points }</span>
 				</div>
 				<div class="flex justify-between">
-					<span>Verified</span>
-					<span>{b.VerifiedPoints}</span>
+					<span>{ i18n.T(ctx, "Verified") }</span>
+					<span class="text-gray-200">{ b.VerifiedPoints }</span>
 				</div>
 			</div>
+			<!-- Last analyzed info -->
+			if b.LastAnalyzedAgo != "" {
+				<div class="text-xs sm:text-sm text-gray-500 border-t border-white/10 pt-2.5">
+					<span class="text-gray-500">{ i18n.T(ctx, "projects.LastAnalyzed") }</span>
+					<span class="text-gray-300 ml-1">{ b.LastAnalyzedAgo }</span>
+					<span class="text-gray-600 ml-1">
+						({ fmt.Sprintf("%d", b.AnalysisRunCount) } { i18n.T(ctx, "projects.AnalysesTotal") })
+					</span>
+				</div>
+			}
+			<!-- Game activity (when a game is active) -->
+			if b.HasGame {
+				<div class="text-xs sm:text-sm text-gray-400 border-t border-white/10 pt-2.5 space-y-1">
+					<div class="flex justify-between">
+						<span class="text-gray-500">{ i18n.T(ctx, "projects.CommitsThisMonth") }</span>
+						<span class="text-gray-200 tabular-nums">
+							{ fmt.Sprintf("%d", b.CommitsThisMonth) }
+							<span class="text-gray-600">(+{ fmt.Sprintf("%d", b.CommitsThisWeek) } { i18n.T(ctx, "projects.ThisWeek") })</span>
+						</span>
+					</div>
+					<div class="flex justify-between">
+						<span class="text-gray-500">{ i18n.T(ctx, "projects.FilesTouched") }</span>
+						<span class="text-gray-200 tabular-nums">{ fmt.Sprintf("%d", b.FileTouchCount) }</span>
+					</div>
+					if b.UniqueDirs > 0 {
+						<div class="flex justify-between">
+							<span class="text-gray-500">{ fmt.Sprintf("%d", b.UniqueDirs) } { i18n.T(ctx, "projects.UniqueDirs") }</span>
+						</div>
+					}
+					if b.Board != nil {
+						<div class="flex justify-between">
+							<span class="text-gray-500">{ i18n.T(ctx, "projects.GameCommits") }</span>
+							<span class="text-gray-200 tabular-nums">{ fmt.Sprintf("%d", b.Board.CommitCount) }</span>
+						</div>
+					}
+				</div>
+			}
 		</div>
 	</div>
 }

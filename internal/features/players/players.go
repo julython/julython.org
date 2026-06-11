@@ -10,20 +10,23 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/auth"
+	"july/internal/components/analysis"
 	"july/internal/components/layout"
 	"july/internal/db"
+	"july/internal/features/projects"
 	"july/internal/services"
 )
 
 func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
-	h := &handler{queries: q, gameService: gs}
+	h := &handler{queries: q, gameService: gs, projectService: projects.NewProjectService(q)}
 	mux.HandleFunc("GET /player/{username}", h.Player)
 	mux.HandleFunc("POST /player/{username}", h.Update)
 }
 
 type handler struct {
-	queries     *db.Queries
-	gameService *services.GameService
+	queries        *db.Queries
+	gameService    *services.GameService
+	projectService *projects.ProjectService
 }
 
 type boardInfo struct {
@@ -33,6 +36,21 @@ type boardInfo struct {
 	CommitCount    int32
 	ProjectName    string
 	ProjectSlug    string
+
+	// Analysis data (populated by projectService).
+	AnalysisTiles     []analysis.AnalysisTile
+	AnalysisEarnedPts int
+	AnalysisMaxPts    int
+	LastAnalyzedAgo   string
+	AnalysisRunCount  int
+
+	// Game activity (populated by projectService)
+	HasGame          bool
+	Board            *analysis.BoardStats
+	CommitsThisMonth int
+	CommitsThisWeek  int
+	FileTouchCount   int
+	UniqueDirs       int
 }
 
 type PlayerData struct {
@@ -73,6 +91,7 @@ func (h *handler) Player(w http.ResponseWriter, r *http.Request) {
 // to swap boards on the player page. Only the player can update their own boards.
 func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 
 	username := r.PathValue("username")
 	if username == "" {
@@ -89,6 +108,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	game, err := h.gameService.GetActiveOrLatestGame(ctx)
 	if err != nil {
+		logger.Error().Err(err).Msg("GetActiveOrLatestGame failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -114,6 +134,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		logger.Error().Err(err).Msg("GetPlayerByUserAndGame failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -149,6 +170,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := h.queries.AssignBoards(ctx, params); err != nil {
+		logger.Error().Err(err).Msg("AssignBoards failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -179,6 +201,7 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
 		CurrentPath: "/player/" + username,
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	pd := PlayersData{
@@ -196,21 +219,42 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 			ProjectName:    r.ProjectName,
 			ProjectSlug:    r.Slug,
 		})
+		// Fetch analysis and game activity for this project.
+		if projData, projErr := h.projectService.BuildProjectBoardInfo(ctx, r.ProjectID, gameID); projErr == nil {
+			bd := &pd.Boards[len(pd.Boards)-1]
+			bd.AnalysisTiles = projData.AnalysisBoard.Tiles
+			bd.AnalysisEarnedPts = projData.AnalysisBoard.EarnedPts
+			bd.AnalysisMaxPts = projData.AnalysisBoard.MaxPts
+			bd.LastAnalyzedAgo = projData.AnalysisBoard.LastAnalyzedAgo
+			bd.AnalysisRunCount = projData.AnalysisBoard.AnalysisRunCount
+			bd.HasGame = projData.GameActivity.HasGame
+			bd.Board = projData.GameActivity.Board
+			bd.CommitsThisMonth = projData.GameActivity.CommitsThisMonth
+			bd.CommitsThisWeek = projData.GameActivity.CommitsThisWeek
+			bd.FileTouchCount = projData.GameActivity.FileTouchCount
+			bd.UniqueDirs = projData.GameActivity.UniqueDirs
+		}
 	}
 
 	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
-		PlayersList(pd).Render(ctx, w)
+		if err := PlayersList(pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersList render failed")
+		}
 	} else {
-		PlayersPage(ld, pd).Render(ctx, w)
+		if err := PlayersPage(ld, pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersPage render failed")
+		}
 	}
 }
 
 func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, username string) {
 	ctx := r.Context()
+	logger := log.Ctx(ctx)
 
 	ld := layout.LayoutData{
 		Title:       "Player: " + username,
 		CurrentPath: "/player/" + username,
+		User:        layout.UserInfoFromContext(r),
 	}
 
 	pd := PlayersData{
@@ -218,8 +262,12 @@ func (h *handler) renderNoBoards(w http.ResponseWriter, r *http.Request, usernam
 	}
 
 	if r.Header.Get("HX-Request") == "true" || r.Method == "POST" {
-		PlayersList(pd).Render(ctx, w)
+		if err := PlayersList(pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersList render failed")
+		}
 	} else {
-		PlayersPage(ld, pd).Render(ctx, w)
+		if err := PlayersPage(ld, pd).Render(ctx, w); err != nil {
+			logger.Error().Err(err).Msg("PlayersPage render failed")
+		}
 	}
 }

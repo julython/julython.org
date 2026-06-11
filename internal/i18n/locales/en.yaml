@@ -99,6 +99,9 @@ en:
         username: username
         webhooks: Webhooks
         webhooksSubtitle: Connected webhooks
+    players:
+        NoBoards: No boards yet.
+        NoBoardsHint: Link your repositories to get started by visiting your
     projects:
         AllServices: all services
         AnalysesTotal: analyses total

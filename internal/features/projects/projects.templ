@@ -7,6 +7,7 @@ import (
 
 	"github.com/invopop/ctxi18n/i18n"
 
+	"july/internal/components/analysis"
 	"july/internal/components/icons"
 	"july/internal/components/layout"
 	"july/internal/shared"
@@ -287,53 +288,6 @@ templ CommitRow(c CommitEntry) {
 	</div>
 }
 
-// ============================================
-// Analysis board (project detail)
-// ============================================
-templ analysisDash(level int16, dashIdx int) {
-	if level >= 3 {
-		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-green-400 lg:h-0.5 lg:max-w-[1rem]"></span>
-	} else if level <= 0 {
-		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600 lg:h-0.5 lg:max-w-[1rem]"></span>
-	} else if int16(dashIdx) <= level {
-		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-blue-400 lg:h-0.5 lg:max-w-[1rem]"></span>
-	} else {
-		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600/80 lg:h-0.5 lg:max-w-[1rem]"></span>
-	}
-}
-
-templ analysisMetricTile(tile ProjectAnalysisTile) {
-	<button
-		type="button"
-		class={
-			"metric-ai-tile w-full max-w-full rounded-lg px-2.5 py-3 lg:px-1.5 lg:py-1.5 border transition-colors min-w-0 overflow-hidden text-left cursor-pointer",
-			"hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-july-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
-			templ.KV("border-green-500/45 bg-green-500/[0.07]", tile.Level >= 3),
-			templ.KV("border-blue-500/40 bg-blue-500/[0.06]", tile.Level >= 1 && tile.Level < 3),
-			templ.KV("border-white/10 bg-white/[0.02]", tile.Level < 1),
-		}
-		data-metric-key={ tile.MetricKey }
-		aria-label={ fmt.Sprintf("%s — %s", tile.I18nKey, i18n.T(ctx, "projects.OpenAssistantPanel")) }
-	>
-		<div class="flex gap-1 mb-1.5 justify-center shrink-0 lg:gap-0.5 lg:mb-1">
-			@analysisDash(tile.Level, 1)
-			@analysisDash(tile.Level, 2)
-			@analysisDash(tile.Level, 3)
-		</div>
-		<p
-			class={
-				"min-w-0 w-full truncate text-base sm:text-sm lg:text-[10px] font-semibold lg:font-medium text-center leading-tight lg:leading-none tracking-tight",
-				templ.KV("text-green-300", tile.Level >= 3),
-				templ.KV("text-blue-200", tile.Level >= 1 && tile.Level < 3),
-				templ.KV("text-gray-500", tile.Level < 1),
-			}
-		>
-			{ tile.I18nKey }
-		</p>
-		<p class="min-w-0 w-full truncate text-sm sm:text-xs lg:text-[9px] text-gray-500 text-center tabular-nums mt-1 lg:mt-0.5 font-medium">{ fmt.Sprintf("%d/10", tile.Score) }</p>
-	</button>
-}
-
 templ projectChatPanel(data ProjectDetailData) {
 	<div id="project-assistant-panel" class="scroll-mt-24 rounded-xl border border-white/10 bg-surface-light/80 overflow-hidden flex flex-col flex-1 w-full min-h-[420px]">
 		<div class="px-3 sm:px-4 py-2.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -361,7 +315,7 @@ templ projectChatPanel(data ProjectDetailData) {
 			data-repo-url={ data.Project.URL }
 			data-project-id={ data.Project.ID }
 			data-llm-worker-url={ shared.AssetLLMWorker }
-			data-repo-name={ githubRepoPath(data.Project.URL) }
+			data-repo-name={ githubRepoPath(data.Project.Name) }
 			data-repo-description={ data.Project.Description }
 			if data.AnalysisBoard.MetricAIEnabled {
 				data-metric-ai-enabled="true"
@@ -436,25 +390,10 @@ templ projectAnalysisBoard(board ProjectAnalysisBoard) {
 			if board.MetricAIEnabled {
 				<p class="text-xs sm:text-sm text-gray-500 leading-snug">{ i18n.T(ctx, "projects.SelectTileForAI") }</p>
 			}
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-				for _, tile := range board.Tiles {
-					@analysisMetricTile(tile)
-				}
-			</div>
-			<div>
-				<div class="flex items-center justify-between text-xs sm:text-sm mb-1">
-					<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
-					<span class="text-gray-300 tabular-nums font-medium">
-						{ fmt.Sprintf("%d", board.EarnedPts) } / { fmt.Sprintf("%d", board.MaxPts) } pts
-					</span>
-				</div>
-				<div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-					<div
-						class="h-full rounded-full bg-green-500/80 transition-all"
-						style={ fmt.Sprintf("width: %d%%", board.ProgressPct()) }
-					></div>
-				</div>
-			</div>
+			if len(board.Tiles) > 0 {
+				@analysis.Grid(board.Tiles)
+			}
+			@analysis.ScoringBar(board.EarnedPts, board.MaxPts)
 			<div class="hidden md:block border-t border-white/10 pt-2.5">
 				<p class="text-gray-500 text-xs sm:text-sm mb-0.5">{ i18n.T(ctx, "projects.LastAnalyzed") }</p>
 				<p class="text-white text-sm leading-snug">

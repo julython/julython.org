@@ -1,0 +1,87 @@
+package analysis
+
+import (
+	"fmt"
+
+	"github.com/invopop/ctxi18n/i18n"
+)
+
+// Dash renders a single dash in the analysis progress indicator.
+templ Dash(level int16, dashIdx int) {
+	if level >= 3 {
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-green-400 lg:h-0.5 lg:max-w-[1rem]"></span>
+	} else if level <= 0 {
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600 lg:h-0.5 lg:max-w-[1rem]"></span>
+	} else if int16(dashIdx) <= level {
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-blue-400 lg:h-0.5 lg:max-w-[1rem]"></span>
+	} else {
+		<span class="h-1 flex-1 max-w-[1.35rem] rounded-full bg-zinc-600/80 lg:h-0.5 lg:max-w-[1rem]"></span>
+	}
+}
+
+// MetricTile renders a single metric tile for the analysis grid.
+templ MetricTile(tile AnalysisTile) {
+	<button
+		type="button"
+		class={
+			"metric-ai-tile w-full max-w-full rounded-lg px-2.5 py-3 lg:px-1.5 lg:py-1.5 border transition-colors min-w-0 overflow-hidden text-left cursor-pointer",
+			"hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-july-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+			templ.KV("border-green-500/45 bg-green-500/[0.07]", tile.Level >= 3),
+			templ.KV("border-blue-500/40 bg-blue-500/[0.06]", tile.Level >= 1 && tile.Level < 3),
+			templ.KV("border-white/10 bg-white/[0.02]", tile.Level < 1),
+		}
+		data-metric-key={ tile.MetricKey }
+		aria-label={ fmt.Sprintf("%s — %s", tile.I18nKey, i18n.T(ctx, "projects.OpenAssistantPanel")) }
+	>
+		<div class="flex gap-1 mb-1.5 justify-center shrink-0 lg:gap-0.5 lg:mb-1">
+			@Dash(tile.Level, 1)
+			@Dash(tile.Level, 2)
+			@Dash(tile.Level, 3)
+		</div>
+		<p
+			class={
+				"min-w-0 w-full truncate text-base sm:text-sm lg:text-[10px] font-semibold lg:font-medium text-center leading-tight lg:leading-none tracking-tight",
+				templ.KV("text-green-300", tile.Level >= 3),
+				templ.KV("text-blue-200", tile.Level >= 1 && tile.Level < 3),
+				templ.KV("text-gray-500", tile.Level < 1),
+			}
+		>
+			{ tile.I18nKey }
+		</p>
+		<p class="min-w-0 w-full truncate text-sm sm:text-xs lg:text-[9px] text-gray-500 text-center tabular-nums mt-1 lg:mt-0.5 font-medium">{ fmt.Sprintf("%d/10", tile.Score) }</p>
+	</button>
+}
+
+// Grid renders a grid of metric tiles (4 columns on desktop, 2 on mobile).
+templ Grid(tiles []AnalysisTile) {
+	<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+		for _, tile := range tiles {
+			@MetricTile(tile)
+		}
+	</div>
+}
+
+// ScoringBar renders the scoring bar with earned/max pts.
+templ ScoringBar(earned, maxPts int) {
+	<div>
+		<div class="flex items-center justify-between text-xs sm:text-sm mb-1">
+			<span class="text-gray-500">{ i18n.T(ctx, "Points") }</span>
+			<span class="text-gray-300 tabular-nums font-medium">
+				{ fmt.Sprintf("%d", earned) } / { fmt.Sprintf("%d", maxPts) } pts
+			</span>
+		</div>
+		<div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+			<div
+				class="h-full rounded-full bg-green-500/80 transition-all"
+				style={ fmt.Sprintf("width: %d%%", progressPct(earned, maxPts)) }
+			></div>
+		</div>
+	</div>
+}
+
+func progressPct(earned, maxPts int) int {
+	if maxPts <= 0 {
+		return 0
+	}
+	return (earned * 100) / maxPts
+}
