@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -404,4 +405,205 @@ func TestGameService_AddCommit_BoardGapFill(t *testing.T) {
 	require.True(t, ids.Board2ID.Valid, "board_2 should be valid")
 	assert.Equal(t, expectedBytes, ids.Board2ID.Bytes, "board_2 should remain unchanged")
 	assert.False(t, ids.Board3ID.Valid, "board_3 should not be assigned yet")
+}
+
+// TestGameService_ScoreReset verifies that scoring is isolated per game:
+// - New game Board rows start with points = 0 (no carryover from old games)
+// - Existing boards.verified_points from prior games are NOT affected
+// - Total score displays correctly: total = boards.points + boards.verified_points
+func TestGameService_ScoreReset(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+	svc := services.NewGameService(env.Queries)
+	ctx := context.Background()
+
+	t.Run("new game Board rows start with points = 0, no carryover from old games", func(t *testing.T) {
+		// Create game 1 with a project, then add commits to build up points
+		game1 := testutil.CreateActiveGame(t, env)
+		project1 := testutil.CreateProject(t, env, "scoregame1-proj",
+			"https://github.com/scoreuser1/scoregame1-proj")
+
+		// Insert 3 commits directly (same pattern as TestGameService_AddCommit)
+		for i := 0; i < 3; i++ {
+			commitID := uuid.New()
+			_, err := env.Pool.Exec(ctx,
+				"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
+					"VALUES ($1, $2, $3, 'Score User 1', 'scoreuser1@test.com', 'Commit 1', 'http://test', now())",
+				commitID, fmt.Sprintf("game1-commit-%d", i), project1.ID)
+			require.NoError(t, err)
+
+			commit, err := env.Queries.GetCommitByHashStr(ctx, fmt.Sprintf("game1-commit-%d", i))
+			require.NoError(t, err)
+			err = svc.AddCommit(ctx, commit)
+			require.NoError(t, err)
+		}
+
+		// Verify game 1 board has points from 3 commits
+		board1, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game1.ID,
+		})
+		require.NoError(t, err)
+		assert.Greater(t, board1.Points, int32(0), "game 1 board should have points > 0 (3 commits + 1 project)")
+
+		// Deactivate game 1 and create a new game
+		err = env.Queries.DeactivateGame(ctx, game1.ID)
+		require.NoError(t, err)
+		game2 := testutil.CreateActiveGame(t, env)
+
+		// Insert a single commit into the same project but game 2
+		commitID2 := uuid.New()
+		_, err = env.Pool.Exec(ctx,
+			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
+				"VALUES ($1, $2, $3, 'Score User 1', 'scoreuser1@test.com', 'Commit 2', 'http://test', now())",
+			commitID2, "game2-commit-0", project1.ID)
+		require.NoError(t, err)
+
+		commit2, err := env.Queries.GetCommitByHashStr(ctx, "game2-commit-0")
+		require.NoError(t, err)
+		err = svc.AddCommit(ctx, commit2)
+		require.NoError(t, err)
+
+		// Verify game 2's board for the same project has only 1 commit's worth of points
+		board2, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game2.ID,
+		})
+		require.NoError(t, err)
+		// 1 commit (1) + 1 project (10) = 11
+		assert.Equal(t, int32(11), board2.Points, "game 2 board should have 11 points (fresh start, 1 commit + 1 project)")
+
+		// Verify game 1's board was NOT affected by game 2's commit
+		board1After, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game1.ID,
+		})
+		require.NoError(t, err)
+		assert.Greater(t, board1After.Points, int32(0), "game 1 board should still have points > 0 (unchanged)")
+	})
+
+	t.Run("boards.verified_points from prior games on the same project are NOT affected", func(t *testing.T) {
+		// Create game 1 with a project that has a board with verified_points set
+		game1 := testutil.CreateActiveGame(t, env)
+		project1 := testutil.CreateProject(t, env, "verifiedgame1-proj",
+			"https://github.com/verifieduser1/verifiedgame1-proj")
+
+		// Add a commit through game 1
+		commitID := uuid.New()
+		_, err := env.Pool.Exec(ctx,
+			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
+				"VALUES ($1, $2, $3, 'Verified User 1', 'verifieduser1@test.com', 'Commit 1', 'http://test', now())",
+			commitID, "verified1-commit-0", project1.ID)
+		require.NoError(t, err)
+
+		commit1, err := env.Queries.GetCommitByHashStr(ctx, "verified1-commit-0")
+		require.NoError(t, err)
+		err = svc.AddCommit(ctx, commit1)
+		require.NoError(t, err)
+
+		// Get the game 1 board (verified_points defaults to 0)
+		board1, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game1.ID,
+		})
+		require.NoError(t, err)
+		assert.Greater(t, board1.Points, int32(0)) // from 1 commit + 1 project
+		assert.Equal(t, int32(0), board1.VerifiedPoints) // default
+
+		// Set verified_points = 15 to simulate AI analysis.
+		// UpsertBoard does NOT update verified_points (it's not in the SQL),
+		// so direct SQL is the only way to set it — same pattern as TestGameService_AddCommit.
+		_, err = env.Pool.Exec(ctx,
+			"UPDATE boards SET verified_points = 15 WHERE id = $1", board1.ID)
+		require.NoError(t, err)
+
+		// Verify game 1 board now has verified_points = 15
+		board1WithVerified, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game1.ID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(15), board1WithVerified.VerifiedPoints)
+
+		// Deactivate game 1 and create game 2
+		err = env.Queries.DeactivateGame(ctx, game1.ID)
+		require.NoError(t, err)
+		game2 := testutil.CreateActiveGame(t, env)
+
+		// Add a commit through game 2 (same project)
+		commitID2 := uuid.New()
+		_, err = env.Pool.Exec(ctx,
+			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
+				"VALUES ($1, $2, $3, 'Verified User 1', 'verifieduser1@test.com', 'Commit 2', 'http://test', now())",
+			commitID2, "verified2-commit-0", project1.ID)
+		require.NoError(t, err)
+
+		commit2, err := env.Queries.GetCommitByHashStr(ctx, "verified2-commit-0")
+		require.NoError(t, err)
+		err = svc.AddCommit(ctx, commit2)
+		require.NoError(t, err)
+
+		// Verify game 2's board has verified_points = 0 (default, no AI analysis)
+		board2, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game2.ID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), board2.VerifiedPoints, "game 2 board should have verified_points = 0 (no AI set)")
+
+		// Verify game 1's board verified_points is STILL 15 (unchanged by game 2 operations)
+		board1After, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project1.ID,
+			GameID:    game1.ID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(15), board1After.VerifiedPoints, "game 1 board verified_points must not be affected by game 2")
+	})
+
+	t.Run("total score: total = boards.points + boards.verified_points", func(t *testing.T) {
+		game := testutil.CreateActiveGame(t, env)
+		project := testutil.CreateProject(t, env, "totalgame-proj",
+			"https://github.com/totaluser/totalgame-proj")
+
+		// Add 2 commits through game 1
+		for i := 0; i < 2; i++ {
+			commitID := uuid.New()
+			_, err := env.Pool.Exec(ctx,
+				"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
+					"VALUES ($1, $2, $3, 'Total User', 'totaluser@test.com', 'Commit %d', 'http://test', now())",
+				commitID, fmt.Sprintf("total-commit-%d", i), project.ID)
+			require.NoError(t, err)
+
+			commit, err := env.Queries.GetCommitByHashStr(ctx, fmt.Sprintf("total-commit-%d", i))
+			require.NoError(t, err)
+			err = svc.AddCommit(ctx, commit)
+			require.NoError(t, err)
+		}
+
+		// Get the board
+		board, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project.ID,
+			GameID:    game.ID,
+		})
+		require.NoError(t, err)
+
+		// board.points = 2 commits * 1 + 1 project * 10 = 12
+		assert.Equal(t, int32(12), board.Points,
+			"board.points should be 12 (2 commits * 1 + 1 project * 10)")
+		assert.Equal(t, int32(0), board.VerifiedPoints)
+
+		// Simulate AI analysis by manually setting verified_points = 5
+		_, err = env.Pool.Exec(ctx,
+			"UPDATE boards SET verified_points = 5 WHERE id = $1", board.ID)
+		require.NoError(t, err)
+
+		// Verify the computed total: 12 + 5 = 17
+		boardAfter, err := env.Queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+			ProjectID: project.ID,
+			GameID:    game.ID,
+		})
+		require.NoError(t, err)
+		expectedTotal := boardAfter.Points + boardAfter.VerifiedPoints
+		assert.Equal(t, int32(17), expectedTotal,
+			"total should be 17 (points 12 + verified_points 5)")
+	})
 }
