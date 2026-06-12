@@ -33,6 +33,9 @@ type Querier interface {
 	// Commits
 	// ============================================
 	CreateCommit(ctx context.Context, arg CreateCommitParams) (Commit, error)
+	// Inserts a commit without user_id/game_id/languages/files.
+	// Primarily used for tests that need precise control over commit creation.
+	CreateCommitSimple(ctx context.Context, arg CreateCommitSimpleParams) (Commit, error)
 	// ============================================
 	// Games
 	// ============================================
@@ -147,6 +150,7 @@ type Querier interface {
 	// Called after AI grading for L2/L3 upgrades only.
 	// Requires the metric to already be at L1 (enforced in the handler).
 	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
+	UpdateBoardVerifiedPoints(ctx context.Context, arg UpdateBoardVerifiedPointsParams) (Board, error)
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
 	UpdateProjectService(ctx context.Context, arg UpdateProjectServiceParams) (Project, error)
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error

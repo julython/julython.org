@@ -145,6 +145,36 @@ func (q *Queries) GetProjectLeaderboard(ctx context.Context, arg GetProjectLeade
 	return items, nil
 }
 
+const updateBoardVerifiedPoints = `-- name: UpdateBoardVerifiedPoints :one
+UPDATE boards
+SET verified_points = $1
+WHERE id = $2
+RETURNING id, game_id, project_id, points, potential_points, verified_points, commit_count, contributor_count, created_at, updated_at
+`
+
+type UpdateBoardVerifiedPointsParams struct {
+	VerifiedPoints int32     `json:"verified_points"`
+	BoardID        uuid.UUID `json:"board_id"`
+}
+
+func (q *Queries) UpdateBoardVerifiedPoints(ctx context.Context, arg UpdateBoardVerifiedPointsParams) (Board, error) {
+	row := q.db.QueryRow(ctx, updateBoardVerifiedPoints, arg.VerifiedPoints, arg.BoardID)
+	var i Board
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.ProjectID,
+		&i.Points,
+		&i.PotentialPoints,
+		&i.VerifiedPoints,
+		&i.CommitCount,
+		&i.ContributorCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const upsertBoard = `-- name: UpsertBoard :one
 
 INSERT INTO boards (id, game_id, project_id, points, potential_points, commit_count, contributor_count)

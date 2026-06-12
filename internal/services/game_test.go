@@ -422,16 +422,22 @@ func TestGameService_ScoreReset(t *testing.T) {
 		project1 := testutil.CreateProject(t, env, "scoregame1-proj",
 			"https://github.com/scoreuser1/scoregame1-proj")
 
-		// Insert 3 commits directly (same pattern as TestGameService_AddCommit)
+		// Insert 3 commits via SQLC query (same pattern as TestGameService_AddCommit)
 		for i := 0; i < 3; i++ {
-			commitID := uuid.New()
-			_, err := env.Pool.Exec(ctx,
-				"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
-					"VALUES ($1, $2, $3, 'Score User 1', 'scoreuser1@test.com', 'Commit 1', 'http://test', now())",
-				commitID, fmt.Sprintf("game1-commit-%d", i), project1.ID)
+			commitHash := fmt.Sprintf("game1-commit-%d", i)
+			_, err := env.Queries.CreateCommitSimple(ctx, db.CreateCommitSimpleParams{
+				ID:        db.NewID(),
+				Hash:      db.Text(commitHash),
+				ProjectID: project1.ID,
+				Author:    db.Text("Score User 1"),
+				Email:     db.Text("scoreuser1@test.com"),
+				Message:   "Commit 1",
+				Url:       "http://test",
+				Timestamp: time.Now(),
+			})
 			require.NoError(t, err)
 
-			commit, err := env.Queries.GetCommitByHashStr(ctx, fmt.Sprintf("game1-commit-%d", i))
+			commit, err := env.Queries.GetCommitByHashStr(ctx, commitHash)
 			require.NoError(t, err)
 			err = svc.AddCommit(ctx, commit)
 			require.NoError(t, err)
@@ -450,12 +456,17 @@ func TestGameService_ScoreReset(t *testing.T) {
 		require.NoError(t, err)
 		game2 := testutil.CreateActiveGame(t, env)
 
-		// Insert a single commit into the same project but game 2
-		commitID2 := uuid.New()
-		_, err = env.Pool.Exec(ctx,
-			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
-				"VALUES ($1, $2, $3, 'Score User 1', 'scoreuser1@test.com', 'Commit 2', 'http://test', now())",
-			commitID2, "game2-commit-0", project1.ID)
+		// Insert a single commit via SQLC into the same project but game 2
+		_, err = env.Queries.CreateCommitSimple(ctx, db.CreateCommitSimpleParams{
+			ID:        db.NewID(),
+			Hash:      db.Text("game2-commit-0"),
+			ProjectID: project1.ID,
+			Author:    db.Text("Score User 1"),
+			Email:     db.Text("scoreuser1@test.com"),
+			Message:   "Commit 2",
+			Url:       "http://test",
+			Timestamp: time.Now(),
+		})
 		require.NoError(t, err)
 
 		commit2, err := env.Queries.GetCommitByHashStr(ctx, "game2-commit-0")
@@ -487,12 +498,17 @@ func TestGameService_ScoreReset(t *testing.T) {
 		project1 := testutil.CreateProject(t, env, "verifiedgame1-proj",
 			"https://github.com/verifieduser1/verifiedgame1-proj")
 
-		// Add a commit through game 1
-		commitID := uuid.New()
-		_, err := env.Pool.Exec(ctx,
-			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
-				"VALUES ($1, $2, $3, 'Verified User 1', 'verifieduser1@test.com', 'Commit 1', 'http://test', now())",
-			commitID, "verified1-commit-0", project1.ID)
+		// Add a commit via SQLC
+		_, err := env.Queries.CreateCommitSimple(ctx, db.CreateCommitSimpleParams{
+			ID:        db.NewID(),
+			Hash:      db.Text("verified1-commit-0"),
+			ProjectID: project1.ID,
+			Author:    db.Text("Verified User 1"),
+			Email:     db.Text("verifieduser1@test.com"),
+			Message:   "Commit 1",
+			Url:       "http://test",
+			Timestamp: time.Now(),
+		})
 		require.NoError(t, err)
 
 		commit1, err := env.Queries.GetCommitByHashStr(ctx, "verified1-commit-0")
@@ -509,11 +525,13 @@ func TestGameService_ScoreReset(t *testing.T) {
 		assert.Greater(t, board1.Points, int32(0)) // from 1 commit + 1 project
 		assert.Equal(t, int32(0), board1.VerifiedPoints) // default
 
-		// Set verified_points = 15 to simulate AI analysis.
+		// Set verified_points = 15 to simulate AI analysis via SQLC.
 		// UpsertBoard does NOT update verified_points (it's not in the SQL),
-		// so direct SQL is the only way to set it — same pattern as TestGameService_AddCommit.
-		_, err = env.Pool.Exec(ctx,
-			"UPDATE boards SET verified_points = 15 WHERE id = $1", board1.ID)
+		// so we use the new UpdateBoardVerifiedPoints query.
+		_, err = env.Queries.UpdateBoardVerifiedPoints(ctx, db.UpdateBoardVerifiedPointsParams{
+			BoardID:        board1.ID,
+			VerifiedPoints: 15,
+		})
 		require.NoError(t, err)
 
 		// Verify game 1 board now has verified_points = 15
@@ -529,12 +547,17 @@ func TestGameService_ScoreReset(t *testing.T) {
 		require.NoError(t, err)
 		game2 := testutil.CreateActiveGame(t, env)
 
-		// Add a commit through game 2 (same project)
-		commitID2 := uuid.New()
-		_, err = env.Pool.Exec(ctx,
-			"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
-				"VALUES ($1, $2, $3, 'Verified User 1', 'verifieduser1@test.com', 'Commit 2', 'http://test', now())",
-			commitID2, "verified2-commit-0", project1.ID)
+		// Add a commit via SQLC for game 2 (same project)
+		_, err = env.Queries.CreateCommitSimple(ctx, db.CreateCommitSimpleParams{
+			ID:        db.NewID(),
+			Hash:      db.Text("verified2-commit-0"),
+			ProjectID: project1.ID,
+			Author:    db.Text("Verified User 1"),
+			Email:     db.Text("verifieduser1@test.com"),
+			Message:   "Commit 2",
+			Url:       "http://test",
+			Timestamp: time.Now(),
+		})
 		require.NoError(t, err)
 
 		commit2, err := env.Queries.GetCommitByHashStr(ctx, "verified2-commit-0")
@@ -564,16 +587,22 @@ func TestGameService_ScoreReset(t *testing.T) {
 		project := testutil.CreateProject(t, env, "totalgame-proj",
 			"https://github.com/totaluser/totalgame-proj")
 
-		// Add 2 commits through game 1
+		// Add 2 commits via SQLC
 		for i := 0; i < 2; i++ {
-			commitID := uuid.New()
-			_, err := env.Pool.Exec(ctx,
-				"INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp) "+
-					"VALUES ($1, $2, $3, 'Total User', 'totaluser@test.com', 'Commit %d', 'http://test', now())",
-				commitID, fmt.Sprintf("total-commit-%d", i), project.ID)
+			commitHash := fmt.Sprintf("total-commit-%d", i)
+			_, err := env.Queries.CreateCommitSimple(ctx, db.CreateCommitSimpleParams{
+				ID:        db.NewID(),
+				Hash:      db.Text(commitHash),
+				ProjectID: project.ID,
+				Author:    db.Text("Total User"),
+				Email:     db.Text("totaluser@test.com"),
+				Message:   fmt.Sprintf("Commit %d", i),
+				Url:       "http://test",
+				Timestamp: time.Now(),
+			})
 			require.NoError(t, err)
 
-			commit, err := env.Queries.GetCommitByHashStr(ctx, fmt.Sprintf("total-commit-%d", i))
+			commit, err := env.Queries.GetCommitByHashStr(ctx, commitHash)
 			require.NoError(t, err)
 			err = svc.AddCommit(ctx, commit)
 			require.NoError(t, err)
@@ -591,9 +620,11 @@ func TestGameService_ScoreReset(t *testing.T) {
 			"board.points should be 12 (2 commits * 1 + 1 project * 10)")
 		assert.Equal(t, int32(0), board.VerifiedPoints)
 
-		// Simulate AI analysis by manually setting verified_points = 5
-		_, err = env.Pool.Exec(ctx,
-			"UPDATE boards SET verified_points = 5 WHERE id = $1", board.ID)
+		// Simulate AI analysis by setting verified_points = 5 via SQLC
+		_, err = env.Queries.UpdateBoardVerifiedPoints(ctx, db.UpdateBoardVerifiedPointsParams{
+			BoardID:        board.ID,
+			VerifiedPoints: 5,
+		})
 		require.NoError(t, err)
 
 		// Verify the computed total: 12 + 5 = 17
