@@ -161,7 +161,7 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 	}
 	logger.Debug().Msgf("Adding commit to game: %s", game.Name)
 
-	// Only public projects contribute to game scoring.
+	// Only public projects contribute to scoring.
 	project, err := s.queries.GetProjectByID(ctx, commit.ProjectID)
 	if err != nil {
 		logger.Debug().Str("project_id", commit.ProjectID.String()).Msg("project not found, skipping scoring")
@@ -179,7 +179,8 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 		return fmt.Errorf("set commit game: %w", err)
 	}
 
-	if err := s.addPointsToBoard(ctx, game, commit); err != nil {
+	board, err := s.addPointsToBoard(ctx, game, commit)
+	if err != nil {
 		logger.Debug().Msgf("add points to board: %s", err)
 		return fmt.Errorf("add points to board: %w", err)
 	}
@@ -191,16 +192,17 @@ func (s *GameService) AddCommit(ctx context.Context, commit db.Commit) error {
 
 	if commit.UserID.Valid {
 		userID, _ := uuid.FromBytes(commit.UserID.Bytes[:])
-		logger.Debug().Msgf("Upsert user %v", userID)
-		if err := s.UpsertPlayer(ctx, game, userID); err != nil {
-			return fmt.Errorf("upsert player: %w", err)
+		logger.Debug().Msgf("Assigning player boards: %v", userID)
+		if err := s.assignPlayerBoards(ctx, game, userID, board.ID); err != nil {
+			return fmt.Errorf("assign player boards: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (s *GameService) addPointsToBoard(ctx context.Context, game db.Game, commit db.Commit) error {
+func (s *GameService) addPointsToBoard(ctx context.Context, game db.Game, commit db.Commit) (db.Board, error) {
+	var board db.Board
 	_, err := s.queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
 		ProjectID: commit.ProjectID,
 		GameID:    game.ID,
@@ -212,7 +214,7 @@ func (s *GameService) addPointsToBoard(ctx context.Context, game db.Game, commit
 		points += game.ProjectPoints
 	}
 
-	_, err = s.queries.UpsertBoard(ctx, db.UpsertBoardParams{
+	board, err = s.queries.UpsertBoard(ctx, db.UpsertBoardParams{
 		ID:               db.NewID(),
 		GameID:           game.ID,
 		ProjectID:        commit.ProjectID,
@@ -220,7 +222,7 @@ func (s *GameService) addPointsToBoard(ctx context.Context, game db.Game, commit
 		CommitCount:      1,
 		ContributorCount: 1,
 	})
-	return err
+	return board, err
 }
 
 func (s *GameService) addLanguageBoards(ctx context.Context, game db.Game, commit db.Commit) error {
@@ -249,6 +251,128 @@ func (s *GameService) addLanguageBoards(ctx context.Context, game db.Game, commi
 		}
 	}
 	return nil
+}
+
+// assignPlayerBoards creates or updates a player and assigns the project
+// board to the first available slot, then recalculates verified_points.
+func (s *GameService) assignPlayerBoards(ctx context.Context, game db.Game, userID uuid.UUID, boardID uuid.UUID) error {
+	player, err := s.queries.GetPlayerByUserAndGame(ctx, db.GetPlayerByUserAndGameParams{
+		UserID: userID,
+		GameID: game.ID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		counts, err := s.queries.CountUserCommitsForGame(ctx, db.CountUserCommitsForGameParams{
+			UserID: pgtype.UUID{Bytes: userID, Valid: true},
+			GameID: pgtype.UUID{Bytes: game.ID, Valid: true},
+		})
+		if err != nil {
+			return fmt.Errorf("count commits: %w", err)
+		}
+
+		points := int32(counts.CommitCount)*game.CommitPoints + int32(counts.ProjectCount)*game.ProjectPoints
+
+		player, err = s.queries.UpsertPlayer(ctx, db.UpsertPlayerParams{
+			ID:             db.NewID(),
+			GameID:         game.ID,
+			UserID:         userID,
+			CommitCount:    counts.CommitCount,
+			ProjectCount:   counts.ProjectCount,
+			Points:         points,
+			AnalysisStatus: "pending",
+		})
+		if err != nil {
+			return fmt.Errorf("create player: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("get player: %w", err)
+	}
+
+	// Get the player's current board IDs.
+	ids, err := s.queries.GetPlayerBoardIds(ctx, player.ID)
+	if err != nil {
+		return fmt.Errorf("get board ids: %w", err)
+	}
+
+	// Count existing assigned boards.
+	boardCount := 0
+	if ids.Board1ID.Valid {
+		boardCount++
+	}
+	if ids.Board2ID.Valid {
+		boardCount++
+	}
+	if ids.Board3ID.Valid {
+		boardCount++
+	}
+
+	// Only assign if the player has fewer than 3 boards.
+	if boardCount < 3 {
+		var board1ID, board2ID, board3ID pgtype.UUID
+		if ids.Board1ID.Valid {
+			board1ID = ids.Board1ID
+		}
+		if ids.Board2ID.Valid {
+			board2ID = ids.Board2ID
+		}
+		if ids.Board3ID.Valid {
+			board3ID = ids.Board3ID
+		}
+		// Assign to the first available slot.
+		switch boardCount {
+		case 0:
+			board1ID = pgid(boardID)
+		case 1:
+			if ids.Board1ID.Valid {
+				board2ID = pgid(boardID)
+			} else {
+				board1ID = pgid(boardID)
+			}
+		case 2:
+			if ids.Board1ID.Valid && ids.Board2ID.Valid {
+				board3ID = pgid(boardID)
+			} else if ids.Board1ID.Valid {
+				board2ID = pgid(boardID)
+			} else {
+				board1ID = pgid(boardID)
+			}
+		}
+
+		if _, err := s.queries.AssignBoards(ctx, db.AssignBoardsParams{
+			PlayerID: player.ID,
+			Board1ID: board1ID,
+			Board2ID: board2ID,
+			Board3ID: board3ID,
+		}); err != nil {
+			return fmt.Errorf("assign boards: %w", err)
+		}
+	}
+
+	// Recalculate verified_points from all boards.
+	total, err := s.queries.GetPlayerBoardTotal(ctx, db.GetPlayerBoardTotalParams{
+		Board1ID: db.UUIDFromPg(ids.Board1ID),
+		Board2ID: db.UUIDFromPg(ids.Board2ID),
+		Board3ID: db.UUIDFromPg(ids.Board3ID),
+	})
+	if err != nil {
+		return fmt.Errorf("get board total: %w", err)
+	}
+
+	if err := s.queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+		ID:             player.ID,
+		VerifiedPoints: total,
+		AnalysisStatus: "completed",
+	}); err != nil {
+		return fmt.Errorf("update analysis: %w", err)
+	}
+
+	return nil
+}
+
+// pgid creates a valid pgtype.UUID from a uuid.UUID.
+func pgid(u uuid.UUID) pgtype.UUID {
+	var b [16]byte
+	copy(b[:], u[:])
+	return pgtype.UUID{Bytes: b, Valid: true}
 }
 
 // UpsertPlayer recalculates and updates a player's score.

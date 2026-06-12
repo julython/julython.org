@@ -13,6 +13,7 @@ import (
 	"july/internal/db"
 	"july/internal/services"
 	"july/internal/testutil"
+	"july/internal/webhooks"
 )
 
 func TestGameService_CreateGame(t *testing.T) {
@@ -328,4 +329,79 @@ func TestGameService_AddCommit(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+}
+
+// TestGameService_AddCommit_BoardGapFill tests that board slots with gaps
+// are filled correctly. It pre-seeds a player with board_2 but no board_1
+// via direct SQL, then posts a commit through the webhook to trigger gap filling.
+func TestGameService_AddCommit_BoardGapFill(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+	ctx := context.Background()
+
+	gameID := uuid.MustParse("67676767-6767-6767-6767-676767676767")
+	userID := uuid.MustParse("89898989-8989-8989-8989-898989898989")
+
+	// Create user with deterministic ID
+	_, err := env.Pool.Exec(ctx,
+		"INSERT INTO users (id, username, name, avatar_url, is_active) VALUES ($1, 'gapuser', 'Gap User', '', true)",
+		userID)
+	require.NoError(t, err)
+
+	// Create email identifier so the webhook pipeline can find this user by email
+	// The key is formatted as "type:value" (e.g., "email:gapuser@test.com")
+	_, err = env.Pool.Exec(ctx,
+		"INSERT INTO user_identifiers (value, type, user_id, verified, is_primary) VALUES ('email:gapuser@test.com', 'email', $1, true, true)",
+		userID)
+	require.NoError(t, err)
+
+	// Create game with deterministic ID
+	game := testutil.CreateGame(t, env, "Gap Test",
+		time.Now().Add(-24*time.Hour), time.Now().Add(24*time.Hour), true)
+	_, err = env.Pool.Exec(ctx, "UPDATE games SET id = $1 WHERE id = $2", gameID, game.ID)
+	require.NoError(t, err)
+	game.ID = gameID
+
+	// Pre-seed player with board_2 assigned but board_1 empty
+	playerID := uuid.MustParse("abadabad-abad-abad-abad-abadabadabad")
+	board2ID := uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+
+	projectID2 := uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+	_, err = env.Pool.Exec(ctx,
+		"INSERT INTO projects (id, url, name, slug, description, service, forked, forks, watchers, is_private, owner) "+
+			"VALUES ($1, $2, $3, 'gap-p2', NULL, 'github', false, 0, 0, false, 'test')",
+		projectID2, "https://github.com/test/gap2", "gap2")
+	require.NoError(t, err)
+
+	_, err = env.Pool.Exec(ctx,
+		"INSERT INTO boards (id, game_id, project_id, points, potential_points, commit_count, contributor_count) "+
+			"VALUES ($1, $2, $3, 11, 11, 1, 1)",
+		board2ID, gameID, projectID2)
+	require.NoError(t, err)
+
+	_, err = env.Pool.Exec(ctx,
+		"INSERT INTO players (id, game_id, user_id, points, potential_points, commit_count, project_count, "+
+			"analysis_status, board_1_id, board_2_id, board_3_id) VALUES ($1, $2, $3, 11, 11, 1, 1, "+
+			"'pending', NULL, $4, NULL)",
+		playerID, gameID, userID, board2ID)
+	require.NoError(t, err)
+
+	// Create a 3rd project and link a commit through the webhook
+	testutil.WebhookCommit(t, env, "gap-fill-hash", func(o *testutil.WebhookOpts) {
+		o.RepoID = 55555
+		o.RepoName = "gap-fill-project"
+		o.FullName = "gapuser/gap-fill-project"
+		o.HTMLURL = "https://github.com/gapuser/gap-fill-project"
+		o.Author = webhooks.GitHubAuthor{Name: "Gap User", Email: "gapuser@test.com"}
+	})
+
+	// Verify board_1 was filled (not board_3)
+	ids, err := env.Queries.GetPlayerBoardIds(ctx, playerID)
+	require.NoError(t, err)
+	require.True(t, ids.Board1ID.Valid, "board_1 should be filled when it's missing")
+
+	// Compare board_2 by bytes (expected is uuid.UUID, actual is pgtype.UUID)
+	expectedBytes := [16]byte(board2ID)
+	require.True(t, ids.Board2ID.Valid, "board_2 should be valid")
+	assert.Equal(t, expectedBytes, ids.Board2ID.Bytes, "board_2 should remain unchanged")
+	assert.False(t, ids.Board3ID.Valid, "board_3 should not be assigned yet")
 }

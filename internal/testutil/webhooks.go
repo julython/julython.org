@@ -21,6 +21,7 @@ type WebhookOpts struct {
 	FullName    string
 	HTMLURL     string
 	Description string
+	Private     bool
 	Fork        bool
 	ForksCount  int
 	Watchers    int

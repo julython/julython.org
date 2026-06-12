@@ -94,12 +94,22 @@ func CreateProjectWithRepoID(t *testing.T, env *TestEnv, name, slug, repoURL str
 // (e.g. webhook ingestion tests, project detail pages).
 func CreateCommit(t *testing.T, env *TestEnv, projectID uuid.UUID, hash, message string) db.Commit {
 	t.Helper()
+	return CreateCommitWithUser(t, env, projectID, hash, message, uuid.Nil, uuid.Nil)
+}
+
+// CreateCommitWithUser inserts a commit with explicit user_id and game_id.
+// This is useful for tests that need to drive the player board assignment flow.
+func CreateCommitWithUser(
+	t *testing.T, env *TestEnv, projectID uuid.UUID, hash, message string,
+	userID, gameID uuid.UUID,
+) db.Commit {
+	t.Helper()
 	commit, err := env.Queries.CreateCommit(context.Background(), db.CreateCommitParams{
 		ID:        db.NewID(),
 		Hash:      db.Text(hash),
 		ProjectID: projectID,
-		UserID:    db.NullUUID(),
-		GameID:    db.NullUUID(),
+		UserID:    db.NullableUUID(userID),
+		GameID:    db.NullableUUID(gameID),
 		Author:    db.Text("Test Author"),
 		Email:     db.Text("test@example.com"),
 		Message:   message,
@@ -142,16 +152,31 @@ func CreateActiveGame(t *testing.T, env *TestEnv) db.Game {
 	)
 }
 
+// uniqueName extracts a unique identifier from the test name for use in
+// generating unique usernames/project slugs across concurrent test runs.
+// The result is truncated to 25 characters to fit the database username limit.
+func uniqueName(t *testing.T, suffix string) string {
+	// t.Name() returns e.g. "TestFoo/SubTest" — take the last segment
+	parts := strings.Split(t.Name(), "/")
+	name := parts[len(parts)-1] + suffix
+	const maxLen = 25
+	if len(name) > maxLen {
+		return name[:maxLen]
+	}
+	return name
+}
+
 // CreateTestScenario sets up a user with a project and a bare commit row.
 // No game association — use CreateGameScenario when scoring matters.
 func CreateTestScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Commit) {
 	t.Helper()
 
-	user := CreateUser(t, env, "testuser", "Test User")
-	CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+	name := uniqueName(t, "_user")
+	user := CreateUser(t, env, name, "Test User")
+	CreateUserIdentifier(t, env, user.ID, "email", name+"@example.com", true, true)
 	CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
 
-	project := CreateProject(t, env, "test-project", "https://github.com/testuser/test-project")
+	project := CreateProject(t, env, "test-project", "https://github.com/name/test-project")
 	commit := CreateCommit(t, env, project.ID, "abc123def456", "Initial commit")
 
 	return user, project, commit
@@ -164,8 +189,9 @@ func CreateGameScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Gam
 	t.Helper()
 	ctx := context.Background()
 
-	user := CreateUser(t, env, "testuser", "Test User")
-	CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+	name := uniqueName(t, "_user")
+	user := CreateUser(t, env, name, "Test User")
+	CreateUserIdentifier(t, env, user.ID, "email", name+"@example.com", true, true)
 	CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
 
 	game := CreateActiveGame(t, env)
@@ -173,15 +199,16 @@ func CreateGameScenario(t *testing.T, env *TestEnv) (db.User, db.Project, db.Gam
 	hash := fmt.Sprintf("game-%s", db.NewID().String()[:8])
 	WebhookCommit(t, env, hash, func(o *WebhookOpts) {
 		o.RepoID = 11111
-		o.RepoName = "test-project"
-		o.FullName = "testuser/test-project"
-		o.HTMLURL = "https://github.com/testuser/test-project"
-		o.Author = webhooks.GitHubAuthor{Name: user.Name, Email: "test@example.com"}
+		o.RepoName = name + "-project"
+		o.FullName = name + "/test-project"
+		o.HTMLURL = "https://github.com/" + name + "/test-project"
+		o.Author = webhooks.GitHubAuthor{Name: user.Name, Email: name + "@example.com"}
 		o.Files = []string{"main.go", "app.py"}
 		o.Message = "Initial game commit"
 	})
 
-	project, err := env.Queries.GetProjectBySlug(ctx, "gh-testuser-test-project")
+	slug := fmt.Sprintf("gh-%s-test-project", name)
+	project, err := env.Queries.GetProjectBySlug(ctx, slug)
 	require.NoError(t, err, "project should have been created by webhook")
 
 	commit, err := env.Queries.GetCommitByHashStr(ctx, hash)
@@ -197,6 +224,7 @@ func CreateGameScenarioForUser(t *testing.T, env *TestEnv, game db.Game, usernam
 	t.Helper()
 	ctx := context.Background()
 
+	// username is now caller-controlled (test-name-based), so no collision.
 	user := CreateUser(t, env, username, name)
 	CreateUserIdentifier(t, env, user.ID, "email", username+"@example.com", true, true)
 

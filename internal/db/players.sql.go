@@ -184,6 +184,27 @@ func (q *Queries) GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (Ge
 	return i, err
 }
 
+const getPlayerBoardTotal = `-- name: GetPlayerBoardTotal :one
+SELECT COALESCE(SUM(b.points), 0)::int AS total
+FROM boards b
+WHERE b.id = $1 OR b.id = $2 OR b.id = $3
+`
+
+type GetPlayerBoardTotalParams struct {
+	Board1ID uuid.UUID `json:"board_1_id"`
+	Board2ID uuid.UUID `json:"board_2_id"`
+	Board3ID uuid.UUID `json:"board_3_id"`
+}
+
+// Return the sum of points for all boards assigned to a player.
+// Uses OR conditions so NULL parameters are safely ignored.
+func (q *Queries) GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTotalParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getPlayerBoardTotal, arg.Board1ID, arg.Board2ID, arg.Board3ID)
+	var total int32
+	err := row.Scan(&total)
+	return total, err
+}
+
 const getPlayerByID = `-- name: GetPlayerByID :one
 SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id FROM players WHERE id = $1
 `
@@ -348,7 +369,7 @@ SELECT
 FROM players p
 JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
 LEFT JOIN LATERAL (
-    SELECT COALESCE(SUM(b.points), 0) AS total
+    SELECT COALESCE(SUM(b.points), 0)::int AS total
     FROM boards b
     WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
 ) AS board_total ON true
@@ -360,7 +381,7 @@ type ListPlayersWithBoardsRow struct {
 	Name       string      `json:"name"`
 	Username   string      `json:"username"`
 	AvatarUrl  pgtype.Text `json:"avatar_url"`
-	BoardTotal interface{} `json:"board_total"`
+	BoardTotal int32       `json:"board_total"`
 }
 
 // Leaderboard with per-player board totals computed via lateral join.
