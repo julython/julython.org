@@ -89,6 +89,9 @@ type Querier interface {
 	// Return the 3 board IDs for a player.  Callers can join boards on
 	// these IDs when displaying the leaderboard.
 	GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (GetPlayerBoardIdsRow, error)
+	// Return the sum of points for all boards assigned to a player.
+	// Uses OR conditions so NULL parameters are safely ignored.
+	GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTotalParams) (int32, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)

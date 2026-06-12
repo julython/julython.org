@@ -513,6 +513,8 @@ func assertPgUUIDEqual(t *testing.T, expected pgtype.UUID, actual pgtype.UUID) {
 func assertBoardTotalEqual(t *testing.T, expected int32, actual interface{}) {
 	t.Helper()
 	switch v := actual.(type) {
+	case int32:
+		assert.Equal(t, expected, v)
 	case int64:
 		assert.Equal(t, expected, int32(v))
 	case float64:

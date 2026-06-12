@@ -107,8 +107,15 @@ SELECT
 FROM players p
 JOIN users u ON u.id = p.user_id AND p.game_id = @game_id AND u.is_active = true
 LEFT JOIN LATERAL (
-    SELECT COALESCE(SUM(b.points), 0) AS total
+    SELECT COALESCE(SUM(b.points), 0)::int AS total
     FROM boards b
     WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
 ) AS board_total ON true
 ORDER BY board_total DESC;
+
+-- name: GetPlayerBoardTotal :one
+-- Return the sum of points for all boards assigned to a player.
+-- Uses OR conditions so NULL parameters are safely ignored.
+SELECT COALESCE(SUM(b.points), 0)::int AS total
+FROM boards b
+WHERE b.id = @board_1_id OR b.id = @board_2_id OR b.id = @board_3_id;

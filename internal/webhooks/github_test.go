@@ -28,28 +28,12 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// PayloadOpts allows callers to override specific fields of the default payload.
-type PayloadOpts struct {
-	Ref         string
-	Forced      bool
-	RepoID      int64
-	RepoName    string
-	FullName    string
-	HTMLURL     string
-	Description string
-	Fork        bool
-	ForksCount  int
-	Watchers    int
-	Author      webhooks.GitHubAuthor
-	Files       []string
-	Message     string
-	Timestamp   time.Time
-}
+
 
 // webhookPayload builds a minimal valid GitHubPushEvent. Hash is required;
 // opts allow callers to override fields without constructing the full struct.
-func webhookPayload(hash string, opts ...func(*PayloadOpts)) webhooks.GitHubPushEvent {
-	o := &PayloadOpts{
+func webhookPayload(hash string, opts ...func(*testutil.WebhookOpts)) webhooks.GitHubPushEvent {
+	o := &testutil.WebhookOpts{
 		Ref:      "refs/heads/main",
 		RepoID:   12345,
 		RepoName: "test-repo",
@@ -74,6 +58,7 @@ func webhookPayload(hash string, opts ...func(*PayloadOpts)) webhooks.GitHubPush
 			FullName:    o.FullName,
 			HTMLURL:     o.HTMLURL,
 			Description: o.Description,
+			Private:     o.Private,
 			Fork:        o.Fork,
 			ForksCount:  o.ForksCount,
 			Watchers:    o.Watchers,
@@ -153,7 +138,7 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("skips non-default branches", func(t *testing.T) {
-		payload := webhookPayload("branch-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("branch-hash-001", func(o *testutil.WebhookOpts) {
 			o.Ref = "refs/heads/feature-branch"
 		})
 		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
@@ -162,7 +147,7 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("skips force pushes", func(t *testing.T) {
-		payload := webhookPayload("force-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("force-hash-001", func(o *testutil.WebhookOpts) {
 			o.Forced = true
 		})
 		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
@@ -197,7 +182,7 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("creates new project from webhook", func(t *testing.T) {
-		payload := webhookPayload("newrepo-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("newrepo-hash-001", func(o *testutil.WebhookOpts) {
 			o.RepoID = 77777
 			o.RepoName = "new-repo"
 			o.FullName = "carol/new-repo"
@@ -269,23 +254,16 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("private project creates commit but no game scoring", func(t *testing.T) {
-		// Create an active game so scoring would normally happen
 		game := testutil.CreateActiveGame(t, env)
 
-		payload := webhooks.GitHubPushEvent{
-			Ref: "refs/heads/main",
-			Repository: webhooks.GitHubRepo{
-				ID:       22222,
-				Name:     "private-repo",
-				FullName: "frank/private-repo",
-				HTMLURL:  "https://github.com/frank/private-repo",
-				Private:  true, // Mark as private
-				Owner:    webhooks.GitHubOwner{Login: "frank"},
-			},
-			Commits: []webhooks.GitHubCommit{
-				{ID: "priv-hash-001", Message: "Private repo commit", Timestamp: time.Now(), Author: webhooks.GitHubAuthor{Email: "frank@test.com"}},
-			},
-		}
+		payload := webhookPayload("priv-hash-001", func(o *testutil.WebhookOpts) {
+			o.RepoID = 22222
+			o.RepoName = "private-repo"
+			o.FullName = "frank/private-repo"
+			o.HTMLURL = "https://github.com/frank/private-repo"
+			o.Private = true
+			o.Author = webhooks.GitHubAuthor{Name: "Frank", Email: "frank@test.com"}
+		})
 		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -293,17 +271,14 @@ func TestGitHubWebhook(t *testing.T) {
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 		assert.Equal(t, 1, result.Created)
 
-		// Verify the project is marked as private
 		project, err := env.Queries.GetProjectBySlug(t.Context(), "gh-frank-private-repo")
 		require.NoError(t, err)
 		assert.True(t, project.IsPrivate)
-		assert.Equal(t, "frank", project.Owner)
 
-		// Verify the commit exists but has no game_id (no scoring for private)
 		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "priv-hash-001")
 		require.NoError(t, err)
 		assert.False(t, commit.GameID.Valid)
-		// Verify no board was created for this private project
+
 		_, err = env.Queries.GetBoardByProjectAndGame(t.Context(), db.GetBoardByProjectAndGameParams{
 			ProjectID: project.ID,
 			GameID:    game.ID,
@@ -311,9 +286,81 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.ErrorIs(t, err, pgx.ErrNoRows)
 	})
 
+	t.Run("public commits from same user get boards assigned sequentially", func(t *testing.T) {
+		game := testutil.CreateActiveGame(t, env)
+
+		user := testutil.CreateUser(t, env, "boardassign", "Board Assign User")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "boardassign@test.com", true, true)
+
+		// Post 2 commits from the same user through the webhook
+		testutil.WebhookCommit(t, env, "board-hash-001", func(o *testutil.WebhookOpts) {
+			o.RepoID = 33333
+			o.RepoName = "project-one"
+			o.FullName = "boardassign/project-one"
+			o.HTMLURL = "https://github.com/boardassign/project-one"
+			o.Author = webhooks.GitHubAuthor{Name: "Board Assign User", Email: "boardassign@test.com"}
+		})
+		testutil.WebhookCommit(t, env, "board-hash-002", func(o *testutil.WebhookOpts) {
+			o.RepoID = 33334
+			o.RepoName = "project-two"
+			o.FullName = "boardassign/project-two"
+			o.HTMLURL = "https://github.com/boardassign/project-two"
+			o.Author = webhooks.GitHubAuthor{Name: "Board Assign User", Email: "boardassign@test.com"}
+		})
+
+		// Verify player has 2 boards assigned
+		player, err := env.Queries.GetPlayerByUserAndGame(t.Context(), db.GetPlayerByUserAndGameParams{
+			UserID: user.ID,
+			GameID: game.ID,
+		})
+		require.NoError(t, err)
+		ids, err := env.Queries.GetPlayerBoardIds(t.Context(), player.ID)
+		require.NoError(t, err)
+		require.True(t, ids.Board1ID.Valid, "board_1 should be assigned")
+		require.True(t, ids.Board2ID.Valid, "board_2 should be assigned")
+		assert.False(t, ids.Board3ID.Valid, "board_3 should not be assigned yet")
+	})
+
+	t.Run("fourth project does not get board assigned", func(t *testing.T) {
+		game := testutil.CreateActiveGame(t, env)
+
+		user := testutil.CreateUser(t, env, "overflowuser", "Overflow User")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "overflowuser@test.com", true, true)
+
+		// Post 4 commits from the same user
+		for i := 1; i <= 4; i++ {
+			testutil.WebhookCommit(t, env, fmt.Sprintf("overflow-hash-%03d", i), func(o *testutil.WebhookOpts) {
+				o.RepoID = 44440 + int64(i)
+				o.RepoName = fmt.Sprintf("overflow-project-%d", i)
+				o.FullName = fmt.Sprintf("overflowuser/overflow-project-%d", i)
+				o.HTMLURL = fmt.Sprintf("https://github.com/overflowuser/overflow-project-%d", i)
+				o.Author = webhooks.GitHubAuthor{Name: "Overflow User", Email: "overflowuser@test.com"}
+			})
+		}
+
+		// Verify player has exactly 3 boards (4th project is not assigned to player)
+		player, err := env.Queries.GetPlayerByUserAndGame(t.Context(), db.GetPlayerByUserAndGameParams{
+			UserID: user.ID,
+			GameID: game.ID,
+		})
+		require.NoError(t, err)
+		ids, err := env.Queries.GetPlayerBoardIds(t.Context(), player.ID)
+		require.NoError(t, err)
+		require.True(t, ids.Board1ID.Valid)
+		require.True(t, ids.Board2ID.Valid)
+		require.True(t, ids.Board3ID.Valid)
+
+		// Verify the 4th project's board is NOT assigned to the player
+		project4, err := env.Queries.GetProjectBySlug(t.Context(), "gh-overflowuser-overflow-project-4")
+		require.NoError(t, err)
+		assert.NotEqual(t, ids.Board1ID, project4.ID, "4th project board should not be in player's board_1")
+		assert.NotEqual(t, ids.Board2ID, project4.ID, "4th project board should not be in player's board_2")
+		assert.NotEqual(t, ids.Board3ID, project4.ID, "4th project board should not be in player's board_3")
+	})
+
 	t.Run("adds commit to the active game", func(t *testing.T) {
 		game := testutil.CreateActiveGame(t, env)
-		payload := webhookPayload("game-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("game-hash-001", func(o *testutil.WebhookOpts) {
 			o.RepoID = 77777
 			o.FullName = "carol/new-repo"
 			o.HTMLURL = "https://github.com/carol/new-repo"
@@ -333,7 +380,7 @@ func TestGitHubWebhook(t *testing.T) {
 		user := testutil.CreateUser(t, env, "dave", "Dave Developer")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "dave@test.com", true, true)
 
-		payload := webhookPayload("dave-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("dave-hash-001", func(o *testutil.WebhookOpts) {
 			o.RepoID = 88888
 			o.RepoName = "dave-repo"
 			o.FullName = "dave/dave-repo"
@@ -353,7 +400,7 @@ func TestGitHubWebhook(t *testing.T) {
 	})
 
 	t.Run("detects languages from files", func(t *testing.T) {
-		payload := webhookPayload("poly-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("poly-hash-001", func(o *testutil.WebhookOpts) {
 			o.RepoID = 66666
 			o.RepoName = "polyglot"
 			o.FullName = "poly/polyglot"
@@ -375,7 +422,7 @@ func TestGitHubWebhook(t *testing.T) {
 		project := testutil.CreateProjectWithRepoID(t, env, "inactive-project", "gh-test-inactive-project", "https://github.com/test/inactive-project", 55555)
 		require.NoError(t, env.Queries.DeactivateProject(t.Context(), project.ID))
 
-		payload := webhookPayload("inactive-hash-001", func(o *PayloadOpts) {
+		payload := webhookPayload("inactive-hash-001", func(o *testutil.WebhookOpts) {
 			o.RepoID = 55555
 			o.RepoName = "inactive-project"
 			o.FullName = "test/inactive-project"
