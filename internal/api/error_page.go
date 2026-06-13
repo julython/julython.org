@@ -71,16 +71,6 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		// HTMX needs a 200 to actually swap the response body.
-		// Use HX-Retarget + HX-Reswap to redirect the fragment to a known error container.
-		if isHTMXRequest(r) {
-			w.Header().Set("HX-Retarget", "#htmx-error")
-			w.Header().Set("HX-Reswap", "innerHTML")
-			w.WriteHeader(http.StatusOK)
-			layout.ErrorFragment(data, ew.status).Render(r.Context(), w)
-			return
-		}
-
 		w.WriteHeader(ew.status)
 		layout.ErrorPage(data, ew.status).Render(r.Context(), w)
 	})
