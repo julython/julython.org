@@ -2,7 +2,7 @@
 name: webhook-placeholder-users
 status: planning
 created: 2026-06-12
-modified: 2026-06-12
+modified: 2026-06-13
 github_milestone: 3
 github_milestone_title: webhook-placeholder-users
 github_issue:
@@ -28,15 +28,15 @@ Auto-create user records from GitHub commit webhooks so that every commit has a 
 ## Approach
 - **No database migration** — keep existing `email` column on commits
 - Create users from webhooks and add their email as an (unverified) identifier
-- Lookup chain: `github:<id>` → `email:<address>` → `username = githubUsername`
+- Lookup chain: `username = githubUsername` → `email:<address>` → (create new user if username provided)
 - OAuth flow: if user found by `github:<id>`, upgrade it; if user found by `username`, add `github:<id>` to it
 
 ## User records created by webhooks:
 - `username` = `Author.Username` (GitHub login, e.g. "rmyers")
-- `name` = `Author.Name` (from git config, e.g. "Robert Myers")
-- `avatar_url` = `Author.AvatarURL` (from webhook data)
-- Unverified `email:<address>` identifier (linked from commit)
-- No `github:<id>` identifier (added at OAuth signup)
+- `name` = `Author.Name` (from git config)
+- No `avatar_url` from webhooks — GitHub push events don't send it (populated via OAuth in Task 2)
+- Unverified `email:<address>` identifier (linked from commit, IsPrimary=false, uses `ON CONFLICT DO NOTHING` to preserve existing verified emails)
+- No `github:<id>` identifier (added at OAuth signup in Task 2)
 
 ## OAuth flow for existing webhook users:
 1. Check `github:<numeric_id>` identifier (existing behavior)
@@ -46,7 +46,7 @@ Auto-create user records from GitHub commit webhooks so that every commit has a 
 ## Tasks
 
 ### Task 1: Webhook handler creates users from commits using multi-stage lookup
-- **Status:** `pending`
+- **Status:** `done`
 - **GitHub Issue:** #206
 - **Description:** Modify `processCommits()` in the webhook handler to look up or create a user for each commit using a multi-stage lookup. For each commit author:
 
@@ -54,16 +54,17 @@ Auto-create user records from GitHub commit webhooks so that every commit has a 
   2. If not, check if user exists with `email:<address>` identifier (existing flow — private/unverified emails)
   3. If not, look up by `username = githubUsername` (NEW — catches users who committed but didn't sign up)
   4. If not found, create a new user with `username = githubUsername`, `name = Author.Name`, `avatar_url = Author.AvatarURL`
-  5. If a user was found/created in step 3 or 4 (no `email:<address>` or `github:<id>` matched), add `email:<address>` as an unverified identifier
-  6. Link the commit to this user
-  7. On every commit, update the user's name and avatar (from webhook data)
+  5. If a user was found/created in step 1 or 3 (not by email), add `email:<address>` as an unverified identifier (IsPrimary=false, uses `ON CONFLICT DO NOTHING` to preserve existing verified emails)
+  6. Link the commit to this user (if no user found and no username, commit has no user association, same as before)
+  7. **Note:** GitHub push events do NOT include `avatar_url`. User name/avatar is populated via OAuth login (Task 2). No user updates from webhooks.
 
 - **Files to change:**
   - `internal/webhooks/github.go` — Add `AvatarURL string` to `GitHubAuthor` struct, remove `Email` from `GitHubAuthor` (or keep for reference only), add `getOrCreateUserForCommit()` method
   - `internal/db/queries/users.sql` — Add query if needed for username-based user lookup
 - **Dependencies:** None (no migration)
 - **Notes:** 
-  - The lookup chain is: `github:<id>` → `email:<address>` → `username = githubUsername` → create new user
+  - The lookup chain is: `username = githubUsername` → `email:<address>` → create new user (if username provided)
+  - No user updates from webhooks: GitHub push events do not include `avatar_url`, and user name/avatar are populated via OAuth (Task 2)
   - Step 5 is the key addition: if a user was found only by `username = githubUsername` (i.e., they committed but never signed up), we add their email as an unverified identifier so future commits can find them by email too
   - On every commit, call `UpdateUser` to refresh `name` and `avatar_url` (coalesced with existing values) so the user record stays fresh
 

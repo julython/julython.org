@@ -554,3 +554,33 @@ func (q *Queries) UpsertUserIdentifier(ctx context.Context, arg UpsertUserIdenti
 	)
 	return i, err
 }
+
+const upsertUserIdentifierUnverified = `-- name: UpsertUserIdentifierUnverified :exec
+INSERT INTO user_identifiers (value, type, user_id, verified, is_primary, data)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (value) DO NOTHING
+`
+
+type UpsertUserIdentifierUnverifiedParams struct {
+	Value     string    `json:"value"`
+	Type      string    `json:"type"`
+	UserID    uuid.UUID `json:"user_id"`
+	Verified  bool      `json:"verified"`
+	IsPrimary bool      `json:"is_primary"`
+	Data      []byte    `json:"data"`
+}
+
+// UpsertUserIdentifierUnverified inserts an unverified identifier but does nothing
+// if the value already exists for this user. This preserves existing verified
+// and is_primary flags on any pre-existing identifier for the same user.
+func (q *Queries) UpsertUserIdentifierUnverified(ctx context.Context, arg UpsertUserIdentifierUnverifiedParams) error {
+	_, err := q.db.Exec(ctx, upsertUserIdentifierUnverified,
+		arg.Value,
+		arg.Type,
+		arg.UserID,
+		arg.Verified,
+		arg.IsPrimary,
+		arg.Data,
+	)
+	return err
+}

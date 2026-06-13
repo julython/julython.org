@@ -444,6 +444,249 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "pong", testutil.DecodeBody(t, resp))
 	})
+
+	t.Run("finds existing user by username", func(t *testing.T) {
+		// User "frank" exists with username "frank"
+		user := testutil.CreateUser(t, env, "frank", "Frank Username")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "frank@example.com", false, true)
+
+		// Commit has matching username "frank" → should find by username, not email
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50001,
+				Name:     "username-repo",
+				FullName: "frank/username-repo",
+				HTMLURL:  "https://github.com/frank/username-repo",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "uname-hash-001",
+					Message:   "Add feature by username lookup",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/frank/username-repo/commit/abc",
+					Author:    webhooks.GitHubAuthor{Name: "Frank Updated", Email: "other@example.com", Username: "frank", AvatarURL: "https://example.com/updated.png"},
+				},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+
+		// Verify the commit links to the existing user (not a new one)
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "uname-hash-001")
+		require.NoError(t, err)
+		require.True(t, commit.UserID.Valid)
+		commitUserID, err := uuid.FromBytes(commit.UserID.Bytes[:])
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, commitUserID)
+
+		// Verify email identifier was added (the commit email is NOT the user's email)
+		// The user already has frank@example.com; the new one (other@example.com) should also exist
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:other@example.com")
+		require.NoError(t, err, "commit email should be added as unverified identifier")
+
+		// Verify original email is still there
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:frank@example.com")
+		require.NoError(t, err, "original email identifier should still exist")
+
+		// User's name stays as original — webhooks don't update user records
+		updatedUser, err := env.Queries.GetUserByID(t.Context(), user.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "Frank Username", updatedUser.Name)
+	})
+
+	t.Run("existing user with verified email not overwritten by webhook", func(t *testing.T) {
+		// User "eve" has a verified email. A commit from eve matching her email
+		// should NOT overwrite her verified/primary status.
+		user := testutil.CreateUser(t, env, "eve", "Eve Developer")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "eve@verified.com", true, true)
+
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50010,
+				Name:     "eve-repo",
+				FullName: "eve/eve-repo",
+				HTMLURL:  "https://github.com/eve/eve-repo",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "eve-verified-hash",
+					Message:   "Commit from user with verified email",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/eve/eve-repo/commit/abc",
+					Author:    webhooks.GitHubAuthor{Name: "Eve Developer", Email: "eve@verified.com", Username: "eve"},
+				},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		// Verify the existing verified identifier was NOT overwritten
+		id, err := env.Queries.GetUserIdentifier(t.Context(), "email:eve@verified.com")
+		require.NoError(t, err)
+		assert.True(t, id.Verified, "verified flag should be preserved")
+		assert.True(t, id.IsPrimary, "is_primary flag should be preserved")
+	})
+
+	t.Run("creates new user from commit with username", func(t *testing.T) {
+		// Commit with a unique username that doesn't match any existing user
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50002,
+				Name:     "newuser-repo",
+				FullName: "newgrit/newuser-repo",
+				HTMLURL:  "https://github.com/newgrit/newuser-repo",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "newuser-hash-001",
+					Message:   "Initial commit from new user",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/newgrit/newuser-repo/commit/abc",
+					Author:    webhooks.GitHubAuthor{Name: "New Grizzard", Email: "newgrit@example.com", Username: "newgrit", AvatarURL: "https://example.com/new.png"},
+				},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+
+		// Verify user was created
+		user, err := env.Queries.GetUserByUsername(t.Context(), "newgrit")
+		require.NoError(t, err)
+		assert.Equal(t, "New Grizzard", user.Name)
+
+		// Verify email identifier was added as unverified
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:newgrit@example.com")
+		require.NoError(t, err)
+
+		// Verify a commit was created and linked to this user
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "newuser-hash-001")
+		require.NoError(t, err)
+		require.True(t, commit.UserID.Valid)
+		commitUserID, err := uuid.FromBytes(commit.UserID.Bytes[:])
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, commitUserID)
+	})
+
+	t.Run("same new user commits multiple times", func(t *testing.T) {
+		// Create a user via webhook (by username)
+		payload1 := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50003,
+				Name:     "multi-repo",
+				FullName: "repmulti/multi-repo",
+				HTMLURL:  "https://github.com/repmulti/multi-repo",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "multi-hash-001",
+					Message:   "First commit from repmulti",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/repmulti/multi-repo/commit/abc",
+					Author:    webhooks.GitHubAuthor{Name: "Repmulti", Email: "repmulti@example.com", Username: "repmulti", AvatarURL: "https://example.com/first.png"},
+				},
+			},
+		}
+		resp1 := testutil.PostJSON(t, env, "/api/v1/github", payload1)
+		assert.Equal(t, http.StatusOK, resp1.StatusCode)
+
+		var result1 webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp1.Body).Decode(&result1))
+		assert.Equal(t, 1, result1.Created)
+
+		// Get the created user
+		user, err := env.Queries.GetUserByUsername(t.Context(), "repmulti")
+		require.NoError(t, err)
+
+		// Second commit with updated name and avatar
+		payload2 := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50004,
+				Name:     "multi-repo-two",
+				FullName: "repmulti/multi-repo-two",
+				HTMLURL:  "https://github.com/repmulti/multi-repo-two",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "multi-hash-002",
+					Message:   "Second commit from repmulti",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/repmulti/multi-repo-two/commit/def",
+					Author:    webhooks.GitHubAuthor{Name: "Repmulti Updated", Email: "repmulti@example.com", Username: "repmulti", AvatarURL: "https://example.com/second.png"},
+				},
+			},
+		}
+		resp2 := testutil.PostJSON(t, env, "/api/v1/github", payload2)
+		assert.Equal(t, http.StatusOK, resp2.StatusCode)
+
+		var result2 webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&result2))
+		assert.Equal(t, 1, result2.Created)
+
+		// Verify same user was used (not a duplicate)
+		secondUser, err := env.Queries.GetUserByUsername(t.Context(), "repmulti")
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, secondUser.ID)
+
+		// User's name stays as original — webhooks don't update user records
+
+		// Verify the second commit links to the same user
+		commit2, err := env.Queries.GetCommitByHashStr(t.Context(), "multi-hash-002")
+		require.NoError(t, err)
+		require.True(t, commit2.UserID.Valid)
+		commit2UserID, err := uuid.FromBytes(commit2.UserID.Bytes[:])
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, commit2UserID)
+	})
+
+	t.Run("empty username no email match: no user association", func(t *testing.T) {
+		// Commit with no username and no matching email → should create commit without user
+		payload := webhooks.GitHubPushEvent{
+			Ref: "refs/heads/main",
+			Repository: webhooks.GitHubRepo{
+				ID:       50005,
+				Name:     "orphan-repo",
+				FullName: "orphanuser/orphan-repo",
+				HTMLURL:  "https://github.com/orphanuser/orphan-repo",
+			},
+			Commits: []webhooks.GitHubCommit{
+				{
+					ID:        "orphan-hash-001",
+					Message:   "Commit from user without account or username",
+					Timestamp: time.Now(),
+					URL:       "https://github.com/orphanuser/orphan-repo/commit/xyz",
+					Author:    webhooks.GitHubAuthor{Name: "Orphan User", Email: "orphan@example.com"},
+				},
+			},
+		}
+		resp := testutil.PostJSON(t, env, "/api/v1/github", payload)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, 1, result.Created)
+
+		// Verify commit was created WITHOUT user association (UserID is null)
+		commit, err := env.Queries.GetCommitByHashStr(t.Context(), "orphan-hash-001")
+		require.NoError(t, err)
+		assert.False(t, commit.UserID.Valid, "commit without username or email match should have no user")
+
+		// Verify no new user was created
+		_, err = env.Queries.GetUserByUsername(t.Context(), "orphanuser")
+		assert.Error(t, err)
+	})
 }
 
 func TestGitHubWebhookContentTypes(t *testing.T) {

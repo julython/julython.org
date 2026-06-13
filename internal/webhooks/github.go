@@ -18,6 +18,7 @@ import (
 	"july/internal/db"
 	"july/internal/services"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 )
@@ -68,9 +69,10 @@ type GitHubCommit struct {
 }
 
 type GitHubAuthor struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Username   string `json:"username"`
+	AvatarURL  string `json:"avatar_url"`
 }
 
 // FileChange represents a file modification in a commit
@@ -312,10 +314,12 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, commit
 		}
 		logger.Info().Str("hash", c.ID).Msg("commit not found, will create")
 
-		// Find user by email
-		userID := db.NullUUID()
-		if user, err := h.queries.FindUserByIdentifier(ctx, "email:"+c.Author.Email); err == nil {
-			userID = db.UUID(user.ID)
+		// Two-stage lookup: email identifier → username
+		userResult, err := h.getOrCreateUserForCommit(ctx, c.Author)
+		if err != nil {
+			logger.Error().Err(err).Str("hash", c.ID).Msg("failed to resolve user for commit")
+			result.Skipped++
+			continue
 		}
 
 		// Parse files and detect languages
@@ -327,7 +331,7 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, commit
 			ID:        db.NewID(),
 			Hash:      db.Text(c.ID),
 			ProjectID: project.ID,
-			UserID:    userID,
+			UserID:    userResult.UserID,
 			GameID:    db.NullUUID(), // Will be set by GameService
 			Author:    db.Text(c.Author.Name),
 			Email:     db.Text(c.Author.Email),
@@ -355,6 +359,96 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, commit
 		result.Created++
 	}
 
+	return result, nil
+}
+
+// commitUserResult holds the outcome of the two-stage user lookup.
+type commitUserResult struct {
+	UserID       pgtype.UUID
+	FoundByEmail bool
+	Name         string
+	AvatarURL    string
+}
+
+// getOrCreateUserForCommit performs a two-stage lookup to find or create
+// a user for a commit author. The lookup chain is:
+//
+//	1. username = githubUsername (primary — commit authors declare who they are)
+//	2. email:<address> (fallback — catches users with private/unverified emails)
+//	3. If not found, create a new user with username, name, avatar_url
+//
+// If a user was found/created in step 1 or 3 (not by email), an unverified
+// email:<address> identifier is added so future commits can find them by email too.
+// GitHub push events do not include avatar_url, so user avatar is populated
+// via OAuth login (Task 2).
+func (h *Handler) getOrCreateUserForCommit(ctx context.Context, author GitHubAuthor) (commitUserResult, error) {
+	logger := log.Ctx(ctx)
+
+	// Stage 1: Look up by username (skip if empty — webhooks may not include it)
+	if author.Username != "" {
+		if user, err := h.queries.GetUserByUsername(ctx, author.Username); err == nil {
+			// Found by username — add email as unverified identifier
+			// (name/avatar update is handled by processCommits with dedup)
+			// Use UpsertUserIdentifierUnverified to preserve any existing
+			// verified/is_primary flags on pre-existing identifiers.
+			h.queries.UpsertUserIdentifierUnverified(ctx, db.UpsertUserIdentifierUnverifiedParams{
+				Value:     "email:" + author.Email,
+				Type:      "email",
+				UserID:    user.ID,
+				Verified:  false,
+				IsPrimary: false,
+			})
+			return commitUserResult{
+				UserID:       db.UUID(user.ID),
+				FoundByEmail: false,
+			}, nil
+		}
+	}
+
+	// Stage 2: Look up by email identifier
+	if user, err := h.queries.FindUserByIdentifier(ctx, "email:"+author.Email); err == nil {
+		return commitUserResult{
+			UserID:       db.UUID(user.ID),
+			FoundByEmail: true,
+		}, nil
+	}
+
+	// Stage 3: Create a new user (only if we have a username)
+	var result commitUserResult
+	if author.Username != "" {
+		userID := db.NewID()
+		user, err := h.queries.CreateUser(ctx, db.CreateUserParams{
+			ID:        userID,
+			Name:      author.Name,
+			Username:  author.Username,
+			AvatarUrl: db.Text(author.AvatarURL),
+			Role:      "user",
+		})
+		if err != nil {
+			return commitUserResult{}, err
+		}
+		// Add email as unverified identifier.
+		// Use UpsertUserIdentifierUnverified to preserve any existing
+		// verified/is_primary flags on pre-existing identifiers.
+		h.queries.UpsertUserIdentifierUnverified(ctx, db.UpsertUserIdentifierUnverifiedParams{
+			Value:     "email:" + author.Email,
+			Type:      "email",
+			UserID:    user.ID,
+			Verified:  false,
+			IsPrimary: false,
+		})
+		logger.Info().
+			Str("user_id", user.ID.String()).
+			Str("username", author.Username).
+			Str("email", author.Email).
+			Msg("created new user from commit")
+		result.UserID = db.UUID(user.ID)
+		// FoundByEmail stays false — created by username
+	} else {
+		// No username available and no email match — return null user ID
+		// (commit will be created without user association, same as before)
+		logger.Info().Str("email", author.Email).Msg("no user found, committing without user association")
+	}
 	return result, nil
 }
 
