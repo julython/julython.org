@@ -67,6 +67,14 @@ ON CONFLICT (value) DO UPDATE SET
 WHERE user_identifiers.user_id = EXCLUDED.user_id
 RETURNING *;
 
+-- UpsertUserIdentifierUnverified inserts an unverified identifier but does nothing
+-- if the value already exists for this user. This preserves existing verified
+-- and is_primary flags on any pre-existing identifier for the same user.
+-- name: UpsertUserIdentifierUnverified :exec
+INSERT INTO user_identifiers (value, type, user_id, verified, is_primary, data)
+VALUES (@value, @type, @user_id, @verified, @is_primary, @data)
+ON CONFLICT (value) DO NOTHING;
+
 -- name: GetUserIdentifier :one
 SELECT * FROM user_identifiers WHERE value = @value;
 

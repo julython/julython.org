@@ -176,6 +176,10 @@ type Querier interface {
 	// User Identifiers
 	// ============================================
 	UpsertUserIdentifier(ctx context.Context, arg UpsertUserIdentifierParams) (UserIdentifier, error)
+	// UpsertUserIdentifierUnverified inserts an unverified identifier but does nothing
+	// if the value already exists for this user. This preserves existing verified
+	// and is_primary flags on any pre-existing identifier for the same user.
+	UpsertUserIdentifierUnverified(ctx context.Context, arg UpsertUserIdentifierUnverifiedParams) error
 	ValidateBoardOwnership(ctx context.Context, arg ValidateBoardOwnershipParams) (ValidateBoardOwnershipRow, error)
 	VerifyCommit(ctx context.Context, id uuid.UUID) error
 }
