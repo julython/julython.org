@@ -123,6 +123,59 @@ func (q *Queries) CreateCommit(ctx context.Context, arg CreateCommitParams) (Com
 	return i, err
 }
 
+const createCommitSimple = `-- name: CreateCommitSimple :one
+INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, hash, project_id, user_id, game_id, author, email, message, url, timestamp, languages, files, is_verified, is_flagged, flag_reason, created_at, updated_at
+`
+
+type CreateCommitSimpleParams struct {
+	ID        uuid.UUID   `json:"id"`
+	Hash      pgtype.Text `json:"hash"`
+	ProjectID uuid.UUID   `json:"project_id"`
+	Author    pgtype.Text `json:"author"`
+	Email     pgtype.Text `json:"email"`
+	Message   string      `json:"message"`
+	Url       string      `json:"url"`
+	Timestamp time.Time   `json:"timestamp"`
+}
+
+// Inserts a commit without user_id/game_id/languages/files.
+// Primarily used for tests that need precise control over commit creation.
+func (q *Queries) CreateCommitSimple(ctx context.Context, arg CreateCommitSimpleParams) (Commit, error) {
+	row := q.db.QueryRow(ctx, createCommitSimple,
+		arg.ID,
+		arg.Hash,
+		arg.ProjectID,
+		arg.Author,
+		arg.Email,
+		arg.Message,
+		arg.Url,
+		arg.Timestamp,
+	)
+	var i Commit
+	err := row.Scan(
+		&i.ID,
+		&i.Hash,
+		&i.ProjectID,
+		&i.UserID,
+		&i.GameID,
+		&i.Author,
+		&i.Email,
+		&i.Message,
+		&i.Url,
+		&i.Timestamp,
+		&i.Languages,
+		&i.Files,
+		&i.IsVerified,
+		&i.IsFlagged,
+		&i.FlagReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const flagCommit = `-- name: FlagCommit :exec
 UPDATE commits SET
     is_flagged = true,

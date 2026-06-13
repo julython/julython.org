@@ -8,6 +8,13 @@ VALUES (@id, @hash, @project_id, @user_id, @game_id, @author, @email, @message, 
 ON CONFLICT (hash) DO NOTHING
 RETURNING *;
 
+-- name: CreateCommitSimple :one
+-- Inserts a commit without user_id/game_id/languages/files.
+-- Primarily used for tests that need precise control over commit creation.
+INSERT INTO commits (id, hash, project_id, author, email, message, url, timestamp)
+VALUES (@id, @hash, @project_id, @author, @email, @message, @url, @timestamp)
+RETURNING *;
+
 -- name: GetCommitByHash :one
 SELECT * FROM commits WHERE hash = @hash;
 

@@ -12,6 +12,12 @@ DO UPDATE SET
     commit_count = boards.commit_count + EXCLUDED.commit_count
 RETURNING *;
 
+-- name: UpdateBoardVerifiedPoints :one
+UPDATE boards
+SET verified_points = @verified_points
+WHERE id = @board_id
+RETURNING *;
+
 -- name: GetBoardByIDsAndGame :many
 SELECT * FROM boards WHERE id = ANY(@board_ids::uuid[]) AND game_id = @game_id;
 
