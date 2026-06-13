@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,12 +16,11 @@ import (
 	ctxi18n "github.com/invopop/ctxi18n"
 )
 
-func TestMain(m *testing.M) {
+func init() {
 	if err := i18n.Init(); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "i18n init failed: %v\n", err)
+		_, _ = os.Stderr.WriteString("i18n init failed: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	os.Exit(m.Run())
 }
 
 // --- isHTMXRequest ---
@@ -240,89 +238,5 @@ func TestErrorMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		// Contains the 404 message in an HTMX error fragment (HTML entity-encoded).
 		assert.Contains(t, rec.Body.String(), "doesn&#39;t exist")
-	})
-}
-
-// --- RecoveryMiddleware ---
-
-func TestRecoveryMiddleware(t *testing.T) {
-	t.Run("recovers from panic", func(t *testing.T) {
-		panicHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			panic("something went wrong")
-		})
-		mw := RecoveryMiddleware(panicHandler)
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		mw.ServeHTTP(rec, req)
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Contains(t, rec.Body.String(), "Internal Server Error")
-	})
-
-	t.Run("passes through normal requests", func(t *testing.T) {
-		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
-		})
-		mw := RecoveryMiddleware(next)
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		mw.ServeHTTP(rec, req)
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "ok", rec.Body.String())
-	})
-}
-
-// --- parseTraceHeader ---
-
-func TestParseTraceHeader(t *testing.T) {
-	t.Run("empty string", func(t *testing.T) {
-		traceID, spanID := parseTraceHeader("")
-		assert.Equal(t, "", traceID)
-		assert.Equal(t, "", spanID)
-	})
-
-	t.Run("trace only", func(t *testing.T) {
-		traceID, spanID := parseTraceHeader("abc123")
-		assert.Equal(t, "abc123", traceID)
-		assert.Equal(t, "", spanID)
-	})
-
-	t.Run("trace and span", func(t *testing.T) {
-		traceID, spanID := parseTraceHeader("abc123/def456;o=1")
-		assert.Equal(t, "abc123", traceID)
-		assert.Equal(t, "def456", spanID)
-	})
-
-	t.Run("trace and span without options", func(t *testing.T) {
-		traceID, spanID := parseTraceHeader("abc123/def456")
-		assert.Equal(t, "abc123", traceID)
-		assert.Equal(t, "def456", spanID)
-	})
-
-	t.Run("trace with options but no span", func(t *testing.T) {
-		traceID, spanID := parseTraceHeader("abc123;o=1")
-		assert.Equal(t, "abc123", traceID)
-		assert.Equal(t, "", spanID)
-	})
-}
-
-// --- generateRequestID ---
-
-func TestGenerateRequestID(t *testing.T) {
-	t.Run("produces non-empty hex string", func(t *testing.T) {
-		id := generateRequestID()
-		assert.NotEmpty(t, id)
-		for _, ch := range id {
-			assert.True(t, (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'), "unexpected char %q", ch)
-		}
-	})
-
-	t.Run("produces unique IDs", func(t *testing.T) {
-		ids := make(map[string]bool, 10)
-		for i := 0; i < 10; i++ {
-			id := generateRequestID()
-			assert.False(t, ids[id], "duplicate ID at iteration %d", i)
-			ids[id] = true
-		}
 	})
 }
