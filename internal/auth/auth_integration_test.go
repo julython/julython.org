@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"july/internal/db"
+	"july/internal/services"
 	"july/internal/testutil"
 )
 
@@ -481,6 +482,111 @@ func TestFullLoginLogoutFlow(t *testing.T) {
 	require.NoError(t, err)
 	resp3.Body.Close()
 	assert.Equal(t, http.StatusUnauthorized, resp3.StatusCode)
+}
+
+// ============================================================================
+// OAuth Linking Tests (multi-stage lookup integration)
+// ============================================================================
+
+func TestOAuthLoginLinksToWebhookUser(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+
+	// Step 1: Create a user via "webhook" — username + unverified email
+	user, err := env.Queries.CreateUser(context.Background(), db.CreateUserParams{
+		ID:       db.NewID(),
+		Name:     "Webhook Creator",
+		Username: "gh-webhookuser",
+		Role:     "user",
+	})
+	require.NoError(t, err)
+
+	// Add unverified email identifier (what webhook does)
+	_, err = env.Queries.UpsertUserIdentifier(context.Background(), db.UpsertUserIdentifierParams{
+		Value:     "email:webhook@example.com",
+		Type:      "email",
+		UserID:    user.ID,
+		Verified:  false,
+		IsPrimary: false,
+	})
+	require.NoError(t, err)
+
+	// Step 2: Simulate OAuth login — should find user by username, add github:<id>
+	oauthUser := services.OAuthUser{
+		ID:        "99999",
+		Provider:  "github",
+		Username:  "gh-webhookuser",
+		Name:      "Webhook Creator Updated",
+		AvatarURL: "https://avatars.example.com/webhook.png",
+		Emails:    []services.EmailAddress{{Email: "webhook@example.com", Primary: true, Verified: true}},
+	}
+
+	linkedUser, created, err := env.UserService.OAuthLoginOrRegister(context.Background(), oauthUser)
+	require.NoError(t, err)
+	assert.False(t, created, "should not create a new user — should find by username")
+	assert.Equal(t, user.ID, linkedUser.ID)
+
+	// Verify github:<id> identifier was added
+	_, err = env.Queries.GetUserIdentifier(context.Background(), "github:99999")
+	require.NoError(t, err, "github identifier should exist after OAuth login")
+
+	// Verify user name was updated from OAuth data
+	updatedUser, err := env.Queries.GetUserByID(context.Background(), linkedUser.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Webhook Creator Updated", updatedUser.Name)
+
+	// Verify avatar was updated from OAuth data
+	require.True(t, updatedUser.AvatarUrl.Valid)
+	assert.Equal(t, "https://avatars.example.com/webhook.png", db.StringFromNull(updatedUser.AvatarUrl))
+
+	// Verify original email identifier still exists (preserved, not overwritten)
+	_, err = env.Queries.GetUserIdentifier(context.Background(), "email:webhook@example.com")
+	require.NoError(t, err)
+}
+
+func TestOAuthLoginFindsUserByGithubId(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+
+	// Step 1: Create a user with an existing github:<id> identifier
+	user, err := env.Queries.CreateUser(context.Background(), db.CreateUserParams{
+		ID:       db.NewID(),
+		Name:     "Existing GitHub User",
+		Username: "gh-ghuser",
+		Role:     "user",
+	})
+	require.NoError(t, err)
+
+	// Add the github identifier directly (simulating prior OAuth login)
+	_, err = env.Queries.UpsertUserIdentifier(context.Background(), db.UpsertUserIdentifierParams{
+		Value:     "github:12345",
+		Type:      "github",
+		UserID:    user.ID,
+		Verified:  true,
+		IsPrimary: false,
+	})
+	require.NoError(t, err)
+
+	// Step 2: Simulate OAuth login with matching github ID
+	oauthUser := services.OAuthUser{
+		ID:        "12345",
+		Provider:  "github",
+		Username:  "gh-ghuser",
+		Name:      "GitHub User Updated",
+		AvatarURL: "https://avatars.example.com/ghuser.png",
+	}
+
+	linkedUser, created, err := env.UserService.OAuthLoginOrRegister(context.Background(), oauthUser)
+	require.NoError(t, err)
+	assert.False(t, created, "should not create a new user — should find by github:<id>")
+	assert.Equal(t, user.ID, linkedUser.ID)
+
+	// Verify user name was updated from OAuth data
+	updatedUser, err := env.Queries.GetUserByID(context.Background(), linkedUser.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "GitHub User Updated", updatedUser.Name)
+
+	// Verify avatar was updated from OAuth data
+	require.True(t, updatedUser.AvatarUrl.Valid)
+	assert.Equal(t, "https://avatars.example.com/ghuser.png", db.StringFromNull(updatedUser.AvatarUrl))
 }
 
 // ============================================================================

@@ -578,77 +578,92 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.Equal(t, user.ID, commitUserID)
 	})
 
-	t.Run("same new user commits multiple times", func(t *testing.T) {
-		// Create a user via webhook (by username)
-		payload1 := webhooks.GitHubPushEvent{
+	t.Run("same user commits from different email — matched by username", func(t *testing.T) {
+		// First commit creates a user via the multi-stage lookup:
+		// Stage 1: look up by username (not found)
+		// Stage 3: create user by username, add unverified email identifier
+		firstPayload := webhooks.GitHubPushEvent{
 			Ref: "refs/heads/main",
 			Repository: webhooks.GitHubRepo{
-				ID:       50003,
-				Name:     "multi-repo",
-				FullName: "repmulti/multi-repo",
-				HTMLURL:  "https://github.com/repmulti/multi-repo",
+				ID:       50006,
+				Name:     "first-repo",
+				FullName: "crossemail/first-repo",
+				HTMLURL:  "https://github.com/crossemail/first-repo",
 			},
 			Commits: []webhooks.GitHubCommit{
 				{
-					ID:        "multi-hash-001",
-					Message:   "First commit from repmulti",
+					ID:        "cross-email-001",
+					Message:   "First commit with original email",
 					Timestamp: time.Now(),
-					URL:       "https://github.com/repmulti/multi-repo/commit/abc",
-					Author:    webhooks.GitHubAuthor{Name: "Repmulti", Email: "repmulti@example.com", Username: "repmulti", AvatarURL: "https://example.com/first.png"},
+					URL:       "https://github.com/crossemail/first-repo/commit/abc",
+					Author:    webhooks.GitHubAuthor{Name: "Cross Email", Email: "original@example.com", Username: "crossemail", AvatarURL: "https://example.com/original.png"},
 				},
 			},
 		}
-		resp1 := testutil.PostJSON(t, env, "/api/v1/github", payload1)
-		assert.Equal(t, http.StatusOK, resp1.StatusCode)
+		firstResp := testutil.PostJSON(t, env, "/api/v1/github", firstPayload)
+		assert.Equal(t, http.StatusOK, firstResp.StatusCode)
 
-		var result1 webhooks.ProcessResult
-		require.NoError(t, json.NewDecoder(resp1.Body).Decode(&result1))
-		assert.Equal(t, 1, result1.Created)
+		var firstResult webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(firstResp.Body).Decode(&firstResult))
+		assert.Equal(t, 1, firstResult.Created)
 
-		// Get the created user
-		user, err := env.Queries.GetUserByUsername(t.Context(), "gh-repmulti")
+		// Find the created user
+		user, err := env.Queries.GetUserByUsername(t.Context(), "gh-crossemail")
 		require.NoError(t, err)
 
-		// Second commit with updated name and avatar
-		payload2 := webhooks.GitHubPushEvent{
+		// Verify user has unverified email identifier (IsPrimary=false)
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:original@example.com")
+		require.NoError(t, err)
+		id, err := env.Queries.GetUserIdentifier(t.Context(), "email:original@example.com")
+		require.NoError(t, err)
+		assert.False(t, id.Verified, "email should not be verified from webhook")
+		assert.False(t, id.IsPrimary, "email should not be primary from webhook")
+
+		// Second commit from DIFFERENT email — should still find user by username
+		secondPayload := webhooks.GitHubPushEvent{
 			Ref: "refs/heads/main",
 			Repository: webhooks.GitHubRepo{
-				ID:       50004,
-				Name:     "multi-repo-two",
-				FullName: "repmulti/multi-repo-two",
-				HTMLURL:  "https://github.com/repmulti/multi-repo-two",
+				ID:       50007,
+				Name:     "second-repo",
+				FullName: "crossemail/second-repo",
+				HTMLURL:  "https://github.com/crossemail/second-repo",
 			},
 			Commits: []webhooks.GitHubCommit{
 				{
-					ID:        "multi-hash-002",
-					Message:   "Second commit from repmulti",
+					ID:        "cross-email-002",
+					Message:   "Second commit with different email",
 					Timestamp: time.Now(),
-					URL:       "https://github.com/repmulti/multi-repo-two/commit/def",
-					Author:    webhooks.GitHubAuthor{Name: "Repmulti Updated", Email: "repmulti@example.com", Username: "repmulti", AvatarURL: "https://example.com/second.png"},
+					URL:       "https://github.com/crossemail/second-repo/commit/def",
+					Author:    webhooks.GitHubAuthor{Name: "Cross Email", Email: "other@example.com", Username: "crossemail", AvatarURL: "https://example.com/other.png"},
 				},
 			},
 		}
-		resp2 := testutil.PostJSON(t, env, "/api/v1/github", payload2)
-		assert.Equal(t, http.StatusOK, resp2.StatusCode)
+		secondResp := testutil.PostJSON(t, env, "/api/v1/github", secondPayload)
+		assert.Equal(t, http.StatusOK, secondResp.StatusCode)
 
-		var result2 webhooks.ProcessResult
-		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&result2))
-		assert.Equal(t, 1, result2.Created)
+		var secondResult webhooks.ProcessResult
+		require.NoError(t, json.NewDecoder(secondResp.Body).Decode(&secondResult))
+		assert.Equal(t, 1, secondResult.Created)
 
-		// Verify same user was used (not a duplicate)
-		secondUser, err := env.Queries.GetUserByUsername(t.Context(), "gh-repmulti")
+		// Both commits link to the SAME user (matched by username, not email)
+		commit1, err := env.Queries.GetCommitByHashStr(t.Context(), "cross-email-001")
 		require.NoError(t, err)
-		assert.Equal(t, user.ID, secondUser.ID)
-
-		// User's name stays as original — webhooks don't update user records
-
-		// Verify the second commit links to the same user
-		commit2, err := env.Queries.GetCommitByHashStr(t.Context(), "multi-hash-002")
+		commit2, err := env.Queries.GetCommitByHashStr(t.Context(), "cross-email-002")
 		require.NoError(t, err)
-		require.True(t, commit2.UserID.Valid)
-		commit2UserID, err := uuid.FromBytes(commit2.UserID.Bytes[:])
+
+		commit1ID, err := uuid.FromBytes(commit1.UserID.Bytes[:])
 		require.NoError(t, err)
-		assert.Equal(t, user.ID, commit2UserID)
+		commit2ID, err := uuid.FromBytes(commit2.UserID.Bytes[:])
+		require.NoError(t, err)
+		assert.Equal(t, user.ID, commit1ID)
+		assert.Equal(t, user.ID, commit2ID, "different email commit should link to same user")
+
+		// Original email identifier preserved
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:original@example.com")
+		require.NoError(t, err)
+		// New email added as unverified identifier
+		_, err = env.Queries.GetUserIdentifier(t.Context(), "email:other@example.com")
+		require.NoError(t, err)
 	})
 
 	t.Run("empty username no email match: no user association", func(t *testing.T) {

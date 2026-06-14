@@ -20,34 +20,48 @@ type WebhookOpts struct {
 	RepoName    string
 	FullName    string
 	HTMLURL     string
-	Description string
 	Private     bool
 	Fork        bool
 	ForksCount  int
 	Watchers    int
+	Description string
 	Author      webhooks.GitHubAuthor
+	Username    string
+	AvatarURL   string
 	Files       []string
 	Message     string
 	Timestamp   time.Time
 }
 
+// buildAuthor applies optional username and avatar overrides to an author.
+func buildAuthor(base webhooks.GitHubAuthor, username string, avatarURL string) webhooks.GitHubAuthor {
+	if username != "" {
+		base.Username = username
+	}
+	if avatarURL != "" {
+		base.AvatarURL = avatarURL
+	}
+	return base
+}
+
 // WebhookPayload builds a minimal valid GitHubPushEvent with sensible defaults.
 // Apply option funcs to override specific fields.
 func WebhookPayload(hash string, opts ...func(*WebhookOpts)) webhooks.GitHubPushEvent {
+	author := webhooks.GitHubAuthor{Name: "Test User", Email: "test@example.com"}
 	o := &WebhookOpts{
-		Ref:       "refs/heads/main",
-		RepoID:    12345,
-		RepoName:  "test-repo",
-		FullName:  "testuser/test-repo",
-		HTMLURL:   "https://github.com/testuser/test-repo",
-		Author:    webhooks.GitHubAuthor{Name: "Test User", Email: "test@example.com"},
-		Message:   "Add a meaningful change",
-		Files:     []string{"main.go"},
-		Timestamp: time.Now(),
+		Ref:      "refs/heads/main",
+		RepoID:   12345,
+		RepoName: "test-repo",
+		FullName: "testuser/test-repo",
+		HTMLURL:  "https://github.com/testuser/test-repo",
+		Author:   author,
+		Message:  "Add a meaningful change",
+		Files:    []string{"main.go"},
 	}
 	for _, opt := range opts {
 		opt(o)
 	}
+	author = buildAuthor(o.Author, o.Username, o.AvatarURL)
 	return webhooks.GitHubPushEvent{
 		Ref:    o.Ref,
 		Forced: o.Forced,
@@ -61,16 +75,14 @@ func WebhookPayload(hash string, opts ...func(*WebhookOpts)) webhooks.GitHubPush
 			ForksCount:  o.ForksCount,
 			Watchers:    o.Watchers,
 		},
-		Commits: []webhooks.GitHubCommit{
-			{
-				ID:        hash,
-				Message:   o.Message,
-				Timestamp: o.Timestamp,
-				URL:       o.HTMLURL + "/commit/" + hash,
-				Author:    o.Author,
-				Added:     o.Files,
-			},
-		},
+		Commits: []webhooks.GitHubCommit{{
+			ID:        hash,
+			Message:   o.Message,
+			Timestamp: o.Timestamp,
+			URL:       o.HTMLURL + "/commit/" + hash,
+			Author:    author,
+			Added:     o.Files,
+		}},
 	}
 }
 
