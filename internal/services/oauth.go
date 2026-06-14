@@ -172,7 +172,7 @@ func (g *GitHubOAuth) fetchUser(ctx context.Context, token string) (OAuthUser, e
 	return OAuthUser{
 		ID:        fmt.Sprintf("%d", data.ID),
 		Provider:  "github",
-		Username:  data.Login,
+		Username:  "gh-" + data.Login,
 		Name:      data.Name,
 		AvatarURL: data.AvatarURL,
 	}, nil
@@ -359,7 +359,7 @@ func (g *GitLabOAuth) GetUser(ctx context.Context, tokens OAuthTokens) (OAuthUse
 	user := OAuthUser{
 		ID:        fmt.Sprintf("%d", data.ID),
 		Provider:  "gitlab",
-		Username:  data.Username,
+		Username:  "gl-" + data.Username,
 		Name:      data.Name,
 		AvatarURL: data.AvatarURL,
 		Data: map[string]any{

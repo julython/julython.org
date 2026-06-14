@@ -87,7 +87,7 @@ SELECT
     c.message,
     c.timestamp,
     c.author,
-    u.username,
+    u.name,
     u.avatar_url,
     p.slug AS project_slug,
     p.name AS project_name

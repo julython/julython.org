@@ -489,7 +489,7 @@ SELECT
     c.message,
     c.timestamp,
     c.author,
-    u.username,
+    u.name,
     u.avatar_url,
     p.slug AS project_slug,
     p.name AS project_name
@@ -512,7 +512,7 @@ type GetRecentCommitsRow struct {
 	Message     string      `json:"message"`
 	Timestamp   time.Time   `json:"timestamp"`
 	Author      pgtype.Text `json:"author"`
-	Username    pgtype.Text `json:"username"`
+	Name        pgtype.Text `json:"name"`
 	AvatarUrl   pgtype.Text `json:"avatar_url"`
 	ProjectSlug string      `json:"project_slug"`
 	ProjectName string      `json:"project_name"`
@@ -533,7 +533,7 @@ func (q *Queries) GetRecentCommits(ctx context.Context, arg GetRecentCommitsPara
 			&i.Message,
 			&i.Timestamp,
 			&i.Author,
-			&i.Username,
+			&i.Name,
 			&i.AvatarUrl,
 			&i.ProjectSlug,
 			&i.ProjectName,

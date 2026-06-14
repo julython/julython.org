@@ -386,7 +386,8 @@ func (h *Handler) getOrCreateUserForCommit(ctx context.Context, author GitHubAut
 
 	// Stage 1: Look up by username (skip if empty — webhooks may not include it)
 	if author.Username != "" {
-		if user, err := h.queries.GetUserByUsername(ctx, author.Username); err == nil {
+		prefixedUsername := "gh-" + author.Username
+		if user, err := h.queries.GetUserByUsername(ctx, prefixedUsername); err == nil {
 			// Found by username — add email as unverified identifier
 			// (name/avatar update is handled by processCommits with dedup)
 			// Use UpsertUserIdentifierUnverified to preserve any existing
@@ -417,10 +418,11 @@ func (h *Handler) getOrCreateUserForCommit(ctx context.Context, author GitHubAut
 	var result commitUserResult
 	if author.Username != "" {
 		userID := db.NewID()
+		prefixedUsername := "gh-" + author.Username
 		user, err := h.queries.CreateUser(ctx, db.CreateUserParams{
 			ID:        userID,
 			Name:      author.Name,
-			Username:  author.Username,
+			Username:  prefixedUsername,
 			AvatarUrl: db.Text(author.AvatarURL),
 			Role:      "user",
 		})
