@@ -21,7 +21,7 @@ templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 	@layout.Layout(ld) {
 		<main class="max-w-7xl mx-auto px-4 py-8">
 			<div class="flex items-center gap-4 mb-8">
-				<span class="text-3xl font-bold text-july-400">{ data.Username }</span>
+				<span class="text-3xl font-bold text-july-400">{ data.Name }</span>
 			</div>
 			if len(data.Boards) == 0 {
 				@noBoardsState()

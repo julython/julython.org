@@ -48,7 +48,7 @@ func (h *gameHandler) Home(w http.ResponseWriter, r *http.Request) {
 
 	dailyCommits, maxDay := h.getDailyCommits(ctx, game.ID, game.StartsAt)
 
-	recentCommits := h.getRecentCommits(ctx, game.ID, maxDay)
+	recentCommits := h.getRecentCommits(ctx, game.ID, 10)
 
 	data := HomeData{
 		Game: GameStats{

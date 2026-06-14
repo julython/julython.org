@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -52,6 +53,32 @@ func UUIDFromPg(u pgtype.UUID) uuid.UUID {
 		return uuid.UUID{}
 	}
 	return u.Bytes
+}
+
+// NullString returns an invalid (NULL) pgtype.Text.
+func NullString() pgtype.Text {
+	return pgtype.Text{}
+}
+
+// JSONB serializes a map into a JSONB byte slice.
+// Returns {} if the input is nil.
+func JSONB(data map[string]any) []byte {
+	if data == nil {
+		return []byte("{}")
+	}
+	b, _ := json.Marshal(data)
+	return b
+}
+
+// FromJSONB deserializes a JSONB byte slice into a map.
+// Returns nil if the input is empty.
+func FromJSONB(data []byte) map[string]any {
+	if len(data) == 0 {
+		return nil
+	}
+	var m map[string]any
+	json.Unmarshal(data, &m)
+	return m
 }
 
 // GetCommitByHashStr looks up a commit by its hash string.

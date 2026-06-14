@@ -3,14 +3,12 @@ package services
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog/log"
 
 	"july/internal/db"
@@ -121,7 +119,7 @@ func (s *UserService) UpsertIdentifier(
 		UserID:    userID,
 		Verified:  verified,
 		IsPrimary: primary,
-		Data:      toJSONB(encrypted),
+		Data:      db.JSONB(encrypted),
 	})
 	if err != nil {
 		return db.UserIdentifier{}, false, err
@@ -149,8 +147,8 @@ func (s *UserService) OAuthLoginOrRegister(ctx context.Context, oauth OAuthUser)
 		// Update user info
 		err = s.queries.UpdateUser(ctx, db.UpdateUserParams{
 			ID:        user.ID,
-			Name:      toNullString(coalesce(oauth.Name, user.Name)),
-			AvatarUrl: toNullString(coalesce(oauth.AvatarURL, stringFromNull(user.AvatarUrl))),
+			Name:      db.Text(coalesce(oauth.Name, user.Name)),
+			AvatarUrl: db.Text(coalesce(oauth.AvatarURL, db.StringFromNull(user.AvatarUrl))),
 		})
 		if err != nil {
 			return db.User{}, false, err
@@ -192,12 +190,43 @@ func (s *UserService) OAuthLoginOrRegister(ctx context.Context, oauth OAuthUser)
 		return *existingUser, false, nil
 	}
 
+	// 2b. Check if a webhook-created user has this username (Task 1 created users)
+	// OAuth usernames are prefixed (gh-xxx, gl-xxx). Webhook users are also prefixed.
+	if oauth.Username != "" {
+		if user, err := s.queries.GetUserByUsername(ctx, oauth.Username); err == nil {
+			// Link OAuth identity to this webhook-created user
+			if _, _, err := s.UpsertIdentifier(ctx, user.ID, idType, oauth.ID, oauth.Data, true, false); err != nil {
+				return db.User{}, false, err
+			}
+
+			// Update name and avatar from OAuth data
+			if err := s.queries.UpdateUser(ctx, db.UpdateUserParams{
+				ID:        user.ID,
+				Name:      db.Text(coalesce(oauth.Name, user.Name)),
+				AvatarUrl: db.Text(coalesce(oauth.AvatarURL, db.StringFromNull(user.AvatarUrl))),
+			}); err != nil {
+				return db.User{}, false, err
+			}
+
+			// Refresh user after update
+			user, _ = s.queries.GetUserByID(ctx, user.ID)
+
+			// Add verified emails from OAuth
+			if _, err := s.upsertEmails(ctx, user.ID, verifiedEmails); err != nil {
+				return db.User{}, false, err
+			}
+
+			logger.Info().Str("user_id", user.ID.String()).Str("username", oauth.Username).Msg("oauth linked to webhook-created user")
+			return user, false, nil
+		}
+	}
+
 	// 3. Create new user
 	newUser, err := s.queries.CreateUser(ctx, db.CreateUserParams{
 		ID:        db.NewID(),
 		Username:  oauth.Username,
 		Name:      oauth.Name,
-		AvatarUrl: toNullString(oauth.AvatarURL),
+		AvatarUrl: db.Text(oauth.AvatarURL),
 		Role:      "user",
 	})
 	if err != nil {
@@ -226,7 +255,7 @@ func (s *UserService) GetOAuthToken(ctx context.Context, userID uuid.UUID, provi
 	if err != nil {
 		return "", err
 	}
-	data := fromJSONB(identifier.Data)
+	data := db.FromJSONB(identifier.Data)
 	token, _ := data["access_token"].(string)
 	if token == "" {
 		return "", fmt.Errorf("no access token found for %s", provider)
@@ -344,37 +373,6 @@ func coalesce(a, b string) string {
 		return a
 	}
 	return b
-}
-
-func toNullString(s string) pgtype.Text {
-	if s == "" {
-		return pgtype.Text{Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
-}
-
-func stringFromNull(t pgtype.Text) string {
-	if t.Valid {
-		return t.String
-	}
-	return ""
-}
-
-func toJSONB(data map[string]any) []byte {
-	if data == nil {
-		return []byte("{}")
-	}
-	b, _ := json.Marshal(data)
-	return b
-}
-
-func fromJSONB(data []byte) map[string]any {
-	if len(data) == 0 {
-		return nil
-	}
-	var m map[string]any
-	json.Unmarshal(data, &m)
-	return m
 }
 
 // UpdateProfile updates the user's name and avatar URL

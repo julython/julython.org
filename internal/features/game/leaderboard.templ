@@ -13,6 +13,7 @@ import (
 type LeaderboardEntry struct {
 	Rank         int
 	UserID       string
+	Name         string
 	Username     string
 	AvatarURL    string
 	CommitCount  int
@@ -127,7 +128,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		<td class="px-6 py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", entry.Username)) } class="flex items-center gap-3 group">
 				@avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg)
-				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Username }</span>
+				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Name }</span>
 			</a>
 		</td>
 		<td class="px-6 py-4 text-right text-gray-400">{ fmt.Sprintf("%d", entry.CommitCount) }</td>

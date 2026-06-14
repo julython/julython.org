@@ -42,7 +42,7 @@ func (h *gameHandler) Activity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get recent commits for the activity page
-	recentCommits := h.getRecentCommits(ctx, game.ID, 50)
+	recentCommits := h.getRecentCommits(ctx, game.ID, 10)
 
 	layout := layout.LayoutData{
 		Title:       "Recent Activity",
@@ -68,8 +68,8 @@ func (h *gameHandler) getRecentCommits(ctx context.Context, gameID uuid.UUID, li
 	for i, row := range rows {
 		username := row.Author.String
 		avatarURL := ""
-		if row.Username.Valid {
-			username = row.Username.String
+		if row.Name.Valid {
+			username = row.Name.String
 		}
 		if row.AvatarUrl.Valid {
 			avatarURL = row.AvatarUrl.String

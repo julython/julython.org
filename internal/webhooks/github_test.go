@@ -447,7 +447,7 @@ func TestGitHubWebhook(t *testing.T) {
 
 	t.Run("finds existing user by username", func(t *testing.T) {
 		// User "frank" exists with username "frank"
-		user := testutil.CreateUser(t, env, "frank", "Frank Username")
+		user := testutil.CreateUser(t, env, "gh-frank", "Frank Username")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "frank@example.com", false, true)
 
 		// Commit has matching username "frank" → should find by username, not email
@@ -502,7 +502,7 @@ func TestGitHubWebhook(t *testing.T) {
 	t.Run("existing user with verified email not overwritten by webhook", func(t *testing.T) {
 		// User "eve" has a verified email. A commit from eve matching her email
 		// should NOT overwrite her verified/primary status.
-		user := testutil.CreateUser(t, env, "eve", "Eve Developer")
+		user := testutil.CreateUser(t, env, "gh-eve", "Eve Developer")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "eve@verified.com", true, true)
 
 		payload := webhooks.GitHubPushEvent{
@@ -561,7 +561,7 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.Equal(t, 1, result.Created)
 
 		// Verify user was created
-		user, err := env.Queries.GetUserByUsername(t.Context(), "newgrit")
+		user, err := env.Queries.GetUserByUsername(t.Context(), "gh-newgrit")
 		require.NoError(t, err)
 		assert.Equal(t, "New Grizzard", user.Name)
 
@@ -606,7 +606,7 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.Equal(t, 1, result1.Created)
 
 		// Get the created user
-		user, err := env.Queries.GetUserByUsername(t.Context(), "repmulti")
+		user, err := env.Queries.GetUserByUsername(t.Context(), "gh-repmulti")
 		require.NoError(t, err)
 
 		// Second commit with updated name and avatar
@@ -636,7 +636,7 @@ func TestGitHubWebhook(t *testing.T) {
 		assert.Equal(t, 1, result2.Created)
 
 		// Verify same user was used (not a duplicate)
-		secondUser, err := env.Queries.GetUserByUsername(t.Context(), "repmulti")
+		secondUser, err := env.Queries.GetUserByUsername(t.Context(), "gh-repmulti")
 		require.NoError(t, err)
 		assert.Equal(t, user.ID, secondUser.ID)
 

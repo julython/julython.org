@@ -3,8 +3,8 @@ package testutil
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,8 +30,9 @@ import (
 	"july/internal/config"
 	"july/internal/db"
 
-	"july/internal/services"
 	"july/internal/i18n"
+	"july/internal/services"
+
 	"github.com/google/uuid"
 )
 
@@ -50,6 +51,7 @@ type TestEnv struct {
 	Pool        *pgxpool.Pool
 	Queries     *db.Queries
 	GameService *services.GameService
+	UserService *services.UserService
 }
 
 // SetupSharedEnv initializes the shared container, pool, and config once.
@@ -157,6 +159,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		Server:      server,
 		Client:      server.Client(),
 		GameService: services.NewGameService(queries),
+		UserService: services.MustNewUserService(queries, sharedCfg.Database.EncKey),
 	}
 }
 
