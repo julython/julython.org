@@ -47,7 +47,7 @@ make i18n        # Sync missing i18n keys
 
 Conventions are documented in [`docs/templ-conventions.md`](docs/templ-conventions.md) — read that before editing `.templ` files.
 
-- **ABSOLUTELY NEVER use the `Edit` tool on `.templ` or `.go` files.** They use tabs and `Edit` mangles tabs during transport. Use `Write` (full-file rewrite) for all `.templ` and `.go` files.
+- **.templ and .go files use tabs for indentation. Never use spaces to indent these files.** The transport layer mangles tabs, so be careful when editing — always preserve existing tab indentation.
 - UI components are `.templ` files — run `make templ` to regenerate Go code
 - Styling is Tailwind — run `make tailwind` to update assets
 
