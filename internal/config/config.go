@@ -82,7 +82,7 @@ type Webhooks struct {
 }
 
 func Load() (*Config, error) {
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Info().Msg("Error loading .env file")
 	}

@@ -40,21 +40,23 @@ type GitHubPushEvent struct {
 }
 
 type GitHubRepo struct {
-	ID            int64  `json:"id"`
-	Name          string `json:"name"`
-	FullName      string `json:"full_name"`
+	ID            int64       `json:"id"`
+	Name          string      `json:"name"`
+	FullName      string      `json:"full_name"`
 	Owner         GitHubOwner `json:"owner"`
-	HTMLURL       string `json:"html_url"`
-	Description   string `json:"description"`
-	DefaultBranch string `json:"default_branch"`
-	Private       bool   `json:"private"`
-	Fork          bool   `json:"fork"`
-	ForksCount    int    `json:"forks_count"`
-	Watchers      int    `json:"watchers_count"`
+	Organization  string      `json:"organization"`
+	HTMLURL       string      `json:"html_url"`
+	Description   string      `json:"description"`
+	DefaultBranch string      `json:"default_branch"`
+	Private       bool        `json:"private"`
+	Fork          bool        `json:"fork"`
+	ForksCount    int         `json:"forks_count"`
+	Watchers      int         `json:"watchers_count"`
 }
 
 type GitHubOwner struct {
-	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type GitHubCommit struct {
@@ -69,10 +71,8 @@ type GitHubCommit struct {
 }
 
 type GitHubAuthor struct {
-	Name       string `json:"name"`
-	Email      string `json:"email"`
-	Username   string `json:"username"`
-	AvatarURL  string `json:"avatar_url"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // FileChange represents a file modification in a commit
@@ -173,6 +173,14 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid payload", http.StatusBadRequest)
 		return
 	}
+	hookLog.Debug().
+		Str("ref", event.Ref).
+		Str("repo", event.Repository.FullName).
+		Str("owner", event.Repository.Owner.Name).
+		Str("organization", event.Repository.Organization).
+		Bool("private", event.Repository.Private).
+		Int("commits", len(event.Commits)).
+		Msg("parsed webhook payload")
 	// Skip pushes not targeting the repo default branch (see repository.default_branch in payload).
 	if !isPushToDefaultBranch(event.Ref, event.Repository) {
 		w.WriteHeader(http.StatusOK)
@@ -208,7 +216,7 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.processCommits(ctx, project, event.Commits)
+	result, err := h.processCommits(ctx, project, event.Repository, event.Commits)
 	if err != nil {
 		logger.Error().
 			Err(err).
@@ -271,7 +279,8 @@ func githubSlug(fullName string) string {
 }
 
 func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Project, error) {
-	owner := repo.Owner.Login
+	// Use login first (from API), then fall back to name (from webhooks)
+	owner := repo.Owner.Name
 	return h.queries.UpsertProjectByRepoID(ctx, db.UpsertProjectByRepoIDParams{
 		ID:          db.NewID(),
 		Url:         repo.HTMLURL,
@@ -294,7 +303,7 @@ type ProcessResult struct {
 	Skipped  int `json:"skipped"`
 }
 
-func (h *Handler) processCommits(ctx context.Context, project db.Project, commits []GitHubCommit) (*ProcessResult, error) {
+func (h *Handler) processCommits(ctx context.Context, project db.Project, repo GitHubRepo, commits []GitHubCommit) (*ProcessResult, error) {
 	result := &ProcessResult{Received: len(commits)}
 	logger := log.Ctx(ctx)
 
@@ -315,7 +324,7 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, commit
 		logger.Info().Str("hash", c.ID).Msg("commit not found, will create")
 
 		// Two-stage lookup: email identifier → username
-		userResult, err := h.getOrCreateUserForCommit(ctx, c.Author)
+		userResult, err := h.getOrCreateUserForCommit(ctx, repo, c.Author)
 		if err != nil {
 			logger.Error().Err(err).Str("hash", c.ID).Msg("failed to resolve user for commit")
 			result.Skipped++
@@ -371,39 +380,39 @@ type commitUserResult struct {
 }
 
 // getOrCreateUserForCommit performs a two-stage lookup to find or create
-// a user for a commit author. The lookup chain is:
+// a user for a commit. For non-organization repositories, the owner field
+// (repo.Owner.Login) is used as the user identifier — creating or finding
+// a user with username gh-{owner}. For organization repositories, falls
+// back to stage 2 (email lookup) only.
 //
-//	1. username = githubUsername (primary — commit authors declare who they are)
-//	2. email:<address> (fallback — catches users with private/unverified emails)
-//	3. If not found, create a new user with username, name, avatar_url
+// Lookup chain for personal repos:
+//
+//  1. username = repo.Owner (primary — the repo owner is who we track)
+//  2. email:<address> (fallback — catches users with private/unverified emails)
+//  3. If not found, create a new user with username gh-{owner}, name, avatar_url
+//
+// Lookup chain for organization repos:
+//
+//  1. email:<address> (fallback only — the repo has an owner/org, users are identified by email)
 //
 // If a user was found/created in step 1 or 3 (not by email), an unverified
 // email:<address> identifier is added so future commits can find them by email too.
 // GitHub push events do not include avatar_url, so user avatar is populated
 // via OAuth login (Task 2).
-func (h *Handler) getOrCreateUserForCommit(ctx context.Context, author GitHubAuthor) (commitUserResult, error) {
+func (h *Handler) getOrCreateUserForCommit(ctx context.Context, repo GitHubRepo, author GitHubAuthor) (commitUserResult, error) {
 	logger := log.Ctx(ctx)
 
-	// Stage 1: Look up by username (skip if empty — webhooks may not include it)
-	if author.Username != "" {
-		prefixedUsername := "gh-" + author.Username
-		if user, err := h.queries.GetUserByUsername(ctx, prefixedUsername); err == nil {
-			// Found by username — add email as unverified identifier
-			// (name/avatar update is handled by processCommits with dedup)
-			// Use UpsertUserIdentifierUnverified to preserve any existing
-			// verified/is_primary flags on pre-existing identifiers.
-			h.queries.UpsertUserIdentifierUnverified(ctx, db.UpsertUserIdentifierUnverifiedParams{
-				Value:     "email:" + author.Email,
-				Type:      "email",
-				UserID:    user.ID,
-				Verified:  false,
-				IsPrimary: false,
-			})
-			return commitUserResult{
-				UserID:       db.UUID(user.ID),
-				FoundByEmail: false,
-			}, nil
-		}
+	owner := repo.Owner.Name
+	prefixedUsername := "gh-" + owner
+
+	logger.Info().Str("Username", prefixedUsername).Msg("Looking for existing user")
+
+	// Stage 1: Look up by repo owner username
+	if user, err := h.queries.GetUserByUsername(ctx, prefixedUsername); err == nil {
+		return commitUserResult{
+			UserID:       db.UUID(user.ID),
+			FoundByEmail: false,
+		}, nil
 	}
 
 	// Stage 2: Look up by email identifier
@@ -414,44 +423,40 @@ func (h *Handler) getOrCreateUserForCommit(ctx context.Context, author GitHubAut
 		}, nil
 	}
 
-	// Stage 3: Create a new user (only if we have a username)
-	var result commitUserResult
-	if author.Username != "" {
-		userID := db.NewID()
-		prefixedUsername := "gh-" + author.Username
-		user, err := h.queries.CreateUser(ctx, db.CreateUserParams{
-			ID:        userID,
-			Name:      author.Name,
-			Username:  prefixedUsername,
-			AvatarUrl: db.Text(author.AvatarURL),
-			Role:      "user",
-		})
-		if err != nil {
-			return commitUserResult{}, err
-		}
-		// Add email as unverified identifier.
-		// Use UpsertUserIdentifierUnverified to preserve any existing
-		// verified/is_primary flags on pre-existing identifiers.
-		h.queries.UpsertUserIdentifierUnverified(ctx, db.UpsertUserIdentifierUnverifiedParams{
-			Value:     "email:" + author.Email,
-			Type:      "email",
-			UserID:    user.ID,
-			Verified:  false,
-			IsPrimary: false,
-		})
-		logger.Info().
-			Str("user_id", user.ID.String()).
-			Str("username", author.Username).
-			Str("email", author.Email).
-			Msg("created new user from commit")
-		result.UserID = db.UUID(user.ID)
-		// FoundByEmail stays false — created by username
-	} else {
-		// No username available and no email match — return null user ID
-		// (commit will be created without user association, same as before)
-		logger.Info().Str("email", author.Email).Msg("no user found, committing without user association")
+	if repo.Organization != "" {
+		return commitUserResult{
+			UserID:       db.NullUUID(),
+			FoundByEmail: false,
+		}, nil
 	}
-	return result, nil
+	// Stage 3: Create a new user with owner username
+	userID := db.NewID()
+	user, err := h.queries.CreateUser(ctx, db.CreateUserParams{
+		ID:       userID,
+		Name:     author.Name,
+		Username: prefixedUsername,
+		Role:     "user",
+	})
+	if err != nil {
+		return commitUserResult{}, err
+	}
+	// Add email as unverified identifier.
+	h.queries.UpsertUserIdentifierUnverified(ctx, db.UpsertUserIdentifierUnverifiedParams{
+		Value:     "email:" + author.Email,
+		Type:      "email",
+		UserID:    user.ID,
+		Verified:  false,
+		IsPrimary: false,
+	})
+	logger.Info().
+		Str("user_id", user.ID.String()).
+		Str("owner", owner).
+		Str("email", author.Email).
+		Msg("created new user from commit")
+	return commitUserResult{
+		UserID:       db.UUID(user.ID),
+		FoundByEmail: false,
+	}, nil
 }
 
 // IsValidCommit checks if a commit should be counted for points

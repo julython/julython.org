@@ -16,9 +16,11 @@ type DayCommits struct {
 
 // RecentCommit is a shared type used by multiple features (home, activity).
 type RecentCommit struct {
-	Username  string
-	AvatarURL string
-	Message   string
-	Project   string
-	TimeAgo   string
+	Username    string
+	Author      string
+	AvatarURL   string
+	Message     string
+	Project     string
+	ProjectName string
+	TimeAgo     string
 }

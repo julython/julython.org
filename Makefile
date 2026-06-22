@@ -100,7 +100,7 @@ $(WEBLLM_VENDOR_DIR)/lib/index.js:
 compose-deps:  ## Run shared services
 	$(COMPOSE_CMD) up -d postgres adminer db_create
 
-up:  ## Run the shared services in docker
+up: generate ## Run the shared services in docker
 	$(COMPOSE_CMD) up api smee --build
 
 down:  ## Stop the docker services
@@ -159,16 +159,17 @@ tailwind:  ## Build Tailwind + asset manifest (needs make setup for web/vendor W
 test-clean:
 	go clean -testcache
 
-test:  ## Run the tests
-	gotestsum --format short -- -race ./...
+tests  ?= ./...
+test:  ## Run the tests (args: e.g. make test tests=./internal/webhooks/ args="-run TestFoo/Bar")
+	gotestsum --format short -- -race $(tests) $(args)
 
 test-v: test-clean  ## Run the tests with verbose output
-	gotestsum --format short-verbose -- -race ./...
+	gotestsum --format short-verbose -- -race $(tests) $(args)
 
 test-dots:  ## Run the tests with dot output
-	gotestsum --format dots -- -race ./...
+	gotestsum --format dots -- -race  $(tests) $(args)
 
-test-cover:  ## Run tests and generate coverage report
+test-cover: test-clean  ## Run tests and generate coverage report
 	gotestsum --format testname -- -coverprofile=coverage.out -coverpkg=./internal/... ./...
 	go tool cover -func=coverage.out | grep -v 100.0
 	go tool cover -html=coverage.out -o coverage.html
@@ -202,6 +203,9 @@ migrate-prod-down:  ## Migrate production down
 
 migrate-prod-status:  ## Show production status
 	migrate -path migrations -database "$(PROD_DATABASE_URL)" version
+
+create-game:  ## Create a new game
+	go run ./cmd/creategame $(args)
 
 # ============================================
 # i18n

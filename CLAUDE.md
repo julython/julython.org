@@ -30,9 +30,11 @@ make migrate-up  # Run database migrations up
 make i18n        # Sync missing i18n keys
 ```
 
-## Critical Rules
+## Testing
 
 - **Always use `make test` to run tests.** Never use `go test` directly.
+- Default is `./...` (all packages). Override with `make test tests=./internal/webhooks/`.
+  Combine with test flags: `make test tests=./internal/webhooks/ args="-count=1 -run TestFoo/Bar"`.
 
 ## Migrations
 

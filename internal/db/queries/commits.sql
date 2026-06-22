@@ -88,6 +88,7 @@ SELECT
     c.timestamp,
     c.author,
     u.name,
+    u.username,
     u.avatar_url,
     p.slug AS project_slug,
     p.name AS project_name

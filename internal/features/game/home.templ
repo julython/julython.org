@@ -172,11 +172,11 @@ templ RecentCommitRow(commit RecentCommit) {
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
-						{ commit.Username }
+						{ commit.Author }
 					</a>
 					<span class="text-gray-500">pushed to </span>
 					<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", commit.Project)) } class="text-gray-300 hover:text-july-400 transition-colors">
-						{ commit.Project }
+						{ commit.ProjectName }
 					</a>
 				</p>
 				<p class="text-sm text-gray-500 truncate" title={ commit.Message }>

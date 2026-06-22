@@ -586,9 +586,9 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Username)
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Author)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/home.templ`, Line: 175, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/home.templ`, Line: 175, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -612,9 +612,9 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Project)
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(commit.ProjectName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/home.templ`, Line: 179, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/home.templ`, Line: 179, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
