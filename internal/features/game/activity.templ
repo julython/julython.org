@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"july/internal/components/avatar"
 	"july/internal/components/layout"
 )
@@ -39,12 +40,12 @@ templ RecentActivityRow(commit RecentCommit) {
 			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, avatar.AvatarMd)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
-					<a href="/player/{commit.Username}" class="font-medium text-white hover:text-july-400 transition-colors">
-						{ commit.Username }
+					<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
+						{ commit.Author }
 					</a>
 					<span class="text-gray-500">pushed to </span>
-					<a href="/projects/{commit.Project}" class="text-gray-300 hover:text-july-400 transition-colors">
-						{ commit.Project }
+					<a href={ templ.SafeURL(fmt.Sprintf("/project/%s", commit.Project)) } class="text-gray-300 hover:text-july-400 transition-colors">
+						{ commit.ProjectName }
 					</a>
 				</p>
 				<p class="text-sm text-gray-500 truncate" title="{commit.Message}">
