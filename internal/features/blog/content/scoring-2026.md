@@ -21,115 +21,61 @@ With our new scoring we attempt to address these issues by tracking the health o
 
 The best analogy for the period we're in: "Civil engineers and architects draw the plans for a new building, then hand it off to a team of workers who actually do the work." The key difference with AI is that labor is incredibly fast and cheap. The cost of writing greenfield software is racing toward zero, but the costs associated with maintaining it have not changed - and left unchecked, will only get worse.
 
-## Server scan vs. browser AI
+## How scoring works
 
 We care a lot about [your privacy](/privacy) and don't want to hand code and IP to "Big Tech" for optional features. Julython has always been about open source, and that has not changed.
 
-**Level 1 heuristics are different from the AI buttons.** For **public** GitHub repositories, our **servers** fetch what they need from GitHub to run the checklist scan (that is how L1 works). We **do not** run that scan on **private** repositories. So yes — for public repos, analysis data is pulled server-side from GitHub; we are not claiming your tree never touches Julython infrastructure during L1.
+When a **push event fires on your repository's main (or default) branch**, our server scans the code from GitHub and evaluates eight metrics using simple heuristics - no AI, no LLM, no guesses. Each metric is scored 0–10 based on what it finds: a README that's substantial enough, test files in standard folders, CI configuration, dependency management, and so on.
 
-**Optional L2 / L3 metric reviews** (the **AI** buttons) run **in your browser**: we prefer **Chrome’s built-in AI** (Gemini Nano via the Prompt API) when available so you don’t have to download a large model; otherwise **WebLLM** (one-time download, cached in your browser) on WebGPU-capable browsers. The prompt is built from **L1 results** (scores, flags, and small snippets we already stored) — we are **not** uploading your full repository to Julython to run that model step; inference stays on your device. Julython is community-run and independent — we're doing this because we love it.
+The scan runs automatically. For **public** repositories, the server fetches the repo tree and file contents from GitHub to score against. For **private** repositories, no server-side analysis runs - you get zero points from those. So yes - for public repos, analysis data is pulled server-side from GitHub.
 
-## How the Analysis Works
+### Levels (0–3): how deep goes your project
 
-### Level 1 — heuristics (server-side for public GitHub)
+The L1 scan assigns each metric a **score** (0–10) based on heuristic signals. But a metric with a partial score shouldn't count the same as a fully complete one. That's where **levels** come in.
 
-For **public** GitHub repositories, **Level 1** is **fast heuristic** scoring (partial credit **0–10** per metric) from checklist-style signals. The **authoritative** run is **server-side** when we receive a **push webhook** on the default branch. You can also **re-scan** from the **project page** (if you own the repo) via the same server-side scan. **Private** repositories are skipped (we persist visibility from the webhook).
+**Level 1** means the metric has at least one positive signal from the L1 scan (score > 0). Once you have any L1 evidence for a metric, you can **claim a higher level** - L2 or L3 - by confirming additional quality markers in your code. Higher levels multiply your L1 score:
 
-**First progress bar:** you only get **L1** (the first tier) when the heuristic **score is greater than zero** — a scan that finds nothing useful stays at **L0** for that metric.
+| Level | Multiplier | Meaning |
+|---|---|---|
+| 0 | — | No analysis row (never scanned) |
+| 1 | × 2 | Basic signals present (L1 scan found something) |
+| 2 | × 4 | Quality confirmed - you've verified deeper markers |
+| 3 | × 6 | High quality - all quality markers met |
 
-Each metric row’s **`data`** JSON stores both the scored checklist (boolean signals) and a small **`prompt_context`** object (paths and text snippets) so **L2/L3** grading in the browser can build prompts without re-downloading the whole repository.
+**Board points** combine **score** (0–10) and **level** (0–3) per metric: **points = score × level × 2** per metric, capped at **60** per metric when score is 10 and level is 3. Across **8** metrics, a repo can earn up to **480** points; up to **3** repos per game → **1,440** points max per player.
 
-### Level 2 / Level 3 — browser AI (optional)
+## Browser LLM (experimental)
 
-For **L2** and **L3**, you run the model **in your browser** (Chrome built-in AI or WebLLM — see above). **AI grading** (POST **`/api/projects/{projectID}/analysis`**) is allowed once that metric already has **heuristic L1** with **any** partial score **greater than zero** — you do **not** need a perfect 10/10 checklist before trying the model. If L1 is still **0** for a metric, the UI explains why and links to [help](/help#analysis-metrics); improve the repo and **Rescan analysis (L1)** first.
-
-The **L2** pass is the step where the model gives feedback and a suggested score; **L3** is a stricter “excellent” tier when you want to go further.
-
-```mermaid
-flowchart LR
-    H[Heuristic_L1_partial]
-    AI[Browser_AI_L2_or_L3]
-    H --> AI
-```
-
-**Board points** combine **score** (0–10) and **level** (0–3) per metric so partial heuristics are not treated like a perfect tile: **points ≈ score × level × 2** per metric, capped at **60** per metric when score is 10 and level is 3. Across **8** metrics, a repo can earn up to **480** points; up to **3** repos per game → **1,440** points max per player.
-
-You don't have to use a downloaded WebLLM build — if Chrome’s built-in model is available, that’s enough for the **browser** review step. **L1** already used a public server-side scan; **L2/L3** inference stays local to your machine.
-
-### Example: What the browser sees (simplified)
-
-The server sends a **system** instruction (act as a concise code-quality coach) plus a **user** prompt built from the repo name, the L1 score, short “what good looks like” text for that metric, and either file snippets from **`prompt_context`** or a readable list of heuristic signals. The model is asked for actionable feedback and an updated **0–10** view. For saving **L2** tier data, the client parses a JSON object shaped like:
-
-```json
-{ "score": 7, "message": "Short paragraph with concrete suggestions." }
-```
-
-(Exact prompt text evolves in the app; the important part is **L1 evidence in → browser model → structured score + message out**.)
+We really are into 'free' LLM's over here and have experimented by putting a chat box on the project page. This runs entirely in your browser so we don't have to pay for it (we are cheap). But you can ask targeted questions and we'll send a bit of metadata about your project to your browser. This will allow the LLM that has a very limited context window to answer some basic questions about what you need to do to increase a certain score.
 
 ## The Metrics
 
 These are the Level 1 checks we have defined so far. The list will evolve over time - we'll adjust thresholds as we learn what signals actually matter.
 
-1. **README**
-
-   - Do you have a README and is it substantial?
-   - Does it have install / getting started instructions?
-   - Does it have usage instructions?
-   - Does it have badges like build status?
-
-2. **Tests**
-
-   - Can we find tests in standard folders (e.g. `tests/`)?
-   - Are there multiple test files?
-   - Is a standard framework in use, or are there instructions for running tests?
-   - Is test coverage reported?
-
-3. **CI**
-
-   - Are you using a CI system?
-   - Do you have lint / test / build steps defined?
-
-4. **Structure**
-
-   - Is the code organized properly or documented?
-   - Is there an ignore file?
-   - Is there a LICENSE?
-
-5. **Linting**
-
-   - Is linting configured?
-   - Is pre-commit or a similar tool set up?
-
-6. **Dependencies**
-
-   - Are dependencies declared in a standard file?
-   - Is Dependabot or Renovate configured?
-   - Is there a lock file?
-
-7. **Documentation**
-
-   - Is there a `docs/` folder?
-   - Is there a CHANGELOG?
-   - Is there a CONTRIBUTING guide?
-   - Is there an ARCHITECTURE document?
-   - Are there Architecture Decision Records (ADRs)?
-
-8. **AI Readiness**
-   - Are there agent rules or an `AGENTS.md`?
-   - Are agent rules succinct, with longer detail broken into separate documents?
-   - Does the codebase have clear module boundaries and inline comments that help an LLM navigate it?
+| Metric | Key Signals |
+|---|---|
+| **README** | Substantial README with install/getting started and usage instructions; badges like build status |
+| **Tests** | Tests in standard folders (e.g. `tests/`); multiple test files; standard framework; test coverage reported |
+| **CI** | CI system in use; lint / test / build steps defined |
+| **Structure** | Code organized properly or documented; `.gitignore` present; LICENSE present |
+| **Linting** | Linting configured; pre-commit or similar tool set up |
+| **Dependencies** | Dependencies declared in a standard file; Dependabot or Renovate configured; lock file present |
+| **Documentation** | `docs/` folder; CHANGELOG; CONTRIBUTING guide; ARCHITECTURE document; Architecture Decision Records (ADRs) |
+| **AI Readiness** | Agent rules or `AGENTS.md`; succinct rules with longer detail in separate docs; clear module boundaries and inline comments for LLM navigation |
 
 Each time you run an analysis we'll update the scores, reflecting them on your game board. Level 1 checks can change over time, so scores can go down as well as up. For example, if we raise the required coverage threshold to 70% and your ratio drops after a big refactor, you'll lose those points until you bring it back up.
 
 ## Scoring Limits
 
-Going forward we are limiting players to **3 repos per game**. Only the owner of a repo (as determined by GitHub or GitLab) can update the analysis for that project.
+Going forward we are limiting players to **3 repos per game**. Only the owner (or an admin) can trigger a rescan of the L1 analysis for that project.
 
 With any competition there will be attempts to game the system. We'll be looking at ways to verify scores are legitimate - most likely through some form of community review for players who are making things less fun for everyone else.
 
 ## But How Do I Win?
 
-That's really up to you. If you learn something or make your projects better, that's winning in our minds. Competition is one major driver, so we plan to add other ways to score points - some ideas include bonus points for joining teams or adding features while maintaining L2/L3 metrics. Nothing concrete yet, but stay tuned.
+That's really up to you. If you learn something or make your projects better, that's winning in our minds. Competition is one major driver, so we plan to add other ways to score points - some ideas include bonus points for joining teams or achieving high L2/L3 levels on metrics. Nothing concrete yet, but stay tuned.
+
+We're also thinking about **low-cost ways** to use open-source LLMs to enhance scoring - possibly leveraging edge LLMs running in the browser, similar to the existing chat feature. If we ever do bring AI into scoring it'll be browser-side only, respecting the same privacy-first philosophy we've built Julython on.
 
 Stay tuned for more details!
 

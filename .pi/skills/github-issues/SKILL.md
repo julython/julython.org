@@ -275,49 +275,59 @@ gh issue edit 42 --body "Duplicate of #100. See also #205."
 gh issue close 43 --close-as-duplicate 100
 ```
 
-## Work on a Milestone
+## List Issues (Browse)
 
-When the user says "work on milestone X" or "continue milestone X":
+Use this section when the user doesn't know what to work on and wants to browse available issues.
 
-1. **List open issues in the milestone**:
-   ```bash
-   gh issue list --repo julython/julython.org --milestone "<milestone-name>" \
-     --json number,title,state,assignee,labels
-   ```
-   Present a numbered list to the user.
+- **"Show me open issues"** (no filter):
+  ```bash
+  gh issue list --repo julython/julython.org --state open \
+    --json number,title,state,assignee,labels
+  ```
+  Present a numbered list. **Do NOT randomly pick one.**
 
-2. **Ask the user which issue to work on** — do NOT randomly pick one.
-   Show the list, let them pick.
+- **"Show me open issues in milestone X"**:
+  ```bash
+  gh issue list --repo julython/julython.org --state open --milestone "<milestone-name>" \
+    --json number,title,state,assignee,labels
+  ```
+  Present a numbered list. **Do NOT randomly pick one.**
 
-3. **View and work on the selected issue**:
+Once the user picks an issue number, follow the "Work on an Issue" section above.
+
+## Work on an Issue
+
+When the user says "work on issue X", "work on #X", or hands you a bare issue number:
+
+1. **View the selected issue**:
    ```bash
    gh issue view 42
    ```
 
-4. **Create a new branch with the ticket number**:
+2. **Create a new branch with the ticket number**:
    ```bash
    git checkout -b 42-short-description
    ```
    The branch name should start with the issue number followed by a descriptive suffix (kebab-case).
 
-5. **Wait for user confirmation before implementing**.
+3. **Wait for user confirmation before implementing**.
    Present a summary of what you plan to do and wait for explicit approval before making changes.
    Do NOT proceed with implementation until the user confirms.
 
-6. **After user approval, implement changes and commit**:
+4. **Implement changes after approval**.
+   Proceed with the changes and print a summary when done. DO NOT commit until user explicitly approves.
+
+5. **Wait for user approval, then commit**:
    - Write a commit message following the standard format:
      - **Subject line:** short description under 50 characters (use the imperative mood, e.g. `refactor: move SQL queries to internal/db/queries`). Prefix with `feat:`, `fix:`, `chore:`, `refactor:`, etc. as appropriate.
      - **Body (optional):** blank line after the subject, then bullet points in [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) describing what was done and why.
-     - **Footer:** append `Closes: #<num>` (replace `<num>` with the issue number) — this auto-closes the issue when merged.
-   - Push the branch and create a PR linking to the issue.
-   **NEVER close an issue before a PR is created.**
-   Only close issues when a PR has been merged and resolves the issue.
-   The issue stays open until the PR is merged.
+     - **Footer:** append `Closes: #<num>` (replace `<num>` with the issue number).
+   **NEVER close an issue without explicit user approval.**
 
 ### Full workflow example
 
 ```bash
-# Step 1: List open issues
+# Step 1: List open issues (optionally filtered by milestone)
 gh issue list --repo julython/julython.org --milestone "player-boards" \
   --json number,title,state,assignee,labels | \
   jq -r '[.[] | select(.state=="open")] | sort_by(.number) | to_entries[] | "  \(.key + 1). #\(.value.number): \(.value.title)"'
@@ -335,7 +345,11 @@ git checkout -b 180-add-owner-field
 # Step 4: WAIT for user confirmation — present plan and get approval
 # (Do NOT implement changes until user says go)
 
-# Step 5: After confirmation, implement changes and commit
+# Step 5: After confirmation, implement changes
+
+# Step 6: WAIT for user confirmation - present summary and ask for approval to commit
+
+# Step 7: commit changes (after user approval)
 # Subject line under 50 chars, then body bullets (GFM), then closing footer
 git add .
 git commit -m "feat: add owner field to projects and enforce public-only
@@ -346,18 +360,15 @@ git commit -m "feat: add owner field to projects and enforce public-only
 - Update documentation references
 
 Closes: #180"
-git push -u origin 180-add-owner-field
-# Then create the PR via gh pr create, linking to #180
+
+# Step 8: after the initial commit, follow up changes should amend the original commit unless the user asks for a separate commit.
 ```
 
 ### IMPORTANT: Issue lifecycle rules
-- **Never close an issue before a PR exists.** Always create a PR first.
-- Only close issues when a PR is merged, or explicitly when the user asks you to.
-- If you are implementing work from an issue, always create a branch and PR.
-- Use `gh issue close` only when explicitly told to close, and only after
-  confirming a PR exists or has been merged.
+- **Never close an issue without explicit user approval.**
+- Only close issues when explicitly told to close by the user.
+- If you are implementing work from an issue, always create a branch.
 - **Always include `Closes: #<num>` in commit messages** for the issue you are working on.
-  GitHub will auto-close the issue when the PR with that commit is merged.
 
 ### Reference GitHub docs
 - `gh issue --help` — full CLI reference

@@ -65,7 +65,7 @@ func TestParseMermaid(t *testing.T) {
 	posts, err := All()
 	require.NoError(t, err)
 
-	scoring, ok := findPostBySlug(posts, "scoring-2026")
+	scoring, ok := findPostBySlug(posts, "rewrite-python-go")
 	require.True(t, ok)
 
 	t.Run("detects mermaid blocks", func(t *testing.T) {

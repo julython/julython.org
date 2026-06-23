@@ -82,3 +82,30 @@ button.htmx-request .htmx-busy  { display: inline-flex; }
   display: flex;
   justify-content: center;
 }
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+.prose thead th {
+  background: var(--color-surface-light);
+  color: var(--color-july-300);
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--color-july-500);
+}
+.prose tbody td,
+.prose tbody th {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+.prose tbody tr:last-child td {
+  border-bottom: none;
+}
+.prose tbody tr:hover {
+  background: rgb(255 255 255 / 0.03);
+}
