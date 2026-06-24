@@ -280,7 +280,7 @@ func TestGetPlayerBoardIds(t *testing.T) {
 	})
 }
 
-// --- ListPlayersWithBoards (leaderboard) ---
+// --- GetLeaderboard (leaderboard with board totals) ---
 
 func TestListPlayersWithBoards(t *testing.T) {
 	ctx := context.Background()
@@ -324,12 +324,15 @@ func TestListPlayersWithBoards(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rows, err := env.Queries.ListPlayersWithBoards(ctx, game.ID)
+		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
+			GameID:     game.ID,
+			LimitCount: 100,
+		})
 		require.NoError(t, err)
 		require.Len(t, rows, 2)
 
 		// Find each player by ID
-		var row1, row2 db.ListPlayersWithBoardsRow
+		var row1, row2 db.GetLeaderboardRow
 		for _, r := range rows {
 			if r.ID == player.ID {
 				row1 = r
@@ -344,7 +347,10 @@ func TestListPlayersWithBoards(t *testing.T) {
 	})
 
 	t.Run("players with no boards get total 0", func(t *testing.T) {
-		rows, err := env.Queries.ListPlayersWithBoards(ctx, game.ID)
+		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
+			GameID:     game.ID,
+			LimitCount: 100,
+		})
 		require.NoError(t, err)
 		require.Len(t, rows, 2)
 
@@ -378,10 +384,13 @@ func TestListPlayersWithBoards(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rows, err := env.Queries.ListPlayersWithBoards(ctx, game.ID)
+		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
+			GameID:     game.ID,
+			LimitCount: 100,
+		})
 		require.NoError(t, err)
 
-		var row db.ListPlayersWithBoardsRow
+		var row db.GetLeaderboardRow
 		for _, r := range rows {
 			if r.ID == player.ID {
 				row = r
@@ -452,9 +461,12 @@ func TestPlayerBoardsFullWorkflow(t *testing.T) {
 	assertPgUUIDEqual(t, pgid(b3.ID), p.Board3ID)
 
 	// Step 5: Check leaderboard total (10 + 20 + 30 = 60)
-	rows, err := env.Queries.ListPlayersWithBoards(ctx, game.ID)
+	rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
+		GameID:     game.ID,
+		LimitCount: 100,
+	})
 	require.NoError(t, err)
-	var row db.ListPlayersWithBoardsRow
+	var row db.GetLeaderboardRow
 	for _, r := range rows {
 		if r.ID == player.ID {
 			row = r
@@ -487,7 +499,10 @@ func TestPlayerBoardsFullWorkflow(t *testing.T) {
 	assertPgUUIDEqual(t, pgid(replaceBoard.ID), p.Board2ID)
 	assertPgUUIDEqual(t, pgid(b3.ID), p.Board3ID)
 
-	rows, err = env.Queries.ListPlayersWithBoards(ctx, game.ID)
+	rows, err = env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
+		GameID:     game.ID,
+		LimitCount: 100,
+	})
 	require.NoError(t, err)
 	for _, r := range rows {
 		if r.ID == player.ID {
