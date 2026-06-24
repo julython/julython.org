@@ -52,11 +52,11 @@ func (h *gameHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 			Rank:         offset + i + 1,
 			UserID:       row.UserID.String(),
 			Username:     row.Username,
-			Name:       row.Name,
+			Name:         row.Name,
 			AvatarURL:    avatarURL,
 			CommitCount:  int(row.CommitCount),
 			ProjectCount: int(row.ProjectCount),
-			Points:       int(row.Points),
+			Points:       int(row.BoardTotal),
 		}
 	}
 

@@ -92,8 +92,8 @@ type Querier interface {
 	// Return the 3 board IDs for a player.  Callers can join boards on
 	// these IDs when displaying the leaderboard.
 	GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (GetPlayerBoardIdsRow, error)
-	// Return the sum of points for all boards assigned to a player.
-	// Uses OR conditions so NULL parameters are safely ignored.
+	// Return the sum of L1-scanned verified_points for all boards assigned
+	// to a player, falling back to initial points when unverified.
 	GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTotalParams) (int32, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
@@ -132,11 +132,6 @@ type Querier interface {
 	ListBannedUsers(ctx context.Context, limitCount int32) ([]User, error)
 	ListGames(ctx context.Context, arg ListGamesParams) ([]Game, error)
 	ListPendingReports(ctx context.Context, limitCount int32) ([]ListPendingReportsRow, error)
-	// Leaderboard with per-player board totals computed via lateral join.
-	// Projects board_N_id columns directly from players so the lateral
-	// subquery can reference them (PostgreSQL cannot see through a
-	// subquery boundary into the base table from within LATERAL).
-	ListPlayersWithBoards(ctx context.Context, gameID uuid.UUID) ([]ListPlayersWithBoardsRow, error)
 	ListPublicTeams(ctx context.Context, arg ListPublicTeamsParams) ([]Team, error)
 	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]ListTeamMembersRow, error)
 	ListUserTeams(ctx context.Context, userID uuid.UUID) ([]ListUserTeamsRow, error)
@@ -151,6 +146,9 @@ type Querier interface {
 	// Requires the metric to already be at L1 (enforced in the handler).
 	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
 	UpdateBoardVerifiedPoints(ctx context.Context, arg UpdateBoardVerifiedPointsParams) (Board, error)
+	// Set verified_points = total_score for all boards attached to a project.
+	// total_score is the sum of all metric scores from L1 scans — no further math.
+	UpdateBoardVerifiedPointsByProjectID(ctx context.Context, arg UpdateBoardVerifiedPointsByProjectIDParams) error
 	UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error
 	UpdateProjectService(ctx context.Context, arg UpdateProjectServiceParams) (Project, error)
 	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error

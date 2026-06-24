@@ -115,5 +115,21 @@ func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy
 	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
+
+	// Update verified_points for all boards of this project.
+	totalScore := 0
+	for _, mr := range results {
+		// TODO(rmyers): we need to add level to the scoring
+		totalScore += int(mr.Score * 1 * 2)
+	}
+	if totalScore > 0 {
+		if err := s.queries.UpdateBoardVerifiedPointsByProjectID(ctx, db.UpdateBoardVerifiedPointsByProjectIDParams{
+			ProjectID:      project.ID,
+			VerifiedPoints: int32(totalScore),
+		}); err != nil {
+			log.Warn().Err(err).Str("project", project.Slug).Msg("failed to update board verified_points")
+		}
+	}
+
 	return nil
 }

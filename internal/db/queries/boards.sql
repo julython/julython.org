@@ -24,6 +24,11 @@ SELECT * FROM boards WHERE id = ANY(@board_ids::uuid[]) AND game_id = @game_id;
 -- name: GetBoardByProjectAndGame :one
 SELECT * FROM boards WHERE project_id = @project_id AND game_id = @game_id;
 
+-- name: UpdateBoardVerifiedPointsByProjectID :exec
+-- Set verified_points = total_score for all boards attached to a project.
+-- total_score is the sum of all metric scores from L1 scans — no further math.
+UPDATE boards SET verified_points = @verified_points WHERE project_id = @project_id;
+
 -- name: GetProjectLeaderboard :many
 SELECT b.*, p.name AS project_name, p.url AS project_url, p.slug
 FROM boards b

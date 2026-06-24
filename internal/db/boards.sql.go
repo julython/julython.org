@@ -175,6 +175,22 @@ func (q *Queries) UpdateBoardVerifiedPoints(ctx context.Context, arg UpdateBoard
 	return i, err
 }
 
+const updateBoardVerifiedPointsByProjectID = `-- name: UpdateBoardVerifiedPointsByProjectID :exec
+UPDATE boards SET verified_points = $1 WHERE project_id = $2
+`
+
+type UpdateBoardVerifiedPointsByProjectIDParams struct {
+	VerifiedPoints int32     `json:"verified_points"`
+	ProjectID      uuid.UUID `json:"project_id"`
+}
+
+// Set verified_points = total_score for all boards attached to a project.
+// total_score is the sum of all metric scores from L1 scans — no further math.
+func (q *Queries) UpdateBoardVerifiedPointsByProjectID(ctx context.Context, arg UpdateBoardVerifiedPointsByProjectIDParams) error {
+	_, err := q.db.Exec(ctx, updateBoardVerifiedPointsByProjectID, arg.VerifiedPoints, arg.ProjectID)
+	return err
+}
+
 const upsertBoard = `-- name: UpsertBoard :one
 
 INSERT INTO boards (id, game_id, project_id, points, potential_points, commit_count, contributor_count)

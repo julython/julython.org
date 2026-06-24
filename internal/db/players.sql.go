@@ -87,10 +87,24 @@ func (q *Queries) GetBoardByID(ctx context.Context, id uuid.UUID) (Board, error)
 }
 
 const getLeaderboard = `-- name: GetLeaderboard :many
-SELECT p.id, p.game_id, p.user_id, p.points, p.potential_points, p.verified_points, p.commit_count, p.project_count, p.analysis_status, p.last_analyzed_at, p.created_at, p.updated_at, p.board_1_id, p.board_2_id, p.board_3_id, u.name, u.username, u.avatar_url
+SELECT
+    p.id, p.game_id, p.user_id,
+    p.points, p.potential_points, p.verified_points,
+    p.commit_count, p.project_count, p.analysis_status,
+    p.last_analyzed_at, p.created_at, p.updated_at,
+    p.board_1_id, p.board_2_id, p.board_3_id,
+    u.name, u.username, u.avatar_url,
+    COALESCE(board_total.total, 0) AS board_total
 FROM players p
-JOIN users u ON u.id = p.user_id
-WHERE p.game_id = $1 AND u.is_active = true
+JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
+LEFT JOIN LATERAL (
+    SELECT COALESCE(
+        SUM(CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END),
+        0
+    )::int AS total
+    FROM boards b
+    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
+) AS board_total ON true
 ORDER BY
     CASE WHEN p.verified_points > 0 THEN p.verified_points ELSE p.potential_points END DESC,
     p.points DESC
@@ -122,6 +136,7 @@ type GetLeaderboardRow struct {
 	Name            string             `json:"name"`
 	Username        string             `json:"username"`
 	AvatarUrl       pgtype.Text        `json:"avatar_url"`
+	BoardTotal      int32              `json:"board_total"`
 }
 
 func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) ([]GetLeaderboardRow, error) {
@@ -152,6 +167,7 @@ func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) 
 			&i.Name,
 			&i.Username,
 			&i.AvatarUrl,
+			&i.BoardTotal,
 		); err != nil {
 			return nil, err
 		}
@@ -185,7 +201,10 @@ func (q *Queries) GetPlayerBoardIds(ctx context.Context, playerID uuid.UUID) (Ge
 }
 
 const getPlayerBoardTotal = `-- name: GetPlayerBoardTotal :one
-SELECT COALESCE(SUM(b.points), 0)::int AS total
+SELECT COALESCE(
+    SUM(
+        CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END
+    ), 0)::int AS total
 FROM boards b
 WHERE b.id = $1 OR b.id = $2 OR b.id = $3
 `
@@ -196,8 +215,8 @@ type GetPlayerBoardTotalParams struct {
 	Board3ID uuid.UUID `json:"board_3_id"`
 }
 
-// Return the sum of points for all boards assigned to a player.
-// Uses OR conditions so NULL parameters are safely ignored.
+// Return the sum of L1-scanned verified_points for all boards assigned
+// to a player, falling back to initial points when unverified.
 func (q *Queries) GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTotalParams) (int32, error) {
 	row := q.db.QueryRow(ctx, getPlayerBoardTotal, arg.Board1ID, arg.Board2ID, arg.Board3ID)
 	var total int32
@@ -351,58 +370,6 @@ func (q *Queries) GetPlayerWithBoards(ctx context.Context, arg GetPlayerWithBoar
 			&i.CommitCount,
 			&i.ProjectName,
 			&i.Slug,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPlayersWithBoards = `-- name: ListPlayersWithBoards :many
-SELECT
-    p.id, u.name, u.username, u.avatar_url,
-    COALESCE(board_total.total, 0) AS board_total
-FROM players p
-JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
-LEFT JOIN LATERAL (
-    SELECT COALESCE(SUM(b.points), 0)::int AS total
-    FROM boards b
-    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
-) AS board_total ON true
-ORDER BY board_total DESC
-`
-
-type ListPlayersWithBoardsRow struct {
-	ID         uuid.UUID   `json:"id"`
-	Name       string      `json:"name"`
-	Username   string      `json:"username"`
-	AvatarUrl  pgtype.Text `json:"avatar_url"`
-	BoardTotal int32       `json:"board_total"`
-}
-
-// Leaderboard with per-player board totals computed via lateral join.
-// Projects board_N_id columns directly from players so the lateral
-// subquery can reference them (PostgreSQL cannot see through a
-// subquery boundary into the base table from within LATERAL).
-func (q *Queries) ListPlayersWithBoards(ctx context.Context, gameID uuid.UUID) ([]ListPlayersWithBoardsRow, error) {
-	rows, err := q.db.Query(ctx, listPlayersWithBoards, gameID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListPlayersWithBoardsRow
-	for rows.Next() {
-		var i ListPlayersWithBoardsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Username,
-			&i.AvatarUrl,
-			&i.BoardTotal,
 		); err != nil {
 			return nil, err
 		}

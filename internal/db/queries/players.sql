@@ -49,10 +49,24 @@ UPDATE players SET
 WHERE id = @id;
 
 -- name: GetLeaderboard :many
-SELECT p.*, u.name, u.username, u.avatar_url
+SELECT
+    p.id, p.game_id, p.user_id,
+    p.points, p.potential_points, p.verified_points,
+    p.commit_count, p.project_count, p.analysis_status,
+    p.last_analyzed_at, p.created_at, p.updated_at,
+    p.board_1_id, p.board_2_id, p.board_3_id,
+    u.name, u.username, u.avatar_url,
+    COALESCE(board_total.total, 0) AS board_total
 FROM players p
-JOIN users u ON u.id = p.user_id
-WHERE p.game_id = @game_id AND u.is_active = true
+JOIN users u ON u.id = p.user_id AND p.game_id = @game_id AND u.is_active = true
+LEFT JOIN LATERAL (
+    SELECT COALESCE(
+        SUM(CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END),
+        0
+    )::int AS total
+    FROM boards b
+    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
+) AS board_total ON true
 ORDER BY
     CASE WHEN p.verified_points > 0 THEN p.verified_points ELSE p.potential_points END DESC,
     p.points DESC
@@ -96,26 +110,12 @@ WHERE p.id = @player_id;
 -- name: GetBoardByID :one
 SELECT * FROM boards WHERE id = @id;
 
--- name: ListPlayersWithBoards :many
--- Leaderboard with per-player board totals computed via lateral join.
--- Projects board_N_id columns directly from players so the lateral
--- subquery can reference them (PostgreSQL cannot see through a
--- subquery boundary into the base table from within LATERAL).
-SELECT
-    p.id, u.name, u.username, u.avatar_url,
-    COALESCE(board_total.total, 0) AS board_total
-FROM players p
-JOIN users u ON u.id = p.user_id AND p.game_id = @game_id AND u.is_active = true
-LEFT JOIN LATERAL (
-    SELECT COALESCE(SUM(b.points), 0)::int AS total
-    FROM boards b
-    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
-) AS board_total ON true
-ORDER BY board_total DESC;
-
 -- name: GetPlayerBoardTotal :one
--- Return the sum of points for all boards assigned to a player.
--- Uses OR conditions so NULL parameters are safely ignored.
-SELECT COALESCE(SUM(b.points), 0)::int AS total
+-- Return the sum of L1-scanned verified_points for all boards assigned
+-- to a player, falling back to initial points when unverified.
+SELECT COALESCE(
+    SUM(
+        CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END
+    ), 0)::int AS total
 FROM boards b
 WHERE b.id = @board_1_id OR b.id = @board_2_id OR b.id = @board_3_id;
