@@ -564,7 +564,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = avatar.AvatarFallback(commit.Username, commit.AvatarURL, AvatarSizeSm, commit.Name).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = avatar.AvatarFallback(commit.Username, commit.AvatarURL, AvatarSizeSm, commit.Author).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
