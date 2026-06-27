@@ -29,7 +29,7 @@ templ HomePage(ld layout.LayoutData, data HomeData) {
 templ Hero(game GameStats) {
 	<section class="relative overflow-hidden">
 		<div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent"></div>
-		<div class="max-w-7xl mx-auto px-4 py-16 sm:py-24 text-center relative">
+		<div class="max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-12 sm:py-16 md:py-24 text-center relative">
 			<div class="flex justify-center mb-6">
 				<div class="relative text-july-500">
 					@icons.JulythonLogoHero()
@@ -48,7 +48,7 @@ templ Hero(game GameStats) {
 
 templ InfoCards() {
 	<section class="border-y border-white/10 bg-surface-light/50">
-		<div class="max-w-7xl mx-auto px-4 py-12">
+		<div class="max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-8 sm:py-12">
 			<div class="grid md:grid-cols-3 gap-8">
 				@InfoCard("🐍", i18n.T(ctx, "WhatIsTitle"), i18n.T(ctx, "WhatIsBody"))
 				@InfoCard("📋", i18n.T(ctx, "RulesTitle"), i18n.T(ctx, "RulesBody", i18n.M{
@@ -93,7 +93,7 @@ func Unsafe(html string) templ.Component {
 }
 
 templ StatsSection(data HomeData) {
-	<section class="max-w-7xl mx-auto px-4 py-12">
+	<section class="max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-8 sm:py-12">
 		<div class="grid lg:grid-cols-3 gap-8">
 			<div class="lg:col-span-2">
 				<h2 class="text-2xl font-bold text-july-400 mb-6">
@@ -120,7 +120,7 @@ templ CommitHistogram(days []DayCommits, maxCount int) {
 				@HistogramBar(day, maxCount)
 			}
 		</div>
-		<div class="flex justify-between mt-4 text-xs text-gray-500">
+		<div class="flex justify-between mt-4 text-[8px] sm:text-xs text-gray-500">
 			<span>1</span>
 			<span>8</span>
 			<span>15</span>
@@ -166,8 +166,8 @@ templ RecentActivity(commits []RecentCommit) {
 }
 
 templ RecentCommitRow(commit RecentCommit) {
-	<div class="py-3 group">
-		<div class="flex items-start gap-3">
+	<div class="py-2 sm:py-3 group">
+		<div class="flex items-start gap-2 sm:gap-3">
 			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, AvatarSizeSm)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">

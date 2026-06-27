@@ -110,7 +110,7 @@ func Hero(game GameStats) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<section class=\"relative overflow-hidden\"><div class=\"absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent\"></div><div class=\"max-w-7xl mx-auto px-4 py-16 sm:py-24 text-center relative\"><div class=\"flex justify-center mb-6\"><div class=\"relative text-july-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<section class=\"relative overflow-hidden\"><div class=\"absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent\"></div><div class=\"max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-12 sm:py-16 md:py-24 text-center relative\"><div class=\"flex justify-center mb-6\"><div class=\"relative text-july-500\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -160,7 +160,7 @@ func InfoCards() templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<section class=\"border-y border-white/10 bg-surface-light/50\"><div class=\"max-w-7xl mx-auto px-4 py-12\"><div class=\"grid md:grid-cols-3 gap-8\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<section class=\"border-y border-white/10 bg-surface-light/50\"><div class=\"max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-8 sm:py-12\"><div class=\"grid md:grid-cols-3 gap-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -290,7 +290,7 @@ func StatsSection(data HomeData) templ.Component {
 			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<section class=\"max-w-7xl mx-auto px-4 py-12\"><div class=\"grid lg:grid-cols-3 gap-8\"><div class=\"lg:col-span-2\"><h2 class=\"text-2xl font-bold text-july-400 mb-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<section class=\"max-w-[95vw] sm:max-w-7xl mx-auto px-4 py-8 sm:py-12\"><div class=\"grid lg:grid-cols-3 gap-8\"><div class=\"lg:col-span-2\"><h2 class=\"text-2xl font-bold text-july-400 mb-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -384,7 +384,7 @@ func CommitHistogram(days []DayCommits, maxCount int) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><div class=\"flex justify-between mt-4 text-xs text-gray-500\"><span>1</span> <span>8</span> <span>15</span> <span>22</span> <span>31</span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><div class=\"flex justify-between mt-4 text-[8px] sm:text-xs text-gray-500\"><span>1</span> <span>8</span> <span>15</span> <span>22</span> <span>31</span></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -560,7 +560,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 			templ_7745c5c3_Var21 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"py-3 group\"><div class=\"flex items-start gap-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"py-2 sm:py-3 group\"><div class=\"flex items-start gap-2 sm:gap-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
