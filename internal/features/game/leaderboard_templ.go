@@ -210,7 +210,7 @@ func LeaderboardTable(data LeaderboardData) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Rank"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 94, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 94, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -223,7 +223,7 @@ func LeaderboardTable(data LeaderboardData) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Coder"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 95, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 95, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -236,7 +236,7 @@ func LeaderboardTable(data LeaderboardData) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Commits"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 96, Col: 113}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 96, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func LeaderboardTable(data LeaderboardData) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Projects"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 97, Col: 114}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 97, Col: 113}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -262,7 +262,7 @@ func LeaderboardTable(data LeaderboardData) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Points"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 98, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 98, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -383,7 +383,7 @@ func LeaderboardRow(entry LeaderboardEntry) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg, entry.Name).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -573,7 +573,7 @@ func ProjectLeaderboardTable(data ProjectLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Rank"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 168, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 168, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -586,7 +586,7 @@ func ProjectLeaderboardTable(data ProjectLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Project"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 169, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 169, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -599,7 +599,7 @@ func ProjectLeaderboardTable(data ProjectLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Contributors"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 170, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 170, Col: 117}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -612,7 +612,7 @@ func ProjectLeaderboardTable(data ProjectLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var30 string
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Commits"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 171, Col: 113}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 171, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -625,7 +625,7 @@ func ProjectLeaderboardTable(data ProjectLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var31 string
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Points"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 172, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 172, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -940,7 +940,7 @@ func LanguageLeaderboardTable(data LanguageLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Rank"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 241, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 241, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -953,7 +953,7 @@ func LanguageLeaderboardTable(data LanguageLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Language"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 242, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 242, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -966,7 +966,7 @@ func LanguageLeaderboardTable(data LanguageLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Commits"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 243, Col: 113}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 243, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -979,7 +979,7 @@ func LanguageLeaderboardTable(data LanguageLeaderboardData) templ.Component {
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Points"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 244, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/game/leaderboard.templ`, Line: 244, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {

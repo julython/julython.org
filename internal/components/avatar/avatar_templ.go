@@ -9,8 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 // AvatarFallback renders a user avatar: the image if URL is provided,
-// otherwise the first character of the username in a colored circle.
-func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Component {
+// otherwise displays initials derived from the display name, or a meaningful
+// character from the username when no display name exists.
+func AvatarFallback(username string, avatarURL string, size AvatarSize, displayName ...string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -32,7 +33,7 @@ func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Co
 		}
 		ctx = templ.ClearChildren(ctx)
 		if avatarURL != "" {
-			var templ_7745c5c3_Var2 = []any{avatarSizeClass(size)}
+			var templ_7745c5c3_Var2 = []any{AvatarSizeClass(size)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -44,7 +45,7 @@ func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Co
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.SafeURL(avatarURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/avatar/avatar.templ`, Line: 7, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/avatar/avatar.templ`, Line: 8, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -68,7 +69,7 @@ func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Co
 				return templ_7745c5c3_Err
 			}
 		} else {
-			var templ_7745c5c3_Var5 = []any{avatarCircleClass(size)}
+			var templ_7745c5c3_Var5 = []any{AvatarCircleClass(size)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -91,9 +92,9 @@ func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Co
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(string(username[0]))
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(AvatarInitials(username, displayName...))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/avatar/avatar.templ`, Line: 10, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/avatar/avatar.templ`, Line: 11, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -106,32 +107,6 @@ func AvatarFallback(username string, avatarURL string, size AvatarSize) templ.Co
 		}
 		return nil
 	})
-}
-
-func avatarSizeClass(size AvatarSize) string {
-	switch size {
-	case AvatarSm:
-		return "w-8 h-8 rounded-full flex-shrink-0"
-	case AvatarMd:
-		return "w-10 h-10 rounded-full flex-shrink-0"
-	case AvatarLg:
-		return "w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-july-500/50 transition-all"
-	default:
-		return "w-8 h-8 rounded-full flex-shrink-0"
-	}
-}
-
-func avatarCircleClass(size AvatarSize) string {
-	switch size {
-	case AvatarSm:
-		return "w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
-	case AvatarMd:
-		return "w-10 h-10 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
-	case AvatarLg:
-		return "w-10 h-10 rounded-full bg-gradient-to-br from-july-500 to-purple-600 flex items-center justify-center text-white font-bold"
-	default:
-		return "w-8 h-8 rounded-full bg-july-500/20 flex items-center justify-center text-july-400 text-sm flex-shrink-0"
-	}
 }
 
 var _ = templruntime.GeneratedTemplate

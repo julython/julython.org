@@ -127,7 +127,7 @@ templ LeaderboardRow(entry LeaderboardEntry) {
 		</td>
 		<td class="px-3 py-2 sm:px-6 sm:py-4">
 			<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", entry.Username)) } class="flex items-center gap-3 group">
-				@avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg)
+				@avatar.AvatarFallback(entry.Username, entry.AvatarURL, avatar.AvatarLg, entry.Name)
 				<span class="font-medium text-white group-hover:text-july-400 transition-colors">{ entry.Name }</span>
 			</a>
 		</td>

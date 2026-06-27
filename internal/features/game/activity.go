@@ -74,9 +74,14 @@ func (h *gameHandler) getRecentCommits(ctx context.Context, gameID uuid.UUID, li
 		if row.AvatarUrl.Valid {
 			avatarURL = row.AvatarUrl.String
 		}
+		displayName := ""
+		if row.Name.Valid {
+			displayName = row.Name.String
+		}
 
 		commits[i] = RecentCommit{
 			Username:    username,
+			Name:        displayName,
 			Author:      row.Author.String,
 			AvatarURL:   avatarURL,
 			Message:     row.Message,
