@@ -37,7 +37,7 @@ templ ActivityPage(ld layout.LayoutData, data ActivityData) {
 templ RecentActivityRow(commit RecentCommit) {
 	<div class="p-4 hover:bg-surface-light/50 transition-colors group">
 		<div class="flex items-start gap-3">
-			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, avatar.AvatarMd)
+			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, avatar.AvatarMd, commit.Name)
 			<div class="min-w-0 flex-1">
 				<p class="text-sm">
 					<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
