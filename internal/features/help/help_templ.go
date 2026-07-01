@@ -245,33 +245,20 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-lg text-gray-300 leading-relaxed\">Points are awarded to the committer, the project, and optionally to the location the user has specified in their profile.</p><div class=\"grid grid-cols-1 sm:grid-cols-2 gap-6\"><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-2\">Commits</h3><p class=\"text-gray-400\">You can score points by committing to a project that has a")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-lg text-gray-300 leading-relaxed\">Points come from two sources: your <strong>commits</strong> and the <strong>analysis</strong> of your projects. Each commit earns 1 point, and analysis scores your project across 8 metrics (README, tests, CI, structure, linting, dependencies, docs, AI readiness) on a 0–10 scale. Each metric has a level associated with it that multiplies the score for a max of 60 points. Up to 3 projects can be linked per player. See our detailed guide on the <a href=\"/blog/scoring-2026\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">blog</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("for")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/help/help.templ`, Line: 75, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/help/help.templ`, Line: 74, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " <a href=\"#webhook\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">web hook</a> setup. Each commit is worth 1 point.</p></div><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-2\">New Projects</h3><p class=\"text-gray-400\">Everytime a new project is added via")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/help/help.templ`, Line: 82, Col: 47}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " <a href=\"#webhook\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">web hook</a> points are awarded. Each new project is worth 10 points.</p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " a full breakdown of levels, multipliers, and how points are calculated.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -279,7 +266,7 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-lg text-gray-300 leading-relaxed\">Julython runs a server-side scan (L1) on linked GitHub repositories and scores each area—README, tests, CI, structure, and more—from 0 to 10. The optional <strong class=\"text-gray-200\">AI</strong> button on each metric uses your browser’s model only after L1 has found at least minimal evidence for that area (a <strong class=\"text-gray-200\">non-zero</strong> score).</p><p class=\"text-gray-400 text-sm leading-relaxed\">If a metric shows <strong class=\"text-gray-300\">0/10</strong>, improve that part of the project (for example add a README or CI workflow), then use <strong class=\"text-gray-300\">Rescan analysis (L1)</strong> on your project page. After the score updates, try the AI review again.</p><ul class=\"list-none space-y-3 text-gray-400 text-sm leading-relaxed\"><li id=\"analysis-metric-readme\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">README</strong> — README presence and basic quality.</li><li id=\"analysis-metric-tests\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Tests</strong> — Test files and configuration.</li><li id=\"analysis-metric-ci\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">CI</strong> — Continuous integration setup.</li><li id=\"analysis-metric-structure\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Structure</strong> — Repository layout and organization.</li><li id=\"analysis-metric-linting\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Linting</strong> — Linters and style checks.</li><li id=\"analysis-metric-deps\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Dependencies</strong> — Dependency manifests and updates.</li><li id=\"analysis-metric-docs\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Documentation</strong> — Docs beyond the README.</li><li id=\"analysis-metric-ai_ready\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">AI-ready</strong> — Tooling for AI-assisted development.</li></ul>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<p class=\"text-lg text-gray-300 leading-relaxed\">Julython runs a server-side scan (L1) on linked GitHub repositories and scores each area—README, tests, CI, structure, and more—from 0 to 10. The optional <strong class=\"text-gray-200\">AI</strong> button on each metric uses your browser’s model only after L1 has found at least minimal evidence for that area (a <strong class=\"text-gray-200\">non-zero</strong> score).</p><p class=\"text-gray-400 text-sm leading-relaxed\">If a metric shows <strong class=\"text-gray-300\">0/10</strong>, improve that part of the project (for example add a README or CI workflow), then use <strong class=\"text-gray-300\">Rescan analysis (L1)</strong> on your project page. After the score updates, try the AI review again.</p><ul class=\"list-none space-y-3 text-gray-400 text-sm leading-relaxed\"><li id=\"analysis-metric-readme\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">README</strong> — README presence and basic quality.</li><li id=\"analysis-metric-tests\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Tests</strong> — Test files and configuration.</li><li id=\"analysis-metric-ci\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">CI</strong> — Continuous integration setup.</li><li id=\"analysis-metric-structure\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Structure</strong> — Repository layout and organization.</li><li id=\"analysis-metric-linting\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Linting</strong> — Linters and style checks.</li><li id=\"analysis-metric-deps\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Dependencies</strong> — Dependency manifests and updates.</li><li id=\"analysis-metric-docs\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">Documentation</strong> — Docs beyond the README.</li><li id=\"analysis-metric-ai_ready\" class=\"scroll-mt-24\"><strong class=\"text-gray-300\">AI-ready</strong> — Tooling for AI-assisted development.</li></ul>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -287,7 +274,7 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"text-lg text-gray-300 leading-relaxed\">You should use your local time to 'start' at midnight on the first day of the month, and 'end' at midnight on the last day of the month.</p><div class=\"overflow-x-auto rounded-xl border border-purple-900\"><table class=\"w-full text-sm text-left\"><thead class=\"bg-purple-900/50 text-purple-300 uppercase text-xs tracking-wider\"><tr><th class=\"px-4 py-3\">Event</th><th class=\"px-4 py-3\">Start</th><th class=\"px-4 py-3\">End</th></tr></thead> <tbody class=\"divide-y divide-purple-900/40\"><tr class=\"bg-gray-800/60 hover:bg-gray-800 transition-colors\"><th class=\"px-4 py-3 font-medium text-gray-200\">Julython</th><td class=\"px-4 py-3 text-gray-400\">July 1st</td><td class=\"px-4 py-3 text-gray-400\">July 31st</td></tr><tr class=\"bg-gray-800/60 hover:bg-gray-800 transition-colors\"><th class=\"px-4 py-3 font-medium text-gray-200\">J(an)ulython</th><td class=\"px-4 py-3 text-gray-400\">January 1st</td><td class=\"px-4 py-3 text-gray-400\">January 31st</td></tr></tbody></table></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-lg text-gray-300 leading-relaxed\">You should use your local time to 'start' at midnight on the first day of the month, and 'end' at midnight on the last day of the month.</p><div class=\"overflow-x-auto rounded-xl border border-purple-900\"><table class=\"w-full text-sm text-left\"><thead class=\"bg-purple-900/50 text-purple-300 uppercase text-xs tracking-wider\"><tr><th class=\"px-4 py-3\">Event</th><th class=\"px-4 py-3\">Start</th><th class=\"px-4 py-3\">End</th></tr></thead> <tbody class=\"divide-y divide-purple-900/40\"><tr class=\"bg-gray-800/60 hover:bg-gray-800 transition-colors\"><th class=\"px-4 py-3 font-medium text-gray-200\">Julython</th><td class=\"px-4 py-3 text-gray-400\">July 1st</td><td class=\"px-4 py-3 text-gray-400\">July 31st</td></tr><tr class=\"bg-gray-800/60 hover:bg-gray-800 transition-colors\"><th class=\"px-4 py-3 font-medium text-gray-200\">J(an)ulython</th><td class=\"px-4 py-3 text-gray-400\">January 1st</td><td class=\"px-4 py-3 text-gray-400\">January 31st</td></tr></tbody></table></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -295,11 +282,41 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"text-lg text-gray-300 leading-relaxed\">Be sure to edit your profile and add the email you use to commit with.</p><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-3\">Git Help</h3><p class=\"text-gray-400 mb-1\">Check the existing setting:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto\">git config --global user.email</pre><p class=\"text-gray-400 mb-1\">Set a new value:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto\">git config --global user.email \"me@example.com\"</pre><p class=\"text-gray-400 mb-1\">Fix the email for the last commit:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 overflow-x-auto\">git commit --amend --author=\"Me &lt;me@example.com&gt;\"</pre></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"text-lg text-gray-300 leading-relaxed\">Be sure to edit your profile and add the email you use to commit with.</p><div class=\"bg-gray-800 rounded-xl p-5 border border-purple-900\"><h3 class=\"text-lg font-semibold text-purple-300 mb-3\">Git Help</h3><p class=\"text-gray-400 mb-1\">Check the existing setting:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto\">git config --global user.email</pre><p class=\"text-gray-400 mb-1\">Set a new value:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 mb-3 overflow-x-auto\">git config --global user.email \"me@example.com\"</pre><p class=\"text-gray-400 mb-1\">Fix the email for the last commit:</p><pre class=\"bg-gray-900 text-green-400 text-sm rounded-lg px-4 py-2 overflow-x-auto\">git commit --amend --author=\"Me &lt;me@example.com&gt;\"</pre></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = helpHeading("How do I set my location?", "location").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var12 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+			if !templ_7745c5c3_IsBuffer {
+				defer func() {
+					templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err == nil {
+						templ_7745c5c3_Err = templ_7745c5c3_BufErr
+					}
+				}()
+			}
+			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"text-lg text-gray-300 leading-relaxed\">First <a href=\"/profile/settings\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">edit your profile</a> and add your location.</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			return nil
+		})
+		templ_7745c5c3_Err = SignInGate(user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"text-gray-400\">The location must be a valid 'city, state, country' location in the world.</p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = helpHeading("How do I set my team?", "teams").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -315,7 +332,7 @@ func helpPage(user *layout.UserInfo) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"text-lg text-gray-300 leading-relaxed\">First <a href=\"/profile/settings\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">edit your profile</a> and add your location.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<p class=\"text-lg text-gray-300 leading-relaxed\">First <a href=\"/profile/settings\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">edit your profile</a> and add your team.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -325,37 +342,7 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<p class=\"text-gray-400\">The location must be a valid 'city, state, country' location in the world.</p>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = helpHeading("How do I set my team?", "teams").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Var14 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-			if !templ_7745c5c3_IsBuffer {
-				defer func() {
-					templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-					if templ_7745c5c3_Err == nil {
-						templ_7745c5c3_Err = templ_7745c5c3_BufErr
-					}
-				}()
-			}
-			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<p class=\"text-lg text-gray-300 leading-relaxed\">First <a href=\"/profile/settings\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">edit your profile</a> and add your team.</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			return nil
-		})
-		templ_7745c5c3_Err = SignInGate(user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<p class=\"text-gray-400\">The team is a free form field. We slugify the contents so 'Worker Bees' and 'worker bees' both become 'worker-bees'.</p><p class=\"text-sm text-gray-500 italic\">* New teams must be approved first before they appear on the site.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<p class=\"text-gray-400\">The team is a free form field. We slugify the contents so 'Worker Bees' and 'worker bees' both become 'worker-bees'.</p><p class=\"text-sm text-gray-500 italic\">* New teams must be approved first before they appear on the site.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -363,20 +350,20 @@ func helpPage(user *layout.UserInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<p class=\"text-lg text-gray-300 leading-relaxed\">Julython uses roughly the same code of conduct policy as")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<p class=\"text-lg text-gray-300 leading-relaxed\">Julython uses roughly the same code of conduct policy as")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
+		var templ_7745c5c3_Var14 string
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/help/help.templ`, Line: 172, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/help/help.templ`, Line: 161, Col: 65}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, " <a href=\"https://policies.python.org/us.pycon.org/code-of-conduct/\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">PyCon</a>.</p><div class=\"space-y-4 text-gray-400 leading-relaxed\"><p>Julython is dedicated to providing a harassment-free experience for everyone, regardless of gender, sexual orientation, disability, physical appearance, body size, race, or religion. We do not tolerate harassment of Julython participants in any form.</p><p>Be kind to others. Do not insult or put down other participants. Behave professionally. Remember that harassment and sexist, racist, or exclusionary jokes are not appropriate for Julython.</p><p>Violating these rules may result in your account and all points associated removed.</p><p class=\"text-gray-300 font-medium\">Thank you for helping make this a welcoming, friendly event for all.</p></div></article></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " <a href=\"https://policies.python.org/us.pycon.org/code-of-conduct/\" class=\"text-purple-400 hover:text-purple-300 underline underline-offset-2\">PyCon</a>.</p><div class=\"space-y-4 text-gray-400 leading-relaxed\"><p>Julython is dedicated to providing a harassment-free experience for everyone, regardless of gender, sexual orientation, disability, physical appearance, body size, race, or religion. We do not tolerate harassment of Julython participants in any form.</p><p>Be kind to others. Do not insult or put down other participants. Behave professionally. Remember that harassment and sexist, racist, or exclusionary jokes are not appropriate for Julython.</p><p>Violating these rules may result in your account and all points associated removed.</p><p class=\"text-gray-300 font-medium\">Thank you for helping make this a welcoming, friendly event for all.</p></div></article></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

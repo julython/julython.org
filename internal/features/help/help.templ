@@ -65,25 +65,14 @@ templ helpPage(user *layout.UserInfo) {
 			</div>
 			@helpHeading("How are points scored?", "scoring")
 			<p class="text-lg text-gray-300 leading-relaxed">
-				Points are awarded to the committer, the project, and optionally
-				to the location the user has specified in their profile.
+				Points come from two sources: your <strong>commits</strong> and the <strong>analysis</strong> of your projects.
+				Each commit earns 1 point, and analysis scores your project across 8 metrics
+				(README, tests, CI, structure, linting, dependencies, docs, AI readiness) on a 0–10 scale.
+				Each metric has a level associated with it that multiplies the score for a max of 60 points.
+				Up to 3 projects can be linked per player.
+				See our detailed guide on the <a href="/blog/scoring-2026" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">blog</a>
+				{ "for" } a full breakdown of levels, multipliers, and how points are calculated.
 			</p>
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-				<div class="bg-gray-800 rounded-xl p-5 border border-purple-900">
-					<h3 class="text-lg font-semibold text-purple-300 mb-2">Commits</h3>
-					<p class="text-gray-400">
-						You can score points by committing to a project that has a{ " " }
-						<a href="#webhook" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">web hook</a> setup. Each commit is worth 1 point.
-					</p>
-				</div>
-				<div class="bg-gray-800 rounded-xl p-5 border border-purple-900">
-					<h3 class="text-lg font-semibold text-purple-300 mb-2">New Projects</h3>
-					<p class="text-gray-400">
-						Everytime a new project is added via{ " " }
-						<a href="#webhook" class="text-purple-400 hover:text-purple-300 underline underline-offset-2">web hook</a> points are awarded. Each new project is worth 10 points.
-					</p>
-				</div>
-			</div>
 			@helpHeading("Project analysis & AI reviews", "analysis-metrics")
 			<p class="text-lg text-gray-300 leading-relaxed">
 				Julython runs a server-side scan (L1) on linked GitHub repositories and scores each area—README, tests, CI, structure, and more—from 0 to 10.
