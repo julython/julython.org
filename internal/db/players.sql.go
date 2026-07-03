@@ -381,6 +381,49 @@ func (q *Queries) GetPlayerWithBoards(ctx context.Context, arg GetPlayerWithBoar
 	return items, nil
 }
 
+const unlinkBoard = `-- name: UnlinkBoard :one
+UPDATE players
+    SET board_1_id = CASE WHEN board_1_id IS NOT DISTINCT FROM $1 THEN NULL ELSE board_1_id END,
+        board_2_id = CASE WHEN board_2_id IS NOT DISTINCT FROM $1 THEN NULL ELSE board_2_id END,
+        board_3_id = CASE WHEN board_3_id IS NOT DISTINCT FROM $1 THEN NULL ELSE board_3_id END
+WHERE id = $2
+  AND $1 IS NOT DISTINCT FROM board_1_id
+    OR $1 IS NOT DISTINCT FROM board_2_id
+    OR $1 IS NOT DISTINCT FROM board_3_id
+RETURNING id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id
+`
+
+type UnlinkBoardParams struct {
+	DeleteBoard pgtype.UUID `json:"delete_board"`
+	PlayerID    uuid.UUID   `json:"player_id"`
+}
+
+// Remove a specific board from one of a player's board slots.
+// Handles NULL comparisons using IS NOT DISTINCT FROM (SQL standard).
+// Returns 0 rows if the board isn't in any of the player's slots.
+func (q *Queries) UnlinkBoard(ctx context.Context, arg UnlinkBoardParams) (Player, error) {
+	row := q.db.QueryRow(ctx, unlinkBoard, arg.DeleteBoard, arg.PlayerID)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.UserID,
+		&i.Points,
+		&i.PotentialPoints,
+		&i.VerifiedPoints,
+		&i.CommitCount,
+		&i.ProjectCount,
+		&i.AnalysisStatus,
+		&i.LastAnalyzedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
+	)
+	return i, err
+}
+
 const updatePlayerAnalysis = `-- name: UpdatePlayerAnalysis :exec
 UPDATE players SET
     verified_points = $1,
