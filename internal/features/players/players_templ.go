@@ -10,7 +10,6 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/invopop/ctxi18n/i18n"
 
@@ -60,7 +59,7 @@ func PlayersPage(ld layout.LayoutData, data PlayersData) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(data.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 19, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 18, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -101,22 +100,6 @@ func PlayersPage(ld layout.LayoutData, data PlayersData) templ.Component {
 	})
 }
 
-// timeAgo returns a relative time string (e.g., "2 hours ago").
-func timeAgo(t time.Time) string {
-	d := time.Since(t)
-	if d < time.Minute {
-		return "just now"
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%dmin ago", int(d.Minutes()))
-	}
-	if d < 24*time.Hour {
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
-	}
-	days := int(d.Hours()) / 24
-	return fmt.Sprintf("%dd ago", days)
-}
-
 // noBoardsState shows the onboarding state when a player has no boards linked.
 func noBoardsState() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -146,7 +129,7 @@ func noBoardsState() templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "players.NoBoards"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 54, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 37, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -159,7 +142,7 @@ func noBoardsState() templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "players.NoBoardsHint"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 56, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 39, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -172,7 +155,7 @@ func noBoardsState() templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "profile.webhooks"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 61, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 44, Col: 37}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -262,7 +245,7 @@ func EmptySlot(slotNum int) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "profile.webhooks"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 90, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 73, Col: 37}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -305,7 +288,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 		var templ_7745c5c3_Var12 templ.SafeURL
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs("/projects/" + b.ProjectSlug)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 103, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 86, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -318,7 +301,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(b.ProjectName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 104, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 87, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -336,7 +319,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(b.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 109, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 92, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -382,7 +365,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(b.Points)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 128, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 111, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -395,7 +378,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Verified"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 131, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 114, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -408,7 +391,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(b.VerifiedPoints)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 132, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 115, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -426,7 +409,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.LastAnalyzed"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 138, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 121, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -439,7 +422,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(b.LastAnalyzedAgo)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 139, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 122, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -452,7 +435,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.AnalysisRunCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 141, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 124, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -465,7 +448,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.AnalysesTotal"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 141, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 124, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -488,7 +471,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.CommitsThisMonth"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 149, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 132, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -501,7 +484,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.CommitsThisMonth))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 151, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 134, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -514,7 +497,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.CommitsThisWeek))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 152, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 135, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -527,7 +510,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.ThisWeek"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 152, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 135, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -540,7 +523,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.FilesTouched"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 156, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 139, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -553,7 +536,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.FileTouchCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 157, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 140, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -571,7 +554,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.UniqueDirs))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 161, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 144, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -584,7 +567,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.UniqueDirs"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 161, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 144, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -603,7 +586,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 				var templ_7745c5c3_Var30 string
 				templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "projects.GameCommits"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 166, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 149, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 				if templ_7745c5c3_Err != nil {
@@ -616,7 +599,7 @@ func BoardCard(b boardInfo, isOwner bool) templ.Component {
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", b.Board.CommitCount))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 167, Col: 88}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 150, Col: 88}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
@@ -708,7 +691,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Hash)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 191, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 174, Col: 16}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -729,7 +712,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var35 templ.SafeURL
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/player/%s", commit.Username)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 197, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 180, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -742,7 +725,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Author)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 198, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 181, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -755,7 +738,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var37 templ.SafeURL
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/projects/%s", commit.Project)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 201, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 184, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
@@ -768,7 +751,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(commit.ProjectName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 202, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 185, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -781,7 +764,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(commit.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 206, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 189, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -794,7 +777,7 @@ func RecentCommitRow(commit RecentCommit) templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(commit.TimeAgo)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 208, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/features/players/players.templ`, Line: 191, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {

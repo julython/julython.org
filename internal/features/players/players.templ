@@ -2,7 +2,6 @@ package players
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/invopop/ctxi18n/i18n"
 
@@ -29,22 +28,6 @@ templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 			}
 		</main>
 	}
-}
-
-// timeAgo returns a relative time string (e.g., "2 hours ago").
-func timeAgo(t time.Time) string {
-	d := time.Since(t)
-	if d < time.Minute {
-		return "just now"
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%dmin ago", int(d.Minutes()))
-	}
-	if d < 24*time.Hour {
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
-	}
-	days := int(d.Hours()) / 24
-	return fmt.Sprintf("%dd ago", days)
 }
 
 // noBoardsState shows the onboarding state when a player has no boards linked.
