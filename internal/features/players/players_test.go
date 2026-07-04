@@ -3,9 +3,9 @@ package players_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -191,29 +191,24 @@ func TestUpdatePlayer(t *testing.T) {
 
 		env.LoginAs(t, "other@example.com")
 
-		reqBody := map[string]interface{}{
-			"board_1": board.ID.String(),
-			"board_2": nil,
-			"board_3": nil,
-		}
-		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/owner", "application/json", bytes.NewReader(body))
+		form := url.Values{}
+		form.Set("board_1", board.ID.String())
+		resp, err := env.Client.Post(env.Server.URL+"/player/owner", "application/x-www-form-urlencoded", bytes.NewReader([]byte(form.Encode())))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 
-	t.Run("forbidden when board not owned by player", func(t *testing.T) {
+	t.Run("forbidden when trying to delete another player's board", func(t *testing.T) {
 		ctx := context.Background()
 		env := testutil.SetupTestEnv(t)
 
 		user := testutil.CreateUser(t, env, "testuser", "Test User")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		testutil.CreateUserIdentifier(t, env, user.ID, "github", "12345", true, false)
 
 		game := testutil.CreateActiveGame(t, env)
 
-		// Create a board for a different game (validation fails)
+		// Create a board for a different game
 		otherGame := testutil.CreateGame(t, env, "Other Game", game.StartsAt.Add(-48*time.Hour), game.EndsAt.Add(-24*time.Hour), false)
 		project := testutil.CreateProject(t, env, "other-project", "https://github.com/testuser/other-project")
 
@@ -226,6 +221,7 @@ func TestUpdatePlayer(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// Create a player for this user
 		_, err = env.Queries.UpsertPlayer(ctx, db.UpsertPlayerParams{
 			ID:          db.NewID(),
 			GameID:      game.ID,
@@ -237,19 +233,72 @@ func TestUpdatePlayer(t *testing.T) {
 
 		env.LoginAs(t, "test@example.com")
 
-		reqBody := map[string]interface{}{
-			"board_1": board.ID.String(),
-			"board_2": nil,
-			"board_3": nil,
-		}
-		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/json", bytes.NewReader(body))
+		// Try to delete a board that isn't in the player's slots → returns 400 (not found)
+		form := url.Values{}
+		form.Set("delete_board", board.ID.String())
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/x-www-form-urlencoded", bytes.NewReader([]byte(form.Encode())))
 		require.NoError(t, err)
 		defer resp.Body.Close()
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
-	t.Run("valid swap updates boards and re-renders", func(t *testing.T) {
+
+	t.Run("delete unlinks a board from the player", func(t *testing.T) {
+		ctx := context.Background()
+		env := testutil.SetupTestEnv(t)
+
+		user := testutil.CreateUser(t, env, "testuser", "Test User")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+
+		game := testutil.CreateActiveGame(t, env)
+
+		project := testutil.CreateProject(t, env, "my-project", "https://github.com/testuser/my-project")
+		board, err := env.Queries.UpsertBoard(ctx, db.UpsertBoardParams{
+			ID:          db.NewID(),
+			GameID:      game.ID,
+			ProjectID:   project.ID,
+			Points:      10,
+			CommitCount: 3,
+		})
+		require.NoError(t, err)
+
+		player, err := env.Queries.UpsertPlayer(ctx, db.UpsertPlayerParams{
+			ID:          db.NewID(),
+			GameID:      game.ID,
+			UserID:      user.ID,
+			Points:      0,
+			CommitCount: 0,
+		})
+		require.NoError(t, err)
+
+		// Assign board_1
+		_, err = env.Queries.AssignBoards(ctx, db.AssignBoardsParams{
+			PlayerID: player.ID,
+			Board1ID: db.UUID(board.ID),
+		})
+		require.NoError(t, err)
+
+		// Verify board is assigned
+		updated, err := env.Queries.GetPlayerByID(ctx, player.ID)
+		require.NoError(t, err)
+		assert.True(t, updated.Board1ID.Valid)
+
+		env.LoginAs(t, "test@example.com")
+
+		// Delete: unlink the board
+		form := url.Values{}
+		form.Set("delete_board", board.ID.String())
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/x-www-form-urlencoded", bytes.NewReader([]byte(form.Encode())))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		// Verify board was unlinked (board_1 should be NULL)
+		updated, err = env.Queries.GetPlayerByID(ctx, player.ID)
+		require.NoError(t, err)
+		assert.False(t, updated.Board1ID.Valid, "Board should have been unlinked")
+	})
+	t.Run("valid delete removes a board from the player", func(t *testing.T) {
 		ctx := context.Background()
 		env := testutil.SetupTestEnv(t)
 
@@ -287,7 +336,7 @@ func TestUpdatePlayer(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Assign all 3 boards at once
+		// Assign all 3 boards
 		_, err = env.Queries.AssignBoards(ctx, db.AssignBoardsParams{
 			PlayerID: player.ID,
 			Board1ID: db.UUID(boards[0].ID),
@@ -298,27 +347,22 @@ func TestUpdatePlayer(t *testing.T) {
 
 		env.LoginAs(t, "test@example.com")
 
-		// Swap: swap board 2 ↔ board 3
-		reqBody := map[string]interface{}{
-			"board_1": boards[0].ID.String(),
-			"board_2": boards[2].ID.String(),
-			"board_3": boards[1].ID.String(),
-		}
-		body, _ := json.Marshal(reqBody)
-		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/json", bytes.NewReader(body))
+		// Delete board 2 (middle slot)
+		form := url.Values{}
+		form.Set("delete_board", boards[1].ID.String())
+		resp, err := env.Client.Post(env.Server.URL+"/player/testuser", "application/x-www-form-urlencoded", bytes.NewReader([]byte(form.Encode())))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		testutil.BodyContains(t, resp, "project-1", "project-2", "project-3")
+		testutil.BodyContains(t, resp, "project-1", "project-3")
 
-		// Verify all 3 boards persisted (board 2 ↔ 3 swapped)
+		// Verify board 2 was unlinked
 		updated, err := env.Queries.GetPlayerByID(ctx, player.ID)
 		require.NoError(t, err)
 		assert.True(t, updated.Board1ID.Valid)
-		assert.True(t, updated.Board2ID.Valid)
+		assert.False(t, updated.Board2ID.Valid, "Board 2 should be unlinked")
 		assert.True(t, updated.Board3ID.Valid)
 		assert.Equal(t, boards[0].ID, uuid.UUID(updated.Board1ID.Bytes))
-		assert.Equal(t, boards[2].ID, uuid.UUID(updated.Board2ID.Bytes))
-		assert.Equal(t, boards[1].ID, uuid.UUID(updated.Board3ID.Bytes))
+		assert.Equal(t, boards[2].ID, uuid.UUID(updated.Board3ID.Bytes))
 	})
 }

@@ -1,12 +1,12 @@
 package players
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog/log"
 
 	"july/internal/auth"
@@ -15,6 +15,7 @@ import (
 	"july/internal/db"
 	"july/internal/features/projects"
 	"july/internal/services"
+	"july/internal/shared"
 )
 
 func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService) {
@@ -53,17 +54,28 @@ type boardInfo struct {
 	UniqueDirs       int
 }
 
-type PlayerData struct {
+type PlayersData struct {
 	Username  string
 	Name      string
 	AvatarURL string
 	Boards    []boardInfo
+	IsOwner   bool
+
+	// Recent commits (only for the player's own page).
+	RecentCommits []RecentCommit
 }
 
-type UpdateRequest struct {
-	Board1ID *uuid.UUID `json:"board_1"`
-	Board2ID *uuid.UUID `json:"board_2"`
-	Board3ID *uuid.UUID `json:"board_3"`
+// RecentCommit is a shared type used by multiple features (home, activity).
+type RecentCommit struct {
+	Username    string
+	Hash        string
+	Name        string // Display name for avatar initials
+	Author      string
+	AvatarURL   string
+	Message     string
+	Project     string
+	ProjectName string
+	TimeAgo     string
 }
 
 // Player handles GET /player/{username}.
@@ -139,38 +151,31 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body UpdateRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	// Unlink a board (the only operation the player page handles).
+	deleteStr := r.FormValue("delete_board")
+	if deleteStr == "" {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	params := db.AssignBoardsParams{PlayerID: player.ID}
-	for i, idPtr := range []*uuid.UUID{body.Board1ID, body.Board2ID, body.Board3ID} {
-		if idPtr == nil {
-			continue
-		}
-		owned, err := h.queries.ValidateBoardOwnership(ctx, db.ValidateBoardOwnershipParams{
-			BoardID: *idPtr,
-			GameID:  game.ID,
-			Owner:   u.Username,
-		})
-		if err != nil || owned.ID == uuid.Nil {
-			http.Error(w, "Board not owned by player", http.StatusForbidden)
-			return
-		}
-		switch i {
-		case 0:
-			params.Board1ID = db.UUID(*idPtr)
-		case 1:
-			params.Board2ID = db.UUID(*idPtr)
-		case 2:
-			params.Board3ID = db.UUID(*idPtr)
-		}
+	deleteID, err := uuid.Parse(deleteStr)
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
 	}
 
-	if _, err := h.queries.AssignBoards(ctx, params); err != nil {
-		logger.Error().Err(err).Msg("AssignBoards failed")
+	if _, err := h.queries.UnlinkBoard(ctx, db.UnlinkBoardParams{
+		PlayerID: player.ID,
+		DeleteBoard: pgtype.UUID{
+			Bytes: deleteID,
+			Valid: true,
+		},
+	}); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "Board not found in player's slots", http.StatusBadRequest)
+			return
+		}
+		logger.Error().Err(err).Msg("UnlinkBoard failed")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -183,6 +188,13 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameID uuid.UUID, username string) {
 	ctx := r.Context()
 	logger := log.Ctx(r.Context())
+
+	isOwner := false
+	// Auth: check if the user is the owner
+	sessionUser := auth.UserFromContext(ctx)
+	if sessionUser != nil {
+		isOwner = sessionUser.Username == username
+	}
 
 	rows, err := h.queries.GetPlayerWithBoards(ctx, db.GetPlayerWithBoardsParams{
 		GameID:   gameID,
@@ -209,6 +221,7 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 		Name:      rows[0].Name,
 		AvatarURL: rows[0].AvatarUrl.String,
 		Boards:    make([]boardInfo, 0, len(rows)),
+		IsOwner:   isOwner,
 	}
 	for _, r := range rows {
 		pd.Boards = append(pd.Boards, boardInfo{
@@ -233,6 +246,32 @@ func (h *handler) renderPlayerData(w http.ResponseWriter, r *http.Request, gameI
 			bd.CommitsThisWeek = projData.GameActivity.CommitsThisWeek
 			bd.FileTouchCount = projData.GameActivity.FileTouchCount
 			bd.UniqueDirs = projData.GameActivity.UniqueDirs
+		}
+	}
+
+	// Fetch recent commits for this player (shown to all viewers).
+	user, err := h.queries.GetUserByUsername(ctx, username)
+	if err == nil {
+		commits, err := h.queries.GetCommitsByUserAndGame(ctx, db.GetCommitsByUserAndGameParams{
+			UserID:      db.UUID(user.ID),
+			GameID:      db.UUID(gameID),
+			LimitCount:  20,
+			OffsetCount: 0,
+		})
+		if err == nil {
+			pd.RecentCommits = make([]RecentCommit, 0, len(commits))
+			for _, c := range commits {
+				pd.RecentCommits = append(pd.RecentCommits, RecentCommit{
+					Hash:        c.Hash.String,
+					Message:     c.Message,
+					Name:        c.Author.String,
+					Author:      c.Author.String,
+					AvatarURL:   user.AvatarUrl.String,
+					Project:     c.ProjectSlug,
+					ProjectName: c.ProjectName,
+					TimeAgo:     shared.TimeAgo(c.Timestamp),
+				})
+			}
 		}
 	}
 

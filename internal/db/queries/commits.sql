@@ -28,9 +28,22 @@ ORDER BY id DESC
 LIMIT GREATEST(@limit_count, 1) OFFSET @offset_count;
 
 -- name: GetCommitsByUserAndGame :many
-SELECT * FROM commits
-WHERE user_id = @user_id AND game_id = @game_id
-ORDER BY id DESC
+SELECT
+    c.id,
+    c.hash,
+    c.message,
+    c.timestamp,
+    c.author,
+    u.name,
+    u.username,
+    u.avatar_url,
+    p.slug AS project_slug,
+    p.name AS project_name
+FROM commits c
+LEFT JOIN users u ON u.id = c.user_id
+JOIN projects p ON p.id = c.project_id
+WHERE c.user_id = @user_id AND c.game_id = @game_id
+ORDER BY c.id DESC
 LIMIT GREATEST(@limit_count, 1) OFFSET @offset_count;
 
 -- name: ClaimOrphanCommits :execrows

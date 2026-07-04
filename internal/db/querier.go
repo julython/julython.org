@@ -76,7 +76,7 @@ type Querier interface {
 	GetCommitByID(ctx context.Context, id uuid.UUID) (Commit, error)
 	GetCommitStats(ctx context.Context, gameID pgtype.UUID) (GetCommitStatsRow, error)
 	GetCommitsByProject(ctx context.Context, arg GetCommitsByProjectParams) ([]Commit, error)
-	GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByUserAndGameParams) ([]Commit, error)
+	GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByUserAndGameParams) ([]GetCommitsByUserAndGameRow, error)
 	GetDailyCommitCounts(ctx context.Context, gameID pgtype.UUID) ([]GetDailyCommitCountsRow, error)
 	GetGameByID(ctx context.Context, id uuid.UUID) (Game, error)
 	GetLanguageByName(ctx context.Context, name string) (Language, error)
@@ -142,6 +142,10 @@ type Querier interface {
 	SearchActiveProjects(ctx context.Context, arg SearchActiveProjectsParams) ([]Project, error)
 	SetCommitGame(ctx context.Context, arg SetCommitGameParams) error
 	SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPrivateParams) error
+	// Remove a specific board from one of a player's board slots.
+	// Handles NULL comparisons using IS NOT DISTINCT FROM (SQL standard).
+	// Returns 0 rows if the board isn't in any of the player's slots.
+	UnlinkBoard(ctx context.Context, arg UnlinkBoardParams) (Player, error)
 	// Called after AI grading for L2/L3 upgrades only.
 	// Requires the metric to already be at L1 (enforced in the handler).
 	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error

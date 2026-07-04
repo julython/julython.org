@@ -100,6 +100,20 @@ UPDATE players
 WHERE id = @player_id
 RETURNING *;
 
+-- name: UnlinkBoard :one
+-- Remove a specific board from one of a player's board slots.
+-- Handles NULL comparisons using IS NOT DISTINCT FROM (SQL standard).
+-- Returns 0 rows if the board isn't in any of the player's slots.
+UPDATE players
+    SET board_1_id = CASE WHEN board_1_id IS NOT DISTINCT FROM @delete_board THEN NULL ELSE board_1_id END,
+        board_2_id = CASE WHEN board_2_id IS NOT DISTINCT FROM @delete_board THEN NULL ELSE board_2_id END,
+        board_3_id = CASE WHEN board_3_id IS NOT DISTINCT FROM @delete_board THEN NULL ELSE board_3_id END
+WHERE id = @player_id
+  AND @delete_board IS NOT DISTINCT FROM board_1_id
+    OR @delete_board IS NOT DISTINCT FROM board_2_id
+    OR @delete_board IS NOT DISTINCT FROM board_3_id
+RETURNING *;
+
 -- name: GetPlayerBoardIds :one
 -- Return the 3 board IDs for a player.  Callers can join boards on
 -- these IDs when displaying the leaderboard.

@@ -325,9 +325,22 @@ func (q *Queries) GetCommitsByProject(ctx context.Context, arg GetCommitsByProje
 }
 
 const getCommitsByUserAndGame = `-- name: GetCommitsByUserAndGame :many
-SELECT id, hash, project_id, user_id, game_id, author, email, message, url, timestamp, languages, files, is_verified, is_flagged, flag_reason, created_at, updated_at FROM commits
-WHERE user_id = $1 AND game_id = $2
-ORDER BY id DESC
+SELECT
+    c.id,
+    c.hash,
+    c.message,
+    c.timestamp,
+    c.author,
+    u.name,
+    u.username,
+    u.avatar_url,
+    p.slug AS project_slug,
+    p.name AS project_name
+FROM commits c
+LEFT JOIN users u ON u.id = c.user_id
+JOIN projects p ON p.id = c.project_id
+WHERE c.user_id = $1 AND c.game_id = $2
+ORDER BY c.id DESC
 LIMIT GREATEST($4, 1) OFFSET $3
 `
 
@@ -338,7 +351,20 @@ type GetCommitsByUserAndGameParams struct {
 	LimitCount  interface{} `json:"limit_count"`
 }
 
-func (q *Queries) GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByUserAndGameParams) ([]Commit, error) {
+type GetCommitsByUserAndGameRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Hash        pgtype.Text `json:"hash"`
+	Message     string      `json:"message"`
+	Timestamp   time.Time   `json:"timestamp"`
+	Author      pgtype.Text `json:"author"`
+	Name        pgtype.Text `json:"name"`
+	Username    pgtype.Text `json:"username"`
+	AvatarUrl   pgtype.Text `json:"avatar_url"`
+	ProjectSlug string      `json:"project_slug"`
+	ProjectName string      `json:"project_name"`
+}
+
+func (q *Queries) GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByUserAndGameParams) ([]GetCommitsByUserAndGameRow, error) {
 	rows, err := q.db.Query(ctx, getCommitsByUserAndGame,
 		arg.UserID,
 		arg.GameID,
@@ -349,27 +375,20 @@ func (q *Queries) GetCommitsByUserAndGame(ctx context.Context, arg GetCommitsByU
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Commit
+	var items []GetCommitsByUserAndGameRow
 	for rows.Next() {
-		var i Commit
+		var i GetCommitsByUserAndGameRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Hash,
-			&i.ProjectID,
-			&i.UserID,
-			&i.GameID,
-			&i.Author,
-			&i.Email,
 			&i.Message,
-			&i.Url,
 			&i.Timestamp,
-			&i.Languages,
-			&i.Files,
-			&i.IsVerified,
-			&i.IsFlagged,
-			&i.FlagReason,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Author,
+			&i.Name,
+			&i.Username,
+			&i.AvatarUrl,
+			&i.ProjectSlug,
+			&i.ProjectName,
 		); err != nil {
 			return nil, err
 		}

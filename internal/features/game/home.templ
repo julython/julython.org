@@ -179,9 +179,9 @@ templ RecentCommitRow(commit RecentCommit) {
 						{ commit.ProjectName }
 					</a>
 				</p>
-				<p class="text-sm text-gray-500 truncate" title={ commit.Message }>
+				<pre class="text-sm text-gray-500 truncate" title={ commit.Message }>
 					{ truncateMessage(commit.Message, 50) }
-				</p>
+				</pre>
 				<p class="text-xs text-gray-600 mt-1">{ commit.TimeAgo }</p>
 			</div>
 		</div>

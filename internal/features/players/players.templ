@@ -6,16 +6,10 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 
 	"july/internal/components/analysis"
+	"july/internal/components/avatar"
+	"july/internal/components/icons"
 	"july/internal/components/layout"
 )
-
-// PlayersData is the template data for a player page.
-type PlayersData struct {
-	Username  string
-	Name      string
-	AvatarURL string
-	Boards    []boardInfo
-}
 
 templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 	@layout.Layout(ld) {
@@ -27,6 +21,10 @@ templ PlayersPage(ld layout.LayoutData, data PlayersData) {
 				@noBoardsState()
 			} else {
 				@PlayersList(data)
+			}
+			// Recent commits section (shown to all viewers)
+			if len(data.RecentCommits) > 0 {
+				@CommitList(data.RecentCommits)
 			}
 		</main>
 	}
@@ -51,22 +49,53 @@ templ noBoardsState() {
 
 templ PlayersList(data PlayersData) {
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-		for _, b := range data.Boards {
-			@BoardCard(b)
+		for i := 0; i < 3; i++ {
+			if i < len(data.Boards) {
+				@BoardCard(data.Boards[i], data.IsOwner)
+			} else if data.IsOwner {
+				@EmptySlot(i + 1)
+			}
 		}
 	</div>
 }
 
+// EmptySlot renders a placeholder for an unassigned board slot.
+// Only shown to the player when they have fewer than 3 boards.
+templ EmptySlot(slotNum int) {
+	<div class="bg-surface rounded-xl border border-dashed border-white/10 overflow-hidden flex flex-col items-center justify-center p-8 text-center">
+		<span class="text-4xl mb-3 block text-gray-600">📋</span>
+		<p class="text-gray-500 text-sm leading-relaxed">
+			Link a webhook and push a commit to another project to add a board.
+			<a
+				href="/profile/webhooks"
+				class="text-july-400 hover:text-july-300 underline underline-offset-2"
+			>
+				{ i18n.T(ctx, "profile.webhooks") }
+			</a>
+		</p>
+	</div>
+}
+
 // BoardCard renders a single board card with analysis tiles, scoring, and activity.
-templ BoardCard(b boardInfo) {
+templ BoardCard(b boardInfo, isOwner bool) {
 	<div class="bg-surface rounded-xl border border-white/10 overflow-hidden">
 		<div class="p-5 space-y-4">
 			<!-- Project header -->
-			<h3 class="text-lg font-semibold text-july-300">
-				<a href={ "/projects/" + b.ProjectSlug } class="hover:text-july-400">
-					{ b.ProjectName }
-				</a>
-			</h3>
+			<div class="flex items-start gap-3">
+				<h3 class="text-lg font-semibold text-july-300 min-w-0 flex-1">
+					<a href={ "/projects/" + b.ProjectSlug } class="hover:text-july-400 truncate block">
+						{ b.ProjectName }
+					</a>
+				</h3>
+				if isOwner {
+					<form method="POST" hx-target="closest .bg-surface" hx-swap="delete">
+						<input type="hidden" name="delete_board" value={ b.ID.String() }/>
+						<button type="submit" class="shrink-0 mt-0.5 p-1.5 rounded-lg text-red-400 border border-red-400/40 hover:border-red-400 hover:text-red-300 transition-colors" title="Delete">
+							@icons.TrashIcon()
+						</button>
+					</form>
+				}
+			</div>
 			<!-- Analysis tiles (if any analysis data exists) -->
 			if len(b.AnalysisTiles) > 0 {
 				@analysis.Grid(b.AnalysisTiles)
@@ -123,6 +152,44 @@ templ BoardCard(b boardInfo) {
 					}
 				</div>
 			}
+		</div>
+	</div>
+}
+
+// CommitList renders a section showing the player's recent commits.
+templ CommitList(commits []RecentCommit) {
+	<div class="max-w-7xl mx-auto pb-8">
+		<h2 class="text-xl font-semibold text-july-300 mb-4 mt-6">Recent Commits</h2>
+		<div>
+			for _, c := range commits {
+				@RecentCommitRow(c)
+			}
+		</div>
+	</div>
+}
+
+templ RecentCommitRow(commit RecentCommit) {
+	<div class="rounded-xl border border-white/10 bg-surface/50 mb-2 p-4 hover:bg-surface hover:border-white/20 transition-colors">
+		<span class="float-right text-xs font-mono text-gray-600">
+			{ commit.Hash }
+		</span>
+		<div class="flex items-start gap-3 relative">
+			@avatar.AvatarFallback(commit.Username, commit.AvatarURL, avatar.AvatarLg, commit.Author)
+			<div class="min-w-0 flex-1">
+				<p class="text-sm">
+					<a href={ templ.SafeURL(fmt.Sprintf("/player/%s", commit.Username)) } class="font-medium text-white hover:text-july-400 transition-colors">
+						{ commit.Author }
+					</a>
+					<span class="text-gray-500">pushed to </span>
+					<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", commit.Project)) } class="text-gray-300 hover:text-july-400 transition-colors">
+						{ commit.ProjectName }
+					</a>
+				</p>
+				<pre class="text-sm text-gray-500 truncate mt-2">
+					{ commit.Message }
+				</pre>
+				<p class="text-xs text-gray-600 mt-1">{ commit.TimeAgo }</p>
+			</div>
 		</div>
 	</div>
 }
