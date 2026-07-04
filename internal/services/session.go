@@ -29,6 +29,9 @@ func NewSessionManager(pool *pgxpool.Pool, cfg config.Session, isProd bool) *Ses
 	sm.Cookie.HttpOnly = true
 	sm.Cookie.Secure = isProd
 	sm.Cookie.SameSite = http.SameSiteLaxMode
+	if cfg.CookieDomain != "" {
+		sm.Cookie.Domain = cfg.CookieDomain
+	}
 
 	return &SessionManager{
 		SessionManager: sm,

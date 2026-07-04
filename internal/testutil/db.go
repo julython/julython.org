@@ -163,6 +163,13 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	}
 }
 
+// NewTestSessionManager creates a SessionManager with the given config.
+// Exported so test packages can construct sessions without a full test server.
+func NewTestSessionManager(t *testing.T, pool *pgxpool.Pool, cfg config.Session, isProd bool) *services.SessionManager {
+	t.Helper()
+	return services.NewSessionManager(pool, cfg, isProd)
+}
+
 func ensureSystemUser(ctx context.Context, pool *pgxpool.Pool) error {
 	_, err := pool.Exec(ctx, `
 		INSERT INTO users (id, name, username, role)

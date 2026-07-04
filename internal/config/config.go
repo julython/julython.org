@@ -54,6 +54,7 @@ func (d Database) DSN() string {
 
 type Session struct {
 	CookieName      string        `env:"COOKIE_NAME"      envDefault:"july_session"`
+	CookieDomain    string        `env:"COOKIE_DOMAIN"    envDefault:""`
 	Lifetime        time.Duration `env:"LIFETIME"         envDefault:"168h"`
 	CleanupInterval time.Duration `env:"CLEANUP_INTERVAL" envDefault:"15m"`
 }
@@ -121,6 +122,7 @@ func (c Config) Log() {
 		Int("database.min_conns", c.Database.MinConns).
 		// Session
 		Str("session.cookie_name", c.Session.CookieName).
+		Str("session.cookie_domain", c.Session.CookieDomain).
 		Dur("session.lifetime", c.Session.Lifetime).
 		Dur("session.cleanup_interval", c.Session.CleanupInterval).
 		// OAuth
