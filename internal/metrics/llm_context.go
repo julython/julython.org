@@ -37,12 +37,12 @@ func MetricDisplayName(metricType string) string {
 }
 
 // MetricLLMSystemPrompt is the system instruction for browser-side metric tile reviews.
-const MetricLLMSystemPrompt = `You are a concise code-quality coach. Use markdown bullets. The L1 score already reflects the scan—explain gaps and next steps; do not assign a new numeric grade.`
+const MetricLLMSystemPrompt = `You are a concise code-quality coach. Use markdown bullets. The score already reflects the scan—explain gaps and next steps; if the score is zero explain why and how to correct it.`
 
 // Limits for browser LLM user prompts (small context windows; old DB rows may still hold large snippets).
 const (
-	maxMetricLLMUserBytes     = 3400
-	maxEvidenceSnippetBytes     = 1000
+	maxMetricLLMUserBytes         = 3400
+	maxEvidenceSnippetBytes       = 1000
 	maxEvidenceSnippetsTotalBytes = 2200
 )
 
@@ -63,7 +63,11 @@ func BuildMetricLLMUserContent(metricType string, data map[string]any, repoName 
 	writePromptEvidence(&b, data)
 
 	b.WriteString("### Task\n\n")
-	b.WriteString("Briefly: strengths, gaps, 2–3 concrete improvements")
+	if l1Score == 0 {
+		b.WriteString("All checks failed: what should the user do to improve?")
+	} else {
+		b.WriteString("Briefly: strengths if any, gaps, 2–3 concrete improvements")
+	}
 	if language != "" {
 		b.WriteString(fmt.Sprintf(" (for **%s**)", language))
 	}
@@ -134,6 +138,7 @@ func truncateUTF8(s string, maxBytes int) string {
 }
 
 // formatHeuristicSignals turns boolean/string flags into readable checkmarks.
+// When all booleans are false, labels use "missing:" to avoid ambiguity.
 func formatHeuristicSignals(data map[string]any) string {
 	keys := make([]string, 0, len(data))
 	for k := range data {
@@ -147,6 +152,14 @@ func formatHeuristicSignals(data map[string]any) string {
 		return "(No signals detected.)"
 	}
 
+	allFalse := true
+	for _, k := range keys {
+		if v, ok := data[k].(bool); ok && v {
+			allFalse = false
+			break
+		}
+	}
+
 	var b strings.Builder
 	for _, k := range keys {
 		v := data[k]
@@ -155,6 +168,8 @@ func formatHeuristicSignals(data map[string]any) string {
 		case bool:
 			if val {
 				b.WriteString(fmt.Sprintf("- ✅ %s\n", label))
+			} else if allFalse {
+				b.WriteString(fmt.Sprintf("- missing: %s\n", label))
 			} else {
 				b.WriteString(fmt.Sprintf("- ❌ %s\n", label))
 			}

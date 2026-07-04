@@ -1138,7 +1138,7 @@ func projectChatPanel(data ProjectDetailData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</label> <select id=\"llm-model-select\" class=\"text-sm px-2 py-1.5 rounded-md bg-black/25 border border-white/10 text-gray-300 min-w-[10rem] max-w-[min(100vw-8rem,18rem)] focus:outline-none focus:border-july-500/50\"></select> <button type=\"button\" id=\"llm-cache-clear\" class=\"text-sm px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0\" title=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</label> <select id=\"llm-model-select\" class=\"text-sm px-2 py-1.5 rounded-md bg-surface-light border border-white/10 text-gray-300 min-w-[10rem] max-w-[min(100vw-8rem,18rem)] focus:outline-none focus:border-july-500/50\"></select> <button type=\"button\" id=\"llm-cache-clear\" class=\"text-sm px-2 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap shrink-0\" title=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

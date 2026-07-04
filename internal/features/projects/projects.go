@@ -179,14 +179,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		scoreByType[row.MetricType] = row.Score
 	}
 
-	showMetricAI := false
-	if sess := auth.UserFromContext(ctx); sess != nil {
-		if u, err := h.userService.FindByID(ctx, sess.ID); err == nil && canEditProject(&u, project) && project.Service == "github" {
-			if !project.IsPrivate && h.l1Scanner.IsConfigured() {
-				showMetricAI = true
-			}
-		}
-	}
+	showMetricAI := project.Service == "github" && !project.IsPrivate && h.l1Scanner.IsConfigured()
 
 	var analysisBoardSpec = []struct {
 		key     string
