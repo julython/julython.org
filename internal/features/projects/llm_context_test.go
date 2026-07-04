@@ -27,12 +27,17 @@ func postChatContext(t *testing.T, env *testutil.TestEnv, projectID, message str
 }
 
 func TestPostProjectChatContext(t *testing.T) {
-	t.Run("unauthenticated request is rejected", func(t *testing.T) {
+	t.Run("unauthenticated request succeeds", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		project := testutil.CreateProject(t, env, "gh-nobody-repo", "https://github.com/nobody/repo")
 
 		resp := postChatContext(t, env, project.ID.String(), "Can you analyze my tests?")
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.NotEmpty(t, body["systemPrompt"])
+		assert.NotEmpty(t, body["userPrompt"])
 	})
 
 	t.Run("unknown project returns 404", func(t *testing.T) {
@@ -45,7 +50,7 @@ func TestPostProjectChatContext(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
-	t.Run("non-owner is forbidden", func(t *testing.T) {
+	t.Run("non-owner chat succeeds", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		alice := testutil.CreateUser(t, env, "alice", "Alice")
 		project := testutil.CreateOwnedProject(t, env, alice, "repo", "https://github.com/alice/repo")
@@ -54,7 +59,7 @@ func TestPostProjectChatContext(t *testing.T) {
 		env.LoginAs(t, "test@example.com")
 
 		resp := postChatContext(t, env, project.ID.String(), "Can you analyze my README?")
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("non-GitHub project is rejected", func(t *testing.T) {
@@ -186,7 +191,7 @@ func TestPostProjectChatContext(t *testing.T) {
 // ── LLM Context expansion ─────────────────────────────────────────
 
 func TestGetProjectMetricLLMContext_NonOwner(t *testing.T) {
-	t.Run("non-owner is forbidden", func(t *testing.T) {
+	t.Run("non-owner succeeds", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		alice := testutil.CreateUser(t, env, "alice", "Alice")
 		project := testutil.CreateOwnedProject(t, env, alice, "repo", "https://github.com/alice/repo")
@@ -195,7 +200,7 @@ func TestGetProjectMetricLLMContext_NonOwner(t *testing.T) {
 		env.LoginAs(t, "test@example.com")
 
 		ctx := context.Background()
-		// Seed an L1 metric row so the owner check is hit before the metric check.
+		// Seed an L1 metric row so the metric check is hit before the metric check.
 		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
@@ -207,17 +212,58 @@ func TestGetProjectMetricLLMContext_NonOwner(t *testing.T) {
 		}))
 
 		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("non-GitHub project is rejected", func(t *testing.T) {
+	t.Run("unauthenticated request succeeds", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		project := testutil.CreateProject(t, env, "gh-public-repo", "https://github.com/owner/repo")
+		ctx := context.Background()
+		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
+			ID:         db.NewID(),
+			ProjectID:  project.ID,
+			MetricType: "readme",
+			Score:      5,
+			Data:       db.JSONMap{"has_readme": true},
+			Sha:        "def456",
+			UpdatedBy:  db.SystemUserID,
+		}))
+
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.NotEmpty(t, body["systemPrompt"])
+		assert.NotEmpty(t, body["userPrompt"])
+	})
+
+	t.Run("unauthenticated request with no L1 data returns metric-scoped checks", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		project := testutil.CreateProject(t, env, "gh-nodata-repo", "https://github.com/nobody/repo")
+
+		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "ci"))
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Equal(t, "ci", body["metricType"])
+		assert.Equal(t, float64(0), body["l1Score"])
+		bodyStr := body["userPrompt"].(string)
+		// Should contain the CI-specific checkmarks, not all metrics.
+		assert.Contains(t, bodyStr, "missing: Has CI configuration")
+		assert.Contains(t, bodyStr, "missing: Has lint step")
+		assert.NotContains(t, bodyStr, "has_readme")
+		assert.NotContains(t, bodyStr, "has_test_dir")
+	})
+
+	t.Run("non-GitHub project works", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateAdminUser(t, env, "gitlabuser", "GitLab User")
 		project := testutil.CreateOwnedProject(t, env, user, "project", "https://gitlab.com/gitlab-user/project")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		env.LoginAs(t, "test@example.com")
 
-		// Change the project service to "gitlab".
 		ctx := context.Background()
 		_, err := env.Queries.UpdateProjectService(ctx, db.UpdateProjectServiceParams{
 			ID:      project.ID,
@@ -226,7 +272,13 @@ func TestGetProjectMetricLLMContext_NonOwner(t *testing.T) {
 		require.NoError(t, err)
 
 		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Equal(t, "readme", body["metricType"])
+		assert.Equal(t, float64(0), body["l1Score"])
+		bodyStr := body["userPrompt"].(string)
+		assert.Contains(t, bodyStr, "missing: Has README")
 	})
 
 	t.Run("unknown metric type is rejected", func(t *testing.T) {

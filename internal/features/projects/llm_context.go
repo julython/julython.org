@@ -1,15 +1,14 @@
 package projects
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
-	"july/internal/auth"
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
@@ -44,110 +43,74 @@ func writeMetricLLMJSONError(w http.ResponseWriter, r *http.Request, status int,
 
 // GET /api/projects/{projectID}/analysis/metrics/{metricType}/llm-context
 // Returns a compact, metric-focused prompt bundle for browser-side WebLLM (after server L1 exists).
+// Public (unauthenticated) access is allowed.
 func (h *projectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
 	metricType := r.PathValue("metricType")
-
-	sessionUser := auth.UserFromContext(ctx)
-	if sessionUser == nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	user, err := h.userService.FindByID(ctx, sessionUser.ID)
-	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+	logger := log.Ctx(ctx)
 
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
+		logger.Warn().Str("project", projectID).Msg("bad project uuid")
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
 	project, err := h.queries.GetProjectByID(ctx, projectUUID)
 	if errors.Is(err, pgx.ErrNoRows) {
+		logger.Warn().Str("project", projectID).Msg("unknown project")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("get project")
+		logger.Error().Err(err).Str("project_id", projectID).Msg("get project")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	if !canEditProject(&user, project) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
 	if !isKnownMetricType(metricType) {
+		logger.Warn().Str("type", metricType).Msg("unknown metric type")
 		http.Error(w, "bad request: unknown metric type", http.StatusBadRequest)
 		return
 	}
 
-	if project.Service != "github" {
-		http.Error(w, "bad request: metric LLM context is only available for GitHub projects", http.StatusBadRequest)
-		return
-	}
-
-	owner, repoName, err := services.ParseGitHubOwnerRepo(project.Url)
-	if err != nil {
-		http.Error(w, "bad request: project URL is not a GitHub repo", http.StatusBadRequest)
-		return
-	}
-	repoFull := owner + "/" + repoName
+	// Attempt to fetch L1 metric data; fall back to README if unavailable.
+	var data map[string]any
+	var score int16
+	var level int16
+	var sha string
 
 	row, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
 		ProjectID:  projectUUID,
 		MetricType: metricType,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		writeMetricLLMJSONError(w, r, http.StatusBadRequest, metricLLMErrorResponse{
-			Error:         "metric_no_analysis",
-			Message:       "There is no L1 analysis row for this metric yet. Run **Rescan analysis (L1)** on the project page first, then try again.",
-			MetricType:    metricType,
-			MetricName:    metrics.MetricDisplayName(metricType),
-			HelpURL:       "/help#analysis-metrics",
-			MetricHelpURL: "/help#" + metrics.MetricHelpAnchor(metricType),
-		})
-		return
-	}
-	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Msg("get analysis metric for llm context")
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	if row.Score <= 0 {
-		score := row.Score
-		name := metrics.MetricDisplayName(metricType)
-		writeMetricLLMJSONError(w, r, http.StatusBadRequest, metricLLMErrorResponse{
-			Error:         "metric_l1_zero",
-			Message:       fmt.Sprintf("**%s** has an L1 score of %d/10. The browser AI review needs at least minimal evidence from the server scan (a non-zero score). Improve this area of the repository, then run **Rescan analysis (L1)** on the project page and try again.", name, row.Score),
-			MetricType:    metricType,
-			MetricName:    name,
-			L1Score:       &score,
-			HelpURL:       "/help#analysis-metrics",
-			MetricHelpURL: "/help#" + metrics.MetricHelpAnchor(metricType),
-		})
-		return
-	}
-
-	var data map[string]any
-	if row.Data != nil {
+	if err == nil && row.Data != nil && row.Score > 0 {
 		data = row.Data
+		score = row.Score
+		level = row.Level
+		sha = row.Sha
 	} else {
-		data = map[string]any{}
+		// No L1 data for this metric: use the metric's zero-value struct
+		// (all booleans false).  No README fallback — sending unrelated data
+		// would distract the LLM from the clicked metric.
+		score = 0
+		level = 0
+		sha = ""
+		zero, err := metrics.ZeroValue(metricType)
+		if err == nil {
+			b, _ := json.Marshal(zero)
+			json.Unmarshal(b, &data)
+		}
 	}
 
-	userPrompt := metrics.BuildMetricLLMUserContent(metricType, data, repoFull, row.Score, row.Level)
+	userPrompt := metrics.BuildMetricLLMUserContent(metricType, data, project.Url, score, level)
 	shared.RespondJSON(w, r, http.StatusOK, metricLLMContextResponse{
 		MetricType:   metricType,
-		RepoName:     repoFull,
-		L1Score:      row.Score,
-		Level:        row.Level,
-		SHA:          row.Sha,
+		RepoName:     project.Url,
+		L1Score:      score,
+		Level:        level,
+		SHA:          sha,
 		SystemPrompt: metrics.MetricLLMSystemPrompt,
 		UserPrompt:   userPrompt,
 	})

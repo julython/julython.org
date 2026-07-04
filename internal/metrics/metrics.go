@@ -150,3 +150,27 @@ func unmarshal[T Metric](data json.RawMessage) (Metric, error) {
 	}
 	return v, nil
 }
+
+// ZeroValue returns a Metric struct with all boolean fields set to false
+// for the given metric type. Useful for "score 0" fallback scenarios.
+func ZeroValue(metricType string) (Metric, error) {
+	switch metricType {
+	case "readme":
+		return Readme{}, nil
+	case "tests":
+		return Tests{}, nil
+	case "ci":
+		return CI{}, nil
+	case "structure":
+		return Structure{}, nil
+	case "linting":
+		return Linting{}, nil
+	case "deps":
+		return Deps{}, nil
+	case "docs":
+		return Docs{}, nil
+	case "ai_ready":
+		return AIReady{}, nil
+	}
+	return nil, fmt.Errorf("unknown metric type: %s", metricType)
+}

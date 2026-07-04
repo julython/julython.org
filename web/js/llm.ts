@@ -13,26 +13,14 @@ export interface ModelRecord {
 
 export const MODELS: ModelRecord[] = [
   {
-    id: "SmolLM2-360M-Instruct-q4f16_1-MLC",
-    label: "SmolLM2 360M (fast, ~130MB)",
-    sizeMB: 130,
-    description: "Fastest option, limited reasoning",
-  },
-  {
     id: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
     label: "Llama 3.2 1B (~879MB)",
     sizeMB: 879,
     description: "Good balance of speed and quality",
   },
-  {
-    id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
-    label: "Llama 3.2 3B (~2.2GB)",
-    sizeMB: 2263,
-    description: "Best quality, requires more VRAM",
-  },
 ];
 
-export const DEFAULT_MODEL = MODELS[1].id; // Llama 1B
+export const DEFAULT_MODEL = MODELS[0].id; // Llama 1B
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -91,8 +79,6 @@ export async function deleteCachedModels(modelId?: string): Promise<void> {
 }
 
 // ── window.ai ─────────────────────────────────────────────────────────────────
-
-const MAX_SYSTEM_PROMPT_CHARS = 2000;
 
 function getLanguageModelAPI(): any | null {
   const w = window as any;
@@ -239,40 +225,4 @@ export async function createSession(
     "No LLM available. Requires Chrome 127+ with #prompt-api-for-gemini-nano, " +
     "or a WebGPU-capable browser."
   );
-}
-
-/** System prompt for repo chat using URL and project description in the prompt. */
-export function buildMinimalChatSystemPrompt(
-  repoDisplay: string,
-  repoURL: string,
-  description: string,
-): string {
-  const desc = description.trim();
-  return `You are a helpful assistant for the software repository "${repoDisplay}" (${repoURL}).
-${desc ? `Project description: ${desc}\n` : ""}
-You do not have the repository files in context. Answer from general knowledge and the user's message; suggest checking GitHub for details when appropriate. Be concise.`;
-}
-
-export function buildSystemPrompt(
-  repoName: string,
-  score: number,
-  categories: Array<{ name: string; score: number; max: number; signals: string[] }>,
-  files: Record<string, string>,
-): string {
-  const scorecard = categories
-    .map(c => `- ${c.name}: ${c.score}/${c.max} (${c.signals.join(", ") || "no signals"})`)
-    .join("\n");
-  const fileDump = Object.entries(files)
-    .slice(0, 5)
-    .map(([path, content]) => `### ${path}\n\`\`\`\n${content.slice(0, 500)}\n\`\`\``)
-    .join("\n\n");
-  return `You are a code quality assistant analyzing the GitHub repository "${repoName}".
-Answer questions about this repo concisely. Focus on actionable advice.
-If asked about something not covered by the files below, say so honestly.
-
-## Scorecard (${score}/100)
-${scorecard}
-
-## Key Files
-${fileDump || "No files were fetched."}`;
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 
-	"july/internal/auth"
 	"july/internal/db"
 	"july/internal/metrics"
 	"july/internal/services"
@@ -32,20 +31,10 @@ type chatContextResponse struct {
 
 // POST /api/projects/{projectID}/analysis/chat-context
 // Returns system + user prompts for the browser assistant: keyword-matched metric scan data, or README by default.
+// Public (unauthenticated) access is allowed.
 func (h *projectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
-
-	sessionUser := auth.UserFromContext(ctx)
-	if sessionUser == nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	user, err := h.userService.FindByID(ctx, sessionUser.ID)
-	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
@@ -61,11 +50,6 @@ func (h *projectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 	if err != nil {
 		log.Ctx(ctx).Error().Err(err).Str("project_id", projectID).Msg("get project")
 		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	if !canEditProject(&user, project) {
-		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 

@@ -278,11 +278,21 @@ func llmContextPath(projectID, metric string) string {
 }
 
 func TestGetProjectMetricLLMContext(t *testing.T) {
-	t.Run("unauthenticated request is rejected", func(t *testing.T) {
+	t.Run("unauthenticated request succeeds", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		project := testutil.CreateProject(t, env, "gh-nobody-repo", "https://github.com/nobody/repo")
+		ctx := context.Background()
+		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
+			ID:         db.NewID(),
+			ProjectID:  project.ID,
+			MetricType: "readme",
+			Score:      5,
+			Data:       db.JSONMap{"has_readme": true},
+			Sha:        "def456",
+			UpdatedBy:  db.SystemUserID,
+		}))
 		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("returns JSON for owner with L1 metric", func(t *testing.T) {
@@ -333,19 +343,17 @@ func TestGetProjectMetricLLMContext(t *testing.T) {
 		}))
 
 		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		var body map[string]any
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 		resp.Body.Close()
-		assert.Equal(t, "metric_l1_zero", body["error"])
-		assert.NotEmpty(t, body["message"])
 		assert.Equal(t, "readme", body["metricType"])
-		assert.Equal(t, "/help#analysis-metrics", body["helpUrl"])
-		assert.Equal(t, "/help#analysis-metric-readme", body["metricHelpUrl"])
+		assert.NotEmpty(t, body["userPrompt"])
+		assert.NotEmpty(t, body["systemPrompt"])
 		assert.Equal(t, float64(0), body["l1Score"])
 	})
 
-	t.Run("rejects missing metric row with JSON body", func(t *testing.T) {
+	t.Run("succeeds with missing metric row by falling back", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
@@ -353,13 +361,18 @@ func TestGetProjectMetricLLMContext(t *testing.T) {
 		env.LoginAs(t, "test@example.com")
 
 		resp := testutil.GetJSON(t, env, llmContextPath(project.ID.String(), "readme"))
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		var body map[string]any
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 		resp.Body.Close()
-		assert.Equal(t, "metric_no_analysis", body["error"])
-		assert.NotEmpty(t, body["message"])
-		assert.Equal(t, "/help#analysis-metrics", body["helpUrl"])
-		assert.Equal(t, "/help#analysis-metric-readme", body["metricHelpUrl"])
+		assert.Equal(t, "readme", body["metricType"])
+		assert.NotEmpty(t, body["userPrompt"])
+		assert.NotEmpty(t, body["systemPrompt"])
+
+		// Verify it contains the README-specific checkmarks, not all metrics.
+		bodyStr := body["userPrompt"].(string)
+		assert.Contains(t, bodyStr, "missing: Has README")
+		assert.NotContains(t, bodyStr, "has_test_dir")
+		assert.NotContains(t, bodyStr, "has_ci")
 	})
 }
