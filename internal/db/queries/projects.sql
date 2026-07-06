@@ -78,31 +78,16 @@ UPDATE projects SET is_active = true WHERE id = @id;
 UPDATE projects SET service = @service WHERE id = @id RETURNING *;
 
 -- name: UpsertAnalysisMetric :exec
--- Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
--- L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
+-- Score always reflects latest scan. Level is computed from score: 0→0, 1–5→1, 6–8→2, 9–10→3.
 INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
-VALUES (@id, @project_id, @metric_type, CASE WHEN @score > 0 THEN 1 ELSE 0 END, @score, @data, @sha, @updated_by)
+VALUES (@id, @project_id, @metric_type, @level, @score, @data, @sha, @updated_by)
 ON CONFLICT (project_id, metric_type) DO UPDATE SET
   sha        = EXCLUDED.sha,
   updated_at = now(),
   updated_by = EXCLUDED.updated_by,
   data       = EXCLUDED.data,
   score      = EXCLUDED.score,
-  level      = CASE
-    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3 AI
-    WHEN EXCLUDED.score > 0          THEN 1                       -- L1 heuristic partial
-    ELSE                                  0                       -- score 0, no L1 bar
-  END;
-
--- name: UpdateAnalysisMetricLevel :exec
--- Called after AI grading for L2/L3 upgrades only.
--- Requires the metric to already be at L1 (enforced in the handler).
-UPDATE analysis_metrics SET
-  level      = @level,
-  updated_at = now(),
-  updated_by = @updated_by
-WHERE project_id = @project_id
-  AND metric_type = @metric_type;
+  level      = EXCLUDED.level;
 
 -- name: GetAnalysisMetric :one
 SELECT * FROM analysis_metrics

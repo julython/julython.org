@@ -407,34 +407,6 @@ func (q *Queries) SetProjectIsPrivate(ctx context.Context, arg SetProjectIsPriva
 	return err
 }
 
-const updateAnalysisMetricLevel = `-- name: UpdateAnalysisMetricLevel :exec
-UPDATE analysis_metrics SET
-  level      = $1,
-  updated_at = now(),
-  updated_by = $2
-WHERE project_id = $3
-  AND metric_type = $4
-`
-
-type UpdateAnalysisMetricLevelParams struct {
-	Level      int16     `json:"level"`
-	UpdatedBy  uuid.UUID `json:"updated_by"`
-	ProjectID  uuid.UUID `json:"project_id"`
-	MetricType string    `json:"metric_type"`
-}
-
-// Called after AI grading for L2/L3 upgrades only.
-// Requires the metric to already be at L1 (enforced in the handler).
-func (q *Queries) UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error {
-	_, err := q.db.Exec(ctx, updateAnalysisMetricLevel,
-		arg.Level,
-		arg.UpdatedBy,
-		arg.ProjectID,
-		arg.MetricType,
-	)
-	return err
-}
-
 const updateProjectService = `-- name: UpdateProjectService :one
 UPDATE projects SET service = $1 WHERE id = $2 RETURNING id, url, name, slug, description, repo_id, service, forked, forks, watchers, parent_url, is_active, created_at, updated_at, is_private, owner
 `
@@ -470,37 +442,34 @@ func (q *Queries) UpdateProjectService(ctx context.Context, arg UpdateProjectSer
 
 const upsertAnalysisMetric = `-- name: UpsertAnalysisMetric :exec
 INSERT INTO analysis_metrics (id, project_id, metric_type, level, score, data, sha, updated_by)
-VALUES ($1, $2, $3, CASE WHEN $4 > 0 THEN 1 ELSE 0 END, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (project_id, metric_type) DO UPDATE SET
   sha        = EXCLUDED.sha,
   updated_at = now(),
   updated_by = EXCLUDED.updated_by,
   data       = EXCLUDED.data,
   score      = EXCLUDED.score,
-  level      = CASE
-    WHEN analysis_metrics.level >= 2 THEN analysis_metrics.level  -- preserve L2/L3 AI
-    WHEN EXCLUDED.score > 0          THEN 1                       -- L1 heuristic partial
-    ELSE                                  0                       -- score 0, no L1 bar
-  END
+  level      = EXCLUDED.level
 `
 
 type UpsertAnalysisMetricParams struct {
 	ID         uuid.UUID `json:"id"`
 	ProjectID  uuid.UUID `json:"project_id"`
 	MetricType string    `json:"metric_type"`
+	Level      int16     `json:"level"`
 	Score      int16     `json:"score"`
 	Data       JSONMap   `json:"data"`
 	Sha        string    `json:"sha"`
 	UpdatedBy  uuid.UUID `json:"updated_by"`
 }
 
-// Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
-// L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
+// Score always reflects latest scan. Level is computed from score: 0→0, 1–5→1, 6–8→2, 9–10→3.
 func (q *Queries) UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error {
 	_, err := q.db.Exec(ctx, upsertAnalysisMetric,
 		arg.ID,
 		arg.ProjectID,
 		arg.MetricType,
+		arg.Level,
 		arg.Score,
 		arg.Data,
 		arg.Sha,

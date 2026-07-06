@@ -1,8 +1,7 @@
-package services
+package metrics
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -11,28 +10,27 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/db"
-	"july/internal/metrics"
 )
 
-// L1Scanner runs server-side L1 analysis and upserts analysis_metrics rows.
-type L1Scanner struct {
+// Scanner runs server-side L1 analysis and upserts analysis_metrics rows.
+type Scanner struct {
 	queries *db.Queries
 	pool    *pgxpool.Pool
 	token   string
 }
 
-// NewL1Scanner wires the app-wide queries handle and pool from the composition root (same as api.buildMux).
+// NewScanner wires the app-wide queries handle and pool from the composition root (same as api.buildMux).
 // Pool is used only for transactions; queries is used for pool-scoped SQL (e.g. SetProjectIsPrivate).
-func NewL1Scanner(queries *db.Queries, pool *pgxpool.Pool, token string) *L1Scanner {
-	return &L1Scanner{queries: queries, pool: pool, token: token}
+func NewScanner(queries *db.Queries, pool *pgxpool.Pool, token string) *Scanner {
+	return &Scanner{queries: queries, pool: pool, token: token}
 }
 
 // IsConfigured returns true when a non-empty GitHub token was provided (public-repo reads).
-func (s *L1Scanner) IsConfigured() bool {
+func (s *Scanner) IsConfigured() bool {
 	return strings.TrimSpace(s.token) != ""
 }
 
-// MetricOrder matches analysisBoardSpec and EvaluateL1 keys.
+// MetricOrder matches analysisBoardSpec and Evaluate keys.
 var MetricOrder = []string{
 	"readme", "tests", "ci", "structure", "linting", "deps", "docs", "ai_ready",
 }
@@ -50,9 +48,9 @@ func ParseGitHubOwnerRepo(repoURL string) (owner, repo string, err error) {
 	return parts[0], parts[1], nil
 }
 
-// RunL1Scan fetches the repo tree, scores metrics, and upserts all eight rows in one transaction.
+// RunScan fetches the repo tree, scores metrics, and upserts all eight rows in one transaction.
 // No-op when token is empty, project is private, or service is not github.
-func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy uuid.UUID) error {
+func (s *Scanner) RunScan(ctx context.Context, project db.Project, updatedBy uuid.UUID) error {
 	if project.Service != "github" {
 		return nil
 	}
@@ -68,10 +66,10 @@ func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy
 		return err
 	}
 
-	client := metrics.NewClient(s.token)
-	res, err := client.FetchL1Scan(ctx, owner, repoName)
+	client := NewClient(s.token)
+	res, err := client.FetchScanData(ctx, owner, repoName)
 	if err != nil {
-		if errors.Is(err, metrics.ErrGitHubForbidden) {
+		if err.Error() == "github: forbidden" {
 			if err := s.queries.SetProjectIsPrivate(ctx, db.SetProjectIsPrivateParams{
 				ID:        project.ID,
 				IsPrivate: true,
@@ -84,7 +82,7 @@ func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy
 		return fmt.Errorf("fetch L1 scan: %w", err)
 	}
 
-	results := metrics.EvaluateL1(res)
+	results := Evaluate(res)
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -104,6 +102,7 @@ func (s *L1Scanner) RunL1Scan(ctx context.Context, project db.Project, updatedBy
 			ProjectID:  project.ID,
 			MetricType: metricType,
 			Score:      mr.Score,
+			Level:      CalculateLevel(mr.Score),
 			Data:       data,
 			Sha:        res.SHA,
 			UpdatedBy:  updatedBy,

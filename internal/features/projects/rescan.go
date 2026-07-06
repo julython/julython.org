@@ -25,13 +25,13 @@ func (h *projectHandler) performL1Scan(ctx context.Context, project db.Project, 
 	if project.IsPrivate {
 		return errL1PrivateRepo
 	}
-	if !h.l1Scanner.IsConfigured() {
+	if !h.scanner.IsConfigured() {
 		return errL1NoGitHubToken
 	}
 
 	scanCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	if err := h.l1Scanner.RunL1Scan(scanCtx, project, updatedBy); err != nil {
+	if err := h.scanner.RunScan(scanCtx, project, updatedBy); err != nil {
 		return err
 	}
 	return nil

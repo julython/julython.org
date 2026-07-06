@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEvaluateL1_ReadmeSubstantial(t *testing.T) {
-	res := &L1ScanResult{
+func TestEvaluate_ReadmeSubstantial(t *testing.T) {
+	res := &ScanResult{
 		SHA: "abc",
 		Tree: []TreeEntry{
 			{Path: "README.md", Type: "blob"},
@@ -21,14 +21,14 @@ func TestEvaluateL1_ReadmeSubstantial(t *testing.T) {
 			}},
 		},
 	}
-	out := EvaluateL1(res)
+	out := Evaluate(res)
 	r := out["readme"]
-	require.Equal(t, int16(10), r.Score)
+	require.Equal(t, int16(8), r.Score) // 5 of 6 = (5*10)/6 = 8
 	require.NotNil(t, r.Data[PromptContextKey])
 }
 
-func TestEvaluateL1_StructureLicense(t *testing.T) {
-	res := &L1ScanResult{
+func TestEvaluate_StructureLicense(t *testing.T) {
+	res := &ScanResult{
 		SHA: "abc",
 		Tree: []TreeEntry{
 			{Path: "LICENSE", Type: "blob"},
@@ -43,7 +43,7 @@ func TestEvaluateL1_StructureLicense(t *testing.T) {
 			}},
 		},
 	}
-	out := EvaluateL1(res)
+	out := Evaluate(res)
 	require.True(t, out["structure"].Score > 0)
 	pc := out["structure"].Data[PromptContextKey].(map[string]any)
 	sources := pc["sources"].([]map[string]string)

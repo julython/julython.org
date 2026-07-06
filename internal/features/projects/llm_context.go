@@ -11,7 +11,6 @@ import (
 
 	"july/internal/db"
 	"july/internal/metrics"
-	"july/internal/services"
 	"july/internal/shared"
 )
 
@@ -91,17 +90,14 @@ func (h *projectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 		level = row.Level
 		sha = row.Sha
 	} else {
-		// No L1 data for this metric: use the metric's zero-value struct
-		// (all booleans false).  No README fallback — sending unrelated data
-		// would distract the LLM from the clicked metric.
+		// No L1 data for this metric: use Parse which returns
+		// an all-false zero-value struct for unknown types.
 		score = 0
 		level = 0
 		sha = ""
-		zero, err := metrics.ZeroValue(metricType)
-		if err == nil {
-			b, _ := json.Marshal(zero)
-			json.Unmarshal(b, &data)
-		}
+		m, _ := metrics.Parse(metricType, nil)
+		b, _ := json.Marshal(m)
+		json.Unmarshal(b, &data)
 	}
 
 	userPrompt := metrics.BuildMetricLLMUserContent(metricType, data, project.Url, score, level)
@@ -117,7 +113,7 @@ func (h *projectHandler) GetProjectMetricLLMContext(w http.ResponseWriter, r *ht
 }
 
 func isKnownMetricType(s string) bool {
-	for _, m := range services.MetricOrder {
+	for _, m := range metrics.MetricOrder {
 		if m == s {
 			return true
 		}

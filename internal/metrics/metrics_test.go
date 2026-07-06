@@ -15,13 +15,13 @@ func TestReadmeScore(t *testing.T) {
 	assert.Equal(t, int16(0), r.score())
 
 	r = Readme{HasReadme: true, ReadmeSubstantial: true}
-	assert.Equal(t, int16(4), r.score()) // 2 of 5 = (2*10)/5 = 4
+	assert.Equal(t, int16(3), r.score()) // 2 of 6 = (2*10)/6 = 3
 
 	r = Readme{
 		HasReadme: true, ReadmeSubstantial: true, ReadmeHasInstall: true,
 		ReadmeHasUsage: true, ReadmeHasBanners: true,
 	}
-	assert.Equal(t, int16(10), r.score())
+	assert.Equal(t, int16(8), r.score()) // 5 of 6 = (5*10)/6 = 8
 }
 
 func TestTestsScore(t *testing.T) {
@@ -101,7 +101,7 @@ func TestAIReadyPartialScore(t *testing.T) {
 
 func TestScore(t *testing.T) {
 	readme := Readme{HasReadme: true, ReadmeSubstantial: true}
-	assert.Equal(t, int16(4), Score(readme))
+	assert.Equal(t, int16(3), Score(readme))
 
 	ci := CI{HasCI: true, HasTestStep: true}
 	assert.Equal(t, int16(5), Score(ci))
@@ -117,6 +117,7 @@ func TestParseReadme(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, r.HasReadme)
 	assert.True(t, r.ReadmeSubstantial)
+	assert.Equal(t, int16(3), Score(m)) // 2 of 6 = (2*10)/6 = 3
 }
 
 func TestParseTests(t *testing.T) {
@@ -169,14 +170,17 @@ func TestParseAIReady(t *testing.T) {
 }
 
 func TestParseUnknownType(t *testing.T) {
-	_, err := Parse("unknown_type", json.RawMessage("{}"))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown metric type")
+	// Unknown types now return an all-false Readme (no error).
+	m, err := Parse("unknown_type", json.RawMessage("{}"))
+	require.NoError(t, err)
+	assert.Equal(t, int16(0), Score(m))
 }
 
 func TestParseInvalidJSON(t *testing.T) {
-	_, err := Parse("readme", json.RawMessage(`{invalid}`))
-	require.Error(t, err)
+	// Invalid JSON now returns an all-false Readme (no error).
+	m, err := Parse("readme", json.RawMessage(`{invalid}`))
+	require.NoError(t, err)
+	assert.Equal(t, int16(0), Score(m))
 }
 
 func TestParseAllKnownTypes(t *testing.T) {

@@ -29,8 +29,8 @@ type analysisResponse struct {
 }
 
 // POST /api/projects/{projectID}/analysis
-// Level 0/1: scores the tile and upserts the metric row (heuristic L1 when score > 0).
-// Level 2/3: records an AI-graded level up; requires existing heuristic row with score > 0.
+// Scores the metric, computes the level from the score (0→0, 1–5→1, 6–8→2, 9–10→3),
+// and persists the result in one upsert.
 func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := r.PathValue("projectID")
@@ -79,54 +79,10 @@ func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		Str("SHA", p.SHA).
 		Str("Metric", p.MetricType).
 		Str("projectID", projectID).
-		Int16("level", p.Level).
 		Logger()
 
 	if p.SHA == "" || p.MetricType == "" || len(p.Data) == 0 {
 		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-	if p.Level < 0 || p.Level > 3 {
-		http.Error(w, "bad request: level must be 0 to 3", http.StatusBadRequest)
-		return
-	}
-
-	// L2/L3 path: AI grading — gate on stored heuristic score > 0 (any partial L1), not 10/10.
-	if p.Level >= 2 {
-		existing, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
-			ProjectID:  projectUUID,
-			MetricType: p.MetricType,
-		})
-		if errors.Is(err, pgx.ErrNoRows) {
-			http.Error(w, "bad request: metric must have heuristic data (L1) before AI grading", http.StatusBadRequest)
-			return
-		}
-		if err != nil {
-			logger.Error().Err(err).Msg("get analysis metric for level guard")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-		if existing.Score <= 0 || existing.Level < 1 {
-			http.Error(w, "bad request: metric must have heuristic data (L1) before AI grading", http.StatusBadRequest)
-			return
-		}
-
-		if err := h.queries.UpdateAnalysisMetricLevel(ctx, db.UpdateAnalysisMetricLevelParams{
-			ProjectID:  projectUUID,
-			MetricType: p.MetricType,
-			Level:      p.Level,
-			UpdatedBy:  user.ID,
-		}); err != nil {
-			logger.Error().Err(err).Msg("update analysis metric level")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		shared.RespondJSON(w, r, http.StatusOK, analysisResponse{
-			MetricType: p.MetricType,
-			Score:      existing.Score,
-			Level:      p.Level,
-		})
 		return
 	}
 
@@ -137,6 +93,7 @@ func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 	}
 
 	score := metrics.Score(m)
+	level := metrics.CalculateLevel(score)
 
 	var data db.JSONMap
 	json.Unmarshal(p.Data, &data)
@@ -145,6 +102,7 @@ func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		ID:         db.NewID(),
 		ProjectID:  projectUUID,
 		MetricType: p.MetricType,
+		Level:      level,
 		Score:      score,
 		Data:       data,
 		Sha:        p.SHA,
@@ -155,8 +113,7 @@ func (h *projectHandler) PostProjectAnalysis(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Fetch the persisted row so the response reflects the true level
-	// (the SQL upsert owns the L0/L1 transition logic).
+	// Fetch the persisted row so the response reflects the true level.
 	saved, err := h.queries.GetAnalysisMetric(ctx, db.GetAnalysisMetricParams{
 		ProjectID:  projectUUID,
 		MetricType: p.MetricType,

@@ -2,9 +2,24 @@ package metrics
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 )
+
+// maxPromptContextBytes is the total cap for all snippet text stored in analysis_metrics.data
+// (prompt_context) and fed to browser LLMs. Keeps WebLLM (~4k context) and Chrome AI prompts usable.
+const maxPromptContextBytes = 3000
+
+// PromptContextKey is stored alongside scored bool fields in analysis_metrics.data for L2/L3 prompts.
+const PromptContextKey = "prompt_context"
+
+// LanguageKey is stored in every metric's data so prompts can reference it.
+const LanguageKey = "language"
+
+// MetricResult is one tile's JSON payload and score for UpsertAnalysisMetric.
+type MetricResult struct {
+	Data  map[string]any
+	Score int16
+}
 
 // Metric is implemented by every tile struct.
 // Score counts true boolean fields as partial credit out of 10.
@@ -18,11 +33,11 @@ func Score(m Metric) int16 {
 	return m.score()
 }
 
-// scoreFields uses reflection to count true bool fields.
-// All tile structs embed this to get Score() for free.
-type scoreFields struct{}
-
-func (scoreFields) score() int16 { return 0 } // never called directly
+type sourceSpec struct {
+	path     string
+	content  string
+	maxBytes int
+}
 
 func countBools(v any) int16 {
 	rv := reflect.ValueOf(v)
@@ -49,11 +64,12 @@ func countBools(v any) int16 {
 // JSON keys become UI lookup keys for displaying feedback to the user.
 
 type Readme struct {
-	HasReadme         bool `json:"has_readme"`
-	ReadmeSubstantial bool `json:"readme_substantial"` // > 500 bytes
-	ReadmeHasInstall  bool `json:"readme_has_install"`
-	ReadmeHasUsage    bool `json:"readme_has_usage"`
-	ReadmeHasBanners  bool `json:"readme_has_banners"`
+	HasReadme           bool `json:"has_readme"`
+	ReadmeSubstantial   bool `json:"readme_substantial"` // > 500 bytes
+	ReadmeHasInstall    bool `json:"readme_has_install"`
+	ReadmeHasUsage      bool `json:"readme_has_usage"`
+	ReadmeHasBanners    bool `json:"readme_has_banners"`
+	ReadmeHasCodeBlocks bool `json:"readme_has_code_blocks"`
 }
 
 func (r Readme) score() int16 { return countBools(r) }
@@ -119,58 +135,167 @@ func (a AIReady) score() int16 { return countBools(a) }
 
 // ── Dispatch ──────────────────────────────────────────────────────
 
-// Parse unmarshals raw JSON into the correct metric struct for the given type
-// and returns its score. Returns an error for unknown metric types.
+// Parse unmarshals raw JSON into the correct metric struct for the given type.
+// Unknown types and nil data return a zero-value struct (all bools false).
+// This is safe for partial JSON — missing fields default to false.
 func Parse(metricType string, data json.RawMessage) (Metric, error) {
 	switch metricType {
 	case "readme":
-		return unmarshal[Readme](data)
+		var r Readme
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &r)
+		}
+		return r, nil
 	case "tests":
-		return unmarshal[Tests](data)
+		var t Tests
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &t)
+		}
+		return t, nil
 	case "ci":
-		return unmarshal[CI](data)
+		var c CI
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &c)
+		}
+		return c, nil
 	case "structure":
-		return unmarshal[Structure](data)
+		var s Structure
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &s)
+		}
+		return s, nil
 	case "linting":
-		return unmarshal[Linting](data)
+		var l Linting
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &l)
+		}
+		return l, nil
 	case "deps":
-		return unmarshal[Deps](data)
+		var d Deps
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &d)
+		}
+		return d, nil
 	case "docs":
-		return unmarshal[Docs](data)
+		var do Docs
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &do)
+		}
+		return do, nil
 	case "ai_ready":
-		return unmarshal[AIReady](data)
+		var a AIReady
+		if len(data) > 0 {
+			_ = json.Unmarshal(data, &a)
+		}
+		return a, nil
 	}
-	return nil, fmt.Errorf("unknown metric type: %s", metricType)
+	return Readme{}, nil
 }
 
-func unmarshal[T Metric](data json.RawMessage) (Metric, error) {
-	var v T
-	if err := json.Unmarshal(data, &v); err != nil {
+// structToMap marshals a struct to JSON and unmarshals back to a map[string]any.
+func structToMap(v any) (map[string]any, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
 		return nil, err
 	}
-	return v, nil
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
-// ZeroValue returns a Metric struct with all boolean fields set to false
-// for the given metric type. Useful for "score 0" fallback scenarios.
-func ZeroValue(metricType string) (Metric, error) {
-	switch metricType {
-	case "readme":
-		return Readme{}, nil
-	case "tests":
-		return Tests{}, nil
-	case "ci":
-		return CI{}, nil
-	case "structure":
-		return Structure{}, nil
-	case "linting":
-		return Linting{}, nil
-	case "deps":
-		return Deps{}, nil
-	case "docs":
-		return Docs{}, nil
-	case "ai_ready":
-		return AIReady{}, nil
+// promptSourcesForMetric builds context entries for LLM prompts, respecting the total byte budget.
+func promptSourcesForMetric(specs []sourceSpec) []map[string]string {
+	const maxSources = 5
+	var out []map[string]string
+	total := 0
+	for _, s := range specs {
+		if s.path == "" {
+			continue
+		}
+		// Path-only: file matters for the metric but body is not useful in-context (e.g. LICENSE).
+		if s.content == "" {
+			out = append(out, map[string]string{"path": s.path, "snippet": ""})
+			if len(out) >= maxSources {
+				break
+			}
+			continue
+		}
+		max := s.maxBytes
+		if max <= 0 {
+			max = 2000
+		}
+		if max > 2200 {
+			max = 2200
+		}
+		sn := s.content
+		if len(sn) > max {
+			sn = sn[:max]
+		}
+		if total+len(sn) > maxPromptContextBytes {
+			remain := maxPromptContextBytes - total
+			if remain < 80 {
+				break
+			}
+			sn = sn[:remain]
+		}
+		out = append(out, map[string]string{"path": s.path, "snippet": sn})
+		total += len(sn)
+		if len(out) >= maxSources {
+			break
+		}
 	}
-	return nil, fmt.Errorf("unknown metric type: %s", metricType)
+	return out
+}
+
+func addPromptContext(data map[string]any, sources []map[string]string) {
+	if len(sources) == 0 {
+		return
+	}
+	data[PromptContextKey] = map[string]any{"sources": sources}
+}
+
+func setLanguage(data map[string]any, lang string) {
+	if lang != "" {
+		data[LanguageKey] = lang
+	}
+}
+
+func pathSetFromTree(tree []TreeEntry) map[string]bool {
+	m := make(map[string]bool, len(tree))
+	for _, e := range tree {
+		if e.Type == "blob" {
+			m[e.Path] = true
+		}
+	}
+	return m
+}
+
+func contentByPath(res *ScanResult) map[string]string {
+	cm := make(map[string]string)
+	for _, m := range res.Matches {
+		if m.Content != "" {
+			cm[m.Path] = m.Content
+		}
+	}
+	return cm
+}
+
+func firstContent(res *ScanResult, category string) string {
+	for _, m := range res.ByCategory[category] {
+		if m.Content != "" {
+			return m.Content
+		}
+	}
+	return ""
+}
+
+func firstPath(res *ScanResult, category string) string {
+	for _, m := range res.ByCategory[category] {
+		if m.Path != "" {
+			return m.Path
+		}
+	}
+	return ""
 }
