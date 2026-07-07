@@ -28,9 +28,9 @@ func (h *gameHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 	stats, _ := h.queries.GetCommitStats(ctx, pgtype.UUID{Bytes: game.ID, Valid: true})
 
 	rows, err := h.queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
-		GameID:      game.ID,
-		LimitCount:  int32(limit + 1),
-		OffsetCount: int32(offset),
+		GameID:  game.ID,
+		Limit:   int32(limit + 1),
+		Offset:  int32(offset),
 	})
 	if err != nil {
 		http.Error(w, "failed to load leaderboard", http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func (h *gameHandler) Leaders(w http.ResponseWriter, r *http.Request) {
 			AvatarURL:    avatarURL,
 			CommitCount:  int(row.CommitCount),
 			ProjectCount: int(row.ProjectCount),
-			Points:       int(row.BoardTotal),
+			Points:       int(row.VerifiedPoints),
 		}
 	}
 

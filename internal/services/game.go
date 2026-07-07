@@ -347,6 +347,14 @@ func (s *GameService) assignPlayerBoards(ctx context.Context, game db.Game, user
 		}
 	}
 
+	counts, err := s.queries.CountUserCommitsForGame(ctx, db.CountUserCommitsForGameParams{
+		UserID: db.UUID(player.UserID),
+		GameID: db.UUID(game.ID),
+	})
+	if err != nil {
+		return fmt.Errorf("count commits: %w", err)
+	}
+
 	// Recalculate verified_points from all boards.
 	total, err := s.queries.GetPlayerBoardTotal(ctx, db.GetPlayerBoardTotalParams{
 		Board1ID: db.UUIDFromPg(ids.Board1ID),
@@ -357,9 +365,12 @@ func (s *GameService) assignPlayerBoards(ctx context.Context, game db.Game, user
 		return fmt.Errorf("get board total: %w", err)
 	}
 
+	verifiedPoints := int32(counts.CommitCount) + total
 	if err := s.queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
 		ID:             player.ID,
-		VerifiedPoints: total,
+		VerifiedPoints: verifiedPoints,
+		CommitCount:    counts.CommitCount,
+		ProjectCount:   counts.ProjectCount,
 		AnalysisStatus: "completed",
 	}); err != nil {
 		return fmt.Errorf("update analysis: %w", err)
@@ -458,9 +469,9 @@ func (s *GameService) ApplyAnalysisAdjustment(ctx context.Context, playerID uuid
 // GetLeaderboard returns top players for a game.
 func (s *GameService) GetLeaderboard(ctx context.Context, gameID uuid.UUID, limit, offset int32) ([]db.GetLeaderboardRow, error) {
 	return s.queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
-		GameID:      gameID,
-		LimitCount:  limit,
-		OffsetCount: offset,
+		GameID: gameID,
+		Limit:  limit,
+		Offset: offset,
 	})
 }
 
@@ -509,5 +520,61 @@ func (s *GameService) DeactivateProject(ctx context.Context, projectID uuid.UUID
 		return fmt.Errorf("deactivate project: %w", err)
 	}
 	logger.Info().Msg("deactivated project")
+	return nil
+}
+
+// RefreshPlayerAfterScan updates the player who owns the given project's board.
+// It recalculates verified_points = (commit_count × 1) + Sum(3 boards).
+func (s *GameService) RefreshPlayerAfterScan(ctx context.Context, gameID, projectID uuid.UUID) error {
+	// 1. Get the board for this project.
+	board, err := s.queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
+		ProjectID: projectID,
+		GameID:    gameID,
+	})
+	if err != nil {
+		return nil // no board, skip silently
+	}
+
+	// 2. Find the player who has this board.
+	player, err := s.queries.GetPlayerByBoardID(ctx, db.UUID(board.ID))
+	if err != nil {
+		return nil // no player, skip silently
+	}
+
+	// 3. Get the user's commit count for the game.
+	counts, err := s.queries.CountUserCommitsForGame(ctx, db.CountUserCommitsForGameParams{
+		UserID: db.UUID(player.UserID),
+		GameID: db.UUID(gameID),
+	})
+	if err != nil {
+		return fmt.Errorf("count commits: %w", err)
+	}
+
+	// 4. Get the total from all 3 boards.
+	boardIDs, err := s.queries.GetPlayerBoardIds(ctx, player.ID)
+	if err != nil {
+		return fmt.Errorf("get board IDs: %w", err)
+	}
+
+	boardTotal, err := s.queries.GetPlayerBoardTotal(ctx, db.GetPlayerBoardTotalParams{
+		Board1ID: db.UUIDFromPg(boardIDs.Board1ID),
+		Board2ID: db.UUIDFromPg(boardIDs.Board2ID),
+		Board3ID: db.UUIDFromPg(boardIDs.Board3ID),
+	})
+	if err != nil {
+		return fmt.Errorf("get board total: %w", err)
+	}
+
+	// 5. Update the player: verified_points = commit_count + board_total.
+	verifiedPoints := int32(counts.CommitCount) + boardTotal
+	if err := s.queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+		ID:             player.ID,
+		VerifiedPoints: verifiedPoints,
+		CommitCount:    counts.CommitCount,
+		ProjectCount:   counts.ProjectCount,
+		AnalysisStatus: "completed",
+	}); err != nil {
+		return fmt.Errorf("update player: %w", err)
+	}
 	return nil
 }

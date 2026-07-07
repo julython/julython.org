@@ -45,6 +45,8 @@ WHERE b.id IS NOT NULL;
 UPDATE players SET
     verified_points = @verified_points,
     analysis_status = @analysis_status,
+    commit_count = @commit_count,
+    project_count = @project_count,
     last_analyzed_at = now()
 WHERE id = @id;
 
@@ -55,22 +57,13 @@ SELECT
     p.commit_count, p.project_count, p.analysis_status,
     p.last_analyzed_at, p.created_at, p.updated_at,
     p.board_1_id, p.board_2_id, p.board_3_id,
-    u.name, u.username, u.avatar_url,
-    COALESCE(board_total.total, 0) AS board_total
+    u.name, u.username, u.avatar_url
 FROM players p
-JOIN users u ON u.id = p.user_id AND p.game_id = @game_id AND u.is_active = true
-LEFT JOIN LATERAL (
-    SELECT COALESCE(
-        SUM(CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END),
-        0
-    )::int AS total
-    FROM boards b
-    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
-) AS board_total ON true
+JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
 ORDER BY
     CASE WHEN p.verified_points > 0 THEN p.verified_points ELSE p.potential_points END DESC,
     p.points DESC
-LIMIT @limit_count OFFSET @offset_count;
+LIMIT $3 OFFSET $2;
 
 -- name: GetPlayerRank :one
 SELECT COUNT(*) + 1 AS rank
@@ -133,3 +126,8 @@ SELECT COALESCE(
     ), 0)::int AS total
 FROM boards b
 WHERE b.id = @board_1_id OR b.id = @board_2_id OR b.id = @board_3_id;
+
+-- name: GetPlayerByBoardID :one
+-- Returns the player who has the given board assigned (any of 3 slots).
+SELECT * FROM players
+WHERE @board_id = ANY(ARRAY[board_1_id, board_2_id, board_3_id]);
