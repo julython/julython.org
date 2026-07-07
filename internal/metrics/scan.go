@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"strings"
 )
 
@@ -30,7 +29,7 @@ type FileMatch struct {
 	Content  string // populated in pass 2
 }
 
-type L1ScanResult struct {
+type ScanResult struct {
 	Owner      string
 	Repo       string
 	SHA        string
@@ -49,18 +48,18 @@ func NewClient(token string) *Client {
 	return &Client{httpClient: &http.Client{}, token: token}
 }
 
-// FetchL1Scan runs two GraphQL queries:
+// FetchScanData runs two GraphQL queries:
 // 1. Fetch the full recursive tree to discover what exists
 // 2. Fetch content for files relevant to L1 scoring
-func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanResult, error) {
+func (c *Client) FetchScanData(ctx context.Context, owner, repo string) (*ScanResult, error) {
 	sha, language, tree, err := c.fetchTree(ctx, owner, repo)
 	if err != nil {
 		return nil, fmt.Errorf("pass 1 tree fetch: %w", err)
 	}
 
-	matches := classifyTree(tree)
+	matches := classifyTree(tree, AllMatchers())
 	if len(matches) == 0 {
-		return &L1ScanResult{
+		return &ScanResult{
 			Owner:      owner,
 			Repo:       repo,
 			SHA:        sha,
@@ -93,7 +92,7 @@ func (c *Client) FetchL1Scan(ctx context.Context, owner, repo string) (*L1ScanRe
 		)
 	}
 
-	return &L1ScanResult{
+	return &ScanResult{
 		Owner:      owner,
 		Repo:       repo,
 		SHA:        sha,
@@ -216,6 +215,20 @@ func (c *Client) fetchRecursiveTree(ctx context.Context, owner, repo, treeSHA st
 	return entries, result.Truncated, nil
 }
 
+// AllMatchers collects the matcher entries from all metric files.
+func AllMatchers() []pathMatcher {
+	var all []pathMatcher
+	all = append(all, readmeMatchers...)
+	all = append(all, ciMatchers...)
+	all = append(all, testsMatchers...)
+	all = append(all, structureMatchers...)
+	all = append(all, lintingMatchers...)
+	all = append(all, depsMatchers...)
+	all = append(all, docsMatchers...)
+	all = append(all, aiReadyMatchers...)
+	return all
+}
+
 // tile category signals — maps category to path matchers
 type pathMatcher struct {
 	Category string
@@ -224,158 +237,15 @@ type pathMatcher struct {
 	Limit int
 }
 
-var matchers = []pathMatcher{
-	{
-		Category: "readme",
-		Limit:    1,
-		Match: func(p string, isBlob bool) bool {
-			base := strings.ToLower(path.Base(p))
-			return isBlob && path.Dir(p) == "." &&
-				strings.HasPrefix(base, "readme")
-		},
-	},
-	{
-		Category: "license",
-		Limit:    1,
-		Match: func(p string, isBlob bool) bool {
-			base := strings.ToLower(path.Base(p))
-			return isBlob && path.Dir(p) == "." &&
-				(strings.HasPrefix(base, "license") || strings.HasPrefix(base, "licence"))
-		},
-	},
-	{
-		Category: "ci",
-		Limit:    3,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob {
-				return false
-			}
-			return strings.HasPrefix(p, ".github/workflows/") ||
-				p == ".gitlab-ci.yml" ||
-				strings.HasPrefix(p, ".circleci/") ||
-				p == "Jenkinsfile" ||
-				strings.HasPrefix(p, ".buildkite/")
-		},
-	},
-	{
-		Category: "tests",
-		Limit:    5,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob {
-				return false
-			}
-			base := path.Base(p)
-			dir := strings.ToLower(path.Dir(p))
-			// go test files
-			if strings.HasSuffix(base, "_test.go") {
-				return true
-			}
-			// python test files
-			if strings.HasPrefix(base, "test_") && strings.HasSuffix(base, ".py") {
-				return true
-			}
-			// common test directories
-			parts := strings.Split(dir, "/")
-			for _, part := range parts {
-				switch part {
-				case "test", "tests", "__tests__", "spec", "specs":
-					return true
-				}
-			}
-			return false
-		},
-	},
-	{
-		Category: "linting",
-		Limit:    3,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob {
-				return false
-			}
-			base := path.Base(p)
-			lintFiles := []string{
-				".golangci.yml", ".golangci.yaml",
-				".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs", ".eslintrc.yml",
-				"eslint.config.js", "eslint.config.mjs",
-				".flake8", "ruff.toml", ".ruff.toml",
-				".prettierrc", ".prettierrc.json",
-				".editorconfig", ".clang-format",
-				"biome.json", "deno.json",
-			}
-			for _, f := range lintFiles {
-				if base == f {
-					return true
-				}
-			}
-			return false
-		},
-	},
-	{
-		Category: "dependencies",
-		Limit:    2,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob || path.Dir(p) != "." {
-				return false
-			}
-			depFiles := []string{
-				"go.mod", "go.sum",
-				"package.json",
-				"requirements.txt", "pyproject.toml", "setup.py", "setup.cfg",
-				"Cargo.toml", "Gemfile", "pom.xml", "build.gradle",
-				"composer.json", "mix.exs",
-			}
-			for _, f := range depFiles {
-				if p == f {
-					return true
-				}
-			}
-			return false
-		},
-	},
-	{
-		Category: "docs",
-		Limit:    3,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob {
-				return false
-			}
-			dir := strings.Split(p, "/")[0]
-			switch strings.ToLower(dir) {
-			case "docs", "doc", "documentation", "wiki":
-				return true
-			}
-			// mkdocs, sphinx, etc.
-			base := path.Base(p)
-			return base == "mkdocs.yml" || base == "conf.py" ||
-				base == "docusaurus.config.js" || base == ".readthedocs.yml"
-		},
-	},
-	{
-		Category: "ai_readability",
-		Limit:    3,
-		Match: func(p string, isBlob bool) bool {
-			if !isBlob {
-				return false
-			}
-			base := strings.ToLower(path.Base(p))
-			return base == "claude.md" || base == "agents.md" ||
-				base == ".cursorrules" || base == ".cursorignore" ||
-				base == "copilot-instructions.md" ||
-				base == ".github/copilot-instructions.md" ||
-				base == "coderabbit.yaml" || base == ".coderabbit.yaml"
-		},
-	},
-}
-
 // classifyTree walks the tree and picks out files worth fetching,
 // returning them tagged with their tile category.
-func classifyTree(tree []TreeEntry) []FileMatch {
+func classifyTree(tree []TreeEntry, ms []pathMatcher) []FileMatch {
 	counts := make(map[string]int)
 	var matches []FileMatch
 
 	for _, entry := range tree {
 		isBlob := entry.Type == "blob"
-		for _, m := range matchers {
+		for _, m := range ms {
 			if counts[m.Category] >= m.Limit {
 				continue
 			}

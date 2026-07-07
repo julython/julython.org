@@ -146,9 +146,6 @@ type Querier interface {
 	// Handles NULL comparisons using IS NOT DISTINCT FROM (SQL standard).
 	// Returns 0 rows if the board isn't in any of the player's slots.
 	UnlinkBoard(ctx context.Context, arg UnlinkBoardParams) (Player, error)
-	// Called after AI grading for L2/L3 upgrades only.
-	// Requires the metric to already be at L1 (enforced in the handler).
-	UpdateAnalysisMetricLevel(ctx context.Context, arg UpdateAnalysisMetricLevelParams) error
 	UpdateBoardVerifiedPoints(ctx context.Context, arg UpdateBoardVerifiedPointsParams) (Board, error)
 	// Set verified_points = total_score for all boards attached to a project.
 	// total_score is the sum of all metric scores from L1 scans — no further math.
@@ -159,8 +156,7 @@ type Querier interface {
 	UpdateTeamMemberCount(ctx context.Context, id uuid.UUID) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserLastSeen(ctx context.Context, id uuid.UUID) error
-	// Score always reflects latest scan. Level 1 (heuristic partial) when score > 0.
-	// L2/L3 AI levels are never downgraded by a rescan — UpdateAnalysisMetricLevel owns AI tiers.
+	// Score always reflects latest scan. Level is computed from score: 0→0, 1–5→1, 6–8→2, 9–10→3.
 	UpsertAnalysisMetric(ctx context.Context, arg UpsertAnalysisMetricParams) error
 	// ============================================
 	// Boards (Project Scores)

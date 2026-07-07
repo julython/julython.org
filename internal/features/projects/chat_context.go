@@ -12,7 +12,6 @@ import (
 
 	"july/internal/db"
 	"july/internal/metrics"
-	"july/internal/services"
 	"july/internal/shared"
 )
 
@@ -58,7 +57,7 @@ func (h *projectHandler) PostProjectChatContext(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	owner, repoName, err := services.ParseGitHubOwnerRepo(project.Url)
+	owner, repoName, err := metrics.ParseGitHubOwnerRepo(project.Url)
 	if err != nil {
 		http.Error(w, "bad request: project URL is not a GitHub repo", http.StatusBadRequest)
 		return

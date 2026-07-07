@@ -14,7 +14,8 @@ import (
 )
 
 // ── Payload fixtures ─────────────────────────────────────────────
-// Readme has 5 bool fields; all true → score 10, one true → score 2.
+// Readme has 6 bool fields (including ReadmeHasCodeBlocks);
+// 5 true (full) → score 8, 1 true (partial) → score 1.
 
 var (
 	readmeFull = map[string]any{
@@ -25,7 +26,7 @@ var (
 		"readme_has_banners": true,
 	}
 	readmePartial = map[string]any{
-		"has_readme": true, // 1/5 → score 2
+		"has_readme": true, // 1/6 → score 1
 	}
 
 	// CI has 4 bool fields; all true → score 10.
@@ -56,12 +57,11 @@ func analysisPath(projectID string) string {
 	return "/api/projects/" + projectID + "/analysis"
 }
 
-func postAnalysis(t *testing.T, env *testutil.TestEnv, projectID, metricType, sha string, level int, data map[string]any) *http.Response {
+func postAnalysis(t *testing.T, env *testutil.TestEnv, projectID, metricType, sha string, data map[string]any) *http.Response {
 	t.Helper()
 	return testutil.PostJSON(t, env, analysisPath(projectID), map[string]any{
 		"sha":        sha,
 		"metricType": metricType,
-		"level":      level,
 		"data":       data,
 	})
 }
@@ -73,7 +73,7 @@ func TestPostProjectAnalysis(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		project := testutil.CreateProject(t, env, "gh-nobody-repo", "https://github.com/nobody/repo")
 
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 0, readmePartial)
+		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", readmePartial)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
@@ -83,7 +83,7 @@ func TestPostProjectAnalysis(t *testing.T) {
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		env.LoginAs(t, "test@example.com")
 
-		resp := postAnalysis(t, env, "00000000-0000-0000-0000-000000000000", "readme", "abc123", 0, readmePartial)
+		resp := postAnalysis(t, env, "00000000-0000-0000-0000-000000000000", "readme", "abc123", readmePartial)
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
@@ -96,39 +96,91 @@ func TestPostProjectAnalysis(t *testing.T) {
 
 		// alice's project; bob must be rejected
 		aliceProject := testutil.CreateProject(t, env, "gh-alice-other", "https://github.com/alice/other")
-		resp := postAnalysis(t, env, aliceProject.ID.String(), "readme", "abc123", 0, readmePartial)
+		resp := postAnalysis(t, env, aliceProject.ID.String(), "readme", "abc123", readmePartial)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 
-	t.Run("partial readme payload returns score 2 at heuristic L1", func(t *testing.T) {
+	t.Run("partial readme payload maps to L1 (score 1–5)", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		env.LoginAs(t, "test@example.com")
 
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 0, readmePartial)
+		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", readmePartial)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		body := decodeAnalysis(t, resp)
 		assert.Equal(t, "readme", body.MetricType)
-		assert.Equal(t, int16(2), body.Score) // 1 true / 5 bools * 10 = 2
-		assert.Equal(t, int16(1), body.Level)
+		assert.Equal(t, int16(1), body.Score) // 1 true / 6 bools * 10 = 1
+		assert.Equal(t, int16(1), body.Level)  // score 1 → level 1 (1–5 range)
 	})
 
-	t.Run("full readme payload returns score 10 at L1", func(t *testing.T) {
+	t.Run("full readme payload maps to L2 (score 6–8)", func(t *testing.T) {
 		env := testutil.SetupTestEnv(t)
 		user := testutil.CreateUser(t, env, "owner", "Owner")
 		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		env.LoginAs(t, "test@example.com")
 
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull)
+		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", readmeFull)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		body := decodeAnalysis(t, resp)
+		assert.Equal(t, int16(8), body.Score)  // 5 true / 6 bools * 10 = 8
+		assert.Equal(t, int16(2), body.Level)  // score 8 → level 2 (6–8 range)
+	})
+
+	t.Run("score 9–10 maps to L3", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		// CI metric: 4 true / 4 bools → score 10
+		resp := postAnalysis(t, env, project.ID.String(), "ci", "abc123", ciFull)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		body := decodeAnalysis(t, resp)
+		assert.Equal(t, "ci", body.MetricType)
 		assert.Equal(t, int16(10), body.Score)
-		assert.Equal(t, int16(1), body.Level)
+		assert.Equal(t, int16(3), body.Level) // score 10 → level 3 (9–10 range)
+	})
+
+	t.Run("score 0 maps to level 0", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", map[string]any{})
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		body := decodeAnalysis(t, resp)
+		assert.Equal(t, int16(0), body.Score)
+		assert.Equal(t, int16(0), body.Level)
+	})
+
+	t.Run("score changes on rescan (no preservation)", func(t *testing.T) {
+		env := testutil.SetupTestEnv(t)
+		user := testutil.CreateUser(t, env, "owner", "Owner")
+		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
+		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
+		env.LoginAs(t, "test@example.com")
+
+		// First: L2 (score 8)
+		resp := must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc", readmeFull))
+		body := decodeAnalysis(t, resp)
+		assert.Equal(t, int16(8), body.Score)
+		assert.Equal(t, int16(2), body.Level)
+
+		// Rescan: partial (score 1)
+		resp = postAnalysis(t, env, project.ID.String(), "readme", "rescan", readmePartial)
+		body = decodeAnalysis(t, resp)
+		assert.Equal(t, int16(1), body.Score)
+		assert.Equal(t, int16(1), body.Level) // re-scoring to L1 (no preservation)
 	})
 
 	t.Run("different metric types are scored independently", func(t *testing.T) {
@@ -138,106 +190,13 @@ func TestPostProjectAnalysis(t *testing.T) {
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		env.LoginAs(t, "test@example.com")
 
-		readmeResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc", 0, readmeFull)))
-		ciResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "ci", "abc", 0, ciFull)))
+		readmeResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc", readmeFull)))
+		ciResp := decodeAnalysis(t, must200(t, postAnalysis(t, env, project.ID.String(), "ci", "abc", ciFull)))
 
 		assert.Equal(t, "readme", readmeResp.MetricType)
 		assert.Equal(t, "ci", ciResp.MetricType)
-		assert.Equal(t, int16(10), readmeResp.Score)
-		assert.Equal(t, int16(10), ciResp.Score)
-	})
-
-	t.Run("L2 upgrade rejected if metric not yet at L1", func(t *testing.T) {
-		env := testutil.SetupTestEnv(t)
-		user := testutil.CreateUser(t, env, "owner", "Owner")
-		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		env.LoginAs(t, "test@example.com")
-
-		// No prior metric — handler must reject with 400.
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	})
-
-	t.Run("L2 upgrade succeeds after L1 is established", func(t *testing.T) {
-		env := testutil.SetupTestEnv(t)
-		user := testutil.CreateUser(t, env, "owner", "Owner")
-		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		env.LoginAs(t, "test@example.com")
-
-		// Establish L1 via the route.
-		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull))
-
-		// AI grades it to L2.
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		body := decodeAnalysis(t, resp)
-		assert.Equal(t, int16(2), body.Level)
-		assert.Equal(t, int16(10), body.Score)
-	})
-
-	t.Run("L2 upgrade succeeds after partial heuristic L1", func(t *testing.T) {
-		env := testutil.SetupTestEnv(t)
-		user := testutil.CreateUser(t, env, "owner", "Owner")
-		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		env.LoginAs(t, "test@example.com")
-
-		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 0, readmePartial))
-
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		body := decodeAnalysis(t, resp)
-		assert.Equal(t, int16(2), body.Level)
-		assert.Equal(t, int16(2), body.Score)
-	})
-
-	t.Run("rescan does not downgrade an L2 metric", func(t *testing.T) {
-		env := testutil.SetupTestEnv(t)
-		user := testutil.CreateUser(t, env, "owner", "Owner")
-		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		env.LoginAs(t, "test@example.com")
-
-		// L1 → L2 via the route.
-		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 1, readmeFull))
-		must200(t, postAnalysis(t, env, project.ID.String(), "readme", "abc123", 2, readmeFull))
-
-		// Rescan with a poor payload — L2 must survive.
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "rescan", 0, readmePartial)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		body := decodeAnalysis(t, resp)
-		assert.Equal(t, int16(2), body.Level, "L2 must survive a bad rescan")
-		assert.Equal(t, int16(2), body.Score, "score updates to reflect the latest scan")
-	})
-
-	t.Run("L2 is preserved even when score drops to 0", func(t *testing.T) {
-		env := testutil.SetupTestEnv(t)
-		ctx := context.Background()
-		user := testutil.CreateUser(t, env, "owner", "Owner")
-		project := testutil.CreateOwnedProject(t, env, user, "repo", "https://github.com/owner/repo")
-		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
-		env.LoginAs(t, "test@example.com")
-
-		// Seed L2 directly for this edge-case test.
-		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
-			ID: db.NewID(), ProjectID: project.ID, MetricType: "readme",
-			Score: 10, Data: db.JSONMap{}, Sha: "seed", UpdatedBy: user.ID,
-		}))
-		require.NoError(t, env.Queries.UpdateAnalysisMetricLevel(ctx, db.UpdateAnalysisMetricLevelParams{
-			ProjectID: project.ID, MetricType: "readme", Level: 2, UpdatedBy: user.ID,
-		}))
-
-		// All-false payload → score 0.
-		resp := postAnalysis(t, env, project.ID.String(), "readme", "rescan", 0, map[string]any{})
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		body := decodeAnalysis(t, resp)
-		assert.Equal(t, int16(2), body.Level, "L2 must not be downgraded by score=0")
+		assert.Equal(t, int16(8), readmeResp.Score) // 5/6 = 8, L2
+		assert.Equal(t, int16(10), ciResp.Score)    // 4/4 = 10, L3
 	})
 
 	t.Run("invalid payload fields return 400", func(t *testing.T) {
@@ -251,11 +210,9 @@ func TestPostProjectAnalysis(t *testing.T) {
 			name    string
 			payload map[string]any
 		}{
-			{"missing sha", map[string]any{"metricType": "readme", "level": 0, "data": readmePartial}},
-			{"missing metricType", map[string]any{"sha": "abc", "level": 0, "data": readmePartial}},
-			{"missing data", map[string]any{"sha": "abc", "metricType": "readme", "level": 0}},
-			{"unknown metricType", map[string]any{"sha": "abc", "metricType": "nope", "level": 0, "data": readmePartial}},
-			{"level out of range", map[string]any{"sha": "abc", "metricType": "readme", "level": 4, "data": readmePartial}},
+			{"missing sha", map[string]any{"metricType": "readme", "data": readmePartial}},
+			{"missing metricType", map[string]any{"sha": "abc", "data": readmePartial}},
+			{"missing data", map[string]any{"sha": "abc", "metricType": "readme"}},
 		}
 
 		for _, tc := range cases {
@@ -286,6 +243,7 @@ func TestGetProjectMetricLLMContext(t *testing.T) {
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
 			MetricType: "readme",
+			Level:      1,
 			Score:      5,
 			Data:       db.JSONMap{"has_readme": true},
 			Sha:        "def456",
@@ -307,6 +265,7 @@ func TestGetProjectMetricLLMContext(t *testing.T) {
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
 			MetricType: "readme",
+			Level:      1,
 			Score:      6,
 			Data:       db.JSONMap{"has_readme": true},
 			Sha:        "abc123",
@@ -336,6 +295,7 @@ func TestGetProjectMetricLLMContext(t *testing.T) {
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
 			MetricType: "readme",
+			Level:      0,
 			Score:      0,
 			Data:       db.JSONMap{"has_readme": false},
 			Sha:        "abc123",

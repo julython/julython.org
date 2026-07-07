@@ -15,6 +15,7 @@ import (
 	"july/internal/components/analysis"
 	"july/internal/components/layout"
 	"july/internal/db"
+	"july/internal/metrics"
 	"july/internal/services"
 	"july/internal/shared"
 )
@@ -23,12 +24,12 @@ type projectHandler struct {
 	queries     *db.Queries
 	gameService *services.GameService
 	userService *services.UserService
-	l1Scanner   *services.L1Scanner
+	scanner     *metrics.Scanner
 }
 
 // Register mounts all project routes on the given mux.
-func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService, us *services.UserService, l1 *services.L1Scanner) {
-	h := &projectHandler{queries: q, gameService: gs, userService: us, l1Scanner: l1}
+func Register(mux *http.ServeMux, q *db.Queries, gs *services.GameService, us *services.UserService, l1 *metrics.Scanner) {
+	h := &projectHandler{queries: q, gameService: gs, userService: us, scanner: l1}
 	mux.HandleFunc("GET /projects", h.List)
 	mux.HandleFunc("GET /projects/{slug}", h.Detail)
 	mux.HandleFunc("POST /projects/{slug}/analysis/l1", h.PostProjectRescanL1)
@@ -179,7 +180,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		scoreByType[row.MetricType] = row.Score
 	}
 
-	showMetricAI := project.Service == "github" && !project.IsPrivate && h.l1Scanner.IsConfigured()
+	showMetricAI := project.Service == "github" && !project.IsPrivate && h.scanner.IsConfigured()
 
 	var analysisBoardSpec = []struct {
 		key     string
@@ -244,7 +245,7 @@ func (h *projectHandler) Detail(w http.ResponseWriter, r *http.Request) {
 			case project.IsPrivate:
 				analysisBoard.RescanL1Disabled = true
 				analysisBoard.RescanL1DisabledReason = "private"
-			case !h.l1Scanner.IsConfigured():
+			case !h.scanner.IsConfigured():
 				analysisBoard.RescanL1Disabled = true
 				analysisBoard.RescanL1DisabledReason = "no_token"
 			}

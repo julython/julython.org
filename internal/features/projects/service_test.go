@@ -38,11 +38,13 @@ func TestBuildAnalysisBoard(t *testing.T) {
 		testutil.CreateUserIdentifier(t, env, user.ID, "email", "test@example.com", true, true)
 		project := testutil.CreateProject(t, env, "scored-project", "https://github.com/test/scored")
 
-		// Insert analysis metrics with an updated_by to satisfy FK
+		// Insert analysis metrics with an updated_by to satisfy FK.
+		// Score 8 → Level 2 (6–8 range), Score 5 → Level 1 (1–5 range).
 		require.NoError(t, env.Queries.UpsertAnalysisMetric(ctx, db.UpsertAnalysisMetricParams{
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
 			MetricType: "readme",
+			Level:      2,
 			Score:      8,
 			Sha:        "abc123",
 			UpdatedBy:  user.ID,
@@ -51,6 +53,7 @@ func TestBuildAnalysisBoard(t *testing.T) {
 			ID:         db.NewID(),
 			ProjectID:  project.ID,
 			MetricType: "tests",
+			Level:      1,
 			Score:      5,
 			Sha:        "def456",
 			UpdatedBy:  user.ID,
@@ -77,9 +80,8 @@ func TestBuildAnalysisBoard(t *testing.T) {
 		assert.Equal(t, int16(5), testsTile.Score)
 
 		// Earned points = score * level * 2 for each metric.
-		// The DB computes level 1 when score > 0.
-		// readme: 8*1*2 = 16, tests: 5*1*2 = 10, total = 26
-		assert.Equal(t, 26, board.EarnedPts)
+		// readme: 8*2*2 = 32 (score 8, L2), tests: 5*1*2 = 10 (score 5, L1), total = 42
+		assert.Equal(t, 42, board.EarnedPts)
 		assert.Greater(t, board.AnalysisRunCount, 0)
 	})
 }

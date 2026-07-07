@@ -18,6 +18,7 @@ import (
 	"july/internal/features/projects"
 	"july/internal/features/proxy"
 	"july/internal/i18n"
+	"july/internal/metrics"
 	"july/internal/services"
 	"july/internal/webhooks"
 	"july/web"
@@ -38,7 +39,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config) (
 	queries := db.New(pool)
 	userSvc := services.MustNewUserService(queries, cfg.Database.EncKey)
 	gameSvc := services.NewGameService(queries)
-	l1Scanner := services.NewL1Scanner(queries, pool, cfg.GitHubToken)
+	scanner := metrics.NewScanner(queries, pool, cfg.GitHubToken)
 
 	// OAuth providers
 	providers := make(map[string]services.OAuthProvider)
@@ -79,7 +80,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config) (
 	players.Register(mux, queries, gameSvc)
 
 	// Project routes
-	projects.Register(mux, queries, gameSvc, userSvc, l1Scanner)
+	projects.Register(mux, queries, gameSvc, userSvc, scanner)
 
 	// Help routes
 	help.Register(mux)
@@ -97,7 +98,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config) (
 	proxy.Register(mux, userSvc, sessionMgr.SessionManager)
 
 	// Webhooks
-	webhooks.Register(mux, queries, pool, gameSvc, l1Scanner)
+	webhooks.Register(mux, queries, pool, gameSvc, scanner)
 
 	// Static files
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", web.AssetsHandler()))

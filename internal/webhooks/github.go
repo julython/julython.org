@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"july/internal/db"
+	"july/internal/metrics"
 	"july/internal/services"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -86,21 +87,21 @@ type Handler struct {
 	queries     *db.Queries
 	pool        *pgxpool.Pool
 	gameService *services.GameService
-	l1Scanner   *services.L1Scanner
+	scanner     *metrics.Scanner
 }
 
-func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, l1Scanner *services.L1Scanner) *Handler {
+func NewHandler(queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, scanner *metrics.Scanner) *Handler {
 	return &Handler{
 		queries:     queries,
 		pool:        pool,
 		gameService: gameService,
-		l1Scanner:   l1Scanner,
+		scanner:     scanner,
 	}
 }
 
 // Register mounts the GitHub webhook route on the given mux.
-func Register(mux *http.ServeMux, queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, l1Scanner *services.L1Scanner) {
-	h := NewHandler(queries, pool, gameService, l1Scanner)
+func Register(mux *http.ServeMux, queries *db.Queries, pool *pgxpool.Pool, gameService *services.GameService, scanner *metrics.Scanner) {
+	h := NewHandler(queries, pool, gameService, scanner)
 	mux.HandleFunc("POST /api/v1/github", h.HandleGitHubWebhook)
 }
 
@@ -146,7 +147,6 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		payload := r.FormValue("payload")
-		hookLog.Info().Msgf("body: %s", payload)
 		if payload == "" {
 			hookLog.Warn().Msg("form post missing 'payload'")
 			http.Error(w, "missing payload field", http.StatusBadRequest)
@@ -241,11 +241,11 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) scheduleL1Scan(project db.Project) {
-	if h.l1Scanner == nil || h.pool == nil {
+	if h.scanner == nil || h.pool == nil {
 		log.Warn().Msg("L1 scan skipped: handler has no pool or scanner")
 		return
 	}
-	if !h.l1Scanner.IsConfigured() {
+	if !h.scanner.IsConfigured() {
 		log.Warn().
 			Str("project", project.Slug).
 			Msg("L1 scan skipped: set GITHUB_TOKEN for server-side analysis (public repos)")
@@ -266,7 +266,7 @@ func (h *Handler) scheduleL1Scan(project db.Project) {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-		if err := h.l1Scanner.RunL1Scan(ctx, proj, db.SystemUserID); err != nil {
+		if err := h.scanner.RunScan(ctx, proj, db.SystemUserID); err != nil {
 			log.Error().Err(err).Str("slug", proj.Slug).Dur("duration", time.Since(start)).Msg("L1 scan failed")
 			return
 		}

@@ -18,7 +18,7 @@ type Config struct {
 	Session     Session  `envPrefix:"JULY_SESSION_"`
 	OAuth       OAuth    `envPrefix:"JULY_OAUTH_"`
 	Webhooks    Webhooks `envPrefix:"JULY_WEBHOOK_"`
-	GitHubToken string   `env:"GITHUB_TOKEN"` // public-repo L1 scans (optional)
+	GitHubToken string   `env:"GITHUB_TOKEN"` // public-repo scans (optional)
 }
 
 func (c Config) IsProduction() bool  { return c.Env == "production" }
