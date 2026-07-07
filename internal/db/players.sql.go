@@ -93,18 +93,9 @@ SELECT
     p.commit_count, p.project_count, p.analysis_status,
     p.last_analyzed_at, p.created_at, p.updated_at,
     p.board_1_id, p.board_2_id, p.board_3_id,
-    u.name, u.username, u.avatar_url,
-    COALESCE(board_total.total, 0) AS board_total
+    u.name, u.username, u.avatar_url
 FROM players p
 JOIN users u ON u.id = p.user_id AND p.game_id = $1 AND u.is_active = true
-LEFT JOIN LATERAL (
-    SELECT COALESCE(
-        SUM(CASE WHEN b.verified_points > 0 THEN b.verified_points ELSE b.points END),
-        0
-    )::int AS total
-    FROM boards b
-    WHERE b.id = ANY(ARRAY[p.board_1_id, p.board_2_id, p.board_3_id])
-) AS board_total ON true
 ORDER BY
     CASE WHEN p.verified_points > 0 THEN p.verified_points ELSE p.potential_points END DESC,
     p.points DESC
@@ -112,9 +103,9 @@ LIMIT $3 OFFSET $2
 `
 
 type GetLeaderboardParams struct {
-	GameID      uuid.UUID `json:"game_id"`
-	OffsetCount int32     `json:"offset_count"`
-	LimitCount  int32     `json:"limit_count"`
+	GameID uuid.UUID `json:"game_id"`
+	Offset int32     `json:"offset"`
+	Limit  int32     `json:"limit"`
 }
 
 type GetLeaderboardRow struct {
@@ -136,11 +127,10 @@ type GetLeaderboardRow struct {
 	Name            string             `json:"name"`
 	Username        string             `json:"username"`
 	AvatarUrl       pgtype.Text        `json:"avatar_url"`
-	BoardTotal      int32              `json:"board_total"`
 }
 
 func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) ([]GetLeaderboardRow, error) {
-	rows, err := q.db.Query(ctx, getLeaderboard, arg.GameID, arg.OffsetCount, arg.LimitCount)
+	rows, err := q.db.Query(ctx, getLeaderboard, arg.GameID, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +157,6 @@ func (q *Queries) GetLeaderboard(ctx context.Context, arg GetLeaderboardParams) 
 			&i.Name,
 			&i.Username,
 			&i.AvatarUrl,
-			&i.BoardTotal,
 		); err != nil {
 			return nil, err
 		}
@@ -222,6 +211,35 @@ func (q *Queries) GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTot
 	var total int32
 	err := row.Scan(&total)
 	return total, err
+}
+
+const getPlayerByBoardID = `-- name: GetPlayerByBoardID :one
+SELECT id, game_id, user_id, points, potential_points, verified_points, commit_count, project_count, analysis_status, last_analyzed_at, created_at, updated_at, board_1_id, board_2_id, board_3_id FROM players
+WHERE $1 = ANY(ARRAY[board_1_id, board_2_id, board_3_id])
+`
+
+// Returns the player who has the given board assigned (any of 3 slots).
+func (q *Queries) GetPlayerByBoardID(ctx context.Context, boardID pgtype.UUID) (Player, error) {
+	row := q.db.QueryRow(ctx, getPlayerByBoardID, boardID)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.UserID,
+		&i.Points,
+		&i.PotentialPoints,
+		&i.VerifiedPoints,
+		&i.CommitCount,
+		&i.ProjectCount,
+		&i.AnalysisStatus,
+		&i.LastAnalyzedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Board1ID,
+		&i.Board2ID,
+		&i.Board3ID,
+	)
+	return i, err
 }
 
 const getPlayerByID = `-- name: GetPlayerByID :one
@@ -428,18 +446,28 @@ const updatePlayerAnalysis = `-- name: UpdatePlayerAnalysis :exec
 UPDATE players SET
     verified_points = $1,
     analysis_status = $2,
+    commit_count = $3,
+    project_count = $4,
     last_analyzed_at = now()
-WHERE id = $3
+WHERE id = $5
 `
 
 type UpdatePlayerAnalysisParams struct {
 	VerifiedPoints int32     `json:"verified_points"`
 	AnalysisStatus string    `json:"analysis_status"`
+	CommitCount    int32     `json:"commit_count"`
+	ProjectCount   int32     `json:"project_count"`
 	ID             uuid.UUID `json:"id"`
 }
 
 func (q *Queries) UpdatePlayerAnalysis(ctx context.Context, arg UpdatePlayerAnalysisParams) error {
-	_, err := q.db.Exec(ctx, updatePlayerAnalysis, arg.VerifiedPoints, arg.AnalysisStatus, arg.ID)
+	_, err := q.db.Exec(ctx, updatePlayerAnalysis,
+		arg.VerifiedPoints,
+		arg.AnalysisStatus,
+		arg.CommitCount,
+		arg.ProjectCount,
+		arg.ID,
+	)
 	return err
 }
 

@@ -316,6 +316,13 @@ func TestListPlayersWithBoards(t *testing.T) {
 			PlayerID: player.ID,
 		})
 		require.NoError(t, err)
+		// Set player's verified_points to match (mimics assignPlayerBoards).
+		err = env.Queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+			ID:             player.ID,
+			VerifiedPoints: 10,
+			AnalysisStatus: "complete",
+		})
+		require.NoError(t, err)
 
 		// Assign board (score=50) to player2
 		_, err = env.Queries.AssignBoards(ctx, db.AssignBoardsParams{
@@ -323,10 +330,16 @@ func TestListPlayersWithBoards(t *testing.T) {
 			PlayerID: player2.ID,
 		})
 		require.NoError(t, err)
+		err = env.Queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+			ID:             player2.ID,
+			VerifiedPoints: 50,
+			AnalysisStatus: "complete",
+		})
+		require.NoError(t, err)
 
 		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
 			GameID:     game.ID,
-			LimitCount: 100,
+			Limit: 100,
 		})
 		require.NoError(t, err)
 		require.Len(t, rows, 2)
@@ -349,16 +362,16 @@ func TestListPlayersWithBoards(t *testing.T) {
 	t.Run("players with no boards get total 0", func(t *testing.T) {
 		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
 			GameID:     game.ID,
-			LimitCount: 100,
+			Limit: 100,
 		})
 		require.NoError(t, err)
 		require.Len(t, rows, 2)
 
 		for _, r := range rows {
 			if r.ID == player.ID {
-				assertBoardTotalEqual(t, 10, r.BoardTotal)
+				verifiedPoints(t, 10, r)
 			} else {
-				assertBoardTotalEqual(t, 50, r.BoardTotal)
+				verifiedPoints(t, 50, r)
 			}
 		}
 	})
@@ -384,9 +397,17 @@ func TestListPlayersWithBoards(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// Set verified_points to sum of 3 boards (10+50+20=80).
+		err = env.Queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+			ID:             player.ID,
+			VerifiedPoints: 80,
+			AnalysisStatus: "complete",
+		})
+		require.NoError(t, err)
+
 		rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
 			GameID:     game.ID,
-			LimitCount: 100,
+			Limit: 100,
 		})
 		require.NoError(t, err)
 
@@ -399,7 +420,7 @@ func TestListPlayersWithBoards(t *testing.T) {
 		}
 
 		// Total should be 10 + 50 + 20 = 80
-		assertBoardTotalEqual(t, 80, row.BoardTotal)
+		verifiedPoints(t, 80, row)
 	})
 }
 
@@ -460,10 +481,18 @@ func TestPlayerBoardsFullWorkflow(t *testing.T) {
 	assertPgUUIDEqual(t, pgid(b2.ID), p.Board2ID)
 	assertPgUUIDEqual(t, pgid(b3.ID), p.Board3ID)
 
-	// Step 5: Check leaderboard total (10 + 20 + 30 = 60)
+	// Step 5: Update verified_points to sum of 3 boards (10+20+30=60).
+	err = env.Queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+		ID:             player.ID,
+		VerifiedPoints: 60,
+		AnalysisStatus: "complete",
+	})
+	require.NoError(t, err)
+
+	// Step 6: Check leaderboard (now 60 pts).
 	rows, err := env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
 		GameID:     game.ID,
-		LimitCount: 100,
+		Limit: 100,
 	})
 	require.NoError(t, err)
 	var row db.GetLeaderboardRow
@@ -473,7 +502,7 @@ func TestPlayerBoardsFullWorkflow(t *testing.T) {
 			break
 		}
 	}
-	assertBoardTotalEqual(t, 60, row.BoardTotal)
+	verifiedPoints(t, 60, row)
 
 	// Step 6: Replace one board (update only board_2)
 	pNew := testutil.CreateProject(t, env, "workflow-replace", "https://github.com/boardtest/replacement")
@@ -499,14 +528,22 @@ func TestPlayerBoardsFullWorkflow(t *testing.T) {
 	assertPgUUIDEqual(t, pgid(replaceBoard.ID), p.Board2ID)
 	assertPgUUIDEqual(t, pgid(b3.ID), p.Board3ID)
 
+	// Update verified_points to the new total (10+100+30=140).
+	err = env.Queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
+		ID:             player.ID,
+		VerifiedPoints: 140,
+		AnalysisStatus: "complete",
+	})
+	require.NoError(t, err)
+
 	rows, err = env.Queries.GetLeaderboard(ctx, db.GetLeaderboardParams{
 		GameID:     game.ID,
-		LimitCount: 100,
+		Limit: 100,
 	})
 	require.NoError(t, err)
 	for _, r := range rows {
 		if r.ID == player.ID {
-			assertBoardTotalEqual(t, 140, r.BoardTotal)
+			verifiedPoints(t, 140, r)
 			return
 		}
 	}
@@ -525,16 +562,6 @@ func assertPgUUIDEqual(t *testing.T, expected pgtype.UUID, actual pgtype.UUID) {
 	assert.Equal(t, expected.Bytes, actual.Bytes)
 }
 
-func assertBoardTotalEqual(t *testing.T, expected int32, actual interface{}) {
-	t.Helper()
-	switch v := actual.(type) {
-	case int32:
-		assert.Equal(t, expected, v)
-	case int64:
-		assert.Equal(t, expected, int32(v))
-	case float64:
-		assert.InDelta(t, float64(expected), v, 0.001)
-	default:
-		t.Errorf("unexpected BoardTotal type %T", actual)
-	}
+func verifiedPoints(t *testing.T, expected int32, row db.GetLeaderboardRow) {
+	assert.Equal(t, expected, row.VerifiedPoints)
 }

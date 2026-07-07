@@ -95,6 +95,8 @@ type Querier interface {
 	// Return the sum of L1-scanned verified_points for all boards assigned
 	// to a player, falling back to initial points when unverified.
 	GetPlayerBoardTotal(ctx context.Context, arg GetPlayerBoardTotalParams) (int32, error)
+	// Returns the player who has the given board assigned (any of 3 slots).
+	GetPlayerByBoardID(ctx context.Context, boardID pgtype.UUID) (Player, error)
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (Player, error)
 	GetPlayerByUserAndGame(ctx context.Context, arg GetPlayerByUserAndGameParams) (Player, error)
 	GetPlayerRank(ctx context.Context, arg GetPlayerRankParams) (int32, error)
