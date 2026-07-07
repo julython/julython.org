@@ -120,8 +120,7 @@ func (s *Scanner) RunScan(ctx context.Context, project db.Project, updatedBy uui
 	// Update verified_points for all boards of this project.
 	totalScore := 0
 	for _, mr := range results {
-		// TODO(rmyers): we need to add level to the scoring
-		totalScore += int(mr.Score * 1 * 2)
+		totalScore += int(mr.Score * CalculateLevel(mr.Score) * 2)
 	}
 	if totalScore > 0 {
 		if err := s.queries.UpdateBoardVerifiedPointsByProjectID(ctx, db.UpdateBoardVerifiedPointsByProjectIDParams{
