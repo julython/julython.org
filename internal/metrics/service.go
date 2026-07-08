@@ -10,21 +10,19 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"july/internal/db"
-	"july/internal/services"
 )
 
 // Scanner runs server-side L1 analysis and upserts analysis_metrics rows.
 type Scanner struct {
-	queries     *db.Queries
-	pool        *pgxpool.Pool
-	gameService *services.GameService
-	token       string
+	queries *db.Queries
+	pool    *pgxpool.Pool
+	token   string
 }
 
 // NewScanner wires the app-wide queries handle and pool from the composition root (same as api.buildMux).
 // Pool is used only for transactions; queries is used for pool-scoped SQL (e.g. SetProjectIsPrivate).
-func NewScanner(queries *db.Queries, pool *pgxpool.Pool, gs *services.GameService, token string) *Scanner {
-	return &Scanner{queries: queries, pool: pool, gameService: gs, token: token}
+func NewScanner(queries *db.Queries, pool *pgxpool.Pool, token string) *Scanner {
+	return &Scanner{queries: queries, pool: pool, token: token}
 }
 
 // IsConfigured returns true when a non-empty GitHub token was provided (public-repo reads).
@@ -128,14 +126,6 @@ func (s *Scanner) RunScan(ctx context.Context, project db.Project, updatedBy uui
 			VerifiedPoints: int32(totalScore),
 		}); err != nil {
 			log.Warn().Err(err).Str("project", project.Slug).Msg("failed to update board verified_points")
-		}
-
-		// Refresh the player who owns this project's board.
-		game, err := s.gameService.GetActiveGame(ctx)
-		if err == nil {
-			if err := s.gameService.RefreshPlayerAfterScan(ctx, game.ID, project.ID); err != nil {
-				log.Warn().Err(err).Str("project", project.Slug).Msg("failed to refresh player after scan")
-			}
 		}
 	}
 

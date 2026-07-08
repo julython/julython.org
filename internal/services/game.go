@@ -305,45 +305,51 @@ func (s *GameService) assignPlayerBoards(ctx context.Context, game db.Game, user
 		boardCount++
 	}
 
-	// Only assign if the player has fewer than 3 boards.
+	// Only assign if the player has fewer than 3 boards and the board
+	// isn't already assigned to this player.
 	if boardCount < 3 {
-		var board1ID, board2ID, board3ID pgtype.UUID
-		if ids.Board1ID.Valid {
-			board1ID = ids.Board1ID
-		}
-		if ids.Board2ID.Valid {
-			board2ID = ids.Board2ID
-		}
-		if ids.Board3ID.Valid {
-			board3ID = ids.Board3ID
-		}
-		// Assign to the first available slot.
-		switch boardCount {
-		case 0:
-			board1ID = pgid(boardID)
-		case 1:
+		alreadyAssigned := (ids.Board1ID.Valid && ids.Board1ID == pgid(boardID)) ||
+			(ids.Board2ID.Valid && ids.Board2ID == pgid(boardID)) ||
+			(ids.Board3ID.Valid && ids.Board3ID == pgid(boardID))
+		if !alreadyAssigned {
+			var board1ID, board2ID, board3ID pgtype.UUID
 			if ids.Board1ID.Valid {
-				board2ID = pgid(boardID)
-			} else {
-				board1ID = pgid(boardID)
+				board1ID = ids.Board1ID
 			}
-		case 2:
-			if ids.Board1ID.Valid && ids.Board2ID.Valid {
-				board3ID = pgid(boardID)
-			} else if ids.Board1ID.Valid {
-				board2ID = pgid(boardID)
-			} else {
-				board1ID = pgid(boardID)
+			if ids.Board2ID.Valid {
+				board2ID = ids.Board2ID
 			}
-		}
+			if ids.Board3ID.Valid {
+				board3ID = ids.Board3ID
+			}
+			// Assign to the first available slot.
+			switch boardCount {
+			case 0:
+				board1ID = pgid(boardID)
+			case 1:
+				if ids.Board1ID.Valid {
+					board2ID = pgid(boardID)
+				} else {
+					board1ID = pgid(boardID)
+				}
+			case 2:
+				if ids.Board1ID.Valid && ids.Board2ID.Valid {
+					board3ID = pgid(boardID)
+				} else if ids.Board1ID.Valid {
+					board2ID = pgid(boardID)
+				} else {
+					board1ID = pgid(boardID)
+				}
+			}
 
-		if _, err := s.queries.AssignBoards(ctx, db.AssignBoardsParams{
-			PlayerID: player.ID,
-			Board1ID: board1ID,
-			Board2ID: board2ID,
-			Board3ID: board3ID,
-		}); err != nil {
-			return fmt.Errorf("assign boards: %w", err)
+			if _, err := s.queries.AssignBoards(ctx, db.AssignBoardsParams{
+				PlayerID: player.ID,
+				Board1ID: board1ID,
+				Board2ID: board2ID,
+				Board3ID: board3ID,
+			}); err != nil {
+				return fmt.Errorf("assign boards: %w", err)
+			}
 		}
 	}
 
@@ -523,58 +529,3 @@ func (s *GameService) DeactivateProject(ctx context.Context, projectID uuid.UUID
 	return nil
 }
 
-// RefreshPlayerAfterScan updates the player who owns the given project's board.
-// It recalculates verified_points = (commit_count × 1) + Sum(3 boards).
-func (s *GameService) RefreshPlayerAfterScan(ctx context.Context, gameID, projectID uuid.UUID) error {
-	// 1. Get the board for this project.
-	board, err := s.queries.GetBoardByProjectAndGame(ctx, db.GetBoardByProjectAndGameParams{
-		ProjectID: projectID,
-		GameID:    gameID,
-	})
-	if err != nil {
-		return nil // no board, skip silently
-	}
-
-	// 2. Find the player who has this board.
-	player, err := s.queries.GetPlayerByBoardID(ctx, db.UUID(board.ID))
-	if err != nil {
-		return nil // no player, skip silently
-	}
-
-	// 3. Get the user's commit count for the game.
-	counts, err := s.queries.CountUserCommitsForGame(ctx, db.CountUserCommitsForGameParams{
-		UserID: db.UUID(player.UserID),
-		GameID: db.UUID(gameID),
-	})
-	if err != nil {
-		return fmt.Errorf("count commits: %w", err)
-	}
-
-	// 4. Get the total from all 3 boards.
-	boardIDs, err := s.queries.GetPlayerBoardIds(ctx, player.ID)
-	if err != nil {
-		return fmt.Errorf("get board IDs: %w", err)
-	}
-
-	boardTotal, err := s.queries.GetPlayerBoardTotal(ctx, db.GetPlayerBoardTotalParams{
-		Board1ID: db.UUIDFromPg(boardIDs.Board1ID),
-		Board2ID: db.UUIDFromPg(boardIDs.Board2ID),
-		Board3ID: db.UUIDFromPg(boardIDs.Board3ID),
-	})
-	if err != nil {
-		return fmt.Errorf("get board total: %w", err)
-	}
-
-	// 5. Update the player: verified_points = commit_count + board_total.
-	verifiedPoints := int32(counts.CommitCount) + boardTotal
-	if err := s.queries.UpdatePlayerAnalysis(ctx, db.UpdatePlayerAnalysisParams{
-		ID:             player.ID,
-		VerifiedPoints: verifiedPoints,
-		CommitCount:    counts.CommitCount,
-		ProjectCount:   counts.ProjectCount,
-		AnalysisStatus: "completed",
-	}); err != nil {
-		return fmt.Errorf("update player: %w", err)
-	}
-	return nil
-}

@@ -39,7 +39,7 @@ func buildMux(pool *pgxpool.Pool, cfg *config.Config) (
 	queries := db.New(pool)
 	userSvc := services.MustNewUserService(queries, cfg.Database.EncKey)
 	gameSvc := services.NewGameService(queries)
-	scanner := metrics.NewScanner(queries, pool, gameSvc, cfg.GitHubToken)
+	scanner := metrics.NewScanner(queries, pool, cfg.GitHubToken)
 
 	// OAuth providers
 	providers := make(map[string]services.OAuthProvider)
