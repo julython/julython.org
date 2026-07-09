@@ -6,6 +6,8 @@ import (
 
 	"github.com/invopop/ctxi18n"
 	"github.com/rs/zerolog/log"
+
+	"july/internal/shared"
 )
 
 //go:embed locales/*.yaml
@@ -58,9 +60,6 @@ func SetLanguage(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	ref := r.Header.Get("Referer")
-	if ref == "" {
-		ref = "/"
-	}
+	ref := shared.SafeRedirect(r.Header.Get("Referer"))
 	http.Redirect(w, r, ref, http.StatusSeeOther)
 }

@@ -128,4 +128,48 @@ func TestSetLanguage(t *testing.T) {
 		require.Equal(t, http.StatusSeeOther, rec.Code)
 		require.Equal(t, "/", rec.Header().Get("Location"))
 	})
+
+	t.Run("rejects external URL in Referer", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/set-language?lang=en", nil)
+		req.Header.Set("Referer", "https://evil.com/phish")
+
+		rec := httptest.NewRecorder()
+		SetLanguage(rec, req)
+
+		require.Equal(t, http.StatusSeeOther, rec.Code)
+		require.Equal(t, "/", rec.Header().Get("Location"))
+	})
+
+	t.Run("rejects protocol-relative URL in Referer", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/set-language?lang=en", nil)
+		req.Header.Set("Referer", "//evil.com")
+
+		rec := httptest.NewRecorder()
+		SetLanguage(rec, req)
+
+		require.Equal(t, http.StatusSeeOther, rec.Code)
+		require.Equal(t, "/", rec.Header().Get("Location"))
+	})
+
+	t.Run("rejects non-path Referer", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/set-language?lang=en", nil)
+		req.Header.Set("Referer", "javascript:alert(1)")
+
+		rec := httptest.NewRecorder()
+		SetLanguage(rec, req)
+
+		require.Equal(t, http.StatusSeeOther, rec.Code)
+		require.Equal(t, "/", rec.Header().Get("Location"))
+	})
+
+	t.Run("accepts valid internal paths", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/set-language?lang=en", nil)
+		req.Header.Set("Referer", "/profile/settings?tab=security")
+
+		rec := httptest.NewRecorder()
+		SetLanguage(rec, req)
+
+		require.Equal(t, http.StatusSeeOther, rec.Code)
+		require.Equal(t, "/profile/settings?tab=security", rec.Header().Get("Location"))
+	})
 }
