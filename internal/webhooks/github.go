@@ -234,44 +234,65 @@ func (h *Handler) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		Int("skipped", result.Skipped).
 		Msg("processed webhook")
 
-	h.scheduleL1Scan(project)
+	h.scheduleL1Scan(project, result.CreatedCommits)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)
 }
 
-func (h *Handler) scheduleL1Scan(project db.Project) {
+// scheduleL1Scan starts the L1 scan in a background goroutine and, once the
+// scan finishes, calls AddCommit for each created commit so the game is scored
+// with the final verified_points from the L1 analysis.
+func (h *Handler) scheduleL1Scan(project db.Project, createdCommits []db.Commit) {
+	if len(createdCommits) == 0 {
+		return
+	}
 	if h.scanner == nil || h.pool == nil {
 		log.Warn().Msg("L1 scan skipped: handler has no pool or scanner")
+		h.scoreCreatedCommits(createdCommits)
 		return
 	}
 	if !h.scanner.IsConfigured() {
 		log.Warn().
 			Str("project", project.Slug).
 			Msg("L1 scan skipped: set GITHUB_TOKEN for server-side analysis (public repos)")
+		h.scoreCreatedCommits(createdCommits)
 		return
 	}
 	if project.IsPrivate {
 		log.Info().Str("project", project.Slug).Msg("L1 scan skipped: private repository")
+		h.scoreCreatedCommits(createdCommits)
 		return
 	}
-	proj := project
-	log.Info().Str("project", proj.Slug).Str("id", proj.ID.String()).Msg("L1 scan starting in background")
+	log.Info().Str("project", project.Slug).Str("id", project.ID.String()).Msg("L1 scan starting in background")
 	go func() {
 		start := time.Now()
 		defer func() {
 			if r := recover(); r != nil {
-				log.Error().Interface("panic", r).Str("project", proj.Slug).Msg("L1 scan panic")
+				log.Error().Interface("panic", r).Str("project", project.Slug).Msg("L1 scan panic")
 			}
 		}()
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		defer cancel()
-		if err := h.scanner.RunScan(ctx, proj, db.SystemUserID); err != nil {
-			log.Error().Err(err).Str("slug", proj.Slug).Dur("duration", time.Since(start)).Msg("L1 scan failed")
+		if err := h.scanner.RunScan(ctx, project, db.SystemUserID); err != nil {
+			log.Error().Err(err).Str("slug", project.Slug).Dur("duration", time.Since(start)).Msg("L1 scan failed")
 			return
 		}
-		log.Info().Str("slug", proj.Slug).Dur("duration", time.Since(start)).Msg("L1 scan completed")
+		log.Info().Str("slug", project.Slug).Dur("duration", time.Since(start)).Msg("L1 scan completed")
+		h.scoreCreatedCommits(createdCommits)
 	}()
+}
+
+// scoreCreatedCommits calls AddCommit for each created commit, scored after
+// the L1 scan has set verified_points on the boards.
+func (h *Handler) scoreCreatedCommits(commits []db.Commit) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	for _, commit := range commits {
+		if err := h.gameService.AddCommit(ctx, commit); err != nil {
+			log.Error().Err(err).Str("hash", commit.Hash.String).Msg("failed to add commit to game")
+		}
+	}
 }
 
 func githubSlug(fullName string) string {
@@ -298,9 +319,10 @@ func (h *Handler) upsertProject(ctx context.Context, repo GitHubRepo) (db.Projec
 }
 
 type ProcessResult struct {
-	Received int `json:"received"`
-	Created  int `json:"created"`
-	Skipped  int `json:"skipped"`
+	Received       int         `json:"received"`
+	Created        int         `json:"created"`
+	Skipped        int         `json:"skipped"`
+	CreatedCommits []db.Commit `json:"-"`
 }
 
 func (h *Handler) processCommits(ctx context.Context, project db.Project, repo GitHubRepo, commits []GitHubCommit) (*ProcessResult, error) {
@@ -359,13 +381,8 @@ func (h *Handler) processCommits(ctx context.Context, project db.Project, repo G
 			continue
 		}
 
-		// Update game scores
-		if err := h.gameService.AddCommit(ctx, commit); err != nil {
-			logger.Error().Err(err).Str("hash", c.ID).Msg("failed to add commit to game")
-			// Don't fail the whole request
-		}
-
 		result.Created++
+		result.CreatedCommits = append(result.CreatedCommits, commit)
 	}
 
 	return result, nil

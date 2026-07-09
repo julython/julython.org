@@ -638,3 +638,51 @@ func TestGameService_ScoreReset(t *testing.T) {
 			"total should be 17 (points 12 + verified_points 5)")
 	})
 }
+
+// TestGameService_AddCommit_DuplicateBoard verifies that calling AddCommit
+// for commits belonging to the same project does not assign the same board
+// to multiple player slots.
+func TestGameService_AddCommit_DuplicateBoard(t *testing.T) {
+	env := testutil.SetupTestEnv(t)
+	ctx := context.Background()
+
+	game := testutil.CreateActiveGame(t, env)
+
+	// First commit: AddCommit assigns the board to slot 1.
+	testutil.WebhookCommit(t, env, "dup-hash-001", func(o *testutil.WebhookOpts) {
+		o.RepoID = 66666
+		o.RepoName = "duplicate-board-project"
+		o.FullName = "dupuser/duplicate-board-project"
+		o.HTMLURL = "https://github.com/dupuser/duplicate-board-project"
+		o.Owner = "dupuser"
+		o.Author = webhooks.GitHubAuthor{Name: "Dup User", Email: "dupuser@test.com"}
+	})
+
+	// Second commit: AddCommit again for the same project.
+	// The fix should skip re-assigning the same board.
+	testutil.WebhookCommit(t, env, "dup-hash-002", func(o *testutil.WebhookOpts) {
+		o.RepoID = 66666
+		o.RepoName = "duplicate-board-project"
+		o.FullName = "dupuser/duplicate-board-project"
+		o.HTMLURL = "https://github.com/dupuser/duplicate-board-project"
+		o.Owner = "dupuser"
+		o.Author = webhooks.GitHubAuthor{Name: "Dup User", Email: "dupuser@test.com"}
+	})
+
+	// Look up the player via username and verify they have exactly 1 board.
+	user, err := env.Queries.GetUserByUsername(ctx, "gh-dupuser")
+	require.NoError(t, err)
+
+	player, err := env.Queries.GetPlayerByUserAndGame(ctx, db.GetPlayerByUserAndGameParams{
+		UserID: user.ID,
+		GameID: game.ID,
+	})
+	require.NoError(t, err)
+
+	ids, err := env.Queries.GetPlayerBoardIds(ctx, player.ID)
+	require.NoError(t, err)
+
+	require.True(t, ids.Board1ID.Valid, "board_1 should be set")
+	assert.False(t, ids.Board2ID.Valid, "board_2 should NOT be assigned (same board already in slot 1)")
+	assert.False(t, ids.Board3ID.Valid, "board_3 should NOT be assigned (same board already in slot 1)")
+}
