@@ -80,6 +80,8 @@ en:
     WhatIsBody: During the months of January and July, we're encouraging developers of all skill levels to try and work on your pet project(s) just a little each day. It's a great excuse to contribute to the communities you follow, or even dive into a language for the first time.
     WhatIsTitle: What is Julython?
     WhatsHappening: What's Happening?
+    LanguagesBreakdown: Languages Breakdown
+    NoData: No data available yet.
     profile:
         accountInfo: account info
         addWebhook: add webhook

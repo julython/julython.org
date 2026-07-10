@@ -578,6 +578,9 @@ func DetectLanguage(path string) string {
 		".less":   "Less",
 		".vue":    "Vue",
 		".svelte": "Svelte",
+		".md":     "Documentation",
+		".rst":    "Documentation",
+		".txt":    "Documentation",
 	}
 
 	return languages[ext]

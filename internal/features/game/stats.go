@@ -1,5 +1,7 @@
 package game
 
+import "july/internal/components/piechart"
+
 // GameStats holds aggregated game statistics.
 type GameStats struct {
 	Name          string
@@ -24,4 +26,13 @@ type RecentCommit struct {
 	Project     string
 	ProjectName string
 	TimeAgo     string
+}
+
+// HomeData holds data for the home page.
+type HomeData struct {
+	Game              GameStats
+	DailyCommits      []DayCommits
+	LanguageBreakdown []piechart.DataPoint
+	RecentCommits     []RecentCommit
+	MaxDayCommits     int
 }
