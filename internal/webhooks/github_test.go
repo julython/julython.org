@@ -820,7 +820,7 @@ func TestDetectLanguage(t *testing.T) {
 		{"style.css", "CSS"},
 		{"lib.rs", "Rust"},
 		{"Main.java", "Java"},
-		{"README.md", ""},
+		{"README.md", "Documentation"},
 		{"Makefile", ""},
 		{".gitignore", ""},
 	}

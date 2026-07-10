@@ -11,6 +11,7 @@ import (
 
 	"july/internal/auth"
 	"july/internal/components/layout"
+	"july/internal/components/piechart"
 	"july/internal/db"
 	"july/internal/services"
 )
@@ -50,6 +51,8 @@ func (h *gameHandler) Home(w http.ResponseWriter, r *http.Request) {
 
 	recentCommits := h.getRecentCommits(ctx, game.ID, 10)
 
+	languageBreakdown := h.getLanguageBreakdown(ctx, game.ID)
+
 	data := HomeData{
 		Game: GameStats{
 			Name:          game.Name,
@@ -57,9 +60,10 @@ func (h *gameHandler) Home(w http.ResponseWriter, r *http.Request) {
 			TotalUsers:    int(stats.UniqueUsers),
 			TotalProjects: int(stats.UniqueProjects),
 		},
-		DailyCommits:  dailyCommits,
-		MaxDayCommits: maxDay,
-		RecentCommits: recentCommits,
+		DailyCommits:      dailyCommits,
+		MaxDayCommits:     maxDay,
+		RecentCommits:     recentCommits,
+		LanguageBreakdown: languageBreakdown,
 	}
 
 	layout := layout.LayoutData{
@@ -69,6 +73,30 @@ func (h *gameHandler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	HomePage(layout, data).Render(ctx, w)
+}
+
+func (h *gameHandler) getLanguageBreakdown(ctx context.Context, gameID uuid.UUID) []piechart.DataPoint {
+	rows, err := h.queries.GetLanguageLeaderboard(ctx, db.GetLanguageLeaderboardParams{
+		GameID:     gameID,
+		LimitCount: 15,
+	})
+	if err != nil {
+		return []piechart.DataPoint{}
+	}
+
+	if len(rows) == 0 {
+		return []piechart.DataPoint{}
+	}
+
+	points := make([]piechart.DataPoint, len(rows))
+	for i, row := range rows {
+		points[i] = piechart.DataPoint{
+			Label: row.LanguageName,
+			Value: int(row.CommitCount),
+		}
+	}
+
+	return points
 }
 
 func (h *gameHandler) getDailyCommits(ctx context.Context, gameID uuid.UUID, _ time.Time) ([]DayCommits, int) {
@@ -107,10 +135,11 @@ func (h *gameHandler) renderEmptyHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := HomeData{
-		Game:          GameStats{Name: "Julython"},
-		DailyCommits:  days,
-		MaxDayCommits: 0,
-		RecentCommits: []RecentCommit{},
+		Game:              GameStats{Name: "Julython"},
+		DailyCommits:      days,
+		MaxDayCommits:     0,
+		RecentCommits:     []RecentCommit{},
+		LanguageBreakdown: nil,
 	}
 
 	layout := layout.LayoutData{

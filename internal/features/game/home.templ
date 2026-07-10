@@ -9,14 +9,8 @@ import (
 	"july/internal/components/avatar"
 	"july/internal/components/icons"
 	"july/internal/components/layout"
+	"july/internal/components/piechart"
 )
-
-type HomeData struct {
-	Game          GameStats
-	DailyCommits  []DayCommits
-	RecentCommits []RecentCommit
-	MaxDayCommits int
-}
 
 templ HomePage(ld layout.LayoutData, data HomeData) {
 	@layout.Layout(ld) {
@@ -100,6 +94,7 @@ templ StatsSection(data HomeData) {
 					{ fmt.Sprintf("%s %s", formatNumber(data.Game.TotalCommits), i18n.T(ctx, "CommitsDuring")) } { data.Game.Name }!
 				</h2>
 				@CommitHistogram(data.DailyCommits, data.MaxDayCommits)
+				@piechart.PieChart(i18n.T(ctx, "LanguagesBreakdown"), data.LanguageBreakdown)
 			</div>
 			<div>
 				<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
