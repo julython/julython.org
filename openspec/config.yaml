@@ -1,0 +1,12 @@
+schema: spec-driven
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+rules:
+  proposal:
+    - Keep proposals under 500 words.
+    - Explicitly state what is out of scope.
+  design:
+    - Record the placement decision: which internal/features capability or internal/services / internal/shared package owns the change.
+  tasks:
+    - Keep each task independently verifiable and include a verification step.
