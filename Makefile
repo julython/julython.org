@@ -32,7 +32,7 @@ else
     endif
 endif
 
-TAILWIND_VERSION := 4.1.18
+TAILWIND_VERSION := 4.3.5
 HTMX_VERSION     := 2.0.8
 MERMAID_VERSION  := 11.4.1
 WEBLLM_VERSION   := 0.2.82
@@ -66,6 +66,7 @@ setup: .env $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/li
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
 	go install github.com/air-verse/air@v1.61.7
 	go install gotest.tools/gotestsum@v1.13.0
+	go install golang.org/x/tools/gopls@latest
 	go mod tidy
 
 $(TAILWIND_BIN):
@@ -98,7 +99,7 @@ $(WEBLLM_VENDOR_DIR)/lib/index.js:
 	@echo "✓ $(WEBLLM_VENDOR_DIR)"
 
 compose-deps:  ## Run shared services
-	$(COMPOSE_CMD) up -d postgres adminer db_create
+	$(COMPOSE_CMD) up -d postgres adminer db_create db_migrate
 
 up: generate ## Run the shared services in docker
 	$(COMPOSE_CMD) up api smee --build

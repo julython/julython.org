@@ -15,6 +15,10 @@ JULY_SESSION_SECRET=change-me-in-production
 # Encryption key (required for database encryption)
 # Generate a 32-byte hex-encoded key: openssl rand -hex 32
 JULY_DATABASE_ENC_KEY=6aa08ddd5fde0da25b431cb471b43db5ae0ec158e9667635b41f670f0c751929
+JULY_DATABASE_USER=postgres
+JULY_DATABASE_PASSWORD=postgres
+JULY_DATABASE_NAME=july
+#JULY_DATABASE_HOST=localhost
 
 # Optional: Redis for sessions
 JULY_REDIS_URL=redis://localhost:6379

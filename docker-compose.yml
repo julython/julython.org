@@ -11,14 +11,15 @@ services:
       - go-mod-cache:/go/pkg/mod
 
   db_migrate:
-    build:
-      context: ./
+    image: migrate/migrate:v4.19.1
     command:
+      - "-path"
+      - "/migrations"
+      - "-database"
       - "postgres://postgres:postgres@postgres:5432/july?sslmode=disable"
       - "up"
-    env_file:
-      - docker-compose.env
-      - .env
+    volumes:
+      - ./migrations:/migrations
     depends_on:
       db_create:
         condition: service_completed_successfully
