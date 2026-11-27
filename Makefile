@@ -66,7 +66,9 @@ setup: .env $(TAILWIND_BIN) $(HTMX_DEST) $(MERMAID_DEST) $(WEBLLM_VENDOR_DIR)/li
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
 	go install github.com/air-verse/air@v1.61.7
 	go install gotest.tools/gotestsum@v1.13.0
+ifndef CI
 	go install golang.org/x/tools/gopls@latest
+endif
 	go mod tidy
 
 $(TAILWIND_BIN):
