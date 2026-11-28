@@ -123,7 +123,7 @@ compile: generate  ## Compile the source
 	go build -o bin/july ./cmd/server
 
 build: generate ## Build docker image
-	docker build . -t $(image)
+	docker build --platform linux/amd64 . -t $(image)
 
 push:  ## Push docker image
 	docker push $(image)

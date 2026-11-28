@@ -96,3 +96,30 @@ $ make game args="--active $DATE"
 After you have created a game you can verify it is working correctly by pushing a commit to the repo you have connected with a webhook locally.
 
 Congratulations you are now a Julython Hacker!
+
+## Deploying
+
+Deployment uses Google Cloud Run with images pushed to Google Artifact Registry (`gcr.io/julython/julython-go`).
+
+### One-time setup
+
+Install the Google Cloud SDK (https://cloud.google.com/sdk/docs/install), then authenticate Docker:
+
+```bash
+gcloud auth login
+gcloud auth configure-docker gcr.io
+```
+
+You need the `artifactregistry.writer` role on the `julython` project.
+
+### Deploy
+
+```bash
+make build    # build image tagged gcr.io/julython/julython-go:<git-sha>
+make push     # push image to Artifact Registry
+make deploy   # deploy to Cloud Run (us-central1, allow-unauthenticated)
+```
+
+The image tag is the short git SHA, so each commit produces a distinct image.
+
+`--allow-unauthenticated` makes the Cloud Run service publicly reachable: anyone with the URL can request it without a Google identity token. This is required because Julython is a public site whose visitors are not Google-authenticated (the app handles login itself via GitHub OAuth).
